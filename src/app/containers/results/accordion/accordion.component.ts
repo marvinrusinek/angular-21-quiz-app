@@ -112,9 +112,7 @@ export class AccordionComponent implements OnInit, OnDestroy {
               }
             }
 
-           if (!id) {
-             return;
-           }
+           if (!id) return;
 
            // Fallback to QuizDataService to ensure clarity (bypasses shuffling/state complexity)
            this.quizDataService.getQuestionsForQuiz(id).pipe(takeUntil(this.destroy$)).subscribe((qs: QuizQuestion[]) => {
@@ -166,9 +164,7 @@ export class AccordionComponent implements OnInit, OnDestroy {
          );
 
          // Fallback: treat id as a 0-based display index (used when options lack optionId)
-         if (idx === -1 && id >= 0 && id < question.options.length) {
-           idx = id;
-         }
+         if (idx === -1 && id >= 0 && id < question.options.length) idx = id;
 
          return idx >= 0 ? idx + 1 : -1;
       })
@@ -226,9 +222,8 @@ export class AccordionComponent implements OnInit, OnDestroy {
 
     // Fallback to selectedOptionsMap
     const selections = this.selectedOptionService.selectedOptionsMap.get(questionIndex);
-    if (!selections || selections.length === 0) {
-      return [];
-    }
+    if (!selections || selections.length === 0) return [];
+
     return selections.map((sel: any) => {
       const visualIdx = matchOption(sel);
       return {
