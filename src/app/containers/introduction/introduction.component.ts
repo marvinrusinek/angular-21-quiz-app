@@ -124,11 +124,11 @@ export class IntroductionComponent implements OnInit, OnDestroy {
         tap((params) => this.handleRouteParams(params)),
         switchMap((params) => this.fetchQuiz(params)),
         tap((quiz) => this.logQuizLoaded(quiz)),
-        takeUntil(this.destroy$),
+        takeUntil(this.destroy$)
       )
       .subscribe({
         next: (quiz: Quiz | null) => this.handleLoadedQuiz(quiz),
-        error: (error) => this.handleError(error),
+        error: (error) => this.handleError(error)
       });
   }
 
@@ -145,7 +145,7 @@ export class IntroductionComponent implements OnInit, OnDestroy {
     return this.quizDataService.getQuiz(quizId).pipe(
       catchError(() => {
         return EMPTY;  // handle the error by returning EMPTY to keep the Observable flow intact
-      }),
+      })
     );
   }
 
@@ -377,9 +377,7 @@ export class IntroductionComponent implements OnInit, OnDestroy {
   private async resolveActiveQuiz(targetQuizId: string): Promise<Quiz | null> {
     const quizFromState = this.selectedQuiz$.getValue() ?? this.quiz ?? null;
 
-    if (quizFromState?.quizId === targetQuizId) {
-      return quizFromState;
-    }
+    if (quizFromState?.quizId === targetQuizId) return quizFromState;
 
     try {
       const loadedQuiz = await this.quizDataService.loadQuizById(targetQuizId);
