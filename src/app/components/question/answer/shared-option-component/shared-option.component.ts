@@ -264,8 +264,7 @@ export class SharedOptionComponent
 
         // Get correct answer texts from canonical question data
         const qIdx = this.currentQuestionIndex ?? this.quizService.currentQuestionIndex ?? 0;
-        const question = this.quizService.questions?.[qIdx]
-          ?? this.currentQuestion;
+        const question = this.quizService.questions?.[qIdx] ?? this.currentQuestion;
         const displayOpts = this.optionsToDisplay?.length
           ? this.optionsToDisplay
           : question?.options ?? [];

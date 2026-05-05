@@ -1,7 +1,6 @@
 import {
-  ChangeDetectorRef, ChangeDetectionStrategy, Component, Input, OnInit,
-  OnChanges, SimpleChanges,
-  input, signal
+  ChangeDetectorRef, ChangeDetectionStrategy, Component, Input, input, OnInit,
+  OnChanges, signal, SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
