@@ -822,6 +822,15 @@ export class OptionUiSyncService {
         !anyIncorrectTextSelected
       ) {
         this.quizService.scoreDirectly(questionIndex, true, true);
+        // Mark this multi-answer question as fully resolved so the
+        // rendering layer (option-item.isDisabled) honors b.disabled
+        // for unselected incorrect options. Without this flag, the
+        // policy correctly stamps b.disabled=true but the UI still
+        // returns false from isDisabled() in multi-answer mode.
+        if (!(this.quizService as any)._multiAnswerPerfect) {
+          (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
+        }
+        (this.quizService as any)._multiAnswerPerfect.set(questionIndex, true);
         // Force FET readiness even if already scored correct (to be safe)
         this.selectedOptionService.setAnswered(true, true);
         // Persist FET-ready state to sessionStorage. quiz-option-processing's

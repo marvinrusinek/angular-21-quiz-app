@@ -251,6 +251,88 @@ export class SharedOptionComponent
       this.renderReady = this.renderReadyInput();
     });
 
+    // Multi-answer auto-disable. Reactively watches the selections signal
+    // and rebuilds optionBindings with fresh refs the moment every pristine-
+    // correct option for THIS rendered question is selected. Pure Angular
+    // reactivity — OnPush option-item children pick up new `b` refs via
+    // ngOnChanges, no DOM, no detectChanges hacks.
+    //
+    // Identifies the rendered question by option-text fingerprint
+    // (matching the bindings against pristine quizInitialState) instead
+    // of trusting currentQuestionIndex, which can lag during click flow.
+    effect(() => {
+      const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
+      if (!this.optionBindings || this.optionBindings.length === 0) return;
+
+      const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
+      const bindingTexts = this.optionBindings
+        .map((b: any) => nrm(b?.option?.text))
+        .filter((t: string) => !!t);
+      if (bindingTexts.length === 0) return;
+
+      // Find pristine question whose options exactly match this binding set.
+      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      let pristineCorrectTexts: Set<string> | null = null;
+      const bindingTextSet = new Set(bindingTexts);
+      outer: for (const quiz of bundle) {
+        for (const pq of (quiz?.questions ?? [])) {
+          const pqOpts = pq?.options ?? [];
+          if (pqOpts.length !== this.optionBindings.length) continue;
+          const pqTexts = pqOpts.map((o: any) => nrm(o?.text));
+          if (!pqTexts.every((t: string) => bindingTextSet.has(t))) continue;
+          pristineCorrectTexts = new Set(
+            pqOpts
+              .filter((o: any) =>
+                o?.correct === true || String(o?.correct) === 'true' ||
+                o?.correct === 1 || o?.correct === '1'
+              )
+              .map((o: any) => nrm(o?.text))
+              .filter((t: string) => !!t)
+          );
+          break outer;
+        }
+      }
+      if (!pristineCorrectTexts || pristineCorrectTexts.size < 2) return;
+
+      // Find selections (across any question slot) whose texts cover every
+      // pristine correct text. Avoids dependence on currentQuestionIndex.
+      let allCorrectSelected = false;
+      for (const sels of selectionsMap.values()) {
+        const selectedTexts = new Set(
+          (sels ?? []).map((s: any) => nrm(s?.text)).filter((t: string) => !!t)
+        );
+        if ([...pristineCorrectTexts].every(t => selectedTexts.has(t))) {
+          allCorrectSelected = true;
+          break;
+        }
+      }
+      if (!allCorrectSelected) return;
+
+      // Rebuild every binding with fresh refs so OnPush option-items pick
+      // up the new disabled state via ngOnChanges.
+      const correctTexts = pristineCorrectTexts;
+      let mutated = false;
+      const next = this.optionBindings.map((b: any) => {
+        const myText = nrm(b?.option?.text);
+        const isCorrect = correctTexts.has(myText);
+        const targetDisabled = !isCorrect;
+        if (b.disabled !== targetDisabled) mutated = true;
+        return {
+          ...b,
+          disabled: targetDisabled,
+          isCorrect,
+          option: b.option ? {
+            ...b.option,
+            active: isCorrect
+          } : b.option
+        };
+      });
+      if (mutated) {
+        this.optionBindings = next;
+        this.cdRef.markForCheck();
+      }
+    });
+
     // Independent timer-expiry watcher: uses the elapsed time signal
     // directly, bypassing expired$ and all orchestrator chains.
     // When elapsed time reaches the time-per-question, apply correct

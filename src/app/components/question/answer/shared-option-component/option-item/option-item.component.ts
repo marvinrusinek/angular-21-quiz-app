@@ -98,6 +98,75 @@ export class OptionItemComponent implements OnChanges, OnInit {
         this.cdRef.markForCheck();
         this.cdRef.detectChanges();
       });
+
+    // Re-check on every selection mutation. isDisabled() reads selections
+    // and pristine corrects for multi-answer mode; without this, sibling
+    // OnPush option-items don't re-evaluate when the user picks a new
+    // option (their `b` input ref doesn't always change in the click path).
+    this.selectedOptionService.selectedOptionsMap$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.applyMultiAnswerDisableState();
+        this.cdRef.markForCheck();
+        this.cdRef.detectChanges();
+      });
+  }
+
+  // Computes the multi-answer disable state for this option from
+  // pristine quiz data + currently saved selections, then writes it
+  // onto b.disabled. Belt-and-suspenders alongside isDisabled():
+  // legacy code paths read b.disabled directly, so keeping it in
+  // sync ensures consistent state.
+  private applyMultiAnswerDisableState(): void {
+    try {
+      if (!this.b?.option) return;
+      const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+
+      const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
+      const liveQT = nrm(
+        (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
+        ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText
+      );
+      if (!liveQT) return;
+
+      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      let pristineCorrectTexts: Set<string> | null = null;
+      for (const quiz of bundle) {
+        let found = false;
+        for (const pq of (quiz?.questions ?? [])) {
+          if (nrm(pq?.questionText) !== liveQT) continue;
+          pristineCorrectTexts = new Set(
+            (pq?.options ?? [])
+              .filter((o: any) =>
+                o?.correct === true || String(o?.correct) === 'true' ||
+                o?.correct === 1 || o?.correct === '1'
+              )
+              .map((o: any) => nrm(o?.text))
+              .filter((t: string) => !!t)
+          );
+          found = true;
+          break;
+        }
+        if (found) break;
+      }
+      if (!pristineCorrectTexts || pristineCorrectTexts.size < 2) return;
+
+      const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
+      const selections = selectionsMap.get(_qIdx) ?? [];
+      const selectedTexts = new Set(
+        selections.map((s: any) => nrm(s?.text)).filter((t: string) => !!t)
+      );
+      const allPristineCorrectSelected =
+        [...pristineCorrectTexts].every(t => selectedTexts.has(t));
+
+      if (!allPristineCorrectSelected) return;
+
+      const myText = nrm(this.b.option.text);
+      if (!selectedTexts.has(myText)) {
+        this.b.disabled = true;
+        if (this.b.option) (this.b.option as any).active = false;
+      }
+    } catch { /* never throw from a CD-triggered method */ }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -321,58 +390,62 @@ export class OptionItemComponent implements OnChanges, OnInit {
       } catch { /* ignore */ }
     }
 
-    // For MULTIPLE mode, NEVER disable unless the question is definitively
-    // fully answered or the timer expired. This prevents stale b.disabled
-    // from initialization (when isMultiMode wasn't yet true) from blocking clicks.
+    // For MULTIPLE mode, disable purely by data: when the user has
+    // selected every pristine-correct option, every other (unselected,
+    // incorrect) option becomes disabled. Reads selectedOptionsMapSig
+    // directly so Angular's signal tracking auto-marks this OnPush
+    // component dirty whenever selections mutate (no need for manual
+    // markForCheck or input-ref-change tricks).
     if (_type === 'multiple') {
       if (this.isTimerExpiredForThisQuestion()) return true;
 
-      const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-      const isFullyAnswered = perfectMap?.get(_qIdx) === true;
-      if (isFullyAnswered && this.b?.disabled === true) {
-        // Pristine verification: only honor _multiAnswerPerfect if the
-        // user's selections actually cover every pristine-correct option.
-        // _multiAnswerPerfect can be set prematurely when upstream code
-        // undercounts correct options (Q2/Q4 multi-answer issue).
-        const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
-        const liveQT = nrm(
-          (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
-          ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText
+      const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
+      const liveQT = nrm(
+        (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
+        ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText
+      );
+      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      let pristineCorrectTexts: Set<string> | null = null;
+      if (liveQT) {
+        outerVerify: for (const quiz of bundle) {
+          for (const pq of (quiz?.questions ?? [])) {
+            if (nrm(pq?.questionText) !== liveQT) continue;
+            pristineCorrectTexts = new Set(
+              (pq?.options ?? [])
+                .filter((o: any) =>
+                  o?.correct === true || String(o?.correct) === 'true' ||
+                  o?.correct === 1 || o?.correct === '1'
+                )
+                .map((o: any) => nrm(o?.text))
+                .filter((t: string) => !!t)
+            );
+            break outerVerify;
+          }
+        }
+      }
+
+      if (pristineCorrectTexts && pristineCorrectTexts.size > 0) {
+        // Read the signal directly — registers as a template dependency
+        // so this OnPush component re-renders when selections change.
+        const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
+        const selections = selectionsMap.get(_qIdx) ?? [];
+        const selectedTexts = new Set(
+          selections.map((s: any) => nrm(s?.text)).filter((t: string) => !!t)
         );
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-        let pristineCorrectTexts: Set<string> | null = null;
-        if (liveQT) {
-          outerVerify: for (const quiz of bundle) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (nrm(pq?.questionText) !== liveQT) continue;
-              pristineCorrectTexts = new Set(
-                (pq?.options ?? [])
-                  .filter((o: any) =>
-                    o?.correct === true || String(o?.correct) === 'true' ||
-                    o?.correct === 1 || o?.correct === '1'
-                  )
-                  .map((o: any) => nrm(o?.text))
-                  .filter((t: string) => !!t)
-              );
-              break outerVerify;
-            }
-          }
+        const allPristineCorrectSelected =
+          [...pristineCorrectTexts].every(t => selectedTexts.has(t));
+        if (allPristineCorrectSelected) {
+          const myText = nrm(this.b?.option?.text);
+          return !selectedTexts.has(myText);
         }
-        if (pristineCorrectTexts && pristineCorrectTexts.size > 0) {
-          const selections = this.selectedOptionService.getSelectedOptionsForQuestion(_qIdx) ?? [];
-          const selectedTexts = new Set(
-            selections.map((s: any) => nrm(s?.text)).filter((t: string) => !!t)
-          );
-          const allPristineCorrectSelected =
-            [...pristineCorrectTexts].every(t => selectedTexts.has(t));
-          if (!allPristineCorrectSelected) {
-            // Premature _multiAnswerPerfect — keep this option enabled.
-            return false;
-          }
-        }
+      }
+
+      // Fallback to the legacy flag path if pristine resolution failed
+      // (no quizInitialState match, etc.).
+      const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+      if (perfectMap?.get(_qIdx) === true && this.b?.disabled === true) {
         return true;
       }
-      // Multi-answer options are NEVER disabled before the question is fully answered
       return false;
     }
 
@@ -567,11 +640,53 @@ export class OptionItemComponent implements OnChanges, OnInit {
       if (this.b?.disabled && !this.b?.isSelected) {
         return '#a0a0a0';
       }
-      // Also check _multiAnswerPerfect directly for the case where
-      // the binding disabled flag is set and all correct are selected
+      // Multi-answer data-driven gray: when the user has selected every
+      // pristine-correct option for this question, every unselected
+      // (incorrect) option goes gray. Mirrors the isDisabled() check so
+      // visuals stay in lockstep without depending on _multiAnswerPerfect
+      // or b.disabled flags being set in sync.
       if (this.type() === 'multiple' && !this.b?.isSelected) {
-        const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
         const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+        const nrmBg = (t: any) => String(t ?? '').trim().toLowerCase();
+        const liveQTBg = nrmBg(
+          (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
+          ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText
+        );
+        const bundleBg: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        let pristineCorrectTextsBg: Set<string> | null = null;
+        if (liveQTBg) {
+          outerBg: for (const qBg of bundleBg) {
+            for (const pqBg of (qBg?.questions ?? [])) {
+              if (nrmBg(pqBg?.questionText) !== liveQTBg) continue;
+              pristineCorrectTextsBg = new Set(
+                (pqBg?.options ?? [])
+                  .filter((o: any) =>
+                    o?.correct === true || String(o?.correct) === 'true' ||
+                    o?.correct === 1 || o?.correct === '1'
+                  )
+                  .map((o: any) => nrmBg(o?.text))
+                  .filter((t: string) => !!t)
+              );
+              break outerBg;
+            }
+          }
+        }
+        if (pristineCorrectTextsBg && pristineCorrectTextsBg.size > 0) {
+          // Read the signal directly so OnPush auto-tracks selection changes.
+          const selectionsMapBg = this.selectedOptionService.selectedOptionsMapSig();
+          const selectionsBg = selectionsMapBg.get(_qIdx) ?? [];
+          const selectedTextsBg = new Set(
+            selectionsBg.map((s: any) => nrmBg(s?.text)).filter((t: string) => !!t)
+          );
+          const allPristineCorrectSelectedBg =
+            [...pristineCorrectTextsBg].every(t => selectedTextsBg.has(t));
+          const myTextBg = nrmBg(this.b?.option?.text);
+          if (allPristineCorrectSelectedBg && !selectedTextsBg.has(myTextBg)) {
+            return '#a0a0a0';
+          }
+        }
+        // Legacy flag fallback
+        const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
         if (perfectMap?.get(_qIdx) === true && !this.isOptionCorrect()) {
           return '#a0a0a0';
         }

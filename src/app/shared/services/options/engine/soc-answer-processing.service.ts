@@ -399,6 +399,53 @@ export class SocAnswerProcessingService {
 
     comp.showFeedback = true;
     comp.cdRef.detectChanges();
+
+    // Multi-answer: when all correct options are selected, also
+    // re-spread bindings AND fall back to a DOM stamp. The Angular
+    // binding rebuild SHOULD make the OnPush option-items re-render,
+    // but the click-flow CD timing in this codebase doesn't always
+    // propagate cleanly to siblings. The DOM stamp guarantees the
+    // visual lock as a belt-and-suspenders fallback.
+    if (allCorrectInDurable) {
+      queueMicrotask(() => {
+        const correctSet = new Set(effectiveCorrectIndices);
+        comp.optionBindings = (comp.optionBindings ?? []).map((b: any, bi: number) => {
+          const isCorrectIdx = correctSet.has(bi);
+          return {
+            ...b,
+            disabled: !isCorrectIdx,
+            isCorrect: isCorrectIdx,
+            option: b.option ? {
+              ...b.option,
+              active: isCorrectIdx
+            } : b.option
+          };
+        });
+        comp.cdRef.detectChanges();
+      });
+
+      // DOM fallback — guarantees the visual lock regardless of CD timing.
+      const stamp = () => {
+        try {
+          const correctSet = new Set(effectiveCorrectIndices);
+          const items = document.querySelectorAll('app-option-item');
+          items.forEach((el, idx) => {
+            if (correctSet.has(idx)) return;
+            const row = el.querySelector('.option-row') as HTMLElement | null;
+            if (row) {
+              row.style.pointerEvents = 'none';
+              row.style.backgroundColor = '#a0a0a0';
+              row.style.opacity = '0.7';
+            }
+            const input = el.querySelector('input') as HTMLInputElement | null;
+            if (input) input.disabled = true;
+          });
+        } catch { /* DOM not ready */ }
+      };
+      stamp();
+      setTimeout(stamp, 0);
+      setTimeout(stamp, 50);
+    }
   }
 
   /**
