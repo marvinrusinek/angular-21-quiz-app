@@ -337,11 +337,8 @@ export class IntroductionComponent implements OnInit, OnDestroy {
 
   private async navigateToFirstQuestion(targetQuizId: string): Promise<boolean> {
     // Resolve the effective quiz id (override → service → component → localStorage)
-    const quizId =
-      this.quizNavigationService.resolveEffectiveQuizId(targetQuizId);
-    if (!quizId) {
-      return false;
-    }
+    const quizId = this.quizNavigationService.resolveEffectiveQuizId(targetQuizId);
+    if (!quizId) return false;
 
     // Ensure the session is ready and can resolve Q0 (best-effort; don’t block nav)
     await this.quizNavigationService.ensureSessionQuestions(quizId);
