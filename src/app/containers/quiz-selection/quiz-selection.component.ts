@@ -127,9 +127,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
 
   async onSelect(quizId: string, index: number): Promise<void> {
     try {
-      if (!quizId) {
-        return;
-      }
+      if (!quizId) return;
 
       // this.quizService.quizId = quizId;
       this.quizService.setQuizId(quizId);
