@@ -49,8 +49,7 @@ export class ScoreComponent implements OnInit {
 
     if (this.isPercentage()) {
       return safeTotal > 0
-        ? `${((safeCorrect / safeTotal) * 100).toFixed(0)}%`
-        : '0%';
+        ? `${((safeCorrect / safeTotal) * 100).toFixed(0)}%` : '0%';
     }
     return `${safeCorrect}/${safeTotal}`;
   });
