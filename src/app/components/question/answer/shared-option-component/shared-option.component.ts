@@ -428,7 +428,9 @@ export class SharedOptionComponent
   // Returns cursor style for option - 'not-allowed' for disabled/incorrect
   // options or when timer expired
   public getOptionCursor(binding: OptionBindings, index: number): string {
-    return this.optionService.getOptionCursor(binding, index, this.isDisabled(binding, index), this.timerExpiredForQuestion);
+    return this.optionService.getOptionCursor(
+      binding, index, this.isDisabled(binding, index), this.timerExpiredForQuestion
+    );
   }
 
   // Decide if an option should be disabled, only checks disabledOptionsPerQuestion
@@ -545,16 +547,16 @@ export class SharedOptionComponent
   }
 
   displayFeedbackForOption(
-      option: SelectedOption,
-      index: number,
-      optionId: number
+    option: SelectedOption,
+    index: number,
+    optionId: number
   ): void {
     this.orchestrator.runDisplayFeedbackForOption(this, option, index, optionId);
   }
 
   generateFeedbackConfig(
-      option: SelectedOption,
-      selectedIndex: number,
+    option: SelectedOption,
+    selectedIndex: number
   ): FeedbackProps {
     return this.feedbackManager.generateFeedbackConfig(option, selectedIndex, this.buildFeedbackContext());
   }
@@ -593,7 +595,7 @@ export class SharedOptionComponent
 
   initializeFeedbackBindings(): void {
     this.feedbackBindings = this.feedbackManager.initializeFeedbackBindings(
-        this.optionBindings, this.buildFeedbackContext()
+      this.optionBindings, this.buildFeedbackContext()
     );
   }
 
@@ -616,8 +618,8 @@ export class SharedOptionComponent
   shouldShowFeedbackFor(b: OptionBindings): boolean {
     const id = b.option.optionId;
     return (
-        id === this.lastFeedbackOptionId &&
-        !!this.feedbackConfigs[id]?.showFeedback
+      id === this.lastFeedbackOptionId &&
+      !!this.feedbackConfigs[id]?.showFeedback
     );
   }
 
