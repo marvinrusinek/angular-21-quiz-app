@@ -1,6 +1,6 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, HostListener,
-  signal, computed
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, HostListener, 
+  OnDestroy, OnInit, signal
 } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -131,7 +131,7 @@ export class ResultsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // optional fallback
+    // Optional fallback
     this.quizService.finalResult$
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe(r => {
