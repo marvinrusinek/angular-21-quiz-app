@@ -30,21 +30,8 @@ import { NextButtonStateService } from '../../../shared/services/state/next-butt
 import { SelectedOptionService } from '../../../shared/services/state/selectedoption.service';
 import { SelectionMessageService } from '../../../shared/services/features/selection-message/selection-message.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
-import { QqcExplanationManagerService } from '../../../shared/services/features/qqc/qqc-explanation-manager.service';
-import { QqcTimerEffectService } from '../../../shared/services/features/qqc/qqc-timer-effect.service';
-import { QqcFeedbackManagerService } from '../../../shared/services/features/qqc/qqc-feedback-manager.service';
-import { QqcOptionSelectionService } from '../../../shared/services/features/qqc/qqc-option-selection.service';
-import { QqcExplanationDisplayService } from '../../../shared/services/features/qqc/qqc-explanation-display.service';
-import { QqcResetManagerService } from '../../../shared/services/features/qqc/qqc-reset-manager.service';
-import { QqcOptionClickOrchestratorService } from '../../../shared/services/features/qqc/qqc-option-click-orchestrator.service';
-import { QqcNavigationHandlerService } from '../../../shared/services/features/qqc/qqc-navigation-handler.service';
-import { QqcInitializerService } from '../../../shared/services/features/qqc/qqc-initializer.service';
 import { QqcQuestionLoaderService } from '../../../shared/services/features/qqc/qqc-question-loader.service';
-import { QqcDisplayStateManagerService } from '../../../shared/services/features/qqc/qqc-display-state-manager.service';
-import { QqcExplanationFlowService } from '../../../shared/services/features/qqc/qqc-explanation-flow.service';
-import { QqcSubscriptionWiringService } from '../../../shared/services/features/qqc/qqc-subscription-wiring.service';
-import { QqcLifecycleService } from '../../../shared/services/features/qqc/qqc-lifecycle.service';
-import { QqcComponentOrchestratorService } from '../../../shared/services/features/qqc/qqc-component-orchestrator.service';
+import { QuizQuestionFacadeService } from '../../../shared/services/features/qqc/quiz-question-facade.service';
 import { QuizShuffleService } from '../../../shared/services/flow/quiz-shuffle.service';
 import { BaseQuestion } from '../base/base-question';
 import { SharedOptionComponent } from '../answer/shared-option-component/shared-option.component';
@@ -222,6 +209,26 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.questionLoader;
   }
 
+  // ── Pass-through getters for the Qqc* services consumed by orchestrators
+  // via `host.<service>`. They delegate to qqcFacade so QQC's constructor
+  // stays compact while the established host:any access pattern keeps
+  // working unchanged.
+  protected get componentOrchestrator() { return this.qqcFacade.componentOrchestrator; }
+  protected get displayStateManager() { return this.qqcFacade.displayStateManager; }
+  protected get explanationDisplay() { return this.qqcFacade.explanationDisplay; }
+  protected get explanationFlow() { return this.qqcFacade.explanationFlow; }
+  protected get explanationManager() { return this.qqcFacade.explanationManager; }
+  protected get feedbackManager() { return this.qqcFacade.feedbackManager; }
+  protected get initializer() { return this.qqcFacade.initializer; }
+  protected get lifecycle() { return this.qqcFacade.lifecycle; }
+  protected get navigationHandler() { return this.qqcFacade.navigationHandler; }
+  protected get clickOrchestrator() { return this.qqcFacade.clickOrchestrator; }
+  protected get optionSelection() { return this.qqcFacade.optionSelection; }
+  protected get questionLoader() { return this.qqcFacade.questionLoader; }
+  protected get resetManager() { return this.qqcFacade.resetManager; }
+  protected get subscriptionWiring() { return this.qqcFacade.subscriptionWiring; }
+  protected get timerEffect() { return this.qqcFacade.timerEffect; }
+
   constructor(
     protected override quizService: QuizService,
     protected override quizStateService: QuizStateService,
@@ -233,23 +240,9 @@ export class QuizQuestionComponent extends BaseQuestion
     protected override selectedOptionService: SelectedOptionService,
     protected selectionMessageService: SelectionMessageService,
     protected timerService: TimerService,
-    protected explanationManager: QqcExplanationManagerService,
-    protected timerEffect: QqcTimerEffectService,
-    protected feedbackManager: QqcFeedbackManagerService,
-    protected optionSelection: QqcOptionSelectionService,
-    protected explanationDisplay: QqcExplanationDisplayService,
-    protected resetManager: QqcResetManagerService,
-    protected questionLoader: QqcQuestionLoaderService,
-    protected clickOrchestrator: QqcOptionClickOrchestratorService,
-    protected navigationHandler: QqcNavigationHandlerService,
-    protected initializer: QqcInitializerService,
+    protected qqcFacade: QuizQuestionFacadeService,
     protected activatedRoute: ActivatedRoute,
     protected quizShuffleService: QuizShuffleService,
-    protected displayStateManager: QqcDisplayStateManagerService,
-    protected explanationFlow: QqcExplanationFlowService,
-    protected subscriptionWiring: QqcSubscriptionWiringService,
-    protected lifecycle: QqcLifecycleService,
-    protected componentOrchestrator: QqcComponentOrchestratorService,
     protected override fb: FormBuilder,
     protected override cdRef: ChangeDetectorRef,
     protected router: Router
