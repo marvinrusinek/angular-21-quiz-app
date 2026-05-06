@@ -36,17 +36,9 @@ export class FeedbackComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    const feedbackChange = changes['feedbackConfig'];
-
-    // Log any change to feedbackConfig
-    if (feedbackChange) {
-    }
-
     if (this.shouldUpdateFeedback(changes)) {
       this.updateFeedback();
-
-      // Force view update
-      this.cdRef.markForCheck();
+      this.cdRef.markForCheck();  // force view update
     }
   }
 
