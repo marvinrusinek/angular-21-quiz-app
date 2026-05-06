@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, WritableSignal } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 import { Option } from '../../models/Option.model';
@@ -16,7 +16,7 @@ export interface VisibilityRestoreParams {
   currentQuestion: QuizQuestion | null;
   optionsToDisplay: Option[];
   explanationToDisplay: string;
-  combinedQuestionDataSubject: BehaviorSubject<QuestionPayload | null>;
+  combinedQuestionData: WritableSignal<QuestionPayload | null>;
   optionsToDisplay$: BehaviorSubject<Option[]>;
 }
 
@@ -56,14 +56,14 @@ export class QuizVisibilityRestoreService {
     this.explanationTextService.setIsExplanationTextDisplayed(showingExplanation);
 
     if (params.currentQuestion) {
-      const currentPayload = params.combinedQuestionDataSubject.getValue();
+      const currentPayload = params.combinedQuestionData();
       const payloadToEmit: QuestionPayload = currentPayload || {
         question: params.currentQuestion,
         options: params.optionsToDisplay || [],
         explanation: params.explanationToDisplay || ''
       };
 
-      params.combinedQuestionDataSubject.next(payloadToEmit);
+      params.combinedQuestionData.set(payloadToEmit);
 
       if (params.optionsToDisplay && params.optionsToDisplay.length > 0) {
         params.optionsToDisplay$.next(params.optionsToDisplay);

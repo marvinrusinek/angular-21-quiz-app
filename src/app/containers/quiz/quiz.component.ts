@@ -1,11 +1,11 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component,
-  HostListener, OnDestroy, OnInit, ViewChild, ViewEncapsulation
+  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, computed,
+  HostListener, OnDestroy, OnInit, signal, ViewChild, ViewEncapsulation
 } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
-import { debounceTime, map, shareReplay } from 'rxjs/operators';
+import { debounceTime, shareReplay } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 
@@ -91,28 +91,27 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   cardFooterClass = '';
   showScrollIndicator = false;
 
-  combinedQuestionDataSubject = new BehaviorSubject<QuestionPayload | null>(null);
-  combinedQuestionData$ = this.combinedQuestionDataSubject.pipe(
-    map((payload) => {
-      if (!payload?.question) return payload;
+  combinedQuestionData = signal<QuestionPayload | null>(null);
+  combinedQuestionDataView = computed(() => {
+    const payload = this.combinedQuestionData();
+    if (!payload?.question) return payload;
 
-      const shuffled = this.quizService.shuffledQuestions;
-      const isShuffleActive = this.quizService.isShuffleEnabled() && shuffled?.length > 0;
-      if (isShuffleActive) {
-        const idx = this.currentQuestionIndex ?? 0;
-        const correctQ = shuffled[idx];
-        if (correctQ) {
-          // ALWAYS use shuffled data when shuffle is active
-          return {
-            question: correctQ,
-            options: correctQ.options ?? [],
-            explanation: correctQ.explanation ?? ''
-          };
-        }
+    const shuffled = this.quizService.shuffledQuestions;
+    const isShuffleActive = this.quizService.isShuffleEnabled() && shuffled?.length > 0;
+    if (isShuffleActive) {
+      const idx = this.currentQuestionIndex ?? 0;
+      const correctQ = shuffled[idx];
+      if (correctQ) {
+        // ALWAYS use shuffled data when shuffle is active
+        return {
+          question: correctQ,
+          options: correctQ.options ?? [],
+          explanation: correctQ.explanation ?? ''
+        };
       }
-      return payload;
-    })
-  );
+    }
+    return payload;
+  });
 
   questionIndex = 0;
   currentQuestionIndex = 0;

@@ -68,13 +68,13 @@ export class QuizSetupDataService {
       options: initialQuestion.options,
       explanation: initialQuestion.explanation
     };
-    host.combinedQuestionDataSubject.next(payload);
+    host.combinedQuestionData.set(payload);
     host.cdRef.detectChanges();
 
     Promise.resolve().then(() => {
-      const current = host.combinedQuestionDataSubject.getValue();
+      const current = host.combinedQuestionData();
       if (!current || current.options?.length === 0) {
-        host.combinedQuestionDataSubject.next(payload);
+        host.combinedQuestionData.set(payload);
         host.cdRef.detectChanges();
       }
     });
@@ -294,7 +294,7 @@ export class QuizSetupDataService {
   createQuestionData(host: Host): void {
     const sub = this.quizContentLoaderService.createNormalizedQuestionPayload$()
       .subscribe((payload: QuestionPayload) => {
-        host.combinedQuestionDataSubject.next(payload);
+        host.combinedQuestionData.set(payload);
         host.qaToDisplay = { question: payload.question, options: payload.options };
         host.questionToDisplaySource.next(payload.question?.questionText?.trim() ?? 'No question available');
         host.explanationToDisplay = payload.explanation ?? '';

@@ -66,7 +66,7 @@ export class QuizSetupRouteService {
         this.quizService.setCurrentQuestionIndex(idx);
         host.updateDotStatus(idx);
 
-        // Force-update combinedQuestionDataSubject so the template always
+        // Force-update combinedQuestionData so the template always
         // has question data after URL navigation. Prefer quizService.questions
         // getter which returns shuffled data when shuffle is active.
         const question = this.quizService.questions?.[idx]
@@ -78,7 +78,7 @@ export class QuizSetupRouteService {
             options: question.options,
             explanation: question.explanation,
           };
-          host.combinedQuestionDataSubject.next(payload);
+          host.combinedQuestionData.set(payload);
           host.questionToDisplaySource.next(question.questionText?.trim() ?? '');
           host.cdRef.detectChanges();
 
@@ -101,7 +101,7 @@ export class QuizSetupRouteService {
 
           // Retry after microtask to ensure child components have rendered
           Promise.resolve().then(() => {
-            host.combinedQuestionDataSubject.next(payload);
+            host.combinedQuestionData.set(payload);
             host.cdRef.detectChanges();
           });
         }
@@ -113,7 +113,7 @@ export class QuizSetupRouteService {
     host.currentQuestion = null;
     host.optionsToDisplay = [];
     host.optionsToDisplay$.next([]);
-    host.combinedQuestionDataSubject.next(null);
+    host.combinedQuestionData.set(null);
     host.questionToDisplaySource.next('');
     host.explanationToDisplay = '';
     host.currentQuestionIndex = 0;
@@ -150,7 +150,7 @@ export class QuizSetupRouteService {
         if (question) {
           host.currentQuestion = question;
           host.questionToDisplaySource.next(question.questionText?.trim() ?? '');
-          host.combinedQuestionDataSubject.next({
+          host.combinedQuestionData.set({
             question, options: question.options, explanation: question.explanation,
           });
         }
@@ -227,7 +227,7 @@ export class QuizSetupRouteService {
       const payload = {
         question: result.question, options: result.options, explanation: result.explanation,
       };
-      host.combinedQuestionDataSubject.next(payload);
+      host.combinedQuestionData.set(payload);
       host.questionToDisplaySource.next(result.question.questionText?.trim() ?? '');
       host.optionsToDisplay = [...result.options];
       host.optionsToDisplay$.next([...result.options]);
@@ -350,7 +350,7 @@ export class QuizSetupRouteService {
       this.timerService.startTimer(this.timerService.timePerQuestion, this.timerService.isCountdown, true);
       this.resetFeedbackState(host);
       host.currentQuestion = result.question;
-      host.combinedQuestionDataSubject.next({
+      host.combinedQuestionData.set({
         question: result.question, options: result.question.options ?? [], explanation: result.question.explanation ?? ''
       });
       host.questionToDisplaySource.next(result.questionText);

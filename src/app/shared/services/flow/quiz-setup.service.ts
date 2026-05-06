@@ -199,7 +199,7 @@ export class QuizSetupService {
         currentQuestion: host.currentQuestion,
         optionsToDisplay: host.optionsToDisplay,
         explanationToDisplay: host.explanationToDisplay,
-        combinedQuestionDataSubject: host.combinedQuestionDataSubject,
+        combinedQuestionData: host.combinedQuestionData,
         optionsToDisplay$: host.optionsToDisplay$,
       });
       if (needsRender) {
@@ -662,7 +662,7 @@ export class QuizSetupService {
         filter((p): p is QuestionPayload => !!p && !!p.question && Array.isArray(p.options) && p.options.length > 0)
       )
       .subscribe((payload) => {
-        host.combinedQuestionDataSubject.next(payload);
+        host.combinedQuestionData.set(payload);
         host.questionToDisplaySource.next(payload.question.questionText?.trim() ?? '');
         host.cdRef.markForCheck();
       });
