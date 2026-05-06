@@ -42,80 +42,129 @@ export class ReturnComponent implements OnInit {
   }
 
   restartQuiz(): void {
+    this.ensureQuizId();
+  
+    const id = this.quizId();
+  
+    this.resetScoreAndResults();
+    this.resetQuizSession(id);
+    this.resetQuizRuntimeState();
+    this.resetDotStatus(id);
+    this.clearRestartStorageState();
+    this.resetThemeToLight();
+    this.clearResultsUiState();
+  
+    if (id) {
+      void this.router.navigate(['/quiz/question', id, 1]);
+    }
+  }
+
+  private ensureQuizId(): void {
     if (!this.quizId()) {
       this.quizId.set(this.quizService.quizId);
     }
-
+  }
+  
+  private resetScoreAndResults(): void {
     // Reset score FIRST before anything else
     this.quizService.resetScore();
     localStorage.removeItem('correctAnswersCount');
     localStorage.removeItem('questionCorrectness');
-
+  
     // Clear “results snapshot”
     this.quizService.clearFinalResult();
-
-    const id = this.quizId();
-
-    // Clear session state (answered, selections, resume index, completion flags)
+  }
+  
+  private resetQuizSession(id: string): void {
+    // Clear session state: answered, selections, resume index, completion flags
     if (id) {
       this.quizService.resetQuizSessionForNewRun(id);
       this.selectedOptionService.clearState();
     }
-
+  }
+  
+  private resetQuizRuntimeState(): void {
     this.quizService.resetAll();
     this.quizService.resetQuestions();
     this.explanationTextService.resetExplanationState();
-
     this.timerService.clearTimerState();
-
+  }
+  
+  private resetDotStatus(id: string): void {
     // Clear ALL dot status sources so dots reset to gray
     this.dotStatusService.clearAllMaps();
     this.selectedOptionService.clickConfirmedDotStatus.clear();
     this.selectedOptionService.lastClickedCorrectByQuestion.clear();
     this.selectedOptionService.clearRefreshBackup();
     this.quizService.questionCorrectness.clear();
+  
     if (id) {
       this.selectedOptionService.clearAllSelectionsForQuiz(id);
       this.quizPersistence.clearAllPersistedDotStatus(id);
       this.quizPersistence.clearClickConfirmedDotStatus(20);
     }
+  }
+  
+  private clearRestartStorageState(): void {
     try {
-      for (let i = 0; i < 100; i++) {
-        sessionStorage.removeItem('dot_confirmed_' + i);
-        sessionStorage.removeItem('sel_Q' + i);
-        sessionStorage.removeItem('quiz_selection_' + i);
-        sessionStorage.removeItem('displayMode_' + i);
-        sessionStorage.removeItem('feedbackText_' + i);
-      }
-      sessionStorage.removeItem('selectedOptionsMap');
-      sessionStorage.removeItem('rawSelectionsMap');
-      sessionStorage.removeItem('selectionHistory');
-      sessionStorage.removeItem('isAnswered');
-      sessionStorage.removeItem('answeredQuestionIndices');
-      const lsKeysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('quiz_dot_status_') || key.startsWith('quiz_progress_'))) {
-          lsKeysToRemove.push(key);
-        }
-      }
-      for (const key of lsKeysToRemove) {
-        localStorage.removeItem(key);
-      }
+      this.clearQuestionSessionStorage();
+      this.clearGlobalSessionStorage();
+      this.clearQuizProgressLocalStorage();
+  
       sessionStorage.setItem('freshStartFromResults', 'true');
     } catch {}
-
+  }
+  
+  private clearQuestionSessionStorage(): void {
+    for (let i = 0; i < 100; i++) {
+      sessionStorage.removeItem('dot_confirmed_' + i);
+      sessionStorage.removeItem('sel_Q' + i);
+      sessionStorage.removeItem('quiz_selection_' + i);
+      sessionStorage.removeItem('displayMode_' + i);
+      sessionStorage.removeItem('feedbackText_' + i);
+    }
+  }
+  
+  private clearGlobalSessionStorage(): void {
+    sessionStorage.removeItem('selectedOptionsMap');
+    sessionStorage.removeItem('rawSelectionsMap');
+    sessionStorage.removeItem('selectionHistory');
+    sessionStorage.removeItem('isAnswered');
+    sessionStorage.removeItem('answeredQuestionIndices');
+  }
+  
+  private clearQuizProgressLocalStorage(): void {
+    const lsKeysToRemove: string[] = [];
+  
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+  
+      if (
+        key &&
+        (key.startsWith('quiz_dot_status_') || key.startsWith('quiz_progress_'))
+      ) {
+        lsKeysToRemove.push(key);
+      }
+    }
+  
+    for (const key of lsKeysToRemove) {
+      localStorage.removeItem(key);
+    }
+  }
+  
+  private resetThemeToLight(): void {
     // Reset to light mode when restarting
     if (this.themeService.isDark()) {
       this.themeService.toggle();
     }
-
-    try { sessionStorage.removeItem('resultsActiveSection'); } catch {}
-
-    if (id) {
-      void this.router.navigate(['/quiz/question', id, 1]);
-    }
   }
+  
+  private clearResultsUiState(): void {
+    try {
+      sessionStorage.removeItem('resultsActiveSection');
+    } catch {}
+  }
+  
 
   selectQuiz(): void {
     this.selectedOptionService.clearState();
