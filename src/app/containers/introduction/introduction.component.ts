@@ -12,9 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleChange, MatSlideToggleModule }
   from '@angular/material/slide-toggle';
-import {
-  BehaviorSubject, combineLatest, EMPTY, firstValueFrom, of, Subject
-} from 'rxjs';
+import { combineLatest, EMPTY, firstValueFrom, of, Subject } from 'rxjs';
 import { catchError, filter, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 import { Quiz } from '../../shared/models/Quiz.model';
@@ -47,10 +45,9 @@ import { SelectedOptionService } from '../../shared/services/state/selectedoptio
 export class IntroductionComponent implements OnInit, OnDestroy {
   quiz: Quiz | null = null;
   quizId: string | undefined;
-  selectedQuiz: Quiz | null = null;
-  selectedQuiz$ = new BehaviorSubject<Quiz | null>(null);
+  readonly selectedQuiz = signal<Quiz | null>(null);
   preferencesForm: FormGroup;
-  private isCheckedSubject = new BehaviorSubject<boolean>(false);
+  readonly isChecked = signal(false);
   readonly isStartingQuiz = signal(false);
   readonly questionCountSig = signal(0);
   readonly questionLabelSig = computed(() =>
