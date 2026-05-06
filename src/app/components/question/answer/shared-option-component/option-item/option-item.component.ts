@@ -216,9 +216,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // so _wasSelected would already be latched — causing ghost highlights
     // (e.g. 2nd correct answer in multi-answer). Gating on _userHasClicked
     // ensures only actual user clicks latch the highlight.
-    if (this.b?.isSelected && this._userHasClicked) {
-      this._wasSelected = true;
-    }
+    if (this.b?.isSelected && this._userHasClicked) this._wasSelected = true;
   }
 
   /**
@@ -234,9 +232,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // template-bound method lets Angular auto-track the dependency and
     // re-render this OnPush component when the signal changes.
     const expiredIdx = this.timerService.expiredForQuestionIndexSig();
-    if (expiredIdx >= 0 && expiredIdx === qIdx) {
-      return true;
-    }
+    if (expiredIdx >= 0 && expiredIdx === qIdx) return true;
 
     // Direct subscription flag (belt-and-suspenders)
     if (this._directTimerExpired && this._directTimerExpiredForIndex === qIdx) {
@@ -244,9 +240,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     }
 
     // Legacy fallback: parent input-based check
-    if (!this.timerExpired()) {
-      return false;
-    }
+    if (!this.timerExpired()) return false;
+
     const expiredPlain = this.timerService.expiredForQuestionIndex;
     return expiredPlain < 0 || expiredPlain === qIdx;
   }
@@ -350,9 +345,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
   isDisabled(): boolean {
     // Timer-expiry handler stamped all bindings as disabled
-    if (this.isTimerStamped()) {
-      return true;
-    }
+    if (this.isTimerStamped()) return true;
 
     let _type = this.type();
     const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
@@ -442,7 +435,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
       // Fallback to the legacy flag path if pristine resolution failed
       // (no quizInitialState match, etc.).
-      const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+      const perfectMap = 
+        (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMap?.get(_qIdx) === true && this.b?.disabled === true) {
         return true;
       }
@@ -585,9 +579,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
       // effectiveId collisions or stale entries.
       // On refresh/initial-load, showIcon is typically undefined (not
       // explicitly false), so the service check below still runs.
-      if (this.b?.option?.showIcon === false) {
-        return false;
-      }
+      if (this.b?.option?.showIcon === false) return false;
+
       // No live click this session → only show icon if a saved
       // selection actually matches this exact binding position.
       return this.isSelectedForCurrentQuestion();
@@ -607,9 +600,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
   }
 
   shouldShowCorrectOnTimeout(): boolean {
-    if (!this.isTimerExpiredForThisQuestion()) {
-      return false;
-    }
+    if (!this.isTimerExpiredForThisQuestion()) return false;
 
     // When the timer expires, reveal ALL correct answers regardless of whether
     // they were flagged for icons or highlighted before.
@@ -637,9 +628,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     if (!_sh) {
       // Dark gray for disabled unselected options (e.g. remaining
       // incorrect after all correct answers selected in multi-answer)
-      if (this.b?.disabled && !this.b?.isSelected) {
-        return '#a0a0a0';
-      }
+      if (this.b?.disabled && !this.b?.isSelected) return '#a0a0a0';
+
       // Multi-answer data-driven gray: when the user has selected every
       // pristine-correct option for this question, every unselected
       // (incorrect) option goes gray. Mirrors the isDisabled() check so
@@ -734,9 +724,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
         const m = window.location.pathname.match(/\/question\/[^/]+\/(\d+)/);
         if (m) {
           const urlIdx = Number(m[1]) - 1;
-          if (Number.isFinite(urlIdx) && urlIdx > 0) {
-            qIndex = urlIdx;
-          }
+          if (Number.isFinite(urlIdx) && urlIdx > 0) qIndex = urlIdx;
         }
       } catch { /* ignore */ }
     }
@@ -746,9 +734,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
     // Strict Question Context Check
     if (selQIdx !== undefined && selQIdx !== null && selQIdx !== -1) {
-      if (Number(selQIdx) !== qIndex) {
-        return false;
-      }
+      if (Number(selQIdx) !== qIndex) return false;
     }
 
     // Saved record must represent an actual selection. `selected: false`
@@ -775,14 +761,11 @@ export class OptionItemComponent implements OnChanges, OnInit {
     const rawIdx =
       sel?.displayIndex ?? (sel as any)?.index ?? (sel as any)?.idx;
     const normalizedSelectedIndex =
-      rawIdx != null && Number.isFinite(Number(rawIdx))
-        ? Number(rawIdx)
-        : null;
+      rawIdx != null && Number.isFinite(Number(rawIdx)) ? Number(rawIdx) : null;
 
     if (normalizedSelectedIndex != null) {
-      if (normalizedSelectedIndex !== this.i) {
-        return false;
-      }
+      if (normalizedSelectedIndex !== this.i) return false;
+
       // Position matches — cross-check optionId to prevent false
       // positives when options reload in a different order or when
       // stale displayIndex values leak from a prior session.
@@ -855,9 +838,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     if (!this._userHasClicked && !this._wasSelected) {
       // During live interaction, trust the binding's highlight flag
       // when explicitly false — prevents service-level false positives.
-      if (this.b?.option?.highlight === false) {
-        return false;
-      }
+      if (this.b?.option?.highlight === false) return false;
+      
       return this.isSelectedForCurrentQuestion();
     }
 
