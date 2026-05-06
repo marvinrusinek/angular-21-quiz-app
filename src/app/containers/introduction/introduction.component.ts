@@ -106,7 +106,7 @@ export class IntroductionComponent implements OnInit, OnDestroy {
         this.highlightPreference = isChecked;
         this.shouldShuffleOptions = isChecked;
         this.quizService.setCheckedShuffle(isChecked);
-        this.isCheckedSubject.next(isChecked);
+        this.isChecked.set(isChecked);
       });
   }
 
