@@ -84,21 +84,19 @@ export class IntroductionComponent implements OnInit, OnDestroy {
       shouldShuffleOptions: [false],
       isImmediateFeedback: [false]
     });
+
+    effect(() => {
+      const quiz = this.selectedQuiz();
+      if (!quiz) return;
+  
+      this.cdRef.markForCheck();
+    });
   }
 
   ngOnInit(): void {
     this.quizService.clearStoredCorrectAnswersText();
     this.subscribeToRouteParameters();
     this.handleQuizSelectionAndFetchQuestions();
-
-    this.selectedQuiz$
-      .pipe(
-        takeUntil(this.destroy$),
-        filter((quiz) => quiz !== null)  // proceed only if there's a valid quiz
-      )
-      .subscribe(() => {
-        this.cdRef.markForCheck();
-      });
 
     this.preferencesForm.get('shouldShuffleOptions')!
       .valueChanges.pipe(takeUntil(this.destroy$))
