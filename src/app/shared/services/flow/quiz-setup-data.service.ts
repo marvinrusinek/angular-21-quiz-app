@@ -342,7 +342,6 @@ export class QuizSetupDataService {
       optionsToDisplay: host.optionsToDisplay,
       currentQuestionIndex: host.currentQuestionIndex,
       answers: host.answers,
-      selectedOption$: host.selectedOption$,
     });
 
     if (!result.option) return;

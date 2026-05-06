@@ -86,7 +86,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   subscriptions: Subscription = new Subscription();
 
   answers: Option[] = [];
-  selectedOption$ = new BehaviorSubject<Option | null>(null);
   selectionMessage$: Observable<string>;
   isAnswered = false;
   cardFooterClass = '';

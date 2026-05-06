@@ -403,7 +403,6 @@ export class QuizContentLoaderService {
     optionsToDisplay: Option[];
     currentQuestionIndex: number;
     answers: Option[];
-    selectedOption$: { next: (o: Option) => void };
   }): {
     option: Option | null;
     answers: Option[];
@@ -432,8 +431,6 @@ export class QuizContentLoaderService {
     this.quizService.answers = [...answers];
     this.quizService.updateUserAnswer(params.currentQuestionIndex, answerIds);
     void this.quizService.checkIfAnsweredCorrectly(params.currentQuestionIndex, false);
-
-    params.selectedOption$.next(option);
 
     return { option, answers, answerIds };
   }
