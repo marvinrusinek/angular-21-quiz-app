@@ -1,7 +1,7 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, effect,
-  input, model, OnChanges, OnInit, output, QueryList, SimpleChanges, ViewChild,
-  ViewContainerRef } from '@angular/core';
+  input, model, OnInit, output, QueryList, ViewChild, ViewContainerRef
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -10,7 +10,6 @@ import { takeUntil } from 'rxjs/operators';
 import { Option } from '../../../../shared/models/Option.model';
 import { OptionBindings } from '../../../../shared/models/OptionBindings.model';
 import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPayload.model';
-import { QuestionType } from '../../../../shared/models/question-type.enum';
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 import { SelectedOption } from '../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../shared/models/SharedOptionConfig.model';
@@ -24,7 +23,6 @@ import { QqcQuestionLoaderService } from '../../../../shared/services/features/q
 import { QuizQuestionManagerService } from '../../../../shared/services/flow/quizquestionmgr.service';
 import { QuizStateService } from '../../../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
-import { TimerService } from '../../../../shared/services/features/timer/timer.service';
 import { SharedOptionComponent } from '../shared-option-component/shared-option.component';
 import { BaseQuestion } from '../../base/base-question';
 
@@ -36,7 +34,7 @@ import { BaseQuestion } from '../../base/base-question';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
-  implements OnInit, OnChanges, AfterViewInit {
+  implements OnInit, AfterViewInit {
 
   viewContainerRefs!: QueryList<ViewContainerRef>;
   viewContainerRef!: ViewContainerRef;
@@ -76,7 +74,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
   constructor(
     protected quizQuestionLoaderService: QqcQuestionLoaderService,
     protected quizQuestionManagerService: QuizQuestionManagerService,
-    protected timerService: TimerService,
     protected override dynamicComponentService: DynamicComponentService,
     protected override feedbackService: FeedbackService,
     protected override quizService: QuizService,
@@ -192,10 +189,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           resetSelection: false
         });
       });
-  }
-
-  override async ngOnChanges(_changes: SimpleChanges): Promise<void> {
-    // Signal-input reactions are handled via effect() in the constructor.
   }
 
   ngAfterViewInit(): void {
