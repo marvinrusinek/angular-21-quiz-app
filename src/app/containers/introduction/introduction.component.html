@@ -13,12 +13,12 @@
 
       <mat-card-title-group>
         <mat-card-title i18n>
-          {{ selectedQuiz.milestone }} Quiz
+          {{ quiz.milestone }} Quiz
         </mat-card-title>
 
         <mat-card-subtitle i18n>
           <span>
-            How well versed are you in {{ selectedQuiz().milestone }}?<br />
+            How well versed are you in {{ quiz.milestone }}?<br />
             Take the quiz and find out!
           </span>
         </mat-card-subtitle>
@@ -28,7 +28,7 @@
     <img
       mat-card-image
       class="quiz-topic-image"
-      [src]="selectedQuiz.image || 'assets/default-image.jpg'"
+      [src]="quiz.image || 'assets/default-image.jpg'"
       alt="Quiz topic image"
       loading="lazy"
     />
@@ -36,13 +36,13 @@
     <mat-card-content>
       <div class="intro-text" i18n>
         <p>
-          <strong class="bold-text">{{ selectedQuiz().summary }}</strong>
+          <strong class="bold-text">{{ quiz.summary }}</strong>
         </p>
 
         <p style="text-align: center">
           Test your wits with
           <strong class="bold-text">
-            {{ selectedQuiz().questions?.length ?? 0 }}
+            {{ quiz.questions?.length ?? 0 }}
           </strong>
           timed multiple-choice {{ questionLabel }}! Have fun and share!
         </p>
