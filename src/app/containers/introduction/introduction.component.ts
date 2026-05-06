@@ -418,6 +418,6 @@ export class IntroductionComponent implements OnInit, OnDestroy {
   }
 
   public get milestone(): string {
-    return this.selectedQuiz?.milestone || 'Milestone not found';
+    return this.selectedQuiz()?.milestone || 'Milestone not found';
   }
 }
