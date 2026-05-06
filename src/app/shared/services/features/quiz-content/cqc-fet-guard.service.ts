@@ -745,4 +745,164 @@ export class CqcFetGuardService {
     } catch { /* ignore */ }
     return false;
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // DOM-LEVEL FET WATCHDOG. Installed by CodelabQuizContentComponent
+  // on init. A MutationObserver on the <h3 #qText> element watches
+  // every content change; if the new text looks like FET for a
+  // multi-answer question that isn't yet fully resolved, the DOM is
+  // reverted to plain question text. The ultimate safety net that
+  // bypasses every RxJS/Angular state path because it runs after the
+  // DOM has already been written.
+  // ══════════════════════════════════════════════════════════════════
+
+  installFetWatchdog(host: Host): void {
+    try {
+      const el: HTMLElement | undefined = host.qText?.nativeElement;
+      if (!el || typeof MutationObserver === 'undefined') return;
+
+      const enforce = () => this.enforceFetGuard(host, el);
+      const mo = new MutationObserver(enforce);
+      mo.observe(el, { childList: true, characterData: true, subtree: true });
+      host._fetWatchdog = mo;
+
+      // Also enforce on every click (covers cases where the DOM
+      // hasn't mutated recently but the selection changed).
+      const clickHandler = () => setTimeout(enforce, 0);
+      document.addEventListener('click', clickHandler, true);
+      host._fetWatchdogClick = clickHandler;
+    } catch {
+      // watchdog install failed
+    }
+  }
+
+  uninstallFetWatchdog(host: Host): void {
+    try {
+      host._fetWatchdog?.disconnect?.();
+      if (host._fetWatchdogClick) {
+        document.removeEventListener('click', host._fetWatchdogClick, true);
+        host._fetWatchdogClick = null;
+      }
+      host._fetWatchdog = null;
+    } catch { /* ignore */ }
+  }
+
+  private enforceFetGuard(host: Host, el: HTMLElement): void {
+    try {
+      const html = el.innerHTML ?? '';
+      if (!this.looksLikeFet(host, html)) return;
+      if (this.isMultiAnswerResolvedNow(host) === false) {
+        this.revertQTextToQuestion(host, el);
+      }
+    } catch { /* ignore */ }
+  }
+
+  private revertQTextToQuestion(host: Host, el: HTMLElement): void {
+    try {
+      const liveQ = this.getLiveQuestion(host);
+      const rawQ = (liveQ?.questionText ?? '').trim();
+      if (rawQ) el.innerHTML = rawQ;
+    } catch { /* ignore */ }
+  }
+
+  // Returns: true=resolved, false=not resolved, null=not multi-answer
+  // (or lookup failed). Timer expiry on the current question always
+  // counts as resolved so the FET stays visible.
+  private isMultiAnswerResolvedNow(host: Host): boolean | null {
+    try {
+      const idx = this.getActiveIdx(host);
+      const timedOutVal = host.timedOutIdxSubject?.getValue?.() ?? -1;
+      if (timedOutVal >= 0 && timedOutVal === idx) return true;
+
+      const liveQ = this.getLiveQuestion(host, idx);
+      const pristineCorrectTexts = this.getPristineCorrectTexts(host, liveQ);
+      if (pristineCorrectTexts.length < 2) return null;
+
+      const selectedNow = this.collectSelectedTexts(host, liveQ, idx);
+      return pristineCorrectTexts.every(t => selectedNow.has(t));
+    } catch {
+      return null;
+    }
+  }
+
+  private looksLikeFet(host: Host, html: string): boolean {
+    const n = this.nrm(html);
+    if (!n) return false;
+    if (n.includes('are correct because') || n.includes('is correct because')) return true;
+    try {
+      const liveQ = this.getLiveQuestion(host);
+      const qExp = this.nrm(liveQ?.explanation ?? '');
+      if (qExp && n.includes(qExp)) return true;
+
+      const qText = this.nrm(liveQ?.questionText ?? '');
+      const bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
+      for (const quiz of bundle) {
+        for (const pq of quiz?.questions ?? []) {
+          if (this.nrm(pq?.questionText) !== qText) continue;
+          const pExp = this.nrm(pq?.explanation ?? '');
+          if (pExp && n.includes(pExp)) return true;
+        }
+      }
+    } catch { /* ignore */ }
+    return false;
+  }
+
+  private nrm(t: any): string {
+    return String(t ?? '').trim().toLowerCase();
+  }
+
+  private getActiveIdx(host: Host): number {
+    const qs: any = host.quizService;
+    return Number.isFinite(qs?.currentQuestionIndex)
+      ? qs.currentQuestionIndex
+      : (qs?.getCurrentQuestionIndex?.() ?? 0);
+  }
+
+  private getLiveQuestion(host: Host, idx: number = this.getActiveIdx(host)): any {
+    const qs: any = host.quizService;
+    const isShuffled = qs?.isShuffleEnabled?.()
+      && Array.isArray(qs?.shuffledQuestions)
+      && qs.shuffledQuestions.length > 0;
+    return isShuffled ? qs?.shuffledQuestions?.[idx] : qs?.questions?.[idx];
+  }
+
+  private getPristineCorrectTexts(host: Host, liveQ: any): string[] {
+    const qText = this.nrm(liveQ?.questionText ?? '');
+    const bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
+    for (const quiz of bundle) {
+      for (const pq of quiz?.questions ?? []) {
+        if (this.nrm(pq?.questionText) !== qText) continue;
+        const texts = (pq?.options ?? [])
+          .filter((o: any) => o?.correct === true || String(o?.correct) === 'true')
+          .map((o: any) => this.nrm(o?.text))
+          .filter((t: string) => !!t);
+        if (texts.length > 0) return texts;
+      }
+    }
+    return [];
+  }
+
+  private collectSelectedTexts(host: Host, liveQ: any, idx: number): Set<string> {
+    const selectedNow = new Set<string>();
+
+    const liveOpts: any[] = Array.isArray(liveQ?.options) ? liveQ.options : [];
+    for (const o of liveOpts) {
+      const isSel = o?.selected === true || o?.highlight === true || o?.showIcon === true;
+      if (!isSel) continue;
+      const t = this.nrm(o?.text);
+      if (t) selectedNow.add(t);
+    }
+
+    const rawMap: any = (host.selectedOptionService as any)?.selectedOptionsMap;
+    if (rawMap && typeof rawMap.get === 'function') {
+      const mapSel: any[] = rawMap.get(idx) ?? [];
+      for (const o of mapSel) {
+        if (o?.selected === false) continue;
+        const t = this.nrm(o?.text);
+        if (t) selectedNow.add(t);
+      }
+    }
+
+    return selectedNow;
+  }
 }

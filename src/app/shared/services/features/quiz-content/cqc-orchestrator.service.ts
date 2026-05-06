@@ -283,10 +283,15 @@ export class CqcOrchestratorService {
       for (const t of host._questionStampRetryTimers) clearTimeout(t);
       host._questionStampRetryTimers = [];
     }
+    this.fetGuard.uninstallFetWatchdog(host);
     try { host.destroy$?.next(); } catch {}
     try { host.destroy$?.complete(); } catch {}
     try { host.correctAnswersDisplaySubject?.complete(); } catch {}
     host.combinedSub?.unsubscribe();
+  }
+
+  runInstallFetWatchdog(host: Host): void {
+    this.fetGuard.installFetWatchdog(host);
   }
 
   private stampQuestionTextNow(host: Host, idx: number): boolean {
