@@ -62,7 +62,7 @@ export class IntroductionComponent implements OnInit, OnDestroy {
 
   questionLabel = '';
   introImg = '';
-  imagePath = '../../../assets/images/milestones/';
+  imagePath = 'assets/images/milestones/';
 
   private destroy$ = new Subject<void>();
 
