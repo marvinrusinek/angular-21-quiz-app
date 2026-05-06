@@ -351,7 +351,7 @@ export class QuizQuestionComponent extends BaseQuestion
   }
 
   private markRenderReady(): void {
-    this.finalRenderReady = true;
+    this.finalRenderReady.set(true);
     this.renderReady.set(true);
     this.cdRef.markForCheck();
   }
