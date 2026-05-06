@@ -10,28 +10,26 @@ import { QuizStateService } from '../../../../shared/services/state/quizstate.se
 import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
 import { AnswerOptionsService } from './answer-options.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class AnswerSelectionService {
   constructor(
     private quizService: QuizService,
     private quizStateService: QuizStateService,
     private selectedOptionService: SelectedOptionService,
-    private answerOptionsService: AnswerOptionsService,
+    private answerOptionsService: AnswerOptionsService
   ) {}
 
   buildEnrichedSelectedOption(
     payload: OptionClickedPayload,
     activeQuestionIndex: number,
-    optionsToDisplay: Option[],
+    optionsToDisplay: Option[]
   ): SelectedOption {
     const rawOption = payload.option;
     const wasChecked = payload.checked ?? true;
 
     const targetKey = this.answerOptionsService.getEffectiveOptionId(
       rawOption,
-      payload.index,
+      payload.index
     );
 
     const canonical =
@@ -48,18 +46,16 @@ export class AnswerSelectionService {
       displayIndex: payload.index,
       selected: wasChecked,
       highlight: wasChecked,
-      showIcon: wasChecked,
+      showIcon: wasChecked
     } as any;
   }
 
   updateSelectedOptionsArray(
     selectedOptions: SelectedOption[],
     enrichedOption: SelectedOption,
-    type: 'single' | 'multiple',
+    type: 'single' | 'multiple'
   ): SelectedOption[] {
-    if (type === 'single') {
-      return [enrichedOption];
-    }
+    if (type === 'single') return [enrichedOption];
 
     const nextSelections = [...(selectedOptions ?? [])];
 
@@ -82,9 +78,7 @@ export class AnswerSelectionService {
       return nextSelections;
     }
 
-    if (existingIndex !== -1) {
-      nextSelections.splice(existingIndex, 1);
-    }
+    if (existingIndex !== -1) nextSelections.splice(existingIndex, 1);
 
     return nextSelections;
   }
@@ -92,7 +86,7 @@ export class AnswerSelectionService {
   syncSelectedOptionService(
     activeQuestionIndex: number,
     enrichedOption: SelectedOption,
-    isMultiAnswer: boolean,
+    isMultiAnswer: boolean
   ): void {
     this.selectedOptionService.currentQuestionType = !isMultiAnswer
       ? QuestionType.SingleAnswer
@@ -101,7 +95,7 @@ export class AnswerSelectionService {
     if (!isMultiAnswer) {
       this.selectedOptionService.setSelectedOptionsForQuestion(
         activeQuestionIndex,
-        [enrichedOption],
+        [enrichedOption]
       );
 
       return;
@@ -112,11 +106,9 @@ export class AnswerSelectionService {
 
   updateQuestionCompletionState(
     questionIndex: number | null,
-    question: QuizQuestion,
+    question: QuizQuestion
   ): boolean {
-    if (questionIndex == null) {
-      return false;
-    }
+    if (questionIndex == null) return false;
 
     const allSelected =
       this.selectedOptionService.getSelectedOptionsForQuestion(questionIndex);
@@ -129,7 +121,7 @@ export class AnswerSelectionService {
     optionsSource: Option[],
     selectedOptions: SelectedOption[],
     isMultiAnswer: boolean,
-    complete: boolean,
+    complete: boolean
   ): void {
     if (isMultiAnswer && selectedOptions?.length > 0) {
       const totalCorrectInQuestion =
@@ -160,7 +152,7 @@ export class AnswerSelectionService {
 
   updateDotStatus(
     activeQuestionIndex: number,
-    enrichedOption: SelectedOption,
+    enrichedOption: SelectedOption
   ): void {
     if (enrichedOption.selected !== true || activeQuestionIndex == null) {
       return;
@@ -170,12 +162,12 @@ export class AnswerSelectionService {
 
     this.selectedOptionService.clickConfirmedDotStatus.set(
       activeQuestionIndex,
-      dotStatus,
+      dotStatus
     );
 
     this.selectedOptionService.lastClickedCorrectByQuestion.set(
       activeQuestionIndex,
-      !!enrichedOption.correct,
+      !!enrichedOption.correct
     );
 
     try {
