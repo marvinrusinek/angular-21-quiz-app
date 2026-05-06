@@ -23,7 +23,6 @@ import { ThemeService } from '../../../shared/services/ui/theme.service';
 })
 export class ReturnComponent implements OnInit {
   readonly quizId = signal<string>('');
-  readonly indexOfQuizId = signal<number>(0);
   readonly codelabUrl = 'https://www.codelab.fun';
 
   constructor(
@@ -169,7 +168,6 @@ export class ReturnComponent implements OnInit {
     try { sessionStorage.removeItem('resultsActiveSection'); } catch {}
 
     this.quizId.set('');
-    this.indexOfQuizId.set(0);
     this.router.navigate(['/select/']);
   }
 }
