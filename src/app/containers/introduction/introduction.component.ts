@@ -158,17 +158,17 @@ export class IntroductionComponent implements OnInit, OnDestroy {
   private handleLoadedQuiz(quiz: Quiz | null): void {
     if (quiz) {
       const questionCount = quiz.questions?.length ?? 0;
-
-      this.selectedQuiz$.next(quiz);
+  
+      this.selectedQuiz.set(quiz);
       this.quiz = quiz;
       this.introImg = this.imagePath + quiz.image;
       this.questionCountSig.set(questionCount);
-
+  
       this.cdRef.markForCheck();
     } else {
       console.warn('[QuizSelection] Quiz was not found or failed to load.');
   
-      this.selectedQuiz$.next(null);
+      this.selectedQuiz.set(null);
       this.quiz = null;
       this.introImg = '';
       this.questionCountSig.set(0);
