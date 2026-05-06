@@ -48,7 +48,7 @@ export class AccordionComponent implements OnInit, OnDestroy {
     private selectedOptionService: SelectedOptionService,
     private explanationTextService: ExplanationTextService,
     private cdRef: ChangeDetectorRef,
-    private route: ActivatedRoute
+    private activatedRoute: ActivatedRoute
   ) {
     effect(() => {
       const incoming = this.questionsInput();
@@ -99,15 +99,14 @@ export class AccordionComponent implements OnInit, OnDestroy {
         // Use a small timeout to let other initializations settle
         setTimeout(() => {
           // Priority: URL params > Service State
-          let id = this.route.snapshot.paramMap.get('quizId') || 
-            this.route.parent?.snapshot.paramMap.get('quizId');
+          let id = this.activatedRoute.snapshot.paramMap.get('quizId') || 
+            this.activatedRoute.parent?.snapshot.paramMap.get('quizId');
             
           if (!id) {
             id = this.quizService.quizId;
           } else {
             // Sync service state if it's currently empty or different
             if (this.quizService.quizId !== id) {
-              // this.quizService.quizId = id;
               this.quizService.setQuizId(id);
             }
           }
