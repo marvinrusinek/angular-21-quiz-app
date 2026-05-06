@@ -160,13 +160,13 @@ export class IntroductionComponent implements OnInit, OnDestroy {
 
   private handleLoadedQuiz(quiz: Quiz | null): void {
     if (quiz) {
+      const questionCount = quiz.questions?.length ?? 0;
+
       this.selectedQuiz$.next(quiz);
       this.quiz = quiz;
       this.introImg = this.imagePath + quiz.image;
-      this.questionCountSig.set(quiz.questions?.length ?? 0);
-      this.questionLabel = this.getPluralizedQuestionLabel(
-        quiz.questions?.length ?? 0
-      );
+      this.questionCountSig.set(questionCount);
+
       this.cdRef.markForCheck();
     } else {
       console.warn('[QuizSelection] Quiz was not found or failed to load.');
@@ -175,7 +175,6 @@ export class IntroductionComponent implements OnInit, OnDestroy {
       this.quiz = null;
       this.introImg = '';
       this.questionCountSig.set(0);
-      this.questionLabel = this.getPluralizedQuestionLabel(0);
   
       this.cdRef.markForCheck();
     }
@@ -188,7 +187,6 @@ export class IntroductionComponent implements OnInit, OnDestroy {
     this.quiz = null;
     this.introImg = '';
     this.questionCountSig.set(0);
-    this.questionLabel = this.getPluralizedQuestionLabel(0);
   
     this.cdRef.markForCheck();
   }
@@ -423,9 +421,5 @@ export class IntroductionComponent implements OnInit, OnDestroy {
 
   public get milestone(): string {
     return this.selectedQuiz?.milestone || 'Milestone not found';
-  }
-
-  public getPluralizedQuestionLabel(count: number): string {
-    return `${count === 1 ? 'question' : 'questions'}`;
   }
 }
