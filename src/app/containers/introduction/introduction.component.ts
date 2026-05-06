@@ -151,8 +151,11 @@ export class IntroductionComponent implements OnInit, OnDestroy {
 
   private logQuizLoaded(quiz: Quiz | null): void {
     if (!quiz) {
-      // quiz is undefined or null after fetching
+      console.warn('[QuizSelection] Quiz was not found or failed to load.');
+      return;
     }
+  
+    console.debug('[QuizSelection] Quiz loaded:', quiz.quizId);
   }
 
   private handleLoadedQuiz(quiz: Quiz | null): void {
