@@ -365,8 +365,17 @@ export class SocAnswerProcessingService {
         // the writeQText looksLikeFet gate can revert FET back to question
         // text before scoreDirectly's questionCorrectness flag is observed.
         const fetForDom = formattedFET;
+        const stampQIdx = qIdx;
         const stampFet = () => {
           try {
+            // Originating-question guard: if the user has navigated away,
+            // the current question is no longer the one this FET belongs
+            // to. Stamping Q(N)'s FET into Q(N+1)'s heading would leak
+            // stale FET across questions ("Q1's FET shows for Q2").
+            const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
+              ?? (this.quizService as any)?.currentQuestionIndex;
+            if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
+
             const h3 = document.querySelector('codelab-quiz-content h3');
             if (h3) {
               const domNow = (h3.innerHTML || '').toLowerCase();
@@ -653,8 +662,15 @@ export class SocAnswerProcessingService {
       // DIRECT DOM FALLBACK
       if (resolvedFetText) {
         const fetForDom = resolvedFetText;
+        const stampQIdx = qIdx;
         const stampFet = (label: string) => {
           try {
+            // Originating-question guard: skip if user has navigated away,
+            // otherwise this stamps Q(N)'s FET into Q(N+1)'s heading.
+            const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
+              ?? (this.quizService as any)?.currentQuestionIndex;
+            if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
+
             const h3 = document.querySelector('codelab-quiz-content h3');
             if (h3) {
               const domNow = (h3.innerHTML || '').toLowerCase();
