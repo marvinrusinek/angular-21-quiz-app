@@ -245,7 +245,7 @@ export class SharedOptionComponent
       this.isNavigatingBackwards = this.isNavigatingBackwardsInput();
     });
     effect(() => {
-      this.renderReady = this.renderReadyInput();
+      this.renderReady.set(this.renderReadyInput());
     });
 
     // Multi-answer auto-disable. Reactively watches the selections signal
