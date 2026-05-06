@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatRadioModule, MatRadioChange } from '@angular/material/radio';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 import { FeedbackProps } from '../../../../shared/models/FeedbackProps.model';
 import { Option } from '../../../../shared/models/Option.model';
