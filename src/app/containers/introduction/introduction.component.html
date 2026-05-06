@@ -28,7 +28,7 @@
     <img
       mat-card-image
       class="quiz-topic-image"
-      [src]="quiz.image || 'assets/default-image.jpg'"
+      [src]="introImg || 'assets/default-image.jpg'"
       alt="Quiz topic image"
       loading="lazy"
     />
@@ -44,7 +44,7 @@
           <strong class="bold-text">
             {{ quiz.questions?.length ?? 0 }}
           </strong>
-          timed multiple-choice {{ questionLabel }}! Have fun and share!
+          timed multiple-choice {{ questionLabelSig() }}! Have fun and share!
         </p>
       </div>
     </mat-card-content>

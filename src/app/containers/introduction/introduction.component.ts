@@ -12,7 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleChange, MatSlideToggleModule }
   from '@angular/material/slide-toggle';
-import { combineLatest, EMPTY, firstValueFrom, of, Subject } from 'rxjs';
+import { EMPTY, firstValueFrom, of, Subject } from 'rxjs';
 import { catchError, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 import { Quiz } from '../../shared/models/Quiz.model';
@@ -108,7 +108,6 @@ export class IntroductionComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.quizService.clearStoredCorrectAnswersText();
     this.subscribeToRouteParameters();
-    this.handleQuizSelectionAndFetchQuestions();
 
     this.preferencesForm.get('shouldShuffleOptions')!
       .valueChanges.pipe(takeUntil(this.destroy$))
@@ -196,20 +195,6 @@ export class IntroductionComponent implements OnInit, OnDestroy {
     this.questionCountSig.set(0);
   
     this.cdRef.markForCheck();
-  }
-
-  private handleQuizSelectionAndFetchQuestions(): void {
-    effect(() => {
-      const quiz = this.selectedQuiz();
-      const checked = this.isChecked();
-  
-      if (!quiz) {
-        return;
-      }
-  
-      this.shouldShuffleOptions = checked;
-      this.fetchAndHandleQuestions(quiz.quizId);
-    });
   }
 
   private fetchAndHandleQuestions(quizId: string): void {
