@@ -38,7 +38,8 @@ export class QuizAnswerEvaluationService {
     questionIndex: number,
     shouldShuffle: boolean
   ): Option[] {
-    if (!question || !Array.isArray(question.options)) {      return answerIds.map(id => ({ optionId: id } as Option));
+    if (!question || !Array.isArray(question.options)) {
+      return answerIds.map(id => ({ optionId: id } as Option));
     }
 
     return answerIds
@@ -51,9 +52,7 @@ export class QuizAnswerEvaluationService {
           if (strId.length > qPrefix.length && strId.startsWith(qPrefix)) {
             const suffix = parseInt(strId.substring(qPrefix.length), 10);
             const optIdx = suffix - 1;
-            if (question.options[optIdx]) {
-              match = question.options[optIdx];
-            }
+            if (question.options[optIdx]) match = question.options[optIdx];
           }
         }
 
@@ -71,7 +70,6 @@ export class QuizAnswerEvaluationService {
           }
         }
 
-        if (!match) {        }
         return match;
       })
       .filter((o): o is Option => !!o);
@@ -102,9 +100,7 @@ export class QuizAnswerEvaluationService {
         const found = currentQuestion.options.find((o: Option) =>
           String(o.optionId) === String(id)
         );
-        if (found) {
-          return found;
-        }
+        if (found) return found;
 
         if (typeof id === 'number') {
           if (id >= 0 && id < currentQuestion.options.length) {
@@ -121,13 +117,17 @@ export class QuizAnswerEvaluationService {
       })
       .filter((o): o is Option => !!o);
 
-    if (!resolvedAnswers || resolvedAnswers.length === 0) {      return { isCorrect: false, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers, answerIds: [] };
+    if (!resolvedAnswers || resolvedAnswers.length === 0) {
+      return { isCorrect: false, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers, answerIds: [] };
     }
 
-    const correctnessArray = await this.optionsService.determineCorrectAnswer(currentQuestion, resolvedAnswers);
+    const correctnessArray = 
+      await this.optionsService.determineCorrectAnswer(currentQuestion, resolvedAnswers);
     const allSelectedAreCorrect = correctnessArray.every((v) => v === true);
-    const isCorrect = allSelectedAreCorrect && correctnessArray.length === numberOfCorrectAnswers;
-    const answerIds = resolvedAnswers.map((a) => a.optionId).filter((id): id is number => id !== undefined);
+    const isCorrect = 
+      allSelectedAreCorrect && correctnessArray.length === numberOfCorrectAnswers;
+    const answerIds = 
+      resolvedAnswers.map((a) => a.optionId).filter((id): id is number => id !== undefined);
 
     return { isCorrect, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers, answerIds };
   }
@@ -147,13 +147,8 @@ export class QuizAnswerEvaluationService {
     answers: Option[],
     userAnswers: any[]
   ): boolean {
-    if (!isCorrect) {
-      return true;
-    }
-
-    if (shouldShuffle) {
-      return true;
-    }
+    if (!isCorrect) return true;
+    if (shouldShuffle) return true;
 
     const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
     const bundle: any[] = quizInitialState ?? [];
@@ -165,18 +160,16 @@ export class QuizAnswerEvaluationService {
     if (qText) {
       for (const quiz of bundle) {
         for (const pq of (quiz?.questions ?? [])) {
-          if (nrm(pq?.questionText) !== qText) {
-            continue;
-          }
+          if (nrm(pq?.questionText) !== qText) continue;
+
           pristineCorrectTexts = (pq?.options ?? [])
             .filter((o: any) => o?.correct === true || String(o?.correct) === 'true')
             .map((o: any) => nrm(o?.text))
             .filter((t: string) => !!t);
+          
           break;
         }
-        if (pristineCorrectTexts.length > 0) {
-          break;
-        }
+        if (pristineCorrectTexts.length > 0) break;
       }
     }
 
@@ -191,12 +184,8 @@ export class QuizAnswerEvaluationService {
       }
     }
 
-    if (pristineCorrectTexts.length === 0) {
-      return true;
-    }
-
-    if (pristineCorrectTexts.length > 1 && !isMultipleAnswer) {      return false;
-    }
+    if (pristineCorrectTexts.length === 0) return true;
+    if (pristineCorrectTexts.length > 1 && !isMultipleAnswer) return false;
 
     const selTexts = new Set<string>();
 
@@ -206,9 +195,7 @@ export class QuizAnswerEvaluationService {
         const selections = sos.getSelectedOptionsForQuestion(questionIndex) ?? [];
         for (const s of selections) {
           const t = nrm((s as any)?.text);
-          if (t) {
-            selTexts.add(t);
-          }
+          if (t) selTexts.add(t);
         }
       }
     } catch { }
@@ -216,26 +203,21 @@ export class QuizAnswerEvaluationService {
     if (selTexts.size === 0 && answers?.length > 0) {
       for (const a of answers) {
         const t = nrm((a as any)?.text);
-        if (t) {
-          selTexts.add(t);
-        }
+        if (t) selTexts.add(t);
       }
     }
 
     if (selTexts.size === 0) {
       try {
         const uaIds = Array.isArray(userAnswers?.[questionIndex])
-          ? (userAnswers[questionIndex] as number[])
-          : [];
+          ? (userAnswers[questionIndex] as number[]) : [];
         const qOpts = questions?.[questionIndex]?.options ?? [];
         for (const id of uaIds) {
           const opt = qOpts.find((o: any) => String(o?.optionId) === String(id))
             ?? (typeof id === 'number' && id >= 0 && id < qOpts.length ? qOpts[id] : null);
           if (opt) {
             const t = nrm((opt as any)?.text);
-            if (t) {
-              selTexts.add(t);
-            }
+            if (t) selTexts.add(t);
           }
         }
       } catch { }
@@ -243,11 +225,9 @@ export class QuizAnswerEvaluationService {
 
     if (selTexts.size > 0) {
       if (pristineCorrectTexts.length === 1) {
-        if (!pristineCorrectTexts.some(t => selTexts.has(t))) {          return false;
-        }
+        if (!pristineCorrectTexts.some(t => selTexts.has(t))) return false;
       } else {
-        if (!pristineCorrectTexts.every(t => selTexts.has(t))) {          return false;
-        }
+        if (!pristineCorrectTexts.every(t => selTexts.has(t))) return false;
       }
     }
 
