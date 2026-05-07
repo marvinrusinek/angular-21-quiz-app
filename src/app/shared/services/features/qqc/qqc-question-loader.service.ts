@@ -5,15 +5,15 @@ import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuizService } from '../../data/quiz.service';
-import { QuizStateService } from '../../state/quizstate.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
+import { QuizStateService } from '../../state/quizstate.service';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
-import { TimerService } from '../timer/timer.service';
 import { QqcQlFetchService } from './qqc-ql-fetch.service';
 import { QqcQlOptionBuildService } from './qqc-ql-option-build.service';
 import { QqcQlStreamService } from './qqc-ql-stream.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
+import { SelectionMessageService } from '../selection-message/selection-message.service';
+import { TimerService } from '../timer/timer.service';
 
 /**
  * Manages question loading pipeline, quiz data fetching, and question initialization for QQC.
@@ -21,18 +21,17 @@ import { QqcQlStreamService } from './qqc-ql-stream.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcQuestionLoaderService {
-
   constructor(
+    private explanationTextService: ExplanationTextService,
+    private nextButtonStateService: NextButtonStateService,
     private quizService: QuizService,
     private quizStateService: QuizStateService,
     private selectedOptionService: SelectedOptionService,
-    private nextButtonStateService: NextButtonStateService,
-    private explanationTextService: ExplanationTextService,
     private selectionMessageService: SelectionMessageService,
-    private timerService: TimerService,
     private fetch: QqcQlFetchService,
     private optionBuild: QqcQlOptionBuildService,
-    private qql: QqcQlStreamService
+    private qql: QqcQlStreamService,
+    private timerService: TimerService
   ) {}
 
   // ─── Pass-through: QqcQlStreamService ───────
@@ -97,19 +96,45 @@ export class QqcQuestionLoaderService {
   // Methods
   resetUI(): void { this.qql.resetUI(); }
   clearQA(): void { this.qql.clearQA(); }
-  resetHeadlineStreams(index?: number): void { this.qql.resetHeadlineStreams(index); }
-  async loadQuestionAndOptions(index: number): Promise<boolean> { return this.qql.loadQuestionAndOptions(index); }
-  async loadQA(index: number): Promise<boolean> { return this.qql.loadQA(index); }
-  async loadQuestionContents(questionIndex: number): Promise<void> { return this.qql.loadQuestionContents(questionIndex); }
-  emitQuestionTextSafely(text: string, index: number): void { this.qql.emitQuestionTextSafely(text, index); }
-  freezeQuestionStream(durationMs?: number): void { this.qql.freezeQuestionStream(durationMs); }
-  unfreezeQuestionStream(): void { this.qql.unfreezeQuestionStream(); }
-  clearQuestionTextBeforeNavigation(): void { this.qql.clearQuestionTextBeforeNavigation(); }
-  isNavBarrierActive(): boolean { return this.qql.isNavBarrierActive(); }
-  waitForDomStable(extra?: number): Promise<void> { return this.qql.waitForDomStable(extra); }
-  setQuestionDetails(questionText: string, options: Option[], explanationText: string): void { this.qql.setQuestionDetails(questionText, options, explanationText); }
-  resetQuestionState(index?: number): void { this.qql.resetQuestionState(index); }
-  resetQuestionLocksForIndex(index: number): void { this.qql.resetQuestionLocksForIndex(index); }
+  resetHeadlineStreams(index?: number): void {
+    this.qql.resetHeadlineStreams(index);
+  }
+  async loadQuestionAndOptions(index: number): Promise<boolean> {
+    return this.qql.loadQuestionAndOptions(index);
+  }
+  async loadQA(index: number): Promise<boolean> {
+    return this.qql.loadQA(index);
+  }
+  async loadQuestionContents(questionIndex: number): Promise<void> {
+    return this.qql.loadQuestionContents(questionIndex);
+  }
+  emitQuestionTextSafely(text: string, index: number): void {
+    this.qql.emitQuestionTextSafely(text, index);
+  }
+  freezeQuestionStream(durationMs?: number): void {
+    this.qql.freezeQuestionStream(durationMs);
+  }
+  unfreezeQuestionStream(): void {
+    this.qql.unfreezeQuestionStream();
+  }
+  clearQuestionTextBeforeNavigation(): void {
+    this.qql.clearQuestionTextBeforeNavigation();
+  }
+  isNavBarrierActive(): boolean {
+    return this.qql.isNavBarrierActive();
+  }
+  waitForDomStable(extra?: number): Promise<void> {
+    return this.qql.waitForDomStable(extra);
+  }
+  setQuestionDetails(questionText: string, options: Option[], explanationText: string): void {
+    this.qql.setQuestionDetails(questionText, options, explanationText);
+  }
+  resetQuestionState(index?: number): void {
+    this.qql.resetQuestionState(index);
+  }
+  resetQuestionLocksForIndex(index: number): void {
+    this.qql.resetQuestionLocksForIndex(index);
+  }
 
   // ─── Fetch (delegated) ───────────────────────────────────────
 
@@ -303,7 +328,7 @@ export class QqcQuestionLoaderService {
 
     return {
       shouldResetSelections: !shouldKeepExplanationVisible,
-      shouldStartLoading: !shouldPreserveVisualState,
+      shouldStartLoading: !shouldPreserveVisualState
     };
   }
 
@@ -341,7 +366,7 @@ export class QqcQuestionLoaderService {
       shouldResetSelections: !params.shouldKeepExplanationVisible,
       shouldResetExplanation: !params.shouldKeepExplanationVisible,
       shouldStartLoading: !params.shouldPreserveVisualState,
-      shouldSetAnsweredTrue: params.shouldKeepExplanationVisible,
+      shouldSetAnsweredTrue: params.shouldKeepExplanationVisible
     };
   }
 
@@ -356,7 +381,7 @@ export class QqcQuestionLoaderService {
     return {
       lastLoggedIndex: -1,
       lastExplanationShownIndex: -1,
-      explanationInFlight: false,
+      explanationInFlight: false
     };
   }
 
@@ -374,16 +399,16 @@ export class QqcQuestionLoaderService {
     questionToDisplay: string;
     hasSharedRefs: boolean;
   } {
-    // 1️⃣ Purge all previous state before touching new data
+    // 1Purge all previous state before touching new data
     this.purgeSelectionState();
 
-    // 2️⃣ Defensive clone of question data
+    // Defensive clone of question data
     const currentQuestion = { ...params.potentialQuestion };
 
-    // 3️⃣ Deep clone options to guarantee new references
+    // Deep clone options to guarantee new references
     const optionsToDisplay = this.optionBuild.buildFreshOptions(params.potentialQuestion, params.currentQuestionIndex);
 
-    // 4️⃣ Verify no shared references
+    // Verify no shared references
     let hasSharedRefs = false;
     if (params.questionsArray?.[params.currentQuestionIndex - 1]?.options) {
       const prev = params.questionsArray[params.currentQuestionIndex - 1].options;
@@ -391,7 +416,7 @@ export class QqcQuestionLoaderService {
       hasSharedRefs = prev.some((p, i) => p === curr[i]);
     }
 
-    // 5️⃣ Compute question text
+    // Compute question text
     const questionToDisplay = currentQuestion.questionText?.trim() || '';
 
     return { currentQuestion, optionsToDisplay, questionToDisplay, hasSharedRefs };
@@ -405,7 +430,7 @@ export class QqcQuestionLoaderService {
     shouldKeepExplanationVisible: boolean;
     currentQuestionIndex: number;
   }): void {
-    // ABSOLUTE LOCK: prevent stale FET display
+    // Absolute Lock: prevent stale FET display
     this.resetExplanationForLoad();
 
     if (params.shouldPreserveVisualState) {
@@ -450,7 +475,7 @@ export class QqcQuestionLoaderService {
       isExplanationReady: false,
       isExplanationLocked: true,
       currentExplanationText: '',
-      feedbackText: '',
+      feedbackText: ''
     };
   }
 
@@ -511,7 +536,7 @@ export class QqcQuestionLoaderService {
 
     return {
       ...resetState,
-      pendingPassiveRaf,
+      pendingPassiveRaf
     };
   }
 
@@ -528,7 +553,7 @@ export class QqcQuestionLoaderService {
 
     // Wait until questions are available
     if (!questionsArray || questionsArray.length <= index) {
-      return null; // caller should retry
+      return null;  // caller should retry
     }
 
     const question = questionsArray[index];
@@ -578,13 +603,17 @@ export class QqcQuestionLoaderService {
     const { shouldRedirect } = this.fetch.checkEndOfQuiz({
       currentQuestionIndex: params.currentQuestionIndex,
       questionsArray,
-      quizId: params.quizId!,
+      quizId: params.quizId!
     });
 
     if (shouldRedirect) {
       return {
-        success: false, shouldRedirect: true, questionsArray,
-        currentQuestion: null as any, optionsToDisplay: [], questionToDisplay: '',
+        success: false,
+        shouldRedirect: true,
+        questionsArray,
+        currentQuestion: null as any,
+        optionsToDisplay: [], 
+        questionToDisplay: ''
       };
     }
 
@@ -607,14 +636,14 @@ export class QqcQuestionLoaderService {
     const preparedState = this.prepareComponentStateForQuestion({
       potentialQuestion,
       currentQuestionIndex: params.currentQuestionIndex,
-      questionsArray,
+      questionsArray
     });
 
     // Emit to quiz service signal
     this.quizService.questionPayloadSig.set({
       question: preparedState.currentQuestion!,
       options: preparedState.optionsToDisplay,
-      explanation: '',
+      explanation: ''
     });
 
     this.quizService.nextQuestionSig.set(preparedState.currentQuestion);
@@ -624,7 +653,7 @@ export class QqcQuestionLoaderService {
     this.emitBaselineSelectionMessage({
       optionsToDisplay: preparedState.optionsToDisplay,
       currentQuestionIndex: params.currentQuestionIndex,
-      questions: params.questions ?? questionsArray,
+      questions: params.questions ?? questionsArray
     });
 
     if (params.signal?.aborted) {
@@ -642,7 +671,7 @@ export class QqcQuestionLoaderService {
       questionsArray,
       currentQuestion: preparedState.currentQuestion!,
       optionsToDisplay: preparedState.optionsToDisplay,
-      questionToDisplay: preparedState.questionToDisplay,
+      questionToDisplay: preparedState.questionToDisplay
     };
   }
 
@@ -667,16 +696,13 @@ export class QqcQuestionLoaderService {
     const loaded = await params.loadQuestion();
     if (!loaded) return null;
 
-    if (params.questionForm) {
-      params.questionForm.patchValue({ answer: '' });
-    }
+    if (params.questionForm) params.questionForm.patchValue({ answer: '' });
 
     // When shuffle is active, use shuffledQuestions as the authoritative source.
     // params.questionsArray may contain unshuffled data, causing Q&A mismatch.
     const shuffled = this.quizService.shuffledQuestions;
     const effectiveQuestions = this.quizService.isShuffleEnabled() && shuffled?.length > 0
-      ? shuffled
-      : params.questionsArray;
+      ? shuffled : params.questionsArray;
     const currentQuestion = effectiveQuestions?.[params.zeroBasedIndex] ?? null;
     if (!currentQuestion) return null;
 
@@ -684,7 +710,7 @@ export class QqcQuestionLoaderService {
       ...opt,
       active: true,
       feedback: undefined,
-      showIcon: false,
+      showIcon: false
     }));
 
     const isAnswered = await params.isAnyOptionSelected(params.zeroBasedIndex);
@@ -695,7 +721,7 @@ export class QqcQuestionLoaderService {
     return {
       loaded: true,
       currentQuestion,
-      optionsToDisplay,
+      optionsToDisplay
     };
   }
 }
