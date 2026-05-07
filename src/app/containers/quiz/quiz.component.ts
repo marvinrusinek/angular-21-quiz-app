@@ -2,6 +2,7 @@ import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, computed,
   HostListener, OnDestroy, OnInit, signal, ViewChild, ViewEncapsulation
 } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
@@ -120,8 +121,8 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   progress = 0;
   public answeredQuestionIndices = new Set<number>();
 
-  questionToDisplaySource = new BehaviorSubject<string>('');
-  public questionToDisplay$ = this.questionToDisplaySource.asObservable();
+  questionToDisplaySig = signal<string>('');
+  public questionToDisplay$ = toObservable(this.questionToDisplaySig);
 
   optionsToDisplay: Option[] = [];
   optionsToDisplay$ = new BehaviorSubject<Option[]>([]);

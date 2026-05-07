@@ -79,7 +79,7 @@ export class QuizSetupRouteService {
             explanation: question.explanation,
           };
           host.combinedQuestionData.set(payload);
-          host.questionToDisplaySource.next(question.questionText?.trim() ?? '');
+          host.questionToDisplaySig.set(question.questionText?.trim() ?? '');
           host.cdRef.detectChanges();
 
           // Force question text (with multi-answer banner) into <h3 #qText>
@@ -114,7 +114,7 @@ export class QuizSetupRouteService {
     host.optionsToDisplay = [];
     host.optionsToDisplay$.next([]);
     host.combinedQuestionData.set(null);
-    host.questionToDisplaySource.next('');
+    host.questionToDisplaySig.set('');
     host.explanationToDisplay = '';
     host.currentQuestionIndex = 0;
     host.lastLoggedIndex = -1;
@@ -149,7 +149,7 @@ export class QuizSetupRouteService {
 
         if (question) {
           host.currentQuestion = question;
-          host.questionToDisplaySource.next(question.questionText?.trim() ?? '');
+          host.questionToDisplaySig.set(question.questionText?.trim() ?? '');
           host.combinedQuestionData.set({
             question, options: question.options, explanation: question.explanation,
           });
@@ -228,7 +228,7 @@ export class QuizSetupRouteService {
         question: result.question, options: result.options, explanation: result.explanation,
       };
       host.combinedQuestionData.set(payload);
-      host.questionToDisplaySource.next(result.question.questionText?.trim() ?? '');
+      host.questionToDisplaySig.set(result.question.questionText?.trim() ?? '');
       host.optionsToDisplay = [...result.options];
       host.optionsToDisplay$.next([...result.options]);
       host.explanationToDisplay = result.explanation;
@@ -353,7 +353,7 @@ export class QuizSetupRouteService {
       host.combinedQuestionData.set({
         question: result.question, options: result.question.options ?? [], explanation: result.question.explanation ?? ''
       });
-      host.questionToDisplaySource.next(result.questionText);
+      host.questionToDisplaySig.set(result.questionText);
       host.optionsToDisplay = result.optionsWithIds;
       setTimeout(() => {
         this.quizContentLoaderService.restoreSelectedOptionsFromSession(host.optionsToDisplay);

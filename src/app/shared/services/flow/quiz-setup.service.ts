@@ -158,7 +158,7 @@ export class QuizSetupService {
       .subscribe(() => {
         this.setupNavigation(host);
         const trimmed = (this.quizService.questions?.[0]?.questionText ?? '').trim();
-        if (trimmed) host.questionToDisplaySource.next(trimmed);
+        if (trimmed) host.questionToDisplaySig.set(trimmed);
         this.quizContentLoaderService.seedFirstQuestionText();
         host.cdRef.markForCheck();
       });
@@ -663,7 +663,7 @@ export class QuizSetupService {
       )
       .subscribe((payload) => {
         host.combinedQuestionData.set(payload);
-        host.questionToDisplaySource.next(payload.question.questionText?.trim() ?? '');
+        host.questionToDisplaySig.set(payload.question.questionText?.trim() ?? '');
         host.cdRef.markForCheck();
       });
   }

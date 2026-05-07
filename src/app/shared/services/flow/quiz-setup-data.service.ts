@@ -62,7 +62,7 @@ export class QuizSetupDataService {
     if (!initialQuestion?.options?.length) return;
 
     host.currentQuestion = initialQuestion;
-    host.questionToDisplaySource.next(initialQuestion.questionText?.trim() ?? '');
+    host.questionToDisplaySig.set(initialQuestion.questionText?.trim() ?? '');
     const payload = {
       question: initialQuestion,
       options: initialQuestion.options,
@@ -174,7 +174,7 @@ export class QuizSetupDataService {
       previousIndex: host.previousIndex, serviceCurrentIndex: this.quizService?.currentQuestionIndex,
     });
     if (result.isEmpty) {
-      host.questionToDisplaySource.next('');
+      host.questionToDisplaySig.set('');
       host.qaToDisplay = undefined;
       host.currentQuestion = null;
       host.optionsToDisplay = [];
@@ -189,7 +189,7 @@ export class QuizSetupDataService {
     host.question = result.question;
     host.currentQuestion = result.question;
     host.qaToDisplay = { question: result.question!, options: result.normalizedOptions };
-    host.questionToDisplaySource.next(result.trimmedQuestionText);
+    host.questionToDisplaySig.set(result.trimmedQuestionText);
     host.optionsToDisplay = [...result.normalizedOptions];
     host.optionsToDisplay$.next([...result.normalizedOptions]);
     host.hasOptionsLoaded = result.normalizedOptions.length > 0;
@@ -260,7 +260,7 @@ export class QuizSetupDataService {
         // setupNavigation is called by the facade via the route service
         host._pendingSetupNavigation = true;
         const trimmed = (this.quizService.questions?.[0]?.questionText ?? '').trim();
-        if (trimmed) host.questionToDisplaySource.next(trimmed);
+        if (trimmed) host.questionToDisplaySig.set(trimmed);
         this.quizContentLoaderService.seedFirstQuestionText();
         host.cdRef.markForCheck();
       });
@@ -296,7 +296,7 @@ export class QuizSetupDataService {
       .subscribe((payload: QuestionPayload) => {
         host.combinedQuestionData.set(payload);
         host.qaToDisplay = { question: payload.question, options: payload.options };
-        host.questionToDisplaySource.next(payload.question?.questionText?.trim() ?? 'No question available');
+        host.questionToDisplaySig.set(payload.question?.questionText?.trim() ?? 'No question available');
         host.explanationToDisplay = payload.explanation ?? '';
         host.question = payload.question;
         host.currentQuestion = payload.question;
