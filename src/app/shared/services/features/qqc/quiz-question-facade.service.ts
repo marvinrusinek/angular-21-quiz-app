@@ -18,8 +18,8 @@ import { QqcTimerEffectService } from './qqc-timer-effect.service';
 
 /**
  * Facade that bundles every Qqc-prefixed sub-service consumed by
- * QuizQuestionComponent. Lets the component inject one service instead
- * of fifteen, while QQC's getters re-expose each member so the existing
+ * QuizQuestionComponent. Lets the component inject one service instead of
+ * fifteen, while QQC's getters re-expose each member so the existing
  * `host.<service>` access pattern used by the orchestrators keeps working.
  */
 @Injectable({ providedIn: 'root' })
