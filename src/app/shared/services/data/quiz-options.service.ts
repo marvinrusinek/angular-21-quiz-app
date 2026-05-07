@@ -1,10 +1,6 @@
 import { Injectable, WritableSignal } from '@angular/core';
-import {
-  Observable, of
-} from 'rxjs';
-import {
-  catchError, map, tap
-} from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { QuestionType } from '../../models/question-type.enum';
 import { Option } from '../../models/Option.model';
@@ -15,14 +11,12 @@ export class QuizOptionsService {
   constructor() {}
 
   sanitizeOptions(options: Option[]): Option[] {
-    if (!Array.isArray(options)) {      return [];
-    }
+    if (!Array.isArray(options)) return [];
 
     return options.map((opt, idx) => {
       const safeId =
         Number.isInteger(opt?.optionId) && (opt?.optionId as number) >= 0
-          ? (opt.optionId as number)
-          : idx + 1;
+          ? (opt.optionId as number) : idx + 1;
 
       const safeText = (opt?.text ?? '').trim() || `Option ${idx + 1}`;
       const normalizedHighlight =
@@ -66,7 +60,8 @@ export class QuizOptionsService {
   ): Observable<Option[]> {
     return getQuestionByIndex(index).pipe(
       map((question) => {
-        if (!question || !Array.isArray(question.options) || question.options.length === 0) {          return [];
+        if (!question || !Array.isArray(question.options) || question.options.length === 0) {
+          return [];
         }
 
         const deepClone = (obj: any) => JSON.parse(JSON.stringify(obj));
@@ -74,9 +69,7 @@ export class QuizOptionsService {
 
         return normalized.map(opt => deepClone(opt));
       }),
-      tap(options => {
-        currentOptionsSig.set(options);
-      }),
+      tap(options => { currentOptionsSig.set(options); }),
       catchError(() => {
         return of([]);
       })
@@ -87,19 +80,17 @@ export class QuizOptionsService {
     questionIndex: number,
     getQuestionByIndex: (idx: number) => Observable<QuizQuestion | null>
   ): Observable<Option[]> {
-    if (!Number.isInteger(questionIndex) || questionIndex < 0) {
-      return of([]);
-    }
+    if (!Number.isInteger(questionIndex) || questionIndex < 0) return of([]);
 
     return getQuestionByIndex(questionIndex).pipe(
       map((question) => {
-        if (!question || !Array.isArray(question.options) || question.options.length === 0) {          return [];
+        if (!question || !Array.isArray(question.options) || question.options.length === 0) {
+          return [];
         }
 
         const deepClone =
           typeof structuredClone === 'function'
-            ? structuredClone
-            : (obj: any) => JSON.parse(JSON.stringify(obj));
+            ? structuredClone : (obj: any) => JSON.parse(JSON.stringify(obj));
 
         const sanitized = question.options.map((opt, index) => ({
           ...deepClone(opt),
@@ -108,24 +99,23 @@ export class QuizOptionsService {
           feedback:
             opt.feedback ??
             `Generated feedback for Q${questionIndex} Option ${index}`
-        }));        return sanitized;
+        }));
+        return sanitized;
       }),
       catchError(() => {
         return of([]);
-      }),
+      })
     );
   }
 
   getSafeOptionId(option: any, index: number): number | undefined {
-    if (option && typeof option.optionId === 'number') {
-      return option.optionId;
-    }    return index;
+    if (option && typeof option.optionId === 'number') return option.optionId;
+    
+    return index;
   }
 
   assignOptionIds(options: Option[], questionIndex: number): Option[] {
-    if (!Array.isArray(options)) {
-      return [];
-    }
+    if (!Array.isArray(options)) return [];
 
     return options.map((option, localIdx) => {
       const existingId = Number(option.optionId);
@@ -153,9 +143,7 @@ export class QuizOptionsService {
   }
 
   normalizeOptionDisplayOrder(options: Option[] = []): Option[] {
-    if (!Array.isArray(options)) {
-      return [];
-    }
+    if (!Array.isArray(options)) return [];
 
     return options.map((option, index) => ({
       ...option,
@@ -165,17 +153,16 @@ export class QuizOptionsService {
 
   assignOptionActiveStates(
     options: Option[],
-    correctOptionSelected: boolean,
+    correctOptionSelected: boolean
   ): Option[] {
-    if (!Array.isArray(options) || options.length === 0) {      return [];
-    }
+    if (!Array.isArray(options) || options.length === 0) return [];
 
     return options.map((opt) => ({
       ...opt,
       active: correctOptionSelected ? opt.correct : true,
       feedback: correctOptionSelected && !opt.correct ? 'x' : undefined,
       showIcon: correctOptionSelected
-        ? opt.correct || opt.showIcon
+        ? opt.correct || opt.showIcon 
         : opt.showIcon
     }));
   }
@@ -214,9 +201,7 @@ export class QuizOptionsService {
 
     for (const option of incomingList) {
       const id = toNumericId(option?.optionId, NaN);
-      if (Number.isFinite(id)) {
-        incomingById.set(id, option);
-      }
+      if (Number.isFinite(id)) incomingById.set(id, option);
     }
 
     return canonical.map((option, index) => {
@@ -249,17 +234,12 @@ export class QuizOptionsService {
     question: QuizQuestion,
     options: Option[]
   ): string {
-    if (!question) {
-      return '';
-    }
+    if (!question) return '';
 
     const isMultipleAnswer =
       question.type === QuestionType.MultipleAnswer ||
       options.filter((option) => option.correct).length > 1;
-
-    if (!isMultipleAnswer) {
-      return '';
-    }
+    if (!isMultipleAnswer) return '';
 
     const correctCount = options.filter((option) => option.correct).length;
     if (!correctCount) return '';
@@ -270,13 +250,8 @@ export class QuizOptionsService {
   }
 
   getCorrectOptionsForCurrentQuestion(question: QuizQuestion): Option[] {
-    if (!question) {
-      return [];
-    }
-
-    if (!Array.isArray(question.options)) {
-      return [];
-    }
+    if (!question) return [];
+    if (!Array.isArray(question.options)) return [];
 
     return question.options.filter((option) => option.correct);
   }
@@ -290,7 +265,9 @@ export class QuizOptionsService {
       .filter((option) => option.correct && option.optionId !== undefined)
       .map((option) => option.optionId as number);
 
-    if (correctAnswers.length === 0) {    }
+    if (correctAnswers.length === 0) {
+      console.warn('[QuizOptions] No correct answers found for question', question?.questionText);
+    }
 
     return correctAnswers;
   }
