@@ -1,8 +1,6 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import {
-  BehaviorSubject, from, Observable, of, Subject
-} from 'rxjs';
+import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import {
   auditTime, distinctUntilChanged, filter, map, shareReplay
 } from 'rxjs/operators';
@@ -92,9 +90,8 @@ export class QuizService {
 
   selectedOptionsMap: Map<number, SelectedOption[]> = new Map();
 
-  resources: Resource[] = [];
-
   answers: Option[] = [];
+  resources: Resource[] = [];
 
   totalQuestions = 0;
   get correctCount(): number { return this.scoringService.correctCountSig(); }
@@ -127,7 +124,7 @@ export class QuizService {
   public readonly correctAnswersText$ = toObservable(this.correctAnswersCountTextSig)
     .pipe(
       // Always emit — including empty clears — but skip null/undefined
-      filter((v) => v != null), // keeps '', filters null/undefined
+      filter((v) => v != null),  // keeps '', filters null/undefined
       // Give Angular and questionText$ exactly one paint frame to sync
       auditTime(0),
       // Drop accidental rapid double-emits
@@ -193,7 +190,6 @@ export class QuizService {
   nextOptionsSig = signal<Option[]>([]);
   nextOptions$: Observable<Option[]> = toObservable(this.nextOptionsSig);
 
-
   badgeTextSig = signal<string>('');
   badgeText = toObservable(this.badgeTextSig);
 
@@ -215,9 +211,8 @@ export class QuizService {
   questionPayloadSig = signal<QuestionPayload | null>(null);
   questionPayload$ = toObservable(this.questionPayloadSig).pipe(
     map((payload) => {
-      if (!payload?.question) {
-        return payload;
-      }
+      if (!payload?.question) return payload;
+      
       if (this.isShuffleEnabled() && this.shuffledQuestions?.length > 0) {
         const idx = this.currentQuestionIndex ?? 0;
         const correctQ = this.shuffledQuestions[idx];
@@ -226,7 +221,7 @@ export class QuizService {
           return {
             question: correctQ,
             options: correctQ.options ?? [],
-            explanation: correctQ.explanation ?? '',
+            explanation: correctQ.explanation ?? ''
           };
         }
       }
@@ -273,10 +268,6 @@ export class QuizService {
     return this._questions;
   }
   set questions(value: any) {
-    if (Array.isArray(value) && value.length === 0 && Array.isArray(this._questions) && this._questions.length > 0) {
-      console.trace();
-    }
-
     // Prevent shuffled data from overwriting canonical _questions
     // Check if the incoming data is the shuffled array to prevent pollution
     const isIncomingShuffledData =
@@ -365,9 +356,8 @@ export class QuizService {
   setCurrentQuiz(q: Quiz): void {
     this.activeQuiz = q;
     this.currentQuizSig.set(q);
-    if (q?.quizId) {
-      this.quizId = q.quizId;
-    }
+    if (q?.quizId) this.quizId = q.quizId;
+    
     if (Array.isArray(q?.questions)) {
       // When shuffle is active, do NOT emit unshuffled questions to subscribers.
       // That causes questionsArray in QuizComponent to briefly hold unshuffled
@@ -383,7 +373,6 @@ export class QuizService {
       this.totalQuestionsSig.set(this.totalQuestions);
     }
   }
-
 
   getCurrentQuizId(): string {
     return this.quizId;
@@ -415,12 +404,6 @@ export class QuizService {
 
   setCompletedQuizId(value: string) {
     this.completedQuizId = value;
-  }
-
-  setOptions(options: Option[]): void {
-    if (!Array.isArray(options) || options.length === 0) {
-      return;
-    }
   }
 
   // Return a sanitized array of options for the given question index.

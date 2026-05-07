@@ -112,9 +112,6 @@ export class QqcOrchDisplayService {
     });
     host.options.set(result.options);
     host.optionsToDisplay.set(result.optionsToDisplay);
-    if (host.optionsToDisplay().length > 0) {
-      host.quizService.setOptions(host.optionsToDisplay().map((option: Option) => ({ ...option })));
-    }
     host.cdRef.markForCheck();
     return result.normalizedOptions;
   }

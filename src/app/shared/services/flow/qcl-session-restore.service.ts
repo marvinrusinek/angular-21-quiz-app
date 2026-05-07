@@ -90,7 +90,6 @@ export class QclSessionRestoreService {
 
     if (normalizedOptions.length > 0) {
       const clonedOptions = normalizedOptions.map((option) => ({ ...option }));
-      this.quizService.setOptions(clonedOptions);
       this.quizService.emitQuestionAndOptions(selectedQuestion, clonedOptions, normalizedIndex);
     }
 
