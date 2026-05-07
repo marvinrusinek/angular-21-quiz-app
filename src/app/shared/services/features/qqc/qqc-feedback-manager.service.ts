@@ -1,19 +1,19 @@
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionType } from '../../../models/question-type.enum';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { FeedbackService } from '../feedback/feedback.service';
+import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
+import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
-import { FeedbackService } from '../feedback/feedback.service';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { QuizService } from '../../data/quiz.service';
-import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
-import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 
 /**
  * Manages feedback display, option highlighting, and disable logic for QQC.
@@ -23,12 +23,12 @@ import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 export class QqcFeedbackManagerService {
 
   constructor(
-    private selectedOptionService: SelectedOptionService,
-    private selectionMessageService: SelectionMessageService,
-    private feedbackService: FeedbackService,
     private explanationTextService: ExplanationTextService,
+    private feedbackService: FeedbackService,
     private quizService: QuizService,
-    private quizQuestionManagerService: QuizQuestionManagerService
+    private quizQuestionManagerService: QuizQuestionManagerService,
+    private selectedOptionService: SelectedOptionService,
+    private selectionMessageService: SelectionMessageService
   ) {}
 
   /**
@@ -39,9 +39,7 @@ export class QqcFeedbackManagerService {
     optionsToDisplay: Option[],
     correctMessage: string
   ): Option[] {
-    if (!currentQuestion || !optionsToDisplay.length) {
-      return optionsToDisplay;
-    }
+    if (!currentQuestion || !optionsToDisplay.length) return optionsToDisplay;
 
     try {
       return optionsToDisplay.map((option) => ({
@@ -49,7 +47,7 @@ export class QqcFeedbackManagerService {
         active: true,
         feedback: option.feedback || this.generateFeedbackForOption(option, correctMessage),
         showIcon: option.correct || option.showIcon,
-        selected: option.selected ?? false,
+        selected: option.selected ?? false
       }));
     } catch (error) {
       return optionsToDisplay;
@@ -74,12 +72,7 @@ export class QqcFeedbackManagerService {
     currentQuestion: QuizQuestion | null,
     selectedIndices: Set<number>
   ): Promise<void> {
-    if (
-      !currentQuestion ||
-      !Array.isArray(currentQuestion.options)
-    ) {
-      return;
-    }
+    if (!currentQuestion || !Array.isArray(currentQuestion.options)) return;
 
     const allCorrectSelected = this.selectedOptionService.areAllCorrectAnswersSelected(
       currentQuestion,
@@ -99,9 +92,7 @@ export class QqcFeedbackManagerService {
     currentQuestion: QuizQuestion | null,
     selectedIndices: Set<number>
   ): Option[] | null {
-    if (!allCorrectSelected) {
-      return null;
-    }
+    if (!allCorrectSelected) return null;
 
     if (currentQuestion?.options?.length) {
       for (const opt of currentQuestion.options) {
@@ -163,9 +154,7 @@ export class QqcFeedbackManagerService {
         (selections[selections.length - 1].optionId === opt.optionId || (selections[selections.length - 1] as any).index === idx);
 
       let shouldHighlight = isSelected;
-      if (isMulti && opt.correct) {
-        shouldHighlight = isLastSelection;
-      }
+      if (isMulti && opt.correct) shouldHighlight = isLastSelection;
 
       if (opt.correct) {
         opt.styleClass = shouldHighlight ? 'highlight-correct' : '';
@@ -260,7 +249,7 @@ export class QqcFeedbackManagerService {
       idx:
         optionBindings.find((b) => b.option.optionId === opt.optionId)
           ?.index ?? 0,
-      correctMessage: '',
+      correctMessage: ''
     } as FeedbackProps;
   }
 
@@ -287,9 +276,7 @@ export class QqcFeedbackManagerService {
     showFeedbackForOption: { [optionId: number]: boolean };
     selectedIndex: number;
   } | null {
-    if (!params.isUserClickInProgress) {
-      return null;
-    }
+    if (!params.isUserClickInProgress) return null;
 
     // Reset feedback for this option
     const showFeedbackForOption = this.resetFeedbackForOption(params.option.optionId!);
@@ -327,9 +314,7 @@ export class QqcFeedbackManagerService {
     showFeedbackForOption: { [optionId: number]: boolean };
     selectedOptionIndex: number;
   } | null {
-    if (!selectedOption) {
-      return null;
-    }
+    if (!selectedOption) return null;
 
     showFeedbackForOption = showFeedbackForOption || {};
     showFeedbackForOption[selectedOption.optionId!] = true;
@@ -337,9 +322,7 @@ export class QqcFeedbackManagerService {
     const selectedOptionIndex = optionsToDisplay.findIndex(
       (opt) => opt.optionId === selectedOption.optionId
     );
-    if (selectedOptionIndex === -1) {
-      return null;
-    }
+    if (selectedOptionIndex === -1) return null;
 
     // Apply feedback to only the clicked option, keeping others unchanged
     const updatedOptions = optionsToDisplay.map((option) => ({
@@ -357,7 +340,7 @@ export class QqcFeedbackManagerService {
     return {
       optionsToDisplay: updatedOptions,
       showFeedbackForOption,
-      selectedOptionIndex,
+      selectedOptionIndex
     };
   }
 
@@ -394,7 +377,7 @@ export class QqcFeedbackManagerService {
       await params.callParentOnOptionClicked(event);
 
       const selectedOptions: SelectedOption[] = [
-        { ...params.option, questionIndex: params.currentQuestionIndex },
+        { ...params.option, questionIndex: params.currentQuestionIndex }
       ];
       const selectedOption = { ...params.option };
       const showFeedbackForOption: { [optionId: number]: boolean } = {};
@@ -439,7 +422,7 @@ export class QqcFeedbackManagerService {
         explanationToDisplay,
         correctMessage,
         shouldDisplayExplanation,
-        displayExplanation,
+        displayExplanation
       };
     } catch (error) {
       return null;
@@ -467,9 +450,7 @@ export class QqcFeedbackManagerService {
       }
 
       // Extract correct options from the question
-      const correctOptions = question.options.filter(
-        (option) => option.correct
-      );
+      const correctOptions = question.options.filter((option) => option.correct);
       if (correctOptions.length === 0) {
         return 'No correct answers defined for this question.';
       }
@@ -502,10 +483,7 @@ export class QqcFeedbackManagerService {
     shouldTriggerExplanation: boolean;
   } | null {
     const { option, optionsToDisplay } = params;
-
-    if (!option) {
-      return null;
-    }
+    if (!option) return null;
 
     // Ensure UI-related states are initialized
     const showFeedbackForOption = params.showFeedbackForOption || {};
@@ -515,22 +493,19 @@ export class QqcFeedbackManagerService {
     const selectedOptionIndex = optionsToDisplay.findIndex(
       (opt) => opt.optionId === option.optionId
     );
-    if (selectedOptionIndex === -1) {
-      return null;
-    }
+    if (selectedOptionIndex === -1) return null;
 
     const foundOption = optionsToDisplay[selectedOptionIndex];
 
     // Explanation evaluation check
     const ready = !!this.explanationTextService.latestExplanation?.trim();
-    const show =
-      this.explanationTextService.shouldDisplayExplanationSig();
+    const show = this.explanationTextService.shouldDisplayExplanationSig();
 
     return {
       showFeedbackForOption,
       selectedOptionIndex,
       foundOption,
-      shouldTriggerExplanation: ready && show,
+      shouldTriggerExplanation: ready && show
     };
   }
 
