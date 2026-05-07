@@ -1,5 +1,4 @@
 import { Injectable, Injector } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
