@@ -55,9 +55,7 @@ export class CqcFetGuardService {
           host.qTextHtmlSig?.set(safe);
           host._lastDisplayedText = safe;
           const el = host.qText?.nativeElement;
-          if (el) {
-            host.renderer.setProperty(el, 'innerHTML', safe);
-          }
+          if (el) host.renderer.setProperty(el, 'innerHTML', safe);
           return;
         }
       }
@@ -546,9 +544,7 @@ export class CqcFetGuardService {
           && this.hasInteractionEvidence(host, bsIdx);
         if (explMatch || textMismatch) {
           if (!this.isScoredCorrectAtDisplay(host, bsIdx)) {
-            if (expectedQBs) {
-              safe = expectedQBs;
-            }
+            if (expectedQBs) safe = expectedQBs;
           }
         }
       } catch { /* ignore */ }
@@ -558,8 +554,7 @@ export class CqcFetGuardService {
         const qsBnr: any = host.quizService;
         const bnrIdx: number = host.currentIndex ?? (
           Number.isFinite(qsBnr?.currentQuestionIndex)
-            ? qsBnr.currentQuestionIndex
-            : (qsBnr?.getCurrentQuestionIndex?.() ?? 0)
+            ? qsBnr.currentQuestionIndex : (qsBnr?.getCurrentQuestionIndex?.() ?? 0)
         );
         const expectedWithBanner = this.buildQuestionDisplayHTML(host, bnrIdx);
         if (expectedWithBanner && expectedWithBanner.includes('correct-count')) {
@@ -579,9 +574,7 @@ export class CqcFetGuardService {
       host.qTextHtmlSig?.set(safe);
       host._lastDisplayedText = safe;
       const el = host.qText?.nativeElement;
-      if (el) {
-        host.renderer.setProperty(el, 'innerHTML', safe);
-      }
+      if (el) host.renderer.setProperty(el, 'innerHTML', safe);
     } catch { /* ignore */ }
   }
 
@@ -691,9 +684,7 @@ export class CqcFetGuardService {
    */
   isQuestionResolvedFromStorage(host: Host, idx: number): boolean {
     try {
-      if (this.isScoredCorrectAtDisplay(host, idx)) {
-        return true;
-      }
+      if (this.isScoredCorrectAtDisplay(host, idx)) return true;
 
       let storedSelections: any[] = [];
       try {
@@ -735,8 +726,7 @@ export class CqcFetGuardService {
                 .map((s: any) => norm(s?.text))
                 .filter((t: string) => !!t)
             );
-            const allCorrectSelected = pristineCorrectTexts.every(t => selTexts.has(t));
-            return allCorrectSelected;
+            return pristineCorrectTexts.every(t => selTexts.has(t));
           }
           return host.selectedOptionService.isQuestionResolvedLeniently?.(q, storedSelections)
             ?? false;
