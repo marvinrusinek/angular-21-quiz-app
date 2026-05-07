@@ -429,8 +429,7 @@ export class QuizService {
   getQuestionsInDisplayOrder(): QuizQuestion[] {
     const shuffled = this.shuffledQuestions ?? [];
     return this.shuffleEnabled && shuffled.length
-      ? shuffled
-      : (this.questions ?? []);
+      ? shuffled : (this.questions ?? []);
   }
 
   async fetchQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
@@ -457,7 +456,6 @@ export class QuizService {
     }
     return this.questions$;
   }
-
 
   getQuestionData(
     quizId: string,
@@ -522,7 +520,6 @@ export class QuizService {
     );
   }
 
-
   setCurrentQuestionIndex(idx: number) {
     const safeIndex = Number.isFinite(idx) ? Math.max(0, Math.trunc(idx)) : 0;
 
@@ -559,7 +556,6 @@ export class QuizService {
     return this.currentQuestionIndex$;
   }
 
-
   updateCurrentQuestionIndex(index: number): void {
     this.currentQuestionIndex = index;
   }
@@ -571,9 +567,8 @@ export class QuizService {
       return;
     }
     const newBadgeText = `Question ${questionIndex} of ${totalQuestions}`;
-    if (this.badgeTextSig() === newBadgeText) {
-      return;
-    }
+    if (this.badgeTextSig() === newBadgeText) return;
+
     this.badgeTextSig.set(newBadgeText);
     localStorage.setItem('savedQuestionIndex', JSON.stringify(questionIndex - 1));
   }
@@ -625,7 +620,7 @@ export class QuizService {
 
         return 0;
       }),
-      distinctUntilChanged(),
+      distinctUntilChanged()
     );
   }
 
@@ -654,17 +649,12 @@ export class QuizService {
   }
 
   updateAnswersForOption(selectedOption: Option): void {
-    if (!this.answers) {
-      this.answers = [];
-    }
+    if (!this.answers) this.answers = [];
 
     const isOptionSelected = this.answers.some(
-      (answer: Option) => answer.optionId === selectedOption.optionId,
+      (answer: Option) => answer.optionId === selectedOption.optionId
     );
-
-    if (!isOptionSelected) {
-      this.answers.push(selectedOption);
-    }
+    if (!isOptionSelected) this.answers.push(selectedOption);
 
     const answerIds = this.answers
       .map((answer: Option) => answer.optionId)
@@ -711,7 +701,9 @@ export class QuizService {
 
   // Expose sub-services for direct access by consumers that need them
   get quizDataLoader(): QuizDataLoaderService { return this.dataLoader; }
-  get quizQuestionResolver(): QuizQuestionResolverService { return this.questionResolver; }
+  get quizQuestionResolver(): QuizQuestionResolverService {
+    return this.questionResolver;
+  }
   get quizOptions(): QuizOptionsService { return this.optionsService; }
   get quizScoring(): QuizScoringService { return this.scoringService; }
 
@@ -823,9 +815,7 @@ export class QuizService {
     let question = this.questions[questionIndex];
     if (this.shouldShuffle() && this.quizId) {
       const resolved = this.resolveCanonicalQuestion(questionIndex, null);
-      if (resolved) {
-        question = resolved;
-      }
+      if (resolved) question = resolved;
     }
 
     this.answers = this.answerEvaluation.resolveAnswerOptions(
@@ -846,20 +836,15 @@ export class QuizService {
     let currentQuestionValue: QuizQuestion | null = null;
     if (this.shouldShuffle()) {
       const resolved = this.resolveCanonicalQuestion(qIndex, null);
-      if (resolved) {
-        currentQuestionValue = resolved;
-      }
+      if (resolved) currentQuestionValue = resolved;
     } else {
       currentQuestionValue = this.questions[qIndex] ?? this.currentQuestionSig();
     }
 
-    if (!currentQuestionValue) {
-      return false;
-    }
+    if (!currentQuestionValue) return false;
 
     const storedAnswerIds = Array.isArray(this.userAnswers[qIndex])
-      ? (this.userAnswers[qIndex] as number[])
-      : [];
+      ? (this.userAnswers[qIndex] as number[]) : [];
 
     const result = await this.answerEvaluation.evaluateCorrectness(
       qIndex,
@@ -877,7 +862,11 @@ export class QuizService {
     return result.isCorrect;
   }
 
-  public scoreDirectly(questionIndex: number, isCorrect: boolean, isMultipleAnswer: boolean): void {
+  public scoreDirectly(
+    questionIndex: number, 
+    isCorrect: boolean, 
+    isMultipleAnswer: boolean
+  ): void {
     const shouldProceed = this.answerEvaluation.verifyScoreAgainstPristine(
       questionIndex,
       isCorrect,
@@ -890,11 +879,11 @@ export class QuizService {
       this.userAnswers
     );
 
-    if (!shouldProceed) {
-      return;
-    }
+    if (!shouldProceed) return;
 
-    this.scoringService.scoreDirectly(questionIndex, isCorrect, isMultipleAnswer, this.shouldShuffle(), this.quizId);
+    this.scoringService.scoreDirectly(
+      questionIndex, isCorrect, isMultipleAnswer, this.shouldShuffle(), this.quizId
+    );
   }
 
   incrementScore(
@@ -904,7 +893,9 @@ export class QuizService {
     questionIndex: number = -1
   ): void {
     const qIndex = questionIndex >= 0 ? questionIndex : this.currentQuestionIndex;
-    this.scoringService.incrementScore(answers, correctAnswerFound, isMultipleAnswer, qIndex, this.shouldShuffle(), this.quizId);
+    this.scoringService.incrementScore(
+      answers, correctAnswerFound, isMultipleAnswer, qIndex, this.shouldShuffle(), this.quizId
+    );
   }
 
   resetScore(): void {
@@ -946,7 +937,9 @@ export class QuizService {
   }
 
   private resolveShuffleQuizId(): string | null {
-    return this.quizId || this.activeQuiz?.quizId || this.selectedQuiz?.quizId || null;
+    return this.quizId 
+      || this.activeQuiz?.quizId 
+      || this.selectedQuiz?.quizId || null;
   }
 
   private resolveCanonicalQuestion(
