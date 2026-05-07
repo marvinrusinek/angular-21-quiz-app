@@ -847,7 +847,7 @@ export class QuizSetupService {
       host.quizQuestionComponent?.renderReady$
         ?.pipe(debounceTime(10))
         .subscribe((isReady: boolean) => {
-          host.isQuizRenderReady$.next(isReady);
+          host.isQuizRenderReadySig.set(isReady);
         });
     }, 0);
   }
