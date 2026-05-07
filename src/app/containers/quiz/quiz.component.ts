@@ -5,7 +5,7 @@ import {
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { debounceTime, shareReplay } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
