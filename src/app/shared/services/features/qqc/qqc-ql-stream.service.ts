@@ -1,9 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
-import {
-  firstValueFrom, forkJoin, lastValueFrom, of
-} from 'rxjs';
+import { firstValueFrom, forkJoin, lastValueFrom, of } from 'rxjs';
 import { catchError, filter, take, timeout } from 'rxjs/operators';
 
 import { QuestionType } from '../../../models/question-type.enum';
@@ -111,12 +109,12 @@ export class QqcQlStreamService {
     private feedbackService: FeedbackService,
     private quizService: QuizService,
     private quizDataService: QuizDataService,
+    private quizStateService: QuizStateService,
     private resetBackgroundService: ResetBackgroundService,
     private resetStateService: ResetStateService,
+    private selectedOptionService: SelectedOptionService,
     private selectionMessageService: SelectionMessageService,
     private timerService: TimerService,
-    private selectedOptionService: SelectedOptionService,
-    private quizStateService: QuizStateService,
     private router: Router
   ) {
     (this.explanationTextService as any)._loaderRef = this;
@@ -125,9 +123,7 @@ export class QqcQlStreamService {
   public async loadQuestionContents(questionIndex: number): Promise<void> {
     try {
       const quizId = this.quizService.getCurrentQuizId();
-      if (!quizId) {
-        return;
-      }
+      if (!quizId) return;
 
       const hasCachedQuestion = this.quizService.quizDataLoader.hasCachedQuestion(
         quizId,
@@ -180,8 +176,8 @@ export class QqcQlStreamService {
                 options: [],
                 explanation: ''
               } as FetchedData);
-            }),
-          ),
+            })
+          )
         );
 
         if (
@@ -211,23 +207,17 @@ export class QqcQlStreamService {
   }
 
   async loadQuestionAndOptions(index: number): Promise<boolean> {
-    if (!this.ensureRouteQuizId()) {
-      return false;
-    }
+    if (!this.ensureRouteQuizId()) return false;
 
     const isCountValid = await this.ensureQuestionCount();
     const isIndexValid = this.validateIndex(index);
 
-    if (!isCountValid || !isIndexValid) {
-      return false;
-    }
+    if (!isCountValid || !isIndexValid) return false;
 
     await this.resetUiForNewQuestion(index);
 
     const { q, opts } = await this.fetchQuestionAndOptions(index);
-    if (!q || !opts.length) {
-      return false;
-    }
+    if (!q || !opts.length) return false;
 
     let cloned: Option[] = [];
     try {
@@ -270,9 +260,7 @@ export class QqcQlStreamService {
 
   private ensureRouteQuizId(): boolean {
     const routeId = this.readRouteParam('quizId') ?? this.quizService.quizId;
-    if (!routeId) {
-      return false;
-    }
+    if (!routeId) return false;
 
     if (routeId !== this.lastQuizId) {
       this.questionsArray = [];
@@ -284,9 +272,8 @@ export class QqcQlStreamService {
   }
 
   private async ensureQuestionCount(): Promise<boolean> {
-    if (this.totalQuestions) {
-      return true;
-    }
+    if (this.totalQuestions) return true;
+
     const qs = (await firstValueFrom(
       this.quizDataService.getQuestionsForQuiz(this.activeQuizId)
     )) as QuizQuestion[];
@@ -320,29 +307,21 @@ export class QqcQlStreamService {
     if (
       activeQuizId &&
       this.quizService.quizDataLoader.hasCachedQuestion(activeQuizId, index)
-    ) {
-      return true;
-    }
+    ) return true;
 
     if (
       !Array.isArray(this.questionsArray) ||
       this.questionsArray.length === 0
-    ) {
-      return false;
-    }
+    ) return false;
 
     if (
       !Number.isInteger(index) ||
       index < 0 ||
       index >= this.questionsArray.length
-    ) {
-      return false;
-    }
+    ) return false;
 
     const question = this.questionsArray[index];
-    if (!question) {
-      return false;
-    }
+    if (!question) return false;
 
     return Array.isArray(question.options) && question.options.length > 0;
   }
@@ -409,7 +388,9 @@ export class QqcQlStreamService {
       this.lastQuizId = quizId;
     }
 
-    if (this.quizService.isShuffleEnabled() && this.quizService.shuffledQuestions?.length > 0) {
+    if (this.quizService.isShuffleEnabled() && 
+      this.quizService.shuffledQuestions?.length > 0
+    ) {
       this.questionsArray = [...this.quizService.shuffledQuestions];
     } else {
       let questions = this.quizService.questions;
@@ -434,7 +415,7 @@ export class QqcQlStreamService {
           }
         } else {
           this.questionsArray = await firstValueFrom(
-            this.quizDataService.getQuestionsForQuiz(quizId),
+            this.quizDataService.getQuestionsForQuiz(quizId)
           );
           this.quizService.questions = [...this.questionsArray];
         }
@@ -483,7 +464,7 @@ export class QqcQlStreamService {
       selected: false,
       highlight: false,
       showIcon: false,
-      active: true,
+      active: true
     }));
 
     const active: Option[] = this.quizService.quizOptions.assignOptionActiveStates(hydrated, false);
@@ -741,13 +722,11 @@ export class QqcQlStreamService {
       !question ||
       !Array.isArray(question.options) ||
       question.options.length === 0
-    )
-      return;
+    ) return;
 
     const options = question.options;
     const correctCount = options.reduce(
-      (total, option) => (option?.correct ? total + 1 : total),
-      0
+      (total, option) => (option?.correct ? total + 1 : total), 0
     );
     const totalCorrect = Math.max(correctCount, 1);
 
@@ -793,18 +772,14 @@ export class QqcQlStreamService {
           this.quizDataService.getQuestionsForQuiz(this.activeQuizId),
         )) as QuizQuestion[];
       }
-      const q: QuizQuestion | undefined = allQuestions[index];
 
-      if (!q) {
-        return false;
-      }
+      const q: QuizQuestion | undefined = allQuestions[index];
+      if (!q) return false;
 
       let opts = q.options ?? [];
       if (opts.length === 0) {
         opts = (allQuestions as QuizQuestion[])?.[index]?.options ?? [];
-        if (opts.length === 0) {
-          return false;
-        }
+        if (opts.length === 0) return false;
       }
 
       const correctIndices = opts
@@ -828,7 +803,7 @@ export class QqcQlStreamService {
       const safeQuestion: QuizQuestion = JSON.parse(
         JSON.stringify({
           ...q,
-          options: finalOpts,
+          options: finalOpts
         })
       );
 
@@ -846,9 +821,8 @@ export class QqcQlStreamService {
   resetHeadlineStreams(index?: number): void {
     const activeIndex = this.quizService.getCurrentQuestionIndex();
 
-    if (index != null && index !== activeIndex) {
-      return;
-    }
+    if (index != null && index !== activeIndex) return;
+
     this.questionToDisplaySig.set('');
     this.explanationTextService.explanationText$.next('');
     this.clearQA();
@@ -871,31 +845,22 @@ export class QqcQlStreamService {
   }
 
   public emitQuestionTextSafely(text: string, index: number): void {
-    if (this.isNavBarrierActive()) {
-      return;
-    }
+    if (this.isNavBarrierActive()) return;
 
     const now = performance.now();
-
-    if (now < (this._quietZoneUntil ?? 0)) {
-      return;
-    }
+    if (now < (this._quietZoneUntil ?? 0)) return;
 
     if (this._frozen && now < (this._renderFreezeUntil ?? 0)) {
       return;
     }
 
     const activeIndex = this.quizService.getCurrentQuestionIndex();
-    if (index !== activeIndex) {
-      return;
-    }
+    if (index !== activeIndex) return;
 
     const trimmed = (text ?? '').trim();
     if (!trimmed || trimmed === '?') return;
 
-    if (now - (this._lastNavTime ?? 0) < 80) {
-      return;
-    }
+    if (now - (this._lastNavTime ?? 0) < 80) return;
 
     this._lastQuestionText = trimmed;
     this.questionToDisplaySig.set(trimmed);
