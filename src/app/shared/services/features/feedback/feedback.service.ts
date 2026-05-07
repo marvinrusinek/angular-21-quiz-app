@@ -103,7 +103,6 @@ export class FeedbackService {
       );
     }
 
-
     const isCorrectHelper = (val: any) => {
       if (!val) return false;
       if (val === true || val === 'true' || val === 1 || val === '1') return true;
@@ -114,7 +113,7 @@ export class FeedbackService {
       return false;
     };
 
-if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
+    if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
       const qText = (question.questionText || '').trim().toLowerCase();
       if (qText) {
         const allQuestions = (quizSvc as any)._questions || quizSvc.questions || [];
@@ -349,7 +348,6 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
       ? directFromCanonical
       : this.explanationTextService.getCorrectOptionIndices(question!, optionsToDisplay, typeof currentIndex === 'number' ? currentIndex : undefined);
     const deduped = Array.from(new Set(indices)).sort((a, b) => a - b);
-
     if (deduped.length === 0) return 'No correct options found.';
 
     const optionsText = deduped.length === 1 ? 'answer is Option' : 'answers are Options';
