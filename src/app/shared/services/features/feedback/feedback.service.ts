@@ -4,9 +4,9 @@ import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionType } from '../../../models/question-type.enum';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { SelectedOptionService } from '../../state/selectedoption.service';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { QuizService } from '../../data/quiz.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
@@ -24,14 +24,10 @@ export class FeedbackService {
     const validCorrectOptions = (correctOptions || []).filter(opt => opt && typeof opt === 'object');
     const validOptionsToDisplay = (optionsToDisplay || []).filter(opt => opt && typeof opt === 'object');
 
-    if (validOptionsToDisplay.length === 0) {
-      return 'Feedback unavailable.';
-    }
+    if (validOptionsToDisplay.length === 0) return 'Feedback unavailable.';
 
     const correctFeedback = this.setCorrectMessage(validOptionsToDisplay);
-    if (!correctFeedback?.trim()) {
-      return 'Feedback unavailable.';
-    }
+    if (!correctFeedback?.trim()) return 'Feedback unavailable.';
 
     return correctFeedback;
   }
@@ -131,10 +127,7 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
               isCorrectHelper(o) ? i + 1 : null
             )
             .filter((n: number | null): n is number => n !== null);
-
-          if (foundIndices.length > 0) {
-            correctIndices = foundIndices;
-          }
+          if (foundIndices.length > 0) correctIndices = foundIndices;
         }
       }
     }
@@ -162,9 +155,7 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
         const match = sortedCalc.length === sortedVisual.length &&
           sortedCalc.every((n, i) => n === sortedVisual[i]);
 
-        if (!match) {
-          correctIndices = visualCorrect;
-        }
+        if (!match) correctIndices = visualCorrect;
       }
     }
 
@@ -201,7 +192,7 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
       // An option is correct if its 'correct' flag is true OR if its visual position matches a correct index.
       const isCorrect = isCorrectHelper(sel) ||
         (visualIdx >= 0 && correctIndices.includes(visualIdx + 1));
-
+      
       if (isCorrect) {
         numCorrectSelected++;
       } else {
@@ -269,9 +260,7 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
 
     const finalRevealMessage = formatReveal(correctIndices);
 
-    if (!selected || dedupedSelected.length === 0) {
-      return '';
-    }
+    if (!selected || dedupedSelected.length === 0) return '';
 
     if (isMultiMode) {
       // If a specific option was clicked, prioritize its individual feedback
@@ -304,9 +293,7 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
       }
 
       // Fallback/Legacy logic for when targetOption isn't provided
-      if (numIncorrectSelected > 0) {
-        return 'Not this one, try again!';
-      }
+      if (numIncorrectSelected > 0) return 'Not this one, try again!';
 
       if (numCorrectSelected >= totalCorrectRequired) {
         return `You're right! ${finalRevealMessage}`;
@@ -358,14 +345,12 @@ if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
     for (const [i, o] of (canonicalQ?.options ?? []).entries()) {
       if (isCorrectFlagSCM(o)) directFromCanonical.push(i + 1);
     }
-const indices = directFromCanonical.length > 0
+    const indices = directFromCanonical.length > 0
       ? directFromCanonical
       : this.explanationTextService.getCorrectOptionIndices(question!, optionsToDisplay, typeof currentIndex === 'number' ? currentIndex : undefined);
     const deduped = Array.from(new Set(indices)).sort((a, b) => a - b);
 
-    if (deduped.length === 0) {
-      return 'No correct options found.';
-    }
+    if (deduped.length === 0) return 'No correct options found.';
 
     const optionsText = deduped.length === 1 ? 'answer is Option' : 'answers are Options';
     const optionStrings = deduped.length > 1
