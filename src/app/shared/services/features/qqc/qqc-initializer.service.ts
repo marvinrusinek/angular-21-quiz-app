@@ -7,12 +7,12 @@ import { Option } from '../../../models/Option.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { Quiz } from '../../../models/Quiz.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { QqcQuestionLoaderService } from './qqc-question-loader.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizDataService } from '../../data/quizdata.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { QqcQuestionLoaderService } from './qqc-question-loader.service';
 
 /**
  * Manages initialization logic for QuizQuestionComponent:
@@ -27,12 +27,12 @@ import { QqcQuestionLoaderService } from './qqc-question-loader.service';
 export class QqcInitializerService {
 
   constructor(
+    private explanationTextService: ExplanationTextService,
+    private questionLoader: QqcQuestionLoaderService,
     private quizService: QuizService,
     private quizDataService: QuizDataService,
     private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private explanationTextService: ExplanationTextService,
-    private questionLoader: QqcQuestionLoaderService
+    private selectedOptionService: SelectedOptionService
   ) {}
 
   // ═══════════════════════════════════════════════════════════════
@@ -49,9 +49,7 @@ export class QqcInitializerService {
     isQuizLoaded: boolean;
   }> {
     const questions = await this.questionLoader.loadQuizData(quizId);
-    if (!questions) {
-      return { questions: null, quiz: null, isQuizLoaded: false };
-    }
+    if (!questions) return { questions: null, quiz: null, isQuizLoaded: false };
 
     const activeQuiz = this.quizService.getActiveQuiz();
     if (!activeQuiz) {
@@ -81,8 +79,7 @@ export class QqcInitializerService {
     const { index, questionsArray } = params;
 
     if (!questionsArray || questionsArray.length === 0) {
-      // questionsArray is empty or undefined
-      return null;
+      return null;  // questionsArray is empty or undefined
     }
 
     // Clamp index to valid range
@@ -92,14 +89,12 @@ export class QqcInitializerService {
     );
 
     if (questionIndex >= questionsArray.length) {
-      // Invalid question index
-      return null;
+      return null;  // invalid question index
     }
 
     const question = questionsArray[questionIndex];
     if (!question) {
-      // No question data available at this index
-      return null;
+      return null;  // no question data available at this index
     }
 
     // Update quiz service
@@ -108,7 +103,7 @@ export class QqcInitializerService {
     return {
       currentQuestion: question,
       optionsToDisplay: [...(question.options ?? [])],
-      questionIndex,
+      questionIndex
     };
   }
 
@@ -132,10 +127,7 @@ export class QqcInitializerService {
     const { quizId, currentQuestionIndex, questionsArray, fetchAndProcessQuizQuestions } = params;
 
     try {
-      if (!quizId) {
-        // Quiz ID is empty after initialization
-        return null;
-      }
+      if (!quizId) return null;  // quiz ID is empty after initialization
 
       // Fetch and store only if not already fetched
       let result = questionsArray;
@@ -156,7 +148,7 @@ export class QqcInitializerService {
 
       return {
         questionsArray: result,
-        questions: result,
+        questions: result
       };
     } catch (error) {
       // Error initializing quiz questions and answers
@@ -189,14 +181,14 @@ export class QqcInitializerService {
 
           this.explanationTextService.formattedExplanations[questionIndex] = {
             questionIndex,
-            explanation: explanationText || 'No explanation provided.',
+            explanation: explanationText || 'No explanation provided.'
           };
         } catch (explanationError) {
           // Failed to fetch explanation for this question
 
           this.explanationTextService.formattedExplanations[questionIndex] = {
             questionIndex,
-            explanation: 'Unable to load explanation.',
+            explanation: 'Unable to load explanation.'
           };
         }
       }
@@ -215,7 +207,7 @@ export class QqcInitializerService {
    */
   parseQuestionIndexFromRoute(questionIndexParam: string | null): number {
     const routeIndex = questionIndexParam !== null ? +questionIndexParam : 1;
-    return Math.max(0, routeIndex - 1);  // Normalize to 0-based
+    return Math.max(0, routeIndex - 1);  // normalize to 0-based
   }
 
   /**
@@ -231,11 +223,9 @@ export class QqcInitializerService {
     const parsedParam = Number(rawParam);
     let questionIndex = isNaN(parsedParam) ? 1 : parsedParam;
 
-    if (questionIndex < 1 || questionIndex > totalQuestions) {
-      questionIndex = 1;
-    }
+    if (questionIndex < 1 || questionIndex > totalQuestions) questionIndex = 1;
 
-    return questionIndex - 1; // Convert to 0-based
+    return questionIndex - 1;  // convert to 0-based
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -262,9 +252,7 @@ export class QqcInitializerService {
     currentQuestion: QuizQuestion | null,
     fb: FormBuilder
   ): FormGroup | null {
-    if (!currentQuestion?.options?.length) {
-      return null;
-    }
+    if (!currentQuestion?.options?.length) return null;
 
     const controls = currentQuestion.options.reduce(
       (acc: { [key: string]: any }, option: Option) => {
@@ -284,23 +272,17 @@ export class QqcInitializerService {
    * Returns true if the component should render.
    */
   checkRenderReady(questionForm: FormGroup | null): boolean {
-    const valid = questionForm?.valid ?? false;
-    if (valid) {
-    }
-    return valid;
+    return questionForm?.valid ?? false;
   }
 
   /**
    * Validates a form for submission: checks form validity and option selection.
    */
   validateFormForSubmission(questionForm: FormGroup): boolean {
-    if (questionForm.invalid) {
-      return false;
-    }
+    if (questionForm.invalid) return false;
 
     const selectedOption = questionForm.get('selectedOption')?.value;
-    // form is valid and option is selected
-    return selectedOption != null;
+    return selectedOption != null;  // form is valid and option is selected
   }
 
   /**
@@ -320,15 +302,12 @@ export class QqcInitializerService {
       !currentQuestion?.options?.find(
         (opt) => opt.optionId === selectedOption.optionId
       )
-    ) {
-      // Invalid or unselected option
-      return false;
-    }
+    ) return false;   // invalid or unselected option
 
     answers.push({
       question: currentQuestion,
       questionIndex: currentQuestionIndex,
-      selectedOption: selectedOption,
+      selectedOption: selectedOption
     });
 
     let isCorrect = false;
@@ -353,7 +332,7 @@ export class QqcInitializerService {
       isCorrect: isCorrect,
       explanationText: explanationText,
       selectedOptions: selectedOptions,
-      numberOfCorrectAnswers: numberOfCorrectAnswers,
+      numberOfCorrectAnswers: numberOfCorrectAnswers
     });
 
     return isCorrect;
@@ -368,13 +347,8 @@ export class QqcInitializerService {
   initializeQuizQuestion(params: {
     onQuestionsLoaded: (questions: QuizQuestion[]) => void;
   }): Subscription | null {
-    if (!this.quizStateService || !this.quizService) {
-      return null;
-    }
-
-    if (this.quizStateService.getQuizQuestionCreated()) {
-      return null;
-    }
+    if (!this.quizStateService || !this.quizService) return null;
+    if (this.quizStateService.getQuizQuestionCreated()) return null;
 
     this.quizStateService.setQuizQuestionCreated();
 
@@ -389,7 +363,7 @@ export class QqcInitializerService {
               quizQuestion.options = quizQuestion.options.map(
                 (option, index) => ({
                   ...option,
-                  optionId: index,
+                  optionId: index
                 })
               );
             } else {
@@ -407,15 +381,12 @@ export class QqcInitializerService {
               this.selectedOptionService.getSelectedOptions();
             const hasAnswered =
               Array.isArray(selectedOptions) && selectedOptions.length > 0;
-
-            if (hasAnswered) {
-              this.selectedOptionService.setAnsweredState(true);
-            }
+            if (hasAnswered) this.selectedOptionService.setAnsweredState(true);
 
             params.onQuestionsLoaded(questions);
           }
         },
-        error: () => { },
+        error: () => { }
       });
   }
 
@@ -427,14 +398,10 @@ export class QqcInitializerService {
   initializeSelectedQuiz(params: {
     onQuizSelected: (quiz: Quiz) => void;
   }): Subscription | null {
-    if (!this.quizDataService.selectedQuiz$) {
-      return null;
-    }
+    if (!this.quizDataService.selectedQuiz$) return null;
 
     return this.quizDataService.selectedQuiz$.subscribe((quiz: Quiz | null) => {
-      if (quiz) {
-        params.onQuizSelected(quiz);
-      }
+      if (quiz) params.onQuizSelected(quiz);
     });
   }
 
@@ -469,7 +436,7 @@ export class QqcInitializerService {
   } | null> {
     // Initialize selected quiz subscription
     this.initializeSelectedQuiz({
-      onQuizSelected: (_quiz: Quiz) => params.setQuestionOptions(),
+      onQuizSelected: (_quiz: Quiz) => params.setQuestionOptions()
     });
 
     const quizId = params.routeQuizId;
@@ -487,18 +454,18 @@ export class QqcInitializerService {
               quizId: qId,
               questionIndex: index,
               question,
-              getExplanationText: params.getExplanationText,
-            }),
+              getExplanationText: params.getExplanationText
+            })
         });
         return questions;
-      },
+      }
     });
 
     if (result) {
       return {
         questionsArray: result.questionsArray,
         questions: result.questions,
-        quizId,
+        quizId
       };
     }
 
