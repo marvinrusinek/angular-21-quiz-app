@@ -20,7 +20,6 @@ type Host = any;
  */
 @Injectable({ providedIn: 'root' })
 export class QqcComponentOrchestratorService {
-
   constructor(
     private orchLifecycle: QqcOrchLifecycleService,
     private orchClick: QqcOrchClickService,
@@ -29,7 +28,7 @@ export class QqcComponentOrchestratorService {
     private orchExplanation: QqcOrchExplanationService,
     private orchSelection: QqcOrchSelectionService,
     private orchReset: QqcOrchResetService,
-    private orchDisplay: QqcOrchDisplayService,
+    private orchDisplay: QqcOrchDisplayService
   ) {}
 
   // ─── Lifecycle ───
