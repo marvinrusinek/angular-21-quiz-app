@@ -1,9 +1,9 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import {
-  BehaviorSubject, firstValueFrom, from, Observable, of, Subject
+  firstValueFrom, from, Observable, of, Subject
 } from 'rxjs';
 import {
   distinctUntilChanged, filter, map, take
@@ -35,13 +35,13 @@ export class QuizDataLoaderService {
   private quizUrl = 'assets/data/quiz.json';
   private fetchPromise: Promise<QuizQuestion[]> | null = null;
 
-  private readonly shuffleEnabledSubject = new BehaviorSubject<boolean>(
+  private readonly shuffleEnabledSig = signal<boolean>(
     localStorage.getItem('checkedShuffle') === 'true'
   );
-  checkedShuffle$ = this.shuffleEnabledSubject.asObservable();
+  checkedShuffle$ = toObservable(this.shuffleEnabledSig);
 
-  // Signal mirrors for new code; existing $ subscribers unaffected.
-  readonly checkedShuffleSig = toSignal(this.checkedShuffle$, { initialValue: localStorage.getItem('checkedShuffle') === 'true' });
+  // Read-only signal alias for new code; existing $ subscribers unaffected.
+  readonly checkedShuffleSig = this.shuffleEnabledSig.asReadonly();
 
   public shuffledQuestions: QuizQuestion[] = (() => {
     try {
@@ -334,11 +334,11 @@ export class QuizDataLoaderService {
   }
 
   shouldShuffle(): boolean {
-    return this.shuffleEnabledSubject.getValue();
+    return this.shuffleEnabledSig();
   }
 
   isShuffleEnabled(): boolean {
-    return this.shuffleEnabledSubject.getValue();
+    return this.shuffleEnabledSig();
   }
 
   get shuffleEnabled(): boolean {
@@ -346,7 +346,7 @@ export class QuizDataLoaderService {
   }
 
   setCheckedShuffle(isChecked: boolean): void {
-    this.shuffleEnabledSubject.next(isChecked);
+    this.shuffleEnabledSig.set(isChecked);
     try {
       localStorage.setItem('checkedShuffle', String(isChecked));
       localStorage.removeItem('shuffledQuestions');
