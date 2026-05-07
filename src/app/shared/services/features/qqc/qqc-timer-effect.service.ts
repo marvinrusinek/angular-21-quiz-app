@@ -6,16 +6,14 @@ import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuestionType } from '../../../models/question-type.enum';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { SelectedOption } from '../../../models/SelectedOption.model';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
+import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
-import { NextButtonStateService } from '../../state/next-button-state.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { TimerService } from '../timer/timer.service';
+import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { SoundService } from '../../ui/sound.service';
-import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
+import { TimerService } from '../timer/timer.service';
 
 /**
  * Handles timer expiry, lock, and disable logic for QQC.
@@ -23,16 +21,15 @@ import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcTimerEffectService {
-
   constructor(
     private explanationTextService: ExplanationTextService,
-    private selectionMessageService: SelectionMessageService,
+    private nextButtonStateService: NextButtonStateService,
     private quizService: QuizService,
     private quizStateService: QuizStateService,
-    private nextButtonStateService: NextButtonStateService,
     private selectedOptionService: SelectedOptionService,
-    private timerService: TimerService,
-    private soundService: SoundService
+    private selectionMessageService: SelectionMessageService,
+    private soundService: SoundService,
+    private timerService: TimerService
   ) {}
 
   /**
@@ -67,9 +64,7 @@ export class QqcTimerEffectService {
       if (!str) return;
 
       const num = Number(str);
-      if (Number.isFinite(num)) {
-        lockKeys.add(num);
-      }
+      if (Number.isFinite(num)) lockKeys.add(num);
 
       lockKeys.add(str);
     };
@@ -209,8 +204,7 @@ export class QqcTimerEffectService {
   } {
     const activeIndex = params.targetIndex ?? params.currentQuestionIndex ?? 0;
     const i0 = params.normalizeIndex(activeIndex);
-    const q =
-      params.questions?.[i0] ??
+    const q = params.questions?.[i0] ??
       (params.currentQuestionIndex === i0 ? params.currentQuestion : undefined);
 
     // Collect canonical snapshot and robust lock keys
@@ -220,7 +214,7 @@ export class QqcTimerEffectService {
       optionsToDisplay: params.optionsToDisplay,
       sharedOptionBindings: params.sharedOptionBindings,
       currentQuestionIndex: params.currentQuestionIndex,
-      currentQuestion: params.currentQuestion,
+      currentQuestion: params.currentQuestion
     });
 
     // Reveal feedback, lock, and disable options
@@ -229,7 +223,7 @@ export class QqcTimerEffectService {
     }, {
       revealFeedbackForAllOptions: params.revealFeedbackForAllOptions,
       forceDisableSharedOption: params.forceDisableSharedOption,
-      updateBindingsAndOptions: params.updateBindingsAndOptions,
+      updateBindingsAndOptions: params.updateBindingsAndOptions
     });
 
     // Announce completion to listeners
@@ -295,7 +289,7 @@ export class QqcTimerEffectService {
     return {
       explanationToDisplay,
       timedOut: true,
-      timerStoppedForQuestion: true,
+      timerStoppedForQuestion: true
     };
   }
 
@@ -331,7 +325,7 @@ export class QqcTimerEffectService {
       optionsToDisplay: params.optionsToDisplay,
       sharedOptionBindings: params.sharedOptionBindings,
       currentQuestionIndex: params.currentQuestionIndex,
-      currentQuestion: params.currentQuestion,
+      currentQuestion: params.currentQuestion
     });
 
     this.applyLocksAndDisableForQuestion(i0, canonicalOpts, lockKeys, {
@@ -339,7 +333,7 @@ export class QqcTimerEffectService {
     }, {
       revealFeedbackForAllOptions: params.revealFeedbackForAllOptions,
       forceDisableSharedOption: params.forceDisableSharedOption,
-      updateBindingsAndOptions: params.updateBindingsAndOptions,
+      updateBindingsAndOptions: params.updateBindingsAndOptions
     });
 
     if (params.reason !== 'timeout') {
@@ -351,7 +345,7 @@ export class QqcTimerEffectService {
     params.markForCheck();
     params.detectChanges();
 
-    return true; // timerStoppedForQuestion = true
+    return true;  // timerStoppedForQuestion = true
   }
 
   /**
@@ -386,7 +380,7 @@ export class QqcTimerEffectService {
           onStop: (elapsed) => {
             (this.timerService as any).elapsedTimes ||= [];
             (this.timerService as any).elapsedTimes[idx] = elapsed ?? 0;
-          },
+          }
         });
       }
     }, 0);
@@ -491,9 +485,7 @@ export class QqcTimerEffectService {
     const ets = this.explanationTextService;
 
     // Wait if the explanation gate is still locked
-    if (ets._fetLocked) {
-      await new Promise(res => setTimeout(res, 60));
-    }
+    if (ets._fetLocked) await new Promise(res => setTimeout(res, 60));
 
     // PREFER cached FET
     const cachedFet = params.formattedByIndex.get(i0)
@@ -566,7 +558,7 @@ export class QqcTimerEffectService {
         useCache: true,
         setCache: true,
         timeoutMs: 6000,
-        updateExplanationText: params.updateExplanationText,
+        updateExplanationText: params.updateExplanationText
       });
 
       const out = (clean ?? '').toString().trim();
@@ -616,9 +608,6 @@ export class QqcTimerEffectService {
         questionIndex: params.currentQuestionIndex,
       });
 
-      if (!stopped) {
-      }
-
       return { optionsToDisplay: updatedOptions, stopped: !!stopped };
     } catch (error) {
       return { optionsToDisplay: params.optionsToDisplay, stopped: false };
@@ -661,7 +650,7 @@ export class QqcTimerEffectService {
 
     return {
       feedbackText: '',
-      displayExplanation: true,
+      displayExplanation: true
     };
   }
 
@@ -692,7 +681,7 @@ export class QqcTimerEffectService {
         currentQuestion: params.currentQuestion,
         formattedByIndex: params.formattedByIndex,
         fixedQuestionIndex: params.fixedQuestionIndex,
-        updateExplanationText: params.updateExplanationText,
+        updateExplanationText: params.updateExplanationText
       });
 
       return { formattedText, needsAsyncRepair };
