@@ -147,7 +147,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   isNextButtonEnabled = false;
   isContentAvailable$: Observable<boolean>;
 
-  animationState$ = new BehaviorSubject<AnimationState>('none');
+  animationStateSig = signal<AnimationState>('none');
   unsubscribe$ = new Subject<void>();
   destroy$ = new Subject<void>();
 

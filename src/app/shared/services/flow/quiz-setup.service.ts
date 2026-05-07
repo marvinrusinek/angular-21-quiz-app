@@ -392,7 +392,7 @@ export class QuizSetupService {
     const leavingDotClass = host.getDotClass(host.currentQuestionIndex);
     if (leavingDotClass.includes('correct')) this.quizPersistence.setPersistedDotStatus(host.quizId, host.currentQuestionIndex, 'correct');
     else if (leavingDotClass.includes('wrong')) this.quizPersistence.setPersistedDotStatus(host.quizId, host.currentQuestionIndex, 'wrong');
-    host.animationState$.next('animationStarted');
+    host.animationStateSig.set('animationStarted');
     this.selectedOptionService.setAnswered(false);
     this.quizStateService.resetInteraction();
     if (direction === 'next') {
