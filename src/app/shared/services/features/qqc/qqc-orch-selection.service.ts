@@ -32,11 +32,11 @@ export class QqcOrchSelectionService {
         const r = host.optionSelection.handleOptionClicked({
           currentQuestion: q,
           optionIndex: idx,
-          currentQuestionIndex: host.currentQuestionIndex(),
+          currentQuestionIndex: host.currentQuestionIndex()
         });
         if (r) host.cdRef.markForCheck();
       },
-      updateExplanationTextFn: (idx: number) => host.updateExplanationText(idx),
+      updateExplanationTextFn: (idx: number) => host.updateExplanationText(idx)
     });
     if (!result) return;
     host.selectedOption = result.selectedOption;
@@ -71,7 +71,7 @@ export class QqcOrchSelectionService {
       currentQuestionIndex: idx,
       formatted: computed.formatted,
       correctAnswersText: computed.correctAnswersText,
-      questionType: computed.questionType,
+      questionType: computed.questionType
     });
     host.displayStateSubject?.next({ mode: 'explanation', answered: true });
     host.displayExplanation = true;
@@ -94,7 +94,7 @@ export class QqcOrchSelectionService {
       questionIndex: lockedIndex,
       quizId: host.quizId()!,
       lastAllCorrect: host._lastAllCorrect,
-      currentQuestionIndex: host.currentQuestionIndex(),
+      currentQuestionIndex: host.currentQuestionIndex()
     });
     await host.finalizeSelection(opt, idx, wasPreviouslySelected);
     host.optionSelected.emit(sel);
@@ -103,7 +103,11 @@ export class QqcOrchSelectionService {
     host.cdRef.markForCheck();
   }
 
-  async runPerformInitialSelectionFlow(host: Host, event: any, option: SelectedOption): Promise<void> {
+  async runPerformInitialSelectionFlow(
+    host: Host, 
+    event: any, 
+    option: SelectedOption
+  ): Promise<void> {
     const prevSelected = !!option.selected;
     host.optionSelection.updateOptionSelection(event, option, host.currentQuestionIndex());
     await host.handleOptionSelection(option, event.index, host.currentQuestion()!);
@@ -113,7 +117,7 @@ export class QqcOrchSelectionService {
       prevSelected,
       nowSelected,
       option,
-      currentQuestionIndex: host.currentQuestionIndex(),
+      currentQuestionIndex: host.currentQuestionIndex()
     });
     host.optionSelection.handleSelectionTransitionAndMessage({
       prevSelected,
@@ -122,7 +126,7 @@ export class QqcOrchSelectionService {
       currentQuestionIndex: host.currentQuestionIndex(),
       optionsToDisplay: host.optionsToDisplay(),
       currentQuestionOptions: host.currentQuestion()?.options,
-      isAnswered: host.isAnswered as boolean,
+      isAnswered: host.isAnswered as boolean
     });
   }
 
@@ -131,7 +135,7 @@ export class QqcOrchSelectionService {
     const result = host.feedbackManager.applyFeedbackIfNeeded({
       option,
       optionsToDisplay: host.optionsToDisplay(),
-      showFeedbackForOption: host.showFeedbackForOption,
+      showFeedbackForOption: host.showFeedbackForOption
     });
     if (!result) return;
     host.showFeedbackForOption = result.showFeedbackForOption;
@@ -179,10 +183,10 @@ export class QqcOrchSelectionService {
           currentQuestionIndex: host.currentQuestionIndex(),
           quizId: host.quizId()!,
           lastAllCorrect: host._lastAllCorrect,
-          getExplanationText: (idx: number) => host.explanationManager.getExplanationText(idx),
+          getExplanationText: (idx: number) => host.explanationManager.getExplanationText(idx)
         }),
       handleOptionSelection: (opt: SelectedOption, idx: number, q: QuizQuestion) =>
-        host.handleOptionSelection(opt, idx, q),
+        host.handleOptionSelection(opt, idx, q)
     });
     if (!result) return;
     host.updateExplanationDisplay(result.shouldDisplay);
@@ -190,7 +194,7 @@ export class QqcOrchSelectionService {
     host.timerEffect.stopTimerIfAllCorrectSelected({
       currentQuestionIndex: host.currentQuestionIndex(),
       questions: host.questions,
-      optionsToDisplay: host.optionsToDisplay(),
+      optionsToDisplay: host.optionsToDisplay()
     });
   }
 
@@ -227,7 +231,7 @@ export class QqcOrchSelectionService {
       isMultipleAnswer: host.isMultipleAnswer,
       optionsToDisplay: host.optionsToDisplay(),
       selectedOptionsCount: host.selectedOptions.length,
-      getExplanationText: (idx: number) => host.explanationManager.getExplanationText(idx),
+      getExplanationText: (idx: number) => host.explanationManager.getExplanationText(idx)
     });
     if (!result) return;
     host.showFeedbackForOption = result.showFeedbackForOption;
@@ -252,7 +256,12 @@ export class QqcOrchSelectionService {
   async runOnSubmit(host: Host): Promise<void> {
     if (!host.initializer.validateFormForSubmission(host.questionForm)) return;
     const selectedOption = host.questionForm.get('selectedOption')?.value;
-    await host.initializer.processAnswer({ selectedOption, currentQuestion: host.currentQuestion()!, currentQuestionIndex: host.currentQuestionIndex(), answers: host.answers });
+    await host.initializer.processAnswer(
+      { selectedOption,
+        currentQuestion: host.currentQuestion()!,
+        currentQuestionIndex: host.currentQuestionIndex(),
+        answers: host.answers
+      });
     host.questionAnswered.emit();
   }
 
@@ -261,7 +270,7 @@ export class QqcOrchSelectionService {
       index,
       normalizeIndex: (idx: number) => host.normalizeIndex(idx),
       optionsToDisplay: host.optionsToDisplay(),
-      currentQuestionType: host.currentQuestion()?.type,
+      currentQuestionType: host.currentQuestion()?.type
     });
   }
 }
