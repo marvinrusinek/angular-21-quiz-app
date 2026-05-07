@@ -1,19 +1,17 @@
 import { Injectable, signal } from '@angular/core';
-import {
-  combineLatest, Observable, of
-} from 'rxjs';
+import { combineLatest, Observable } from 'rxjs';
 import {
   distinctUntilChanged, filter, map, shareReplay, startWith, switchMap
 } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { ExplanationTextService, FETPayload } from '../explanation/explanation-text.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizNavigationService } from '../../flow/quiz-navigation.service';
 import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { ExplanationTextService, FETPayload } from '../explanation/explanation-text.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuizContentDisplayService {
@@ -39,11 +37,11 @@ export class QuizContentDisplayService {
   fetToDisplay$!: Observable<string>;
 
   constructor(
+    private explanationTextService: ExplanationTextService,
     private quizService: QuizService,
     private quizNavigationService: QuizNavigationService,
-    private quizStateService: QuizStateService,
-    private explanationTextService: ExplanationTextService,
     private quizQuestionManagerService: QuizQuestionManagerService,
+    private quizStateService: QuizStateService,
     private selectedOptionService: SelectedOptionService
   ) {}
 
@@ -274,17 +272,13 @@ export class QuizContentDisplayService {
       lastInteractedIdx === safeIdx ||
       safeSelections.length > 0 ||
       isResolved;
-    if (!hasInteracted && !isTimedOut) {
-      shouldShowExplanation = false;
-    }
+    if (!hasInteracted && !isTimedOut) shouldShowExplanation = false;
 
     // When navigating backwards (Previous button), show question text
     // UNLESS the question was previously answered / resolved — in that
     // case we want the FET to persist so the user sees their prior result.
     const hasPriorAnswer = wasPreviouslyAnswered || isResolved || safeSelections.length > 0;
-    if (isNavBack && !hasPriorAnswer) {
-      shouldShowExplanation = false;
-    }
+    if (isNavBack && !hasPriorAnswer) shouldShowExplanation = false;
 
     // DIRECT OIS BYPASS: If OIS has already confirmed all correct answers
     // are selected, trust it — but validate against pristine data first
@@ -362,7 +356,8 @@ export class QuizContentDisplayService {
             }
             if (!effectiveQuizId) {
               try {
-                const shuffleKeys = Object.keys(localStorage).filter((k: string) => k.startsWith('shuffleState:'));
+                const shuffleKeys = 
+                  Object.keys(localStorage).filter((k: string) => k.startsWith('shuffleState:'));
                 if (shuffleKeys.length > 0) {
                   effectiveQuizId = shuffleKeys[0].replace('shuffleState:', '');
                 }
@@ -375,9 +370,7 @@ export class QuizContentDisplayService {
               }
             }
           }
-          if (scored) {
-            shouldShowExplanation = true;
-          }
+          if (scored) shouldShowExplanation = true;
         }
         // Also check fetBypassForQuestion — set by SOC before scoring
         if (!shouldShowExplanation) {
@@ -389,10 +382,10 @@ export class QuizContentDisplayService {
     }
 
     // FINAL HARD GUARD: authoritative check via hasClickedInSession.
-    // This Set only grows on real user clicks or refresh-of-answered,
-    // so it's immune to sessionStorage contamination affecting other
-    // flags. If the user hasn't clicked this idx in this session and
-    // it wasn't just timed out, force question text.
+    // This Set only grows on real user clicks or refresh-of-answered, so it's
+    // immune to sessionStorage contamination affecting other flags. If the user
+    // hasn't clicked this idx in this session and it wasn't just timed out, 
+    // force question text.
     const hasClickedThisIdx = this.quizStateService.hasClickedInSession?.(safeIdx) ?? false;
     if (shouldShowExplanation && !isTimedOut && !hasClickedThisIdx) {
       shouldShowExplanation = false;
@@ -437,8 +430,7 @@ export class QuizContentDisplayService {
           }
           // Live question options
           const liveOpts: any[] = Array.isArray(liveQForGate?.options)
-            ? liveQForGate.options
-            : [];
+            ? liveQForGate.options : [];
           for (const o of liveOpts) {
             const isSel = o?.selected === true
               || o?.highlight === true
@@ -480,7 +472,8 @@ export class QuizContentDisplayService {
               }
               // Also check fetBypassForQuestion
               if (!scoringOverrideGate) {
-                scoringOverrideGate = this.explanationTextService.fetBypassForQuestion?.get(safeIdx) === true;
+                scoringOverrideGate =
+                  this.explanationTextService.fetBypassForQuestion?.get(safeIdx) === true;
               }
             } catch { /* ignore */ }
             if (!scoringOverrideGate) {
@@ -538,9 +531,8 @@ export class QuizContentDisplayService {
       // to question text — that would cause the visible FET to flicker
       // back to the question on every stray emission.
       const regenerated = this.regenerateFetForIndex(safeIdx);
-      if (regenerated) {
-        return regenerated;
-      }
+      if (regenerated) return regenerated;
+      
       // Last resort: return empty string so the subscribeToDisplayText
       // guard preserves the previously cached FET in the DOM rather than
       // overwriting it with question text.
@@ -577,7 +569,7 @@ export class QuizContentDisplayService {
         )
       ),
       distinctUntilChanged(),
-      shareReplay({ bufferSize: 1, refCount: true }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
   }
 
@@ -611,17 +603,13 @@ export class QuizContentDisplayService {
 
         // Allow display if: Resolved OR TimedOut
         if (resolved || timedOut) {
-          if (text.length > 0) {
-            return text;
-          }
+          if (text.length > 0) return text;
+          
           // Fallback if formatted text is missing
-          if (question && question.explanation) {
-            return question.explanation;
-          }
+          if (question && question.explanation) return question.explanation;
         }
         return '';
       }),
-
       distinctUntilChanged(),
       shareReplay({ bufferSize: 1, refCount: true })
     );
