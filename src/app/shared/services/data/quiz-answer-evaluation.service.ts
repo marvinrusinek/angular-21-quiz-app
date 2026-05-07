@@ -4,7 +4,6 @@ import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { QuizOptionsService } from './quiz-options.service';
-import { QuizScoringService } from './quiz-scoring.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 
 /**
@@ -17,7 +16,6 @@ export class QuizAnswerEvaluationService {
 
   constructor(
     private optionsService: QuizOptionsService,
-    private scoringService: QuizScoringService,
     private injector: Injector
   ) {}
 
