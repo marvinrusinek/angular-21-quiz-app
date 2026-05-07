@@ -2,13 +2,11 @@ import { Injectable, Optional } from '@angular/core';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { ParamMap } from '@angular/router';
 import {
-  BehaviorSubject, combineLatest, firstValueFrom,
-  forkJoin, Observable, of, Subject
+  BehaviorSubject, combineLatest, firstValueFrom, forkJoin, Observable, of, Subject
 } from 'rxjs';
 import {
-  catchError, debounceTime, distinctUntilChanged, filter, map,
-  shareReplay, startWith, switchMap, take, takeUntil,
-  tap, withLatestFrom
+  catchError, distinctUntilChanged, filter, map, shareReplay, startWith, 
+  switchMap, take, takeUntil, tap, withLatestFrom
 } from 'rxjs/operators';
 
 import { CombinedQuestionDataType } from '../../../models/CombinedQuestionDataType.model';
@@ -46,9 +44,8 @@ export class CqcOrchestratorService {
       const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       isPageRefresh = navEntries.length > 0 && navEntries[0].type === 'reload';
     } catch { /* ignore */ }
-    if (!isPageRefresh) {
-      host.quizStateService._hasUserInteracted?.clear();
-    }
+    if (!isPageRefresh) host.quizStateService._hasUserInteracted?.clear();
+
     host.quizStateService.resetInteraction();
 
     host.setupQuestionResetSubscription();
@@ -98,9 +95,8 @@ export class CqcOrchestratorService {
           ? ((host.explanationTextService.formattedExplanations?.[idx]?.explanation ?? '').trim()
             || ((host.explanationTextService as any).fetByIndex?.get(idx) ?? '').trim())
           : '';
-        if (cachedFet) {
-          intended = cachedFet;
-        }
+        if (cachedFet) intended = cachedFet;
+        
         // No cached FET — try on-the-fly if quiz data is available
         if (!intended) {
           try {
@@ -184,9 +180,7 @@ export class CqcOrchestratorService {
             // from Q(N), if qText briefly emptied, this branch would
             // restore Q(N)'s FET — exactly the FET->q-txt flash bug.
             const restore = computeIntendedQText();
-            if (restore) {
-              this.fetGuard.writeQText(host, restore);
-            }
+            if (restore) this.fetGuard.writeQText(host, restore);
           }, 80);
         });
         observer.observe(el, { childList: true, characterData: true, subtree: true });
@@ -240,9 +234,7 @@ export class CqcOrchestratorService {
             if (correctIndices.length > 0) {
               fetHtml = host.explanationTextService.formatExplanation(q, correctIndices, q.explanation);
             }
-            if (!fetHtml) {
-              fetHtml = q.explanation || '';
-            }
+            if (!fetHtml) fetHtml = q.explanation || '';
             if (fetHtml) {
               // Guard the delayed writes against the user navigating away
               // before they fire. Read from the input signal directly —
@@ -384,16 +376,14 @@ export class CqcOrchestratorService {
       );
 
       const [questions, explanationTexts] = data;
-
-      if (!questions || questions.length === 0) {
-        // No questions found
-        return;
-      }
+      if (!questions || questions.length === 0) return;  // no questions found
 
       host.explanationTexts = explanationTexts;
 
       host.quizService.questions = questions;
-      if (host.quizService.questions$ instanceof BehaviorSubject || host.quizService.questions$ instanceof Subject) {
+      if (host.quizService.questions$ instanceof BehaviorSubject || 
+        host.quizService.questions$ instanceof Subject
+      ) {
         (host.quizService.questions$ as unknown as Subject<QuizQuestion[]>).next(questions);
       }
 
@@ -413,8 +403,7 @@ export class CqcOrchestratorService {
     host.setQuizId(params.get('quizId') ?? '');
     const qid = host.quizId();
     if (!qid) {
-      // No quizId provided
-      return of([[], []] as [QuizQuestion[], string[]]);
+      return of([[], []] as [QuizQuestion[], string[]]);  // no quizId provided
     }
 
     return forkJoin([
@@ -427,7 +416,7 @@ export class CqcOrchestratorService {
         catchError((error: Error) => {
           return of([] as string[]);
         })
-      ),
+      )
     ]).pipe(
       map((results: any) => {
         const [questions, explanationTexts] = results;
@@ -437,9 +426,7 @@ export class CqcOrchestratorService {
   }
 
   runUpdateCorrectAnswersDisplay(host: Host, question: QuizQuestion | null): Observable<void> {
-    if (!question) {
-      return of(void 0);
-    }
+    if (!question) return of(void 0);
 
     return host.quizQuestionManagerService
       .isMultipleAnswerQuestion(question)
@@ -472,8 +459,7 @@ export class CqcOrchestratorService {
     const currentQuizAndOptions$ = host.combineCurrentQuestionAndOptions();
 
     currentQuizAndOptions$.pipe(takeUntil(host.destroy$)).subscribe({
-      next: (data: any) => {
-      },
+      next: (data: any) => {},
       error: () => { }
     });
 
@@ -583,17 +569,9 @@ export class CqcOrchestratorService {
       filter(({ payload, index }: { payload: QuestionPayload; index: number }) => {
         const expected =
           Array.isArray(host.questions()) && index >= 0
-            ? (host.questions()[index] ?? null)
-            : null;
+            ? (host.questions()[index] ?? null) : null;
 
         if (!expected) return true;
-
-        const normalizedExpected = host.normalizeKeySource(expected.questionText);
-        const normalizedIncoming = host.normalizeKeySource(payload.question?.questionText);
-
-        if (normalizedExpected && normalizedIncoming && normalizedExpected !== normalizedIncoming) {
-          // Mismatch detected but allowing update for shuffled text
-        }
 
         return true;
       }),
@@ -686,8 +664,7 @@ export class CqcOrchestratorService {
     const totalOptions = Array.isArray(currentOptions)
       ? currentOptions.length
       : Array.isArray(currentQuestion?.options)
-        ? currentQuestion.options.length
-        : 0;
+        ? currentQuestion.options.length : 0;
 
     const isMultipleAnswerQuestion =
       currentQuestion.type === QuestionType.MultipleAnswer ||
@@ -697,7 +674,9 @@ export class CqcOrchestratorService {
 
     const correctAnswersText =
       isMultipleAnswerQuestion && normalizedCorrectCount > 0
-        ? host.quizQuestionManagerService.getNumberOfCorrectAnswersText(normalizedCorrectCount, totalOptions)
+        ? host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
+          normalizedCorrectCount, totalOptions
+        )
         : '';
 
     const explanationText = isExplanationDisplayed
@@ -728,13 +707,13 @@ export class CqcOrchestratorService {
         startWith(false),
         map((value: boolean) => value ?? false),
         distinctUntilChanged()
-      ),
+      )
     ]).pipe(
       map((arr: any) => !!arr[0] && !arr[1]),
       distinctUntilChanged(),
       catchError((error: Error) => {
         return of(false);
-      }),
+      })
     );
 
     host.displayCorrectAnswersText$ = host.shouldDisplayCorrectAnswers$.pipe(
