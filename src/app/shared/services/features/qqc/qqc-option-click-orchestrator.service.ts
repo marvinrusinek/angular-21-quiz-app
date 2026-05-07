@@ -4,12 +4,12 @@ import { Option } from '../../../models/Option.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionType } from '../../../models/question-type.enum';
-import { SelectedOptionService } from '../../state/selectedoption.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
-import { QuizStateService } from '../../state/quizstate.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
+import { QuizStateService } from '../../state/quizstate.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
+import { SelectionMessageService } from '../selection-message/selection-message.service';
 
 /**
  * Manages option click orchestration: canonical option building, multi-answer
@@ -26,12 +26,12 @@ export class QqcOptionClickOrchestratorService {
   private _multiAnswerSelections = new Map<number, Set<number>>();
 
   constructor(
+    private nextButtonStateService: NextButtonStateService,
     private selectedOptionService: SelectedOptionService,
     private selectionMessageService: SelectionMessageService,
-    private nextButtonStateService: NextButtonStateService,
-    private quizStateService: QuizStateService,
     private quizService: QuizService,
-    private quizShuffleService: QuizShuffleService
+    private quizShuffleService: QuizShuffleService,
+    private quizStateService: QuizStateService
   ) {}
 
   /**
@@ -86,13 +86,11 @@ export class QqcOptionClickOrchestratorService {
    * Determines if a question should use multi-answer selection logic.
    */
   isMultiForSelection(question: QuizQuestion | undefined): boolean {
-    if (!question) {
-      return false;
-    }
+    if (!question) return false;
+
     const typeMatch = question.type === QuestionType.MultipleAnswer;
     const correctCount = (question.options?.filter((o: any) => o.correct === true || String(o.correct) === 'true').length ?? 0);
-    const result = typeMatch || correctCount > 1;
-    return result;
+    return (typeMatch || correctCount > 1);
   }
 
   /**
@@ -150,9 +148,7 @@ export class QqcOptionClickOrchestratorService {
             .filter((t: string) => !!t)
         );
         question.options.forEach((o: any, i: number) => {
-          if (pristineCorrectTexts.has(nrm(o?.text))) {
-            correctIndices.push(i);
-          }
+          if (pristineCorrectTexts.has(nrm(o?.text))) correctIndices.push(i);
         });
       }
     } catch { /* ignore */ }
@@ -220,7 +216,7 @@ export class QqcOptionClickOrchestratorService {
       return {
         ...o,
         optionId: (o.optionId != null && String(o.optionId) !== '-1') ? Number(o.optionId) : i,
-        selected: isSelected,
+        selected: isSelected
       };
     });
 
@@ -382,7 +378,7 @@ export class QqcOptionClickOrchestratorService {
     let origIdx = this.quizShuffleService.toOriginalIndex(params.quizId, qIdx);
     let pristine = (origIdx !== null) ? this.quizService.getPristineQuestion(origIdx) : null;
 
-    // 🧪 ROBUSTNESS FIX: Try to find origIdx by question text if mapping fails
+    // Try to find origIdx by question text if mapping fails
     if (!pristine && params.questionText) {
       const canonical = this.quizService.quizDataLoader.getCanonicalQuestions(params.quizId);
       const normalize = (s: string) => s.replace(/\s/g, '').toLowerCase();
@@ -420,7 +416,7 @@ export class QqcOptionClickOrchestratorService {
     // Resolve pristine question (for potential correctness validation)
     this.resolvePristineQuestion({
       quizId: resolvedQuizId,
-      questionText: params.question?.questionText,
+      questionText: params.question?.questionText
     });
 
     await params.generateFeedbackText(params.question);
@@ -509,7 +505,7 @@ export class QqcOptionClickOrchestratorService {
       optionsToDisplay,
       evtIdx,
       checked,
-      questionIndex,
+      questionIndex
     });
 
     const isMultiForSelection = this.isMultiForSelection(question);
@@ -526,7 +522,7 @@ export class QqcOptionClickOrchestratorService {
         questionIndex,
         evtIdx,
         checked,
-        question,
+        question
       });
 
       if (allCorrectSelected) {
@@ -543,7 +539,7 @@ export class QqcOptionClickOrchestratorService {
       questionIndex,
       evtIdx,
       evtOpt,
-      checked,
+      checked
     });
 
     // Apply option locks
@@ -551,7 +547,7 @@ export class QqcOptionClickOrchestratorService {
       questionIndex,
       evtOpt,
       question,
-      optionsToDisplay,
+      optionsToDisplay
     });
 
     const selectedKeysSet = this.buildSelectedKeysSet(canonicalOpts);
@@ -564,7 +560,7 @@ export class QqcOptionClickOrchestratorService {
       questionType: question?.type,
       optionsNow,
       canonicalOpts,
-      msgTok,
+      msgTok
     });
 
     // Compute correctness
@@ -573,7 +569,7 @@ export class QqcOptionClickOrchestratorService {
       question,
       questionIndex,
       evtOpt,
-      isMultiForSelection,
+      isMultiForSelection
     });
 
     // Apply correctness state to services
@@ -587,7 +583,7 @@ export class QqcOptionClickOrchestratorService {
       allCorrect,
       enableNext,
       hasAnySelection,
-      msgTok,
+      msgTok
     };
   }
 
@@ -609,7 +605,7 @@ export class QqcOptionClickOrchestratorService {
       questionType: params.questionType ?? QuestionType.SingleAnswer,
       options: params.optionsNow,
       canonicalOptions: params.canonicalOpts as any[],
-      token: params.msgTok,
+      token: params.msgTok
     });
   }
 }
