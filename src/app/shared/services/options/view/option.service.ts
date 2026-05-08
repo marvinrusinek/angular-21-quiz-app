@@ -1,17 +1,17 @@
 import { Injectable } from '@angular/core';
+
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class OptionService {
   /**
    * Use the same key shape everywhere (STRING so we don't lose non-numeric ids)
    * Stable per-row key: prefer numeric optionId; fallback to stableKey + index
    */
   keyOf(o: Option, i: number): string {
-    const idPart = (o && o.optionId != null && o.optionId !== -1) ? String(o.optionId) : 'opt';
+    const idPart = 
+      (o && o.optionId != null && o.optionId !== -1) ? String(o.optionId) : 'opt';
     return `${idPart}-${i}`;
   }
 
@@ -29,12 +29,9 @@ export class OptionService {
     const option = binding.option;
     if (option.showIcon === false) { return ''; }
 
-    if (option.correct) {
-      return 'check';
-    }
-    if (binding.isSelected && !option.correct) {
-      return 'close';
-    }
+    if (option.correct) return 'check';
+    if (binding.isSelected && !option.correct) return 'close';
+
     return '';
   }
 
@@ -77,10 +74,8 @@ export class OptionService {
     isDisabled: boolean,
     timerExpiredForQuestion: boolean
   ): string {
-    if (isDisabled || timerExpiredForQuestion) {
-      return 'default';
-    }
+    if (isDisabled || timerExpiredForQuestion) return 'default';
+
     return 'pointer';
   }
-
 }
