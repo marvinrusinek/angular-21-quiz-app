@@ -35,9 +35,7 @@ export class OptionIdResolverService {
       if (rawNumeric !== null) {
         if (rawNumeric > 100) {
           const syntheticQIdx = Math.floor(rawNumeric / 100) - 1;
-          if (syntheticQIdx === questionIndex) {
-            return null;
-          }
+          if (syntheticQIdx === questionIndex) return null;
         }
         return rawNumeric;
       }
@@ -51,9 +49,7 @@ export class OptionIdResolverService {
     };
 
     const options = this.getKnownOptions(questionIndex);
-    if (options.length === 0) {
-      return parseFallbackNumber();
-    }
+    if (options.length === 0) return parseFallbackNumber();
 
     const normalize = this.buildNormalizer();
     const inBounds = (index: number | undefined) =>
@@ -87,16 +83,12 @@ export class OptionIdResolverService {
       if (option?.optionId !== null && option?.optionId !== undefined && String(option.optionId) !== '-1') {
         lookupById.set(option.optionId, index);
         const numericId = toFiniteNumber(option.optionId);
-        if (numericId !== null) {
-          lookupById.set(numericId, index);
-        }
+        if (numericId !== null) lookupById.set(numericId, index);
         lookupById.set(String(option.optionId), index);
       }
       for (const field of aliasFields) {
         const key = normalize((option as unknown as Record<string, unknown>)?.[field]);
-        if (key) {
-          lookupByAlias.set(key, index);
-        }
+        if (key) lookupByAlias.set(key, index);
       }
       lookupByAlias.set(normalize(buildStableKey(option)), index);
       index++;
@@ -105,36 +97,26 @@ export class OptionIdResolverService {
     if (rawId !== undefined && rawId !== null) {
       const rawNumeric = toFiniteNumber(rawId);
       const candidates: Array<string | number> = [rawId, String(rawId)];
-      if (rawNumeric !== null) {
-        candidates.push(rawNumeric);
-      }
+      if (rawNumeric !== null) candidates.push(rawNumeric);
       for (const candidate of candidates) {
         const match = lookupById.get(candidate as any);
-        if (match !== undefined) {
-          return resolveFromIndex(match);
-        }
+        if (match !== undefined) return resolveFromIndex(match);
       }
       if (rawNumeric !== null) {
         if (inBounds(rawNumeric) && fallbackIndex === undefined) {
           return rawNumeric;
         }
         const zeroBased = rawNumeric - 1;
-        if (inBounds(zeroBased)) {
-          return zeroBased;
-        }
+        if (inBounds(zeroBased)) return zeroBased;
       }
     }
 
     if (normalizedHint) {
       const match = lookupByAlias.get(normalizedHint);
-      if (match !== undefined) {
-        return resolveFromIndex(match);
-      }
+      if (match !== undefined) return resolveFromIndex(match);
     }
 
-    if (inBounds(fallbackIndex)) {
-      return resolveFromIndex(fallbackIndex!);
-    }
+    if (inBounds(fallbackIndex)) return resolveFromIndex(fallbackIndex!);
 
     return null;
   }
@@ -144,17 +126,15 @@ export class OptionIdResolverService {
     option: SelectedOption,
     fallbackIndex?: number | string
   ): SelectedOption {
-    if (!option) {
-      return option;
-    }
+    if (!option) return option;
+
     const canonicalId = this.resolveCanonicalOptionId(
       questionIndex,
       option.optionId,
       fallbackIndex
     );
-    if (canonicalId === null || canonicalId === option.optionId) {
-      return option;
-    }
+    if (canonicalId === null || canonicalId === option.optionId) return option;
+    
     return {
       ...option,
       optionId: canonicalId
@@ -169,9 +149,8 @@ export class OptionIdResolverService {
     const seenKeys = new Set<string>();
 
     for (const selection of selections ?? []) {
-      if (!selection) {
-        continue;
-      }
+      if (!selection) continue;
+
       const canonicalSelection = this.canonicalizeOptionForQuestion(
         questionIndex,
         selection,
@@ -180,13 +159,11 @@ export class OptionIdResolverService {
       if (
         canonicalSelection?.optionId === undefined ||
         canonicalSelection.optionId === null
-      ) {
-        continue;
-      }
+      ) continue;
+      
       const key = `${canonicalSelection.optionId}|${canonicalSelection.displayIndex ?? (selection as any).index ?? -1}`;
-      if (seenKeys.has(key)) {
-        continue;
-      }
+      if (seenKeys.has(key)) continue;
+
       seenKeys.add(key);
       canonical.push(canonicalSelection);
     }
@@ -200,9 +177,7 @@ export class OptionIdResolverService {
     text: string,
     aliasFields?: string[]
   ): { option: Option; index: number } | null {
-    if (!Array.isArray(options) || options.length === 0) {
-      return null;
-    }
+    if (!Array.isArray(options) || options.length === 0) return null;
 
     const fields = aliasFields ?? this.getAliasFields();
     const normalize = this.buildNormalizer();
@@ -264,21 +239,16 @@ export class OptionIdResolverService {
         byId.set(o.id, i);
       }
       const t = this.normalizeStr(o.text);
-      if (t) {
-        byText.set(t, i);
-      }
+      if (t) byText.set(t, i);
+
       const v = this.normalizeStr(o.value);
-      if (v) {
-        byValue.set(v, i);
-      }
+      if (v) byValue.set(v, i);
     }
 
     const explicitIndex = selection?.index ?? selection?.idx;
     if (explicitIndex !== undefined && explicitIndex !== null && Number.isFinite(explicitIndex)) {
       const n = Number(explicitIndex);
-      if (n >= 0 && n < options.length) {
-        return n;
-      }
+      if (n >= 0 && n < options.length) return n;
     }
 
     if (
@@ -288,9 +258,7 @@ export class OptionIdResolverService {
       String(selection.optionId) !== '-1'
     ) {
       const hit = byId.get(selection.optionId);
-      if (hit !== undefined) {
-        return hit;
-      }
+      if (hit !== undefined) return hit;
     }
     if (
       'id' in selection &&
@@ -299,25 +267,19 @@ export class OptionIdResolverService {
       String(selection.id) !== '-1'
     ) {
       const hit = byId.get(selection.id);
-      if (hit !== undefined) {
-        return hit;
-      }
+      if (hit !== undefined) return hit;
     }
 
     const sText = this.normalizeStr(selection?.text);
     if (sText) {
       const hit = byText.get(sText);
-      if (hit !== undefined) {
-        return hit;
-      }
+      if (hit !== undefined) return hit;
     }
 
     const sValue = this.normalizeStr(selection?.value);
     if (sValue) {
       const hit = byValue.get(sValue);
-      if (hit !== undefined) {
-        return hit;
-      }
+      if (hit !== undefined) return hit;
     }
 
     return null;
@@ -353,61 +315,53 @@ export class OptionIdResolverService {
   }
 
   normalizeOptionId(id: unknown): string | null {
-    if (typeof id === 'number') {
-      return Number.isFinite(id) ? String(id) : null;
-    }
+    if (typeof id === 'number') return Number.isFinite(id) ? String(id) : null;
+
     if (typeof id === 'string') {
       const trimmed = id.trim();
       return trimmed.length > 0 ? trimmed : null;
     }
+    
     return null;
   }
 
   extractNumericId(id: unknown): number | null {
-    if (typeof id === 'number' && Number.isFinite(id)) {
-      return id;
-    }
+    if (typeof id === 'number' && Number.isFinite(id)) return id;
+
     if (typeof id === 'string') {
       const parsed = Number(id);
       return Number.isFinite(parsed) ? parsed : null;
     }
+    
     return null;
   }
 
   normalizeStr(x: unknown): string {
     return typeof x === 'string'
-      ? x.trim().toLowerCase().replace(/\s+/g, ' ')
-      : '';
+      ? x.trim().toLowerCase().replace(/\s+/g, ' ') : '';
   }
 
   normalizeQuestionIndex(index: number | null | undefined): number {
-    if (!Number.isFinite(index as number)) {
-      return -1;
-    }
+    if (!Number.isFinite(index as number)) return -1;
     const normalized = Math.trunc(index as number);
     const questions = this.quizService?.questions;
 
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return normalized;
-    }
-    if (questions[normalized] != null) {
-      return normalized;
-    }
+    if (!Array.isArray(questions) || questions.length === 0) return normalized;
+    if (questions[normalized] != null) return normalized;
+
     const potentialOneBased = normalized - 1;
     if (
       potentialOneBased >= 0 &&
       potentialOneBased < questions.length &&
       questions[potentialOneBased] != null
-    ) {
-      return potentialOneBased;
-    }
+    ) return potentialOneBased;
+    
     return Math.min(Math.max(normalized, 0), questions.length - 1);
   }
 
   normalizeIdx(idx: number): number {
-    if (!Number.isFinite(idx)) {
-      return -1;
-    }
+    if (!Number.isFinite(idx)) return -1;
+
     const n = Math.trunc(idx);
     const qs = this.quizService?.questions;
 
@@ -422,21 +376,15 @@ export class OptionIdResolverService {
   }
 
   coerceToBoolean(value: unknown): boolean {
-    if (typeof value === 'boolean') {
-      return value;
-    }
+    if (typeof value === 'boolean') return value;
+
     if (typeof value === 'string') {
       const normalized = value.trim().toLowerCase();
-      if (normalized === 'true') {
-        return true;
-      }
-      if (normalized === 'false' || normalized.length === 0) {
-        return false;
-      }
+      if (normalized === 'true') return true;
+      if (normalized === 'false' || normalized.length === 0) return false;
     }
-    if (typeof value === 'number') {
-      return value !== 0;
-    }
+    if (typeof value === 'number') return value !== 0;
+    
     return false;
   }
 
@@ -458,9 +406,8 @@ export class OptionIdResolverService {
   // ── Identity matching helpers ────────────────────────────────
 
   normKey(x: unknown): string {
-    if (x == null) {
-      return '';
-    }
+    if (x == null) return '';
+    
     return String(x).trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
@@ -469,29 +416,21 @@ export class OptionIdResolverService {
     ui: Option[] | undefined,
     cb: (canonIndex: number, uiItem: Option) => void
   ): void {
-    if (!Array.isArray(canonical) || canonical.length === 0) {
-      return;
-    }
-    if (!Array.isArray(ui) || ui.length === 0) {
-      return;
-    }
+    if (!Array.isArray(canonical) || canonical.length === 0) return;
+    if (!Array.isArray(ui) || ui.length === 0) return;
 
     const idxByKey = new Map<string, number>();
     for (let i = 0; i < canonical.length; i++) {
       const c: any = canonical[i];
       const key = this.normKey(c.optionId ?? c.id ?? c.value ?? c.text ?? i);
-      if (key) {
-        idxByKey.set(key, i);
-      }
+      if (key) idxByKey.set(key, i);
     }
 
     for (const u of ui) {
       const uu: any = u;
       const key = this.normKey(uu.optionId ?? uu.id ?? uu.value ?? uu.text);
       const i = key ? idxByKey.get(key) : undefined;
-      if (i !== undefined) {
-        cb(i, u);
-      }
+      if (i !== undefined) cb(i, u);
     }
   }
 
@@ -499,9 +438,7 @@ export class OptionIdResolverService {
     canonical: Option[],
     ui: Option[]
   ): Option[] {
-    if (!Array.isArray(canonical) || canonical.length === 0) {
-      return [];
-    }
+    if (!Array.isArray(canonical) || canonical.length === 0) return [];
     const out = canonical.map((o) => ({ ...o, selected: false }));
 
     this.forEachUiMatch(canonical, ui, (i, u) => {
@@ -526,9 +463,7 @@ export class OptionIdResolverService {
     const overlaySelections = new Map<number, Option>();
 
     const recordSelection = (option: Option, fallbackIdx?: number): void => {
-      if (!option) {
-        return;
-      }
+      if (!option) return;
 
       const resolvedIdx = this.resolveOptionIndexFromSelection(
         canonicalOptions,
@@ -542,9 +477,7 @@ export class OptionIdResolverService {
       }
     };
 
-    for (const opt of mapSelections) {
-      recordSelection(opt);
-    }
+    for (const opt of mapSelections) recordSelection(opt);
 
     const dataOptions = Array.isArray(quizService?.data?.currentOptions)
       ? quizService.data.currentOptions : [];
@@ -588,9 +521,7 @@ export class OptionIdResolverService {
   ): { canonicalOptionId: number; foundSourceOption: Option | undefined } | null {
     const normalize = this.buildNormalizer();
     const toNum = (v: unknown): number | null => {
-      if (typeof v === 'number' && Number.isFinite(v)) {
-        return v;
-      }
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
       const n = Number(String(v));
       return Number.isFinite(n) ? n : null;
     };
@@ -623,9 +554,7 @@ export class OptionIdResolverService {
         oid === optionId ||
         String(oid) === String(optionId) ||
         toNum(oid) === toNum(optionId)
-      ) {
-        indexFromId = i;
-      }
+      ) indexFromId = i;
     }
 
     const resolverHint: number | string | undefined =
@@ -656,9 +585,7 @@ export class OptionIdResolverService {
       }
     }
 
-    if (canonicalOptionId == null) {
-      return null;
-    }
+    if (canonicalOptionId == null) return null;
 
     let foundSourceOption: Option | undefined;
 
