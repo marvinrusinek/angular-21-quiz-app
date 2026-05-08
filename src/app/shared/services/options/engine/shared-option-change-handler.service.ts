@@ -143,7 +143,6 @@ export class SharedOptionChangeHandlerService {
     // BLOCK 1: Full state reset when question index or question changes
     // ---------------------------------------------------------------
     if (hasIndexChanged || hasQuestionChanged) {
-
       result.selectedOptions = 'clear';
       result.clickedOptionIds = 'clear';
       result.selectedOptionMap = 'clear';
@@ -158,7 +157,6 @@ export class SharedOptionChangeHandlerService {
       result.lastFeedbackOptionId = -1;
       result.lastFeedbackQuestionIndex = currentIdx;
       result.showFeedback = false;
-
       result.lastProcessedQuestionIndex = currentIdx;
       result.lastClickFeedback = null;
       result.feedbackDisplay = null;
@@ -299,11 +297,9 @@ export class SharedOptionChangeHandlerService {
         typeof changes['questionIndex'].currentValue === 'number');
 
     if (changes['currentQuestionIndex']) {
-
       const newIndex = changes['currentQuestionIndex'].currentValue;
       if (typeof newIndex === 'number') {
         result.lastProcessedQuestionIndex = newIndex;
-
         result.callResetStateForNewQuestion = true;
         result.highlightedOptionIds = 'clear';
         result.showFeedback = false;
@@ -320,9 +316,7 @@ export class SharedOptionChangeHandlerService {
       result.callHydrateAndGenerate = true;
 
       // Synchronize type from data-detected multi-mode
-      if (ctx.isMultiMode) {
-        result.type = 'multiple';
-      }
+      if (ctx.isMultiMode) result.type = 'multiple';
     } else if (
       changes['optionBindings'] &&
       Array.isArray(changes['optionBindings'].currentValue) &&
@@ -345,7 +339,6 @@ export class SharedOptionChangeHandlerService {
 
     // Only reset display mode when question changes
     if (questionChanged) {
-
       result.resolvedQuestionIndex = null;
 
       this.quizStateService.setDisplayState({
@@ -365,9 +358,7 @@ export class SharedOptionChangeHandlerService {
     }
 
     // Handle TYPE changes explicitly
-    if (changes['type']) {
-      result.type = changes['type'].currentValue;
-    }
+    if (changes['type']) result.type = changes['type'].currentValue;
 
     // UI cleanup ONLY when question index changes
     if (questionChanged && ctx.optionsToDisplay?.length) {
@@ -387,7 +378,6 @@ export class SharedOptionChangeHandlerService {
       result.detectChanges = true;
 
       result.callUpdateHighlighting = true;
-      // A second detectChanges is needed after updateHighlighting
     }
 
     // Full local visual reset when question changes
