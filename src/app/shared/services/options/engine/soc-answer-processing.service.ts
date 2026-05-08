@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
 
+import { Option } from '../../../models/Option.model';
+import { FeedbackProps } from '../../../models/FeedbackProps.model';
+import { QuestionType } from '../../../models/question-type.enum';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -11,17 +14,12 @@ import { OptionClickHandlerService } from './option-click-handler.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
 import { SharedOptionExplanationService } from '../../features/shared-option/shared-option-explanation.service';
 
-import { Option } from '../../../models/Option.model';
-import { FeedbackProps } from '../../../models/FeedbackProps.model';
-import { QuestionType } from '../../../models/question-type.enum';
-
 /**
  * Handles multi-answer and single-answer click processing logic.
  * Extracted from SharedOptionClickService.runOptionContentClick.
  */
 @Injectable({ providedIn: 'root' })
 export class SocAnswerProcessingService {
-
   constructor(
     private quizService: QuizService,
     private quizStateService: QuizStateService,
@@ -375,14 +373,7 @@ export class SocAnswerProcessingService {
             const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
               ?? (this.quizService as any)?.currentQuestionIndex;
             if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
-
-            const h3 = document.querySelector('codelab-quiz-content h3');
-            if (h3) {
-              const domNow = (h3.innerHTML || '').toLowerCase();
-              if (!domNow.includes('correct because')) {
-                h3.innerHTML = fetForDom;
-              }
-            }
+            this.writeFetToQuestionTextIfNeeded(fetForDom);
           } catch { /* ignore */ }
         };
         stampFet();
@@ -553,7 +544,7 @@ export class SocAnswerProcessingService {
     }
     const correctSet = new Set(correctIdxs);
 
-    // PRISTINE cross-check for single-answer
+    // Pristine cross-check for single-answer
     let pristineSingleCorrect = false;
     try {
       const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
@@ -600,7 +591,7 @@ export class SocAnswerProcessingService {
         ?? comp.getQuestionAtDisplayIndex?.(qIdx)
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx];
 
-      // SYNCHRONOUS FET write
+      // Synchronous FET write
       try {
         const singleFetCtxSync = {
           resolvedIndex: qIdx,
@@ -634,8 +625,7 @@ export class SocAnswerProcessingService {
           this.explanationTextService.lockExplanation();
           this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
         }
-      } catch (syncErr) {
-      }
+      } catch (syncErr) {}
 
       const singleFetCtx = {
         resolvedIndex: qIdx,
@@ -670,14 +660,7 @@ export class SocAnswerProcessingService {
             const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
               ?? (this.quizService as any)?.currentQuestionIndex;
             if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
-
-            const h3 = document.querySelector('codelab-quiz-content h3');
-            if (h3) {
-              const domNow = (h3.innerHTML || '').toLowerCase();
-              if (!domNow.includes('correct because')) {
-                h3.innerHTML = fetForDom;
-              }
-            }
+            this.writeFetToQuestionTextIfNeeded(fetForDom);
           } catch { /* ignore */ }
         };
         setTimeout(() => stampFet('50ms'), 50);
@@ -749,6 +732,16 @@ export class SocAnswerProcessingService {
 
       comp.cdRef?.markForCheck?.();
       comp.cdRef?.detectChanges?.();
+    }
+  }
+
+  private writeFetToQuestionTextIfNeeded(fetForDom: string): void {
+    const h3 = this.qText?.nativeElement;
+    if (!h3) return;
+  
+    const domNow = h3.innerHTML.toLowerCase();
+    if (!domNow.includes('correct because')) {
+      h3.innerHTML = fetForDom;
     }
   }
 }
