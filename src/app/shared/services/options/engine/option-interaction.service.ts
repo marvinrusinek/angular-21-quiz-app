@@ -72,8 +72,7 @@ export class OptionInteractionService {
     // the click to be attributed to the wrong question and dropped.
     const liveIdx = this.quizService?.getCurrentQuestionIndex?.();
     let qIdx = (typeof liveIdx === 'number' && Number.isFinite(liveIdx) && liveIdx >= 0)
-      ? liveIdx
-      : state.currentQuestionIndex;
+      ? liveIdx : state.currentQuestionIndex;
     // Self-heal: quizService.getCurrentQuestionIndex() can be stuck at 0
     // even when the user is on Q2/Q3. Correct qIdx by matching the live
     // currentQuestion text against quizService.questions, so confirmed
@@ -152,9 +151,7 @@ export class OptionInteractionService {
     this.quizStateService.markUserInteracted(qIdx);
 
     // Prevent propagation
-    if (event && event.stopPropagation) {
-      event.stopPropagation();
-    }
+    if (event && event.stopPropagation) event.stopPropagation();
 
     const getEffectiveId = (o: any, i: number) => (o?.optionId != null && o.optionId !== -1) ? o.optionId : i;
     const targetKey = getEffectiveId(binding.option, index);
@@ -386,9 +383,7 @@ export class OptionInteractionService {
       state.selectedOptionHistory.push(index);
     } else if (!newState) {
       const hIdx = state.selectedOptionHistory.indexOf(index);
-      if (hIdx !== -1) {
-        state.selectedOptionHistory.splice(hIdx, 1);
-      }
+      if (hIdx !== -1)  state.selectedOptionHistory.splice(hIdx, 1);
     }
 
     const correctIndicesSet = new Set<number>();
