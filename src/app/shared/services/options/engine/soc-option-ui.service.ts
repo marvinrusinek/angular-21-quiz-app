@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 
-import { SelectedOptionService } from '../../state/selectedoption.service';
-import { OptionSelectionPolicyService } from '../policy/option-selection-policy.service';
-import { OptionService } from '../view/option.service';
-import { OptionLockService } from '../policy/option-lock.service';
-
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
+import { SelectedOptionService } from '../../state/selectedoption.service';
+import { OptionLockService } from '../policy/option-lock.service';
+import { OptionSelectionPolicyService } from '../policy/option-selection-policy.service';
+import { OptionService } from '../view/option.service';
 
 /**
  * Handles option UI utility methods: selection, highlighting, binding snapshots,
@@ -15,12 +14,11 @@ import { SelectedOption } from '../../../models/SelectedOption.model';
  */
 @Injectable({ providedIn: 'root' })
 export class SocOptionUiService {
-
   constructor(
     private selectedOptionService: SelectedOptionService,
+    private optionLockService: OptionLockService,
     private optionSelectionPolicyService: OptionSelectionPolicyService,
-    private optionService: OptionService,
-    private optionLockService: OptionLockService
+    private optionService: OptionService
   ) {}
 
   handleSelection(comp: any, option: SelectedOption, index: number, optionId: number): void {

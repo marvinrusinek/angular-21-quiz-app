@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Element, Injectable, ViewChild } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
@@ -20,6 +20,9 @@ import { SharedOptionExplanationService } from '../../features/shared-option/sha
  */
 @Injectable({ providedIn: 'root' })
 export class SocAnswerProcessingService {
+  @ViewChild('qText')
+  private qText?: ElementRef<HTMLHeadingElement>;
+  
   constructor(
     private quizService: QuizService,
     private quizStateService: QuizStateService,
@@ -373,7 +376,7 @@ export class SocAnswerProcessingService {
             const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
               ?? (this.quizService as any)?.currentQuestionIndex;
             if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
-            this.writeFetToQuestionTextIfNeeded(fetForDom);
+            this.writeFetToQuestionTextIfNeeded(params.qTextEl, fetForDom);
           } catch { /* ignore */ }
         };
         stampFet();
@@ -660,7 +663,7 @@ export class SocAnswerProcessingService {
             const liveIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
               ?? (this.quizService as any)?.currentQuestionIndex;
             if (typeof liveIdx === 'number' && liveIdx !== stampQIdx) return;
-            this.writeFetToQuestionTextIfNeeded(fetForDom);
+            this.writeFetToQuestionTextIfNeeded(params.qTextEl, fetForDom);
           } catch { /* ignore */ }
         };
         setTimeout(() => stampFet('50ms'), 50);
@@ -735,7 +738,10 @@ export class SocAnswerProcessingService {
     }
   }
 
-  private writeFetToQuestionTextIfNeeded(fetForDom: string): void {
+  private writeFetToQuestionTextIfNeeded(
+    qTextEl: HTMLHeadingElement | null | undefined,
+    fetForDom: string
+  ): void {
     const h3 = this.qText?.nativeElement;
     if (!h3) return;
   
