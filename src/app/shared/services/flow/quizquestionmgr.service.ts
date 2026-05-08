@@ -10,9 +10,7 @@ export class QuizQuestionManagerService {
     numberOfCorrectAnswers: number | undefined,
     totalOptions: number | undefined,
   ): string {
-    if ((numberOfCorrectAnswers ?? 0) === 0) {
-      return 'No correct answers';
-    }
+    if ((numberOfCorrectAnswers ?? 0) === 0) return 'No correct answers';
 
     if (!totalOptions || totalOptions <= 0) {
       return numberOfCorrectAnswers === 1
@@ -28,8 +26,7 @@ export class QuizQuestionManagerService {
   calculateNumberOfCorrectAnswers(options: Option[]): number {
     const validOptions = options ?? [];
     return validOptions.reduce(
-      (count, option) => count + (option.correct ? 1 : 0),
-      0
+      (count, option) => count + (option.correct ? 1 : 0), 0
     );
   }
 
@@ -46,7 +43,7 @@ export class QuizQuestionManagerService {
         return correctAnswersCount > 1;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       return false;
     }
   }
