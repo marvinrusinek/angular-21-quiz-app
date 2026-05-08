@@ -9,14 +9,10 @@ export class DynamicComponentService {
 
   private async importComponent(): Promise<Type<any>> {
     // Already cached → instant
-    if (this.cachedAnswerComponent) {
-      return this.cachedAnswerComponent;
-    }
+    if (this.cachedAnswerComponent) return this.cachedAnswerComponent;
 
     // Already loading → wait for same promise
-    if (this.loadingPromise) {
-      return this.loadingPromise;
-    }
+    if (this.loadingPromise) return this.loadingPromise;
 
     // First load (real one)
     this.loadingPromise =
