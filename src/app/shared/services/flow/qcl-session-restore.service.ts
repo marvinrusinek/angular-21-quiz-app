@@ -24,7 +24,7 @@ export class QclSessionRestoreService {
     private explanationTextService: ExplanationTextService,
     private selectedOptionService: SelectedOptionService,
     private quizQuestionDataService: QuizQuestionDataService,
-    private quizScoringService: QuizScoringService,
+    private quizScoringService: QuizScoringService
   ) {}
 
   syncQuestionSnapshot(params: {
@@ -40,7 +40,7 @@ export class QclSessionRestoreService {
       question: null,
       trimmedQuestionText: '',
       normalizedOptions: [],
-      trimmedExplanation: '',
+      trimmedExplanation: ''
     };
 
     if (!Array.isArray(hydratedQuestions) || hydratedQuestions.length === 0) {
@@ -65,9 +65,7 @@ export class QclSessionRestoreService {
     this.quizService.setCurrentQuestionIndex(normalizedIndex);
 
     const selectedQuestion = hydratedQuestions[normalizedIndex];
-    if (!selectedQuestion) {
-      return empty;
-    }
+    if (!selectedQuestion) return empty;
 
     const normalizedOptions = this.quizService.quizOptions
       .assignOptionIds(selectedQuestion.options ?? [], normalizedIndex)
@@ -99,7 +97,7 @@ export class QclSessionRestoreService {
       question: selectedQuestion,
       trimmedQuestionText,
       normalizedOptions,
-      trimmedExplanation,
+      trimmedExplanation
     };
   }
 
@@ -170,9 +168,7 @@ export class QclSessionRestoreService {
           opt => opt.optionId === option.optionId
         );
 
-        if (restoredOption) {
-          restoredOption.selected = true;
-        }
+        if (restoredOption) restoredOption.selected = true;
       }
     } catch (error: any) {
       // failed to parse selected options
@@ -237,9 +233,7 @@ export class QclSessionRestoreService {
             const restoredIndex = Number(questionId);
             const restoredQuestion = this.quizService.questions?.[restoredIndex];
 
-            if (!restoredQuestion) {
-              continue;
-            }
+            if (!restoredQuestion) continue;
 
             const rawExplanation = (restoredQuestion.explanation ?? '').trim();
             this.explanationTextService.storeFormattedExplanation(
