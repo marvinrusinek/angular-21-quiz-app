@@ -61,7 +61,6 @@ export interface OptionEvaluationResult {
  */
 @Injectable({ providedIn: 'root' })
 export class QuizOptionProcessingService {
-
   constructor(
     private quizService: QuizService,
     private selectedOptionService: SelectedOptionService,
@@ -100,7 +99,7 @@ export class QuizOptionProcessingService {
       option, idx, liveSelections: params.liveSelections,
       questionsArray: params.questionsArray, currentQuestion: params.currentQuestion,
       optionsToDisplay: params.optionsToDisplay, quizId,
-      currentQuestionIndex: params.currentQuestionIndex,
+      currentQuestionIndex: params.currentQuestionIndex
     });
 
     if (immediate.canPersistOptimisticStatus) {
@@ -113,7 +112,7 @@ export class QuizOptionProcessingService {
     if (immediate.isSingleAnswerQuestion) {
       this.evaluateSingleAnswer({
         option, idx, optionsForImmediateScoring: immediate.optionsForImmediateScoring,
-        liveCorrectness: immediate.liveCorrectness, quizId,
+        liveCorrectness: immediate.liveCorrectness, quizId
       });
     } else {
       const multiResult = this.evaluateMultiAnswer({
@@ -121,7 +120,7 @@ export class QuizOptionProcessingService {
         questionForSelection: immediate.questionForSelection,
         optionsForImmediateScoring: immediate.optionsForImmediateScoring,
         correctOptionsForQuestion: immediate.correctOptionsForQuestion,
-        quizId,
+        quizId
       });
       immediateMultiDotStatus = multiResult.immediateMultiDotStatus;
       isQuestionComplete = multiResult.allCorrectSelected;
@@ -129,7 +128,7 @@ export class QuizOptionProcessingService {
 
     await this.handleAuthoritativeCheck({
       idx, isSingleAnswerQuestion: immediate.isSingleAnswerQuestion,
-      immediateMultiDotStatus, quizId,
+      immediateMultiDotStatus, quizId
     });
 
     this.nextButtonStateService.setNextButtonState(isQuestionComplete);
@@ -146,7 +145,7 @@ export class QuizOptionProcessingService {
 
     this.persistOptionSelection({
       idx, quizId, explanationToDisplay: params.explanationToDisplay, option,
-      isQuestionComplete,
+      isQuestionComplete
     });
   }
 
@@ -225,7 +224,7 @@ export class QuizOptionProcessingService {
       currentQuestionIndex,
       optionsToDisplay,
       currentQuestion,
-      questionsArray,
+      questionsArray
     });
 
     let usedExplicitPayloadCorrectness = false;
@@ -257,7 +256,7 @@ export class QuizOptionProcessingService {
       immediateSelections,
       questionForSelection,
       optionsForImmediateScoring,
-      correctOptionsForQuestion,
+      correctOptionsForQuestion
     };
   }
 
@@ -313,7 +312,7 @@ export class QuizOptionProcessingService {
 
     return {
       clickedIsCorrect,
-      dotStatus: clickedIsCorrect ? 'correct' : 'wrong',
+      dotStatus: clickedIsCorrect ? 'correct' : 'wrong'
     };
   }
 
@@ -428,9 +427,7 @@ export class QuizOptionProcessingService {
       this.quizService.updateUserAnswer(idx, syncIds);
     }
 
-    if (allCorrectSelected) {
-      this.quizService.scoreDirectly(idx, true, true);
-    }
+    if (allCorrectSelected) this.quizService.scoreDirectly(idx, true, true);
 
     // Compute immediate multi dot status
     const clickedIndex = Number((option as any)?.displayIndex ?? (option as any)?.index ?? -1);
@@ -470,9 +467,7 @@ export class QuizOptionProcessingService {
       immediateMultiDotStatus = 'wrong';
     }
 
-    if (!allCorrectSelected) {
-      this.quizService.scoreDirectly(idx, false, true);
-    }
+    if (!allCorrectSelected) this.quizService.scoreDirectly(idx, false, true);
 
     if (immediateMultiDotStatus) {
       this.dotStatusService.activeDotClickStatus.set(idx, immediateMultiDotStatus);
@@ -488,7 +483,7 @@ export class QuizOptionProcessingService {
       hasAnyCorrectSelection,
       immediateMultiDotStatus,
       currentSelections,
-      syncIds,
+      syncIds
     };
   }
 
@@ -549,9 +544,7 @@ export class QuizOptionProcessingService {
             const selections = this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
             const selTexts = new Set(selections.map((s: any) => nrm(s?.text)).filter((t: string) => !!t));
             const allPristineSelected = pristineCorrectTexts.every(t => selTexts.has(t));
-            if (!allPristineSelected) {
-              pristineBlocked = true;
-            }
+            if (!allPristineSelected) pristineBlocked = true;
           }
         } catch { }
       }
@@ -590,8 +583,7 @@ export class QuizOptionProcessingService {
         sessionStorage.setItem('isAnswered', 'true');
         sessionStorage.setItem(`displayMode_${idx}`, 'explanation');
       }
-    } catch (e) {
-    }
+    } catch (err: any) { }
 
     // Ensure sessionStorage has a dot_confirmed_ entry
     try {
