@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 
+import { QuizStatus } from '../../models/quiz-status.enum';
 import { QuizService } from '../data/quiz.service';
 import { QuizDataService } from '../data/quizdata.service';
-import { QuizStatus } from '../../models/quiz-status.enum';
 import { SelectedOptionService } from './selectedoption.service';
 
 /**
@@ -12,7 +12,6 @@ import { SelectedOptionService } from './selectedoption.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QuizPersistenceService {
-
   constructor(
     private quizService: QuizService,
     private quizDataService: QuizDataService,
@@ -47,13 +46,10 @@ export class QuizPersistenceService {
       const keys = [this.getProgressStorageKey(quizId), 'quiz_progress_default'];
       for (const key of keys) {
         const raw = localStorage.getItem(key);
-        if (raw == null) {
-          continue;
-        }
+        if (raw == null) continue;
+        
         const n = Number(raw);
-        if (Number.isFinite(n) && n >= 0) {
-          return Math.trunc(n);
-        }
+        if (Number.isFinite(n) && n >= 0) return Math.trunc(n);
       }
     } catch { }
     return null;
@@ -89,9 +85,7 @@ export class QuizPersistenceService {
         }
         const parsed = JSON.parse(raw) as Record<string, 'correct' | 'wrong'>;
         const value = parsed[String(index)];
-        if (value === 'correct' || value === 'wrong') {
-          return value;
-        }
+        if (value === 'correct' || value === 'wrong') return value;
       }
 
       return null;
@@ -141,9 +135,7 @@ export class QuizPersistenceService {
         this.getDotStatusStorageKey(quizId),
         'quiz_dot_status_default',
       ]));
-      for (const key of keys) {
-        localStorage.removeItem(key);
-      }
+      for (const key of keys) localStorage.removeItem(key);
     } catch { }
   }
 
@@ -219,9 +211,7 @@ export class QuizPersistenceService {
           lsKeysToRemove.push(key);
         }
       }
-      for (const key of lsKeysToRemove) {
-        localStorage.removeItem(key);
-      }
+      for (const key of lsKeysToRemove) localStorage.removeItem(key);
     } catch {}
   }
 
@@ -230,22 +220,17 @@ export class QuizPersistenceService {
   // ════════════════════════════════════════════════════��══════════
 
   persistContinueStatusIfNeeded(quizId: string, currentQuestionIndex: number): void {
-    if (!quizId) {
-      return;
-    }
+    if (!quizId) return;
 
     // Hard Block: never persist CONTINUE after completion
-    if (this.quizService.quizCompleted === true) {      return;
-    }
+    if (this.quizService.quizCompleted === true) return;
 
     // Only persist if the user actually answered something
     const hasAnsweredAny =
       currentQuestionIndex > 0 ||
       this.selectedOptionService.isQuestionAnswered(0) === true;
 
-    if (!hasAnsweredAny) {
-      return;
-    }
+    if (!hasAnsweredAny) return;
 
     // Store the current question index for resume
     this.quizService.currentQuestionIndex = currentQuestionIndex;
