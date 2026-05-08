@@ -1,8 +1,5 @@
 import { Injectable } from '@angular/core';
-import { MatCheckboxChange } from '@angular/material/checkbox';
-import { MatRadioChange } from '@angular/material/radio';
 
-import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -30,9 +27,6 @@ export class SharedOptionOrchestratorService {
   runAfterViewInit(host: Host): void {
     host.viewReady = true;
     host.setupRehydrateTriggers();
-
-    if (host.form) {
-    }
 
     if (!host.optionBindings?.length && host.optionsToDisplay?.length) {
       host.generateOptionBindings();
@@ -111,7 +105,7 @@ export class SharedOptionOrchestratorService {
 
     if (r.optionsToDisplay !== undefined) {
       host.optionsToDisplay$.next(
-          Array.isArray(host.optionsToDisplay) ? [...host.optionsToDisplay] : []
+        Array.isArray(host.optionsToDisplay) ? [...host.optionsToDisplay] : []
       );
     }
 
@@ -151,19 +145,19 @@ export class SharedOptionOrchestratorService {
 
   runGetActiveQuestionIndex(host: Host): number {
     const qi = host.questionIndex();
-    if (typeof qi === 'number' && Number.isFinite(qi)) {
-      return qi;
-    }
-    if (typeof host.currentQuestionIndex === 'number' && Number.isFinite(host.currentQuestionIndex)) {
+    if (typeof qi === 'number' && Number.isFinite(qi)) return qi;
+
+    if (typeof host.currentQuestionIndex === 'number' && 
+      Number.isFinite(host.currentQuestionIndex)
+    ) {
       return host.currentQuestionIndex;
     }
     if (Number.isFinite(host.resolvedQuestionIndex)) {
       return host.resolvedQuestionIndex!;
     }
     const svcIndex = host.quizService?.getCurrentQuestionIndex?.() ?? host.quizService?.currentQuestionIndex;
-    if (typeof svcIndex === 'number' && Number.isFinite(svcIndex)) {
-      return svcIndex;
-    }
+    if (typeof svcIndex === 'number' && Number.isFinite(svcIndex)) return svcIndex;
+
     return 0;
   }
 
@@ -176,19 +170,18 @@ export class SharedOptionOrchestratorService {
   }
 
   runUpdateResolvedQuestionIndex(host: Host, candidate: unknown): void {
-    if (typeof candidate !== 'number' && candidate !== null) {
-      return;
-    }
+    if (typeof candidate !== 'number' && candidate !== null) return;
+
     const normalized = host.normalizeQuestionIndex(candidate);
     if (normalized !== null) host.resolvedQuestionIndex = normalized;
   }
 
   runGetQuestionAtDisplayIndex(host: Host, displayIndex: number): QuizQuestion | null {
     const isShuffled = host.quizService?.isShuffleEnabled?.() &&
-        host.quizService?.shuffledQuestions?.length > 0;
+      host.quizService?.shuffledQuestions?.length > 0;
     const questionSource = isShuffled
-        ? host.quizService.shuffledQuestions
-        : host.quizService?.questions;
+      ? host.quizService.shuffledQuestions
+      : host.quizService?.questions;
     return questionSource?.[displayIndex] ?? null;
   }
 
@@ -268,7 +261,9 @@ export class SharedOptionOrchestratorService {
     // Fall back to detectMultiMode if pristine didn't decide.
     if (!result) {
       result = host.clickHandler.detectMultiMode(
-          currentQ, host.type, host.config()?.type
+        currentQ, 
+        host.type, 
+        host.config()?.type
       );
     }
 
@@ -316,7 +311,7 @@ export class SharedOptionOrchestratorService {
 
   runRebuildShowFeedbackMapFromBindings(host: Host): void {
     const result = host.feedbackManager.rebuildShowFeedbackMapFromBindings(
-        host.optionBindings, host.lastFeedbackOptionId, host.selectedOptionHistory
+      host.optionBindings, host.lastFeedbackOptionId, host.selectedOptionHistory
     );
     host.showFeedback = result.showFeedback;
     host.showFeedbackForOption = result.showFeedbackForOption;
@@ -375,20 +370,18 @@ export class SharedOptionOrchestratorService {
 
   runShouldDisableOption(host: Host, binding: OptionBindings): boolean {
     if (!binding || !binding.option) return false;
-    if (host.isMultiMode) {
-      return host.forceDisableAll;
-    }
+    if (host.isMultiMode) return host.forceDisableAll;
     return true;
   }
 
   runGetOptionClasses(host: Host, binding: OptionBindings): { [key: string]: boolean } {
     return host.optionService.getOptionClasses(
-        binding,
-        binding.index,
-        host.highlightedOptionIds,
-        host.flashDisabledSet,
-        host.isLocked(binding, binding.index),
-        host.timerExpiredForQuestion
+      binding,
+      binding.index,
+      host.highlightedOptionIds,
+      host.flashDisabledSet,
+      host.isLocked(binding, binding.index),
+      host.timerExpiredForQuestion
     );
   }
 
@@ -406,13 +399,11 @@ export class SharedOptionOrchestratorService {
   // ===== Rendering / explanation =====
   runMarkRenderReady(host: Host, reason: string): void {
     const bindingsReady =
-        Array.isArray(host.optionBindings) && host.optionBindings.length > 0;
+      Array.isArray(host.optionBindings) && host.optionBindings.length > 0;
     const optionsReady =
-        Array.isArray(host.optionsToDisplay) && host.optionsToDisplay.length > 0;
+      Array.isArray(host.optionsToDisplay) && host.optionsToDisplay.length > 0;
 
     if (bindingsReady && optionsReady) {
-      if (reason) {
-      }
       host.renderReady = true;
       host.renderReadyChange.emit(true);
       host.renderReadySubject.next(true);
@@ -443,9 +434,8 @@ export class SharedOptionOrchestratorService {
   }
 
   runFinalizeOptionPopulation(host: Host): void {
-    if (!host.optionsToDisplay?.length) {
-      return;
-    }
+    if (!host.optionsToDisplay?.length) return;
+
     if (host.type !== 'multiple') {
       // In shuffled mode, use display-order question (currentQuestion may be wrong)
       const qs: any = host.quizService;
@@ -457,8 +447,7 @@ export class SharedOptionOrchestratorService {
         ? (qs?.getQuestionsInDisplayOrder?.()?.[displayIdx] ?? qs?.shuffledQuestions?.[displayIdx] ?? host.currentQuestion)
         : host.currentQuestion;
       host.type = questionForType
-          ? host.determineQuestionType(questionForType)
-          : 'single';
+          ? host.determineQuestionType(questionForType) : 'single';
     }
   }
 
@@ -480,9 +469,8 @@ export class SharedOptionOrchestratorService {
   }
 
   runInitializeOptionBindings(host: Host): void {
-    if (host.optionBindingsInitialized) {
-      return;
-    }
+    if (host.optionBindingsInitialized) return;
+
     host.optionBindingsInitialized = true;
     if (!host.optionsToDisplay?.length) {
       host.optionBindingsInitialized = false;
@@ -505,8 +493,7 @@ export class SharedOptionOrchestratorService {
     const i = opts.findIndex((x: OptionBindings, idx: number) => {
       const explicitId = x?.option?.optionId;
       const effectiveId = (explicitId != null && Number(explicitId) > -1)
-          ? Number(explicitId)
-          : idx;
+        ? Number(explicitId) : idx;
       return effectiveId === Number(optionId);
     });
     if (i < 0) return null;
@@ -521,12 +508,12 @@ export class SharedOptionOrchestratorService {
 
   runCanDisplayOptions(host: Host): boolean {
     return (
-        !!host.form &&
-        host.renderReady &&
-        host.showOptions &&
-        Array.isArray(host.optionBindings) &&
-        host.optionBindings.length > 0 &&
-        host.optionBindings.every((b: OptionBindings) => !!b.option)
+      !!host.form &&
+      host.renderReady &&
+      host.showOptions &&
+      Array.isArray(host.optionBindings) &&
+      host.optionBindings.length > 0 &&
+      host.optionBindings.every((b: OptionBindings) => !!b.option)
     );
   }
 
