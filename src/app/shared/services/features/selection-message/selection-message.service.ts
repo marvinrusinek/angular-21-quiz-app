@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
 
 import { QuestionType } from '../../../models/question-type.enum';
-import { CanonicalOption } from '../../../models/CanonicalOption.model';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuizService } from '../../data/quiz.service';
@@ -49,7 +48,7 @@ export class SelectionMessageService {
 
   constructor(
     private quizService: QuizService,
-    private selectedOptionService: SelectedOptionService,
+    private selectedOptionService: SelectedOptionService
   ) { }
 
   public getCurrentMessage(): string {
@@ -73,12 +72,10 @@ export class SelectionMessageService {
   private getQuestion(index: number): QuizQuestion | null {
     const svc = this.quizService as any;
     const questions = (svc.isShuffleEnabled() && svc.shuffledQuestions?.length > 0)
-      ? svc.shuffledQuestions
-      : svc.questions;
+      ? svc.shuffledQuestions : svc.questions;
 
     return (Array.isArray(questions) && index >= 0 && index < questions.length)
-      ? questions[index]
-      : (svc.currentQuestion?.value ?? null);
+      ? questions[index] : (svc.currentQuestion?.value ?? null);
   }
 
   public determineSelectionMessage(
@@ -113,15 +110,16 @@ export class SelectionMessageService {
     const canonical = Array.isArray(q?.options) ? (q!.options as Option[]) : [];
     this.ensureStableIds(questionIndex, canonical, uiSnapshot);
 
-    const overlaid: Option[] = (canonical.length ? canonical : this.normalizeOptionArray(uiSnapshot)).map((o, idx) => {
-      const id = this.toStableId(o, idx);
-      return this.toOption(o, idx, selectedKeys.has(id) || !!o.selected);
-    });
+    const overlaid: Option[] = 
+      (canonical.length ? canonical : this.normalizeOptionArray(uiSnapshot)).map((o, idx) => {
+        const id = this.toStableId(o, idx);
+        return this.toOption(o, idx, selectedKeys.has(id) || !!o.selected);
+      }
+    );
 
     const correctCount = overlaid.filter((o) => !!o?.correct).length;
     const qType: QuestionType = (correctCount > 1 || declaredType === QuestionType.MultipleAnswer)
-      ? QuestionType.MultipleAnswer
-      : (declaredType ?? QuestionType.SingleAnswer);
+      ? QuestionType.MultipleAnswer : (declaredType ?? QuestionType.SingleAnswer);
 
     return this.computeFinalMessage({
       index: questionIndex,
@@ -189,9 +187,7 @@ export class SelectionMessageService {
 
   public pushMessage(newMsg: string, _index: number): void {
     const prev = this.selectionMessageSig();
-    if (prev !== newMsg) {
-      this.selectionMessageSig.set(newMsg);
-    }
+    if (prev !== newMsg) this.selectionMessageSig.set(newMsg);
   }
 
   public releaseBaseline(index: number): void {
@@ -221,8 +217,7 @@ export class SelectionMessageService {
     const q = this.getQuestion(index);
     const totalCorrect = (q?.options ?? []).filter((o: any) => o.correct).length;
     const qType = (totalCorrect > 1 || q?.type === QuestionType.MultipleAnswer)
-      ? QuestionType.MultipleAnswer
-      : (q?.type ?? QuestionType.SingleAnswer);
+      ? QuestionType.MultipleAnswer : (q?.type ?? QuestionType.SingleAnswer);
 
     // Clear released state so enforceBaselineAtInit doesn't skip
     this._baselineReleased.delete(index);
@@ -246,13 +241,9 @@ export class SelectionMessageService {
     });
   }
 
-
-
   public setOptionsSnapshot(opts: Option[] | null | undefined): void {
     const safe = Array.isArray(opts) ? opts.map((o) => ({ ...o })) : [];
-    if (safe.length > 0) {
-      this.optionsSnapshotSig.set(safe);
-    }
+    if (safe.length > 0) this.optionsSnapshotSig.set(safe);
   }
 
   public notifySelectionMutated(options: Option[] | null | undefined): void {
@@ -266,8 +257,7 @@ export class SelectionMessageService {
     ).length;
     const declaredType = params.questionType;
     const qType: QuestionType = (correctCount > 1 || declaredType === QuestionType.MultipleAnswer)
-      ? QuestionType.MultipleAnswer
-      : (declaredType ?? QuestionType.SingleAnswer);
+      ? QuestionType.MultipleAnswer : (declaredType ?? QuestionType.SingleAnswer);
 
     const msg = this.computeFinalMessage({
       index: params.index,
@@ -350,13 +340,9 @@ export class SelectionMessageService {
     const keys = new Set<string | number>();
     if (!rawSel) return keys;
     if (rawSel instanceof Set) {
-      for (const s of rawSel) {
-        keys.add(s?.optionId ?? s);
-      }
+      for (const s of rawSel) keys.add(s?.optionId ?? s);
     } else if (Array.isArray(rawSel)) {
-      for (const o of rawSel) {
-        keys.add(keyFn(o));
-      }
+      for (const o of rawSel) keys.add(keyFn(o));
     }
     return keys;
   }
@@ -379,8 +365,6 @@ export class SelectionMessageService {
 
   public setSelectionMessageText(message: string): void {
     const prev = this.selectionMessageSig();
-    if (prev !== message) {
-      this.selectionMessageSig.set(message);
-    }
+    if (prev !== message) this.selectionMessageSig.set(message);
   }
 }
