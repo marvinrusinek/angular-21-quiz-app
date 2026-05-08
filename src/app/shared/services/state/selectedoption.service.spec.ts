@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 
+import { SelectedOption } from '../../models/SelectedOption.model';
 import { SelectedOptionService } from './selectedoption.service';
 import { QuizService } from '../data/quiz.service';
 import { NextButtonStateService } from './next-button-state.service';
@@ -10,7 +11,6 @@ import { OptionFeedbackStateService } from './option-feedback-state.service';
 import { AnswerEvaluationService } from './answer-evaluation.service';
 import { SelectionPersistenceService } from './selection-persistence.service';
 import { SelectionCrudService } from './selection-crud.service';
-import { SelectedOption } from '../../models/SelectedOption.model';
 
 describe('SelectedOptionService', () => {
   let service: SelectedOptionService;
@@ -24,11 +24,11 @@ describe('SelectedOptionService', () => {
     currentQuestionIndex: 0,
     getCurrentQuestionIndex: () => 0,
     currentQuestionIndexSig: () => 0,
-    updateUserAnswer: jest.fn(),
+    updateUserAnswer: jest.fn()
   };
 
   const mockNextButtonStateService = {
-    setNextButtonState: jest.fn(),
+    setNextButtonState: jest.fn()
   };
 
   const mockIdResolver = {
@@ -40,7 +40,7 @@ describe('SelectedOptionService', () => {
     buildCanonicalSelectionSnapshot: jest.fn(() => []),
     canonicalizeSelectionsForQuestion: jest.fn((_idx: number, sels: any[]) => sels),
     overlaySelectedByIdentity: jest.fn((canonical: any[], _ui: any[]) => canonical),
-    resolveOptionIndexFromSelection: jest.fn(() => -1),
+    resolveOptionIndexFromSelection: jest.fn(() => -1)
   };
 
   const mockLockState = {
@@ -55,7 +55,7 @@ describe('SelectedOptionService', () => {
     lockQuestion: jest.fn(),
     unlockQuestion: jest.fn(),
     isQuestionLocked: jest.fn(() => false),
-    resetLocksForQuestion: jest.fn(),
+    resetLocksForQuestion: jest.fn()
   };
 
   const mockFeedbackState = {
@@ -63,7 +63,7 @@ describe('SelectedOptionService', () => {
     deleteFeedbackForQuestion: jest.fn(),
     getFeedbackForQuestion: jest.fn(() => ({})),
     republishFeedbackForQuestion: jest.fn(),
-    syncFeedbackForQuestion: jest.fn(),
+    syncFeedbackForQuestion: jest.fn()
   };
 
   const mockPersistence = {
@@ -73,7 +73,7 @@ describe('SelectedOptionService', () => {
     clearPerQuestionSessionKey: jest.fn(),
     persistAnswerForResults: jest.fn(),
     recoverAnswersForResults: jest.fn(),
-    clearAnswersForResults: jest.fn(),
+    clearAnswersForResults: jest.fn()
   };
 
   const mockSelectionCrud = {
@@ -89,7 +89,7 @@ describe('SelectedOptionService', () => {
     removeSelectedOptionIndex: jest.fn(),
     addSelection: jest.fn(),
     updateSelectionState: jest.fn(),
-    updateSelectedOptions: jest.fn(),
+    updateSelectedOptions: jest.fn()
   };
 
   const mockAnswerEval = {
@@ -100,7 +100,7 @@ describe('SelectedOptionService', () => {
     isQuestionResolvedCorrectly: jest.fn(() => false),
     isQuestionResolvedLeniently: jest.fn(() => false),
     isAnyCorrectAnswerSelected: jest.fn(() => false),
-    getResolutionStatus: jest.fn(() => null),
+    getResolutionStatus: jest.fn(() => null)
   };
 
   function makeOption(overrides: Partial<SelectedOption> = {}): SelectedOption {
@@ -108,7 +108,7 @@ describe('SelectedOptionService', () => {
       text: 'Option A',
       optionId: 1,
       displayIndex: 0,
-      ...overrides,
+      ...overrides
     } as SelectedOption;
   }
 
@@ -125,8 +125,8 @@ describe('SelectedOptionService', () => {
         { provide: OptionFeedbackStateService, useValue: mockFeedbackState },
         { provide: AnswerEvaluationService, useValue: mockAnswerEval },
         { provide: SelectionPersistenceService, useValue: mockPersistence },
-        { provide: SelectionCrudService, useValue: mockSelectionCrud },
-      ],
+        { provide: SelectionCrudService, useValue: mockSelectionCrud }
+      ]
     });
 
     service = TestBed.inject(SelectedOptionService);
