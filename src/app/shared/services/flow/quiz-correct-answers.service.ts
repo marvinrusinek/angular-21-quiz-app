@@ -58,8 +58,7 @@ export class QuizCorrectAnswersService {
       ]);
 
       const correctAnswersText = multipleAnswers
-        ? this.getCorrectAnswersText(options)
-        : '';
+        ? this.getCorrectAnswersText(options) : '';
 
       this.quizService.updateCorrectAnswersText('');
       return correctAnswersText;
