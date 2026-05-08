@@ -26,7 +26,6 @@ type Host = any;
  */
 @Injectable({ providedIn: 'root' })
 export class QuizSetupRouteService {
-
   constructor(
     private router: Router,
     private quizService: QuizService,
@@ -70,13 +69,12 @@ export class QuizSetupRouteService {
         // has question data after URL navigation. Prefer quizService.questions
         // getter which returns shuffled data when shuffle is active.
         const question = this.quizService.questions?.[idx]
-          ?? host.questionsArray?.[idx]
-          ?? null;
+          ?? host.questionsArray?.[idx] ?? null;
         if (question && question.options?.length > 0) {
           const payload = {
             question,
             options: question.options,
-            explanation: question.explanation,
+            explanation: question.explanation
           };
           host.combinedQuestionData.set(payload);
           host.questionToDisplaySig.set(question.questionText?.trim() ?? '');
@@ -144,14 +142,14 @@ export class QuizSetupRouteService {
         host.lastLoggedIndex = idx;
         host.currentQuestionIndex = idx;
         const { question, isNavigation } = this.quizContentLoaderService.handleQuestionIndexTransition({
-          idx, prevIdx, quizId: host.quizId, questionsArray: host.questionsArray,
+          idx, prevIdx, quizId: host.quizId, questionsArray: host.questionsArray
         });
 
         if (question) {
           host.currentQuestion = question;
           host.questionToDisplaySig.set(question.questionText?.trim() ?? '');
           host.combinedQuestionData.set({
-            question, options: question.options, explanation: question.explanation,
+            question, options: question.options, explanation: question.explanation
           });
         }
         host.cdRef.markForCheck();
@@ -198,9 +196,7 @@ export class QuizSetupRouteService {
     const quizId = params.get('quizId') ?? '';
     const indexParam = params.get('questionIndex');
     const index = Number(indexParam) - 1;
-    if (!quizId || isNaN(index) || index < 0) {
-      return;
-    }
+    if (!quizId || isNaN(index) || index < 0) return;
 
     if (host.quizId && host.quizId !== quizId) {
       this.dotStatusService.clearAllMaps();
@@ -225,7 +221,7 @@ export class QuizSetupRouteService {
       host.currentQuestion = result.question;
       host.question = result.question;
       const payload = {
-        question: result.question, options: result.options, explanation: result.explanation,
+        question: result.question, options: result.options, explanation: result.explanation
       };
       host.combinedQuestionData.set(payload);
       host.questionToDisplaySig.set(result.question.questionText?.trim() ?? '');
@@ -242,9 +238,7 @@ export class QuizSetupRouteService {
         const writeH3 = () => {
           try {
             const h3 = document.querySelector('codelab-quiz-content h3');
-            if (h3 && !h3.innerHTML.trim()) {
-              h3.innerHTML = displayHTML;
-            }
+            if (h3 && !h3.innerHTML.trim()) h3.innerHTML = displayHTML;
           } catch {}
         };
         setTimeout(writeH3, 0);
@@ -254,7 +248,7 @@ export class QuizSetupRouteService {
 
       if (!result.hasValidSelections) this.timerService.restartForQuestion(index);
       localStorage.setItem('savedQuestionIndex', index.toString());
-    } catch (error) {
+    } catch (error: any) {
       // param map change handling failed
     }
   }
