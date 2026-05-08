@@ -75,8 +75,8 @@ export interface RegenerateFeedbackResult {
 export class SharedOptionFeedbackService {
   constructor(
     private feedbackService: FeedbackService,
-    private selectedOptionService: SelectedOptionService,
     private quizService: QuizService,
+    private selectedOptionService: SelectedOptionService,
     private clickHandler: OptionClickHandlerService,
     private optionService: OptionService
   ) {}
@@ -103,9 +103,7 @@ export class SharedOptionFeedbackService {
     }
 
     // Ensure the main option has a displayIndex
-    if (option.displayIndex === undefined) {
-      option.displayIndex = selectedIndex;
-    }
+    if (option.displayIndex === undefined) option.displayIndex = selectedIndex;
 
     const question = ctx.currentQuestion;
     // Robust detection: check type OR count of correct answers in the raw question data
@@ -170,7 +168,10 @@ export class SharedOptionFeedbackService {
       });
 
       // Safety: ensure the current option is included if not found above
-      if (!optionsToCheck.find(o => o === option || (o.optionId != null && o.optionId > -1 && o.optionId === option.optionId))) {
+      if (!optionsToCheck.find(
+        o => o === option || 
+        (o.optionId != null && o.optionId > -1 && o.optionId === option.optionId))
+      ) {
         optionsToCheck.push(option);
       }
     }
@@ -183,13 +184,13 @@ export class SharedOptionFeedbackService {
       ctx.timerExpiredForQuestion,
       ctx.activeQuestionIndex,
       ctx.optionsToDisplay,
-      option // targetOption
+      option  // targetOption
     );
 
     const validOptions = (ctx.optionsToDisplay || []).filter(isValidOption);
     const correctMessage = this.feedbackService.setCorrectMessage(validOptions, ctx.currentQuestion!);
 
-    // DIRECT OVERRIDE: Check if all correct options are selected using EVERY available
+    // Direct Override: Check if all correct options are selected using EVERY available
     // source of truth (selectedOptions Set, optionBindings, optionsToDisplay, current click).
     let finalFeedback = feedbackMessage;
     if (isMulti) {
@@ -268,21 +269,24 @@ export class SharedOptionFeedbackService {
       for (const k of Object.keys(showFeedbackForOption)) {
         delete showFeedbackForOption[k];
       }
-      for (const k of Object.keys(feedbackConfigs)) {
-        delete feedbackConfigs[k];
-      }
+      for (const k of Object.keys(feedbackConfigs)) delete feedbackConfigs[k];
+      
       lastFeedbackQuestionIndex = currentQuestionIndex;
     }
 
     // Set the last option selected (used to show only one feedback block)
-    // CRITICAL: Use index for anchoring so it's stable in the template loop
+    // Use index for anchoring so it's stable in the template loop
     const lastFeedbackOptionId = index;
 
     // Use consistent effective ID (matching shouldShowFeedbackAfter)
-    const normalizedIdForAnchor = (optionId != null && !isNaN(Number(optionId))) ? Number(optionId) : null;
-    const effectiveId = (normalizedIdForAnchor !== null && normalizedIdForAnchor > -1) ? normalizedIdForAnchor : index;
+    const normalizedIdForAnchor = 
+      (optionId != null && !isNaN(Number(optionId))) ? Number(optionId) : null;
+    const effectiveId = 
+      (normalizedIdForAnchor !== null && normalizedIdForAnchor > -1) 
+      ? normalizedIdForAnchor : index;
 
-    // Ensure feedback visibility state is updated for JUST THIS option (mutate to clear others)
+    // Ensure feedback visibility state is updated for JUST THIS option
+    // (mutate to clear others)
     for (const k of Object.keys(showFeedbackForOption)) {
       delete showFeedbackForOption[k];
     }
@@ -324,9 +328,7 @@ export class SharedOptionFeedbackService {
         (o: any) => o.correct === true || String(o.correct) === 'true'
       ).length ?? 0;
       const isSingleAnswer = correctCount <= 1;
-      if (isSingleAnswer && option?.correct === true) {
-        isResolved = true;
-      }
+      if (isSingleAnswer && option?.correct === true) isResolved = true;
     }
 
     if (isResolved) {
@@ -336,7 +338,7 @@ export class SharedOptionFeedbackService {
       this.selectedOptionService.setAnswered(false, false);
     }
 
-    // CRITICAL: Store config under BOTH the numeric effectiveId AND the string key
+    // Store config under both the numeric effectiveId and the string key
     feedbackConfigs[effectiveId] = feedbackConfig;
     feedbackConfigs[String(effectiveId)] = feedbackConfig;
 
@@ -347,7 +349,7 @@ export class SharedOptionFeedbackService {
       feedbackConfigs[canonicalKey] = feedbackConfig;
     }
 
-    // CRITICAL: Re-generate configs for ALL options that are currently showing feedback
+    // Re-generate configs for ALL options that are currently showing feedback
     // This ensures that if the latest click solves the question, any previous "Select 1 more"
     // blocks also update to "You're right!" for consistency.
     if (ctx.optionBindings) {
@@ -403,7 +405,7 @@ export class SharedOptionFeedbackService {
   ): RebuildFeedbackMapResult {
     const showMap: Record<string | number, boolean> = {};
 
-    // PREFER lastFeedbackOptionId for the anchor; it tracks the MOST RECENT click reliably
+    // Prefer lastFeedbackOptionId for the anchor; it tracks the most recent click reliably
     const targetId =
       typeof lastFeedbackOptionId === 'number' && lastFeedbackOptionId !== -1
         ? lastFeedbackOptionId
@@ -441,16 +443,14 @@ export class SharedOptionFeedbackService {
       }
     }
 
-    // CRITICAL: Preserve the existing feedbackConfigs - do NOT clear them.
+    // Preserve the existing feedbackConfigs - do NOT clear them.
     // They were set by displayFeedbackForOption() and contain the correct message.
     // Only update the showFeedbackForOption map (which controls WHERE feedback shows).
     const showFeedbackForOption = { ...showMap };
 
     const updatedBindings = (optionBindings ?? []).map(b => {
       const updated = { ...b, showFeedbackForOption };
-      if (showFeedback) {
-        updated.showFeedback = true;
-      }
+      if (showFeedback) updated.showFeedback = true;
       return updated;
     });
 
@@ -569,7 +569,7 @@ export class SharedOptionFeedbackService {
 
   /**
    * Initializes feedback bindings from option bindings.
-   * Mirrors SharedOptionComponent.initializeFeedbackBindings (lines ~2797-2821).
+   * Mirrors SharedOptionComponent.initializeFeedbackBindings
    */
   initializeFeedbackBindings(
     optionBindings: OptionBindings[],
@@ -589,10 +589,6 @@ export class SharedOptionFeedbackService {
         idx,
         ctx
       );
-
-      // Validate the generated feedback binding
-      if (!feedbackBinding || !feedbackBinding.selectedOption) {
-      }
 
       return feedbackBinding;
     });
@@ -680,8 +676,7 @@ export class SharedOptionFeedbackService {
     const isShuffled = this.quizService?.isShuffleEnabled?.() &&
       this.quizService?.shuffledQuestions?.length > 0;
     const questionSource = isShuffled
-      ? this.quizService.shuffledQuestions
-      : this.quizService?.questions;
+      ? this.quizService.shuffledQuestions : this.quizService?.questions;
     return questionSource?.[displayIndex] ?? null;
   }
 }
