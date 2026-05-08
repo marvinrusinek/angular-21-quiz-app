@@ -25,7 +25,6 @@ type Host = any;
  */
 @Injectable({ providedIn: 'root' })
 export class QuizSetupDataService {
-
   constructor(
     private router: Router,
     private quizService: QuizService,
@@ -49,7 +48,7 @@ export class QuizSetupDataService {
       host.totalQuestions = questions.length;
       host.isQuizDataLoaded = true;
       host.cdRef.detectChanges();
-    } catch (error) {
+    } catch (error: any) {
       // question loading failed
     }
     this.pushInitialQuestionPayload(host);
@@ -108,9 +107,7 @@ export class QuizSetupDataService {
     this.quizService.getQuestionByIndex(host.currentQuestionIndex)
       .pipe(
         tap((question: QuizQuestion | null) => {
-          if (!question) {
-            return;
-          }
+          if (!question) return;
           host.question = question;
           this.quizService.getOptions(host.currentQuestionIndex).subscribe({
             next: (options: Option[]) => {
@@ -126,7 +123,7 @@ export class QuizSetupDataService {
         }),
         catchError(() => {
           return of(null);
-        }),
+        })
       )
       .subscribe();
   }
@@ -238,7 +235,7 @@ export class QuizSetupDataService {
     host.quizId = host.activatedRoute.snapshot.paramMap.get('quizId') ?? '';
     await this.quizContentLoaderService.prepareQuizSession({
       quizId: host.quizId,
-      applyQuestionsFromSession: (questions: QuizQuestion[]) => this.applyQuestionsFromSession(host, questions),
+      applyQuestionsFromSession: (questions: QuizQuestion[]) => this.applyQuestionsFromSession(host, questions)
     });
   }
 
@@ -341,7 +338,7 @@ export class QuizSetupDataService {
       question: host.question,
       optionsToDisplay: host.optionsToDisplay,
       currentQuestionIndex: host.currentQuestionIndex,
-      answers: host.answers,
+      answers: host.answers
     });
 
     if (!result.option) return;
