@@ -200,7 +200,7 @@ export class QuizSetupService {
         optionsToDisplay: host.optionsToDisplay,
         explanationToDisplay: host.explanationToDisplay,
         combinedQuestionData: host.combinedQuestionData,
-        optionsToDisplaySig: host.optionsToDisplaySig,
+        optionsToDisplaySig: host.optionsToDisplaySig
       });
       if (needsRender) {
         host.cdRef.markForCheck();
@@ -210,12 +210,9 @@ export class QuizSetupService {
       if (!isHidden) {
         const idx = host.currentQuestionIndex;
         const isAnswered = this.selectedOptionService.isQuestionAnswered(idx);
-        if (!isAnswered) {
-          this.selectionMessageService.forceBaseline(idx);
-        }
+        if (!isAnswered) this.selectionMessageService.forceBaseline(idx);
         const question = this.quizService.questions?.[idx]
-          ?? host.questionsArray?.[idx]
-          ?? null;
+          ?? host.questionsArray?.[idx] ?? null;
         if (question) {
           const displayHTML = this.routeService.buildQuestionDisplayHTML(question);
           if (displayHTML) {
@@ -250,8 +247,7 @@ export class QuizSetupService {
           const shuffled = this.quizService.shuffledQuestions;
           const effectiveQuestions =
             this.quizService.isShuffleEnabled() && shuffled?.length > 0
-              ? shuffled
-              : questions;
+              ? shuffled : questions;
           host.questions = effectiveQuestions;
           host.questionsArray = [...effectiveQuestions];
           host.totalQuestions = effectiveQuestions.length;
@@ -351,7 +347,7 @@ export class QuizSetupService {
       currentQuestion: host.currentQuestion,
       optionsToDisplay: host.optionsToDisplay,
       liveSelections: host.getSelectionsForQuestion(idx),
-      explanationToDisplay: host.explanationToDisplay,
+      explanationToDisplay: host.explanationToDisplay
     });
 
     host.markQuestionAnswered(idx);
@@ -643,9 +639,7 @@ export class QuizSetupService {
             scoredCorrect = this.explanationTextService.fetBypassForQuestion?.get(qIdx) === true;
           }
         } catch { /* ignore */ }
-        if (!scoredCorrect) {
-          return;
-        }
+        if (!scoredCorrect) return;
       }
     }
 
