@@ -366,38 +366,58 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.isQuizDataLoaded && this.totalQuestions > 0;
   }
 
+  // Read the URL question index — used as a fallback when
+  // this.currentQuestionIndex hasn't propagated yet during URL/dot
+  // navigation. The button-visibility getters depend on the index
+  // matching the URL, otherwise Prev/Restart/Show-Results all
+  // disappear on direct URL nav to a non-Q1 question.
+  private getEffectiveQuestionIndex(): number {
+    try {
+      const m = window.location.pathname.match(/\/question\/[^/]+\/(\d+)/);
+      if (m) {
+        const urlIdx = Number(m[1]) - 1;
+        if (urlIdx >= 0) return urlIdx;
+      }
+    } catch { /* non-browser env */ }
+    return this.currentQuestionIndex;
+  }
+
   public get shouldShowPrevButton(): boolean {
-    return this.currentQuestionIndex > 0;
+    return this.getEffectiveQuestionIndex() > 0;
   }
 
   public get shouldShowRestartButton(): boolean {
-    return this.currentQuestionIndex > 0 && this.currentQuestionIndex <= this.totalQuestions - 1;
+    const idx = this.getEffectiveQuestionIndex();
+    const serviceCount = this.quizService.questions?.length || 0;
+    const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
+    return idx > 0 && idx <= effectiveTotal - 1;
   }
 
   public get shouldShowNextButton(): boolean {
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
-    return this.currentQuestionIndex < effectiveTotal - 1;
+    return this.getEffectiveQuestionIndex() < effectiveTotal - 1;
   }
 
   public get shouldShowResultsButton(): boolean {
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
-    const isLast = effectiveTotal > 0 && this.currentQuestionIndex === effectiveTotal - 1;
+    const idx = this.getEffectiveQuestionIndex();
+    const isLast = effectiveTotal > 0 && idx === effectiveTotal - 1;
     if (!isLast) return false;
 
     const question: QuizQuestion | null =
       (this.question as QuizQuestion | null) ??
       ((this.quizService as any).currentQuestion?.value as QuizQuestion | null) ??
-      (this.quizService.questions?.[this.currentQuestionIndex] ?? null) ??
-      ((this.quizService as any).shuffledQuestions?.[this.currentQuestionIndex] ?? null);
+      (this.quizService.questions?.[idx] ?? null) ??
+      ((this.quizService as any).shuffledQuestions?.[idx] ?? null);
 
     if (!question) return false;
-    const selected = this.selectedOptionService.getSelectedOptionsForQuestion(this.currentQuestionIndex) ?? [];
+    const selected = this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
     if (selected.length > 0) return true;
 
     // Also show Results button when timer expired on last question without an answer
-    return this.dotStatusService.timerExpiredUnanswered.has(this.currentQuestionIndex);
+    return this.dotStatusService.timerExpiredUnanswered.has(idx);
   }
 
   public handleQuizQuestionEvent(event: QuizQuestionEvent): void {
