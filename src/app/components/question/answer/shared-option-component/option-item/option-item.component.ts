@@ -589,6 +589,21 @@ export class OptionItemComponent implements OnChanges, OnInit {
       return wasSelected && !this.isOptionCorrect() ? '#ff0000' : null;
     }
 
+    // AUTO-REVEAL backup: if this option is the canonical correct one AND
+    // either of the auto-reveal signals is set, paint green directly. This
+    // bypasses any shouldHighlightOption() race on Q3+ where the
+    // _userHasClicked-based refresh path may briefly return false even
+    // after _multiAnswerPerfect is set.
+    if (this.isOptionCorrect()) {
+      const _qIdxARBg = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const perfectMapARBg =
+        (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+      if (perfectMapARBg?.get(_qIdxARBg) === true ||
+          this.b?.cssClasses?.['correct-option'] === true) {
+        return '#43e756';
+      }
+    }
+
     const _sh = this.shouldHighlightOption();
     if (!_sh) {
       // Single-answer suppression: while no correct option has been selected
@@ -843,14 +858,19 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // AUTO-REVEAL: when the question has been resolved (correct option
     // selected directly OR all-incorrect-exhausted auto-reveal fired),
     // the canonical correct option highlights green even if THIS option-
-    // item never had a live click. _multiAnswerPerfect is the cross-
-    // mechanism flag set by both processSingleAnswerClick (correct path)
-    // and the auto-reveal block (all-incorrect-exhausted path).
-    const _qIdxAR = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
-    const perfectMapAR =
-      (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-    if (perfectMapAR?.get(_qIdxAR) === true && this.isOptionCorrect()) {
-      return true;
+    // item never had a live click. Two parallel signals — either is enough:
+    //   1. _multiAnswerPerfect.get(qIdx) === true on quizService
+    //      (set by processSingleAnswerClick and the auto-reveal block)
+    //   2. b.cssClasses['correct-option'] === true on this binding
+    //      (stamped directly by the auto-reveal block when it rebuilds
+    //      bindings — survives the post-click binding spread because
+    //      cssClasses is preserved via {...b}).
+    if (this.isOptionCorrect()) {
+      const _qIdxAR = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const perfectMapAR =
+        (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+      if (perfectMapAR?.get(_qIdxAR) === true) return true;
+      if (this.b?.cssClasses?.['correct-option'] === true) return true;
     }
 
     // On refresh (no live click), ONLY trust authoritative saved
