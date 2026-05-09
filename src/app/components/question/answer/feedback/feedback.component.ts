@@ -100,18 +100,37 @@ export class FeedbackComponent implements OnInit, OnChanges {
           // index were cementing the negative message because the upstream
           // click handler couldn't see the canonical correct flag.
           if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
+            const candidates: string[] = [];
             const sel: any = this.feedbackConfig?.selectedOption;
-            const selText = (sel?.text ?? '').trim().toLowerCase();
-            if (selText && Array.isArray(liveQ?.options)) {
-              const match = liveQ.options.find(
-                (o: any) => (o?.text ?? '').trim().toLowerCase() === selText
-              );
-              const isCorrectFlag = match && (
-                match.correct === true ||
-                match.correct === 1 ||
-                String(match.correct) === 'true'
-              );
-              if (isCorrectFlag) cacheMatchesUrl = false;
+            if (sel?.text) candidates.push(String(sel.text).trim().toLowerCase());
+
+            // Also look at the selectedOptionService — it carries the
+            // authoritative committed click for this question, which can
+            // be more current than feedbackConfig.selectedOption when the
+            // upstream click handler hasn't refreshed the config yet.
+            try {
+              const liveSelections =
+                this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
+              for (const s of liveSelections) {
+                if (s?.text) candidates.push(String(s.text).trim().toLowerCase());
+              }
+            } catch { /* ignore */ }
+
+            if (candidates.length && Array.isArray(liveQ?.options)) {
+              for (const candidateText of candidates) {
+                const match = liveQ.options.find(
+                  (o: any) => (o?.text ?? '').trim().toLowerCase() === candidateText
+                );
+                const isCorrectFlag = match && (
+                  match.correct === true ||
+                  match.correct === 1 ||
+                  String(match.correct) === 'true'
+                );
+                if (isCorrectFlag) {
+                  cacheMatchesUrl = false;
+                  break;
+                }
+              }
             }
           }
         }
