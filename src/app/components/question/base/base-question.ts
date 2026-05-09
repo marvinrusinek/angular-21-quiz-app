@@ -4,6 +4,7 @@ import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
+import { QuestionType } from '../../../shared/models/question-type.enum';
 import { Option } from '../../../shared/models/Option.model';
 import { OptionBindings } from '../../../shared/models/OptionBindings.model';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
@@ -14,7 +15,6 @@ import { FeedbackService } from '../../../shared/services/features/feedback/feed
 import { QuizService } from '../../../shared/services/data/quiz.service';
 import { QuizStateService } from '../../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../../shared/services/state/selectedoption.service';
-import { QuestionType } from '../../../shared/models/question-type.enum';
 
 /** Event payload emitted when an option is clicked */
 export interface OptionClickEvent {
@@ -117,7 +117,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
       !Array.isArray(this.optionsToDisplay()) ||
       this.optionsToDisplay().length === 0
     ) {
-
       setTimeout(() => {
         if (!this.containerInitialized) {
           this.initializeDynamicComponentIfNeeded();
@@ -209,7 +208,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
 
     this.sharedOptionConfig = {
       ...this.getDefaultSharedOptionConfig(),
-      type: this.type(), // FIX: Use the actual type (which might be 'multiple') to configure Option behavior
+      type: this.type(), // use the actual type (which might be 'multiple') to configure Option behavior
       optionsToDisplay: clonedOptions,
       currentQuestion: { ...this.question()! } as QuizQuestion,
       shouldResetBackground: this.shouldResetBackground() || false,
@@ -264,9 +263,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
 
           // Guard against questions that don’t yet have options
           const hasOptions = !!quizQuestion.options?.length;
-          if (!hasOptions) {
-          }
-
           return hasOptions;
         })
       )
@@ -295,13 +291,8 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     // Ensure the selected option is updated
     this.updateSelectedOption(index);
 
-    if (!this.sharedOptionConfig) {
-      await this.initializeSharedOptionConfig();
-    }
-
-    if (!this.sharedOptionConfig) {
-      return;
-    }
+    if (!this.sharedOptionConfig) await this.initializeSharedOptionConfig();
+    if (!this.sharedOptionConfig) return;
 
     try {
       // Always show feedback when an option is clicked
@@ -312,9 +303,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
         // Deselect all other options
         for (const opt of this.optionsToDisplay()) {
           opt.selected = opt === option;
-          if (opt.optionId) {
-            this.showFeedbackForOption[opt.optionId] = false;
-          }
+          if (opt.optionId) this.showFeedbackForOption[opt.optionId] = false;
         }
       } else {
         // For multiple-selection type questions, toggle the clicked option
@@ -354,9 +343,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
   }
 
   protected setCurrentQuestion(question: QuizQuestion): void {
-    if (this.quizStateService) {
-      this.quizService.setCurrentQuestion(question);
-    }
+    if (this.quizStateService) this.quizService.setCurrentQuestion(question);
   }
 
   private handleQuestionChange(change: SimpleChange): void {
