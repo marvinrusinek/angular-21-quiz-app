@@ -355,6 +355,13 @@ export class OptionItemComponent implements OnChanges, OnInit {
     try {
       const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
+      const isCorrectFlag = (v: any) =>
+        v === true || String(v) === 'true' || v === 1 || v === '1';
+
+      // PRISTINE-FIRST: quizInitialState is the immutable structuredClone of
+      // QUIZ_DATA. Live `quizService.questions` correct flags can be
+      // mutated/missing during gameplay, which would make the size===1 gate
+      // fail and suppress the trying-state CSS.
       const isShuf = this.quizService?.isShuffleEnabled?.()
         && Array.isArray((this.quizService as any)?.shuffledQuestions)
         && (this.quizService as any)?.shuffledQuestions?.length > 0;
@@ -362,9 +369,21 @@ export class OptionItemComponent implements OnChanges, OnInit {
         ? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
           ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]
         : (this.quizService as any)?.questions?.[qIdx];
-      const canonicalOpts: any[] = liveQ?.options ?? [];
-      const isCorrectFlag = (v: any) =>
-        v === true || String(v) === 'true' || v === 1 || v === '1';
+      const liveQText = nrm(liveQ?.questionText);
+      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      let pristineQ: any = null;
+      if (liveQText) {
+        outerPQ: for (const quiz of bundle) {
+          for (const pq of (quiz?.questions ?? [])) {
+            if (nrm(pq?.questionText) === liveQText) {
+              pristineQ = pq;
+              break outerPQ;
+            }
+          }
+        }
+      }
+      // Pristine wins when present; fall back to live if no pristine match.
+      const canonicalOpts: any[] = (pristineQ?.options ?? liveQ?.options ?? []) as any[];
       const correctTexts = new Set(
         canonicalOpts
           .filter((o: any) => isCorrectFlag(o?.correct ?? o?.isCorrect))
@@ -377,10 +396,12 @@ export class OptionItemComponent implements OnChanges, OnInit {
       const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
       const selections = selectionsMap.get(qIdx) ?? [];
 
-      // Match isDisabled()'s detection: by canonical index, by id, by own
-      // flag, AND by text. Any one is enough — text alone misses entries
-      // where the saved selection lacks `text`.
+      // Match isDisabled()'s detection: by text first (most reliable when
+      // canonical/live indices diverge in shuffled mode), then by canonical
+      // index, by id, and by the selection's own correct flag.
       const anyCorrectSelected = selections.some((s: any) => {
+        const txt = nrm(s?.text);
+        if (txt && correctTexts.has(txt)) return true;
         const sIdx = s?.displayIndex ?? s?.index ?? s?.idx;
         if (typeof sIdx === 'number' && sIdx >= 0) {
           const co = canonicalOpts[sIdx];
@@ -391,9 +412,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
           const co = canonicalOpts.find((o: any) => o?.optionId === sId);
           if (co && isCorrectFlag(co?.correct ?? co?.isCorrect)) return true;
         }
-        if (isCorrectFlag(s?.correct ?? s?.isCorrect)) return true;
-        const txt = nrm(s?.text);
-        return !!txt && correctTexts.has(txt);
+        return isCorrectFlag(s?.correct ?? s?.isCorrect);
       });
 
       return !anyCorrectSelected;
