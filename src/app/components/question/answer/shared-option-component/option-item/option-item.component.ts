@@ -350,75 +350,13 @@ export class OptionItemComponent implements OnChanges, OnInit {
    * styling that might leak through other code paths.
    */
   isSingleAnswerTrying(): boolean {
+    // Lockstep with isDisabled(): a single-answer option that isn't
+    // selected and isn't currently disabled is by definition "still
+    // open for the user to try." Deriving it this way avoids drift
+    // between two parallel implementations of "is the user mid-attempt."
     if (this.type() !== 'single') return false;
     if (this.b?.isSelected) return false;
-    try {
-      const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
-      const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
-      const isCorrectFlag = (v: any) =>
-        v === true || String(v) === 'true' || v === 1 || v === '1';
-
-      // PRISTINE-FIRST: quizInitialState is the immutable structuredClone of
-      // QUIZ_DATA. Live `quizService.questions` correct flags can be
-      // mutated/missing during gameplay, which would make the size===1 gate
-      // fail and suppress the trying-state CSS.
-      const isShuf = this.quizService?.isShuffleEnabled?.()
-        && Array.isArray((this.quizService as any)?.shuffledQuestions)
-        && (this.quizService as any)?.shuffledQuestions?.length > 0;
-      const liveQ: any = isShuf
-        ? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
-          ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]
-        : (this.quizService as any)?.questions?.[qIdx];
-      const liveQText = nrm(liveQ?.questionText);
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      let pristineQ: any = null;
-      if (liveQText) {
-        outerPQ: for (const quiz of bundle) {
-          for (const pq of (quiz?.questions ?? [])) {
-            if (nrm(pq?.questionText) === liveQText) {
-              pristineQ = pq;
-              break outerPQ;
-            }
-          }
-        }
-      }
-      // Pristine wins when present; fall back to live if no pristine match.
-      const canonicalOpts: any[] = (pristineQ?.options ?? liveQ?.options ?? []) as any[];
-      const correctTexts = new Set(
-        canonicalOpts
-          .filter((o: any) => isCorrectFlag(o?.correct ?? o?.isCorrect))
-          .map((o: any) => nrm(o?.text))
-          .filter((t: string) => !!t)
-      );
-      if (correctTexts.size !== 1) return false;
-
-      // Read signal so OnPush re-evaluates on every selection mutation.
-      const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
-      const selections = selectionsMap.get(qIdx) ?? [];
-
-      // Match isDisabled()'s detection: by text first (most reliable when
-      // canonical/live indices diverge in shuffled mode), then by canonical
-      // index, by id, and by the selection's own correct flag.
-      const anyCorrectSelected = selections.some((s: any) => {
-        const txt = nrm(s?.text);
-        if (txt && correctTexts.has(txt)) return true;
-        const sIdx = s?.displayIndex ?? s?.index ?? s?.idx;
-        if (typeof sIdx === 'number' && sIdx >= 0) {
-          const co = canonicalOpts[sIdx];
-          if (co && isCorrectFlag(co?.correct ?? co?.isCorrect)) return true;
-        }
-        const sId = s?.optionId;
-        if (sId != null) {
-          const co = canonicalOpts.find((o: any) => o?.optionId === sId);
-          if (co && isCorrectFlag(co?.correct ?? co?.isCorrect)) return true;
-        }
-        return isCorrectFlag(s?.correct ?? s?.isCorrect);
-      });
-
-      return !anyCorrectSelected;
-    } catch {
-      return false;
-    }
+    return !this.isDisabled();
   }
 
   isDisabled(): boolean {

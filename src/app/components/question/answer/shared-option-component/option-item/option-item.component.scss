@@ -128,13 +128,16 @@
 
 /* DISABLED STATE — only for unselected/non-highlighted options. Excludes
    `.sa-trying` (single-answer mid-attempt) so a wrong-clicked single-
-   answer question doesn't lock the user out of the unclicked siblings. */
+   answer question doesn't lock the user out of the unclicked siblings.
+   pointer-events intentionally omitted: mat-radio-button's [disabled]
+   already prevents clicks via its JS handler, and adding
+   pointer-events:none here cascades through Material's class
+   application timing in ways that block legit clicks on Q5+. */
 .option-row.mat-mdc-radio-disabled:not(.correct-option):not(.incorrect-option):not(.sa-trying),
 .option-row.mat-mdc-checkbox-disabled:not(.correct-option):not(.incorrect-option):not(.sa-trying) {
   background-color: #a0a0a0 !important;
   border-color: #888 !important;
   cursor: default !important;
-  pointer-events: none !important;
 
   .option-text {
     color: #444 !important;
