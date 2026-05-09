@@ -350,7 +350,16 @@ export class QuizSetupService {
       explanationToDisplay: host.explanationToDisplay
     });
 
-    host.markQuestionAnswered(idx);
+    // Always mark progress against the authoritative current-question
+    // index from quizService — host.currentQuestionIndex and the derived
+    // `idx` from option.questionIndex can both be stale on Q2+, leaving
+    // markQuestionAnswered called with 0 on every question (already in
+    // the set, early-returns, progress freezes).
+    const liveQIdx = (this.quizService as any)?.currentQuestionIndex;
+    const progressIdx = Number.isFinite(liveQIdx)
+      ? liveQIdx
+      : (Number.isFinite(host.currentQuestionIndex) ? host.currentQuestionIndex : idx);
+    host.markQuestionAnswered(progressIdx);
     host.updateDotStatus(idx);
 
     const confirmed = this.selectedOptionService.clickConfirmedDotStatus.get(idx);
