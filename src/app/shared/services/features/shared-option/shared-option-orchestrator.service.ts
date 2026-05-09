@@ -104,7 +104,13 @@ export class SharedOptionOrchestratorService {
     if (r.correctClicksPerQuestion === 'clear') host.correctClicksPerQuestion.clear();
 
     if (r.optionsToDisplay !== undefined) {
-      host.optionsToDisplay$.next(
+      // optional-chain `next` so this is a no-op when the host doesn't
+      // expose optionsToDisplay$ (the subject was removed in commit
+      // a9164c67 along with its only subscriber). Without the guard,
+      // calling `.next` on undefined throws and aborts runApplyChangeResult,
+      // which leaves the host in a partially-applied state and triggers
+      // NG0953 emits on a now-destroyed output.
+      host.optionsToDisplay$?.next?.(
         Array.isArray(host.optionsToDisplay) ? [...host.optionsToDisplay] : []
       );
     }

@@ -207,9 +207,39 @@ export class SharedOptionComponent
       const v = this.currentQuestionInput();
       if (v !== undefined) this.currentQuestion = v;
     });
+    let _lastQIdxForStampCleanup: number | undefined;
     effect(() => {
       const v = this.currentQuestionIndexInput();
-      if (v !== undefined) this.currentQuestionIndex = v;
+      if (v !== undefined) {
+        // Q→Q transition cleanup: strip any timer-expiry stamps left over
+        // from the previous question. Angular reuses .option-row DOM nodes
+        // across the @for binding rebuild, so inline pointer-events:none
+        // and the 'correct-option' class persist into the new question.
+        // Per-binding _timerExpiredStamped flags can also stick when the
+        // binding objects are mutated in place.
+        if (_lastQIdxForStampCleanup !== undefined && _lastQIdxForStampCleanup !== v) {
+          this.timerExpiredForQuestion = false;
+          this._timerExpiryHandled = false;
+          for (const b of this.optionBindings ?? []) {
+            if (!b) continue;
+            delete (b as any)._timerExpiredStamped;
+            delete (b as any)._timerExpiredStampedForIndex;
+            if (b.cssClasses) {
+              delete b.cssClasses['correct-option'];
+              delete b.cssClasses['incorrect-option'];
+            }
+          }
+          try {
+            document.querySelectorAll('.option-row').forEach((el: Element) => {
+              const html = el as HTMLElement;
+              html.style.pointerEvents = '';
+              el.classList.remove('correct-option');
+            });
+          } catch { /* ignore — non-browser env */ }
+        }
+        _lastQIdxForStampCleanup = v;
+        this.currentQuestionIndex = v;
+      }
     });
     effect(() => {
       let v = this.optionsToDisplayInput();
