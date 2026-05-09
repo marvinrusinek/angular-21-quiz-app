@@ -1,10 +1,10 @@
 import { Injectable, Injector, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import {
-  BehaviorSubject, firstValueFrom, merge, Observable, ReplaySubject, Subject
+  BehaviorSubject, firstValueFrom, Observable, ReplaySubject, Subject
 } from 'rxjs';
 import {
-  distinctUntilChanged, filter, map, startWith, take, timeout
+  distinctUntilChanged, filter, map, take, timeout
 } from 'rxjs/operators';
 
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -12,6 +12,7 @@ import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { ExplanationFormatterService } from './explanation-formatter.service';
+import { ExplanationGateService } from './explanation-gate.service';
 
 export type FETPayload = { idx: number; text: string; token: number };
 
@@ -49,8 +50,15 @@ export class ExplanationDisplayStateService {
   private lastDisplaySignature: string | null = null;
   private lastDisplayedSignature: string | null = null;
 
-  public _byIndex = new Map<number, BehaviorSubject<string | null>>();
-  public _gate = new Map<number, BehaviorSubject<boolean>>();
+  // Per-index storage moved to ExplanationGateService. These getters
+  // preserve the previous public API so external callers (quiz-reset,
+  // explanation-text, specs) keep working unchanged.
+  public get _byIndex(): Map<number, BehaviorSubject<string | null>> {
+    return this.gate._byIndex;
+  }
+  public get _gate(): Map<number, BehaviorSubject<boolean>> {
+    return this.gate._gate;
+  }
   private _activeIndexValue: number | null = 0;
 
   public readonly activeIndexSig = signal<number>(0);
@@ -64,8 +72,12 @@ export class ExplanationDisplayStateService {
   public readonly questionRenderedSig = signal<boolean>(false);
   public questionRendered$ = toObservable(this.questionRenderedSig);
 
-  // Track which indices currently have open gates (used for cleanup)
-  public _gatesByIndex: Map<number, BehaviorSubject<boolean>> = new Map();
+  // Track which indices currently have open gates (used for cleanup).
+  // Backing storage lives on ExplanationGateService; this getter keeps the
+  // public field-style access working for external consumers.
+  public get _gatesByIndex(): Map<number, BehaviorSubject<boolean>> {
+    return this.gate._gatesByIndex;
+  }
 
   public _fetLocked: boolean | null = null;
 
@@ -82,7 +94,6 @@ export class ExplanationDisplayStateService {
   public fetPayload$: Observable<FETPayload> = this._fetSubject.asObservable();
   public _gateToken = 0;
   public _currentGateToken = 0;
-  private _textMap: Map<number, { text$: ReplaySubject<string> }> = new Map();
   private readonly _instanceId: string = '';
   private _unlockRAFId: number | null = null;
   public latestExplanationIndex: number | null = -1;
@@ -101,7 +112,8 @@ export class ExplanationDisplayStateService {
 
   constructor(
     private injector: Injector,
-    private formatter: ExplanationFormatterService
+    private formatter: ExplanationFormatterService,
+    private gate: ExplanationGateService
   ) {
     this._instanceId = `EDS-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     // Always clear stale FET payloads when switching to a new question index.
@@ -638,7 +650,7 @@ export class ExplanationDisplayStateService {
     this._byIndex.clear();
     this._gate.clear();
     this._gatesByIndex.clear();
-    this._textMap?.clear?.();
+    this.gate.clearTextMap();
     this._fetLocked = null;
     this._gateToken = 0;
     this._currentGateToken = 0;
@@ -790,13 +802,7 @@ export class ExplanationDisplayStateService {
   }
 
   public setGate(index: number, show: boolean): void {
-    const idx = Math.max(0, Number(index) || 0);
-    if (!this._gate.has(idx)) {
-      this._gate.set(idx, new BehaviorSubject<boolean>(false));
-    }
-    const bs = this._gate.get(idx)!;
-    const next = show;
-    if (bs.getValue() !== next) bs.next(next);  // coalesce
+    this.gate.setGate(index, show);
   }
 
   // Call to open a gate for an index
@@ -835,45 +841,12 @@ export class ExplanationDisplayStateService {
 
   // Holds a per-question text$ stream (isolated subjects by index)
   public getOrCreate(index: number) {
-    // Ensure a dedicated text$ stream exists for each question index
-    let textEntry = this._textMap.get(index);
-    if (!textEntry) {
-      textEntry = { text$: new ReplaySubject<string>(1) };
-      this._textMap.set(index, textEntry);
-    }
-
-    // Maintain compatibility with old BehaviorSubjects
-    if (!this._byIndex.has(index)) {
-      this._byIndex.set(index, new BehaviorSubject<string | null>(null));
-    }
-
-    if (!this._gate.has(index)) {
-      this._gate.set(index, new BehaviorSubject<boolean>(false));
-    }
-
-    return {
-      text$: textEntry.text$,
-      gate$: this._gate.get(index)!
-    };
+    return this.gate.getOrCreate(index);
   }
 
   // Returns a reactive stream for a given question index
   public getExplanationText$(index: number): Observable<string | null> {
-    const { text$ } = this.getOrCreate(index);
-    const existing = 
-      this.formatter.formattedExplanations[index]?.explanation || 
-      this.formatter.fetByIndex.get(index) || '';
-
-    return merge(
-      text$,
-      this.formatter.explanationsUpdated$.pipe(
-        map(dict => dict[index]?.explanation || ''),
-        distinctUntilChanged()
-      )
-    ).pipe(
-      startWith(existing),
-      distinctUntilChanged()
-    );
+    return this.gate.getExplanationText$(index);
   }
 
   // Reset explanation state cleanly for a new index
@@ -883,9 +856,7 @@ export class ExplanationDisplayStateService {
       this._activeIndex !== -1 &&
       this._activeIndex !== index
     ) {
-      try {
-        this._gate.get(this._activeIndex)?.next(false);
-      } catch { }
+      this.gate.closePrimaryGate(this._activeIndex);
 
       this.latestExplanation = '';
       this.latestExplanationIndex = null;
@@ -938,12 +909,11 @@ export class ExplanationDisplayStateService {
   }
 
   public closeGateForIndex(index: number): void {
-    const gate = this._gatesByIndex?.get(index);
-    if (gate) gate.next(false);
+    this.gate.closeGateForIndex(index);
   }
 
   public closeAllGates(): void {
-    this._gatesByIndex.clear();
+    this.gate.clearGatesByIndex();
     this._fetLocked = null;
 
     try {
@@ -978,7 +948,7 @@ export class ExplanationDisplayStateService {
       this.setShouldDisplayExplanation(false);
     }
     this.setIsExplanationTextDisplayed(false);
-    this._textMap?.delete?.(newIndex);
+    this.gate.deleteText(newIndex);
 
     // Preserve cached FET for back-navigation.
     const hasCachedFet = 
