@@ -414,11 +414,32 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.cdRef.markForCheck();
   }
 
-  /** Marks a question as answered (called only when an option is clicked). */
+  /**
+   * Marks a question as answered. Always recomputes progress from the
+   * authoritative selectedOptionsMap (every entry with selections counts
+   * as answered). This bypasses brittle index-passing through several
+   * layers — the progress %% no longer depends on `index` matching the
+   * caller's understanding of the current question.
+   */
   public markQuestionAnswered(index: number): void {
-    if (index < 0) return;
-    if (this.answeredQuestionIndices.has(index)) return;
-    this.answeredQuestionIndices.add(index);
+    const liveIdx = (this.quizService as any)?.currentQuestionIndex;
+    const effectiveIdx = Number.isFinite(liveIdx) && liveIdx >= 0 ? liveIdx : index;
+    if (effectiveIdx >= 0) this.answeredQuestionIndices.add(effectiveIdx);
+
+    // Always merge the live selectedOptionsMap so any question that has
+    // had at least one option committed counts toward the progress %%,
+    // regardless of which path called us first.
+    try {
+      const map = this.selectedOptionService?.selectedOptionsMap;
+      if (map && typeof map.forEach === 'function') {
+        map.forEach((selections: any[], qIdx: number) => {
+          if (Array.isArray(selections) && selections.length > 0 && qIdx >= 0) {
+            this.answeredQuestionIndices.add(qIdx);
+          }
+        });
+      }
+    } catch { /* ignore */ }
+
     this.updateProgressValue();
   }
 
