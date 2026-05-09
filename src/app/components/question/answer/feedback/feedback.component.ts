@@ -93,6 +93,27 @@ export class FeedbackComponent implements OnInit, OnChanges {
             const cachedOptN = Number(optionMatch[1]);
             cacheMatchesUrl = correctIdxs.includes(cachedOptN);
           }
+
+          // ALSO reject a cached "Not this one, try again!" when the user
+          // actually clicked an option whose text matches a correct option
+          // in the live URL question. Single-answer questions on the last
+          // index were cementing the negative message because the upstream
+          // click handler couldn't see the canonical correct flag.
+          if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
+            const sel: any = this.feedbackConfig?.selectedOption;
+            const selText = (sel?.text ?? '').trim().toLowerCase();
+            if (selText && Array.isArray(liveQ?.options)) {
+              const match = liveQ.options.find(
+                (o: any) => (o?.text ?? '').trim().toLowerCase() === selText
+              );
+              const isCorrectFlag = match && (
+                match.correct === true ||
+                match.correct === 1 ||
+                String(match.correct) === 'true'
+              );
+              if (isCorrectFlag) cacheMatchesUrl = false;
+            }
+          }
         }
       } catch {}
       if (cacheMatchesUrl) {
