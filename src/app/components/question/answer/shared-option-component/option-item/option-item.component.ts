@@ -359,18 +359,6 @@ export class OptionItemComponent implements OnChanges, OnInit {
     return !this.isDisabled();
   }
 
-  /**
-   * True when this option should render with the dark-gray locked-out
-   * visual: not currently selected, AND isDisabled() says it's locked.
-   * Drives the `.locked-option` CSS class — the SCSS gray rule keys off
-   * that class instead of Material's mat-mdc-radio-disabled, so the
-   * gray styling never depends on Material's class-application timing.
-   */
-  isVisuallyLocked(): boolean {
-    if (this.b?.isSelected) return false;
-    return this.isDisabled();
-  }
-
   isDisabled(): boolean {
     // Timer-expiry handler stamped all bindings as disabled
     if (this.isTimerStamped()) return true;
