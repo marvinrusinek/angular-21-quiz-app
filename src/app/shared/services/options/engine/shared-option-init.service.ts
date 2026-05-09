@@ -43,7 +43,7 @@ export interface SharedOptionComponentLike {
   selectedOptionId: () => number | null;
   selectedOptionIndex: number | null;
   isNavigatingBackwards: boolean;
-  renderReady: boolean;
+  renderReady: { set: (v: boolean) => void; (): boolean };
   finalRenderReady$: () => Observable<boolean> | null;
   questionVersion: () => number;
   sharedOptionConfig: () => SharedOptionConfig;
@@ -284,7 +284,7 @@ export class SharedOptionInitService {
 
         // If we have options and bindings but display flags aren't set, fix them
         if (comp.optionsToDisplay?.length && comp.optionBindings?.length) {
-          if (!comp.showOptions || !comp.renderReady) {
+          if (!comp.showOptions || !comp.renderReady()) {
 
             comp.showOptions = true;
             comp.renderReady.set(true);
@@ -297,7 +297,7 @@ export class SharedOptionInitService {
 
         // If we've exhausted retries, show fallback
         if (attempt >= maxAttempts) {
-          if (!comp.renderReady || !comp.optionsToDisplay?.length) {
+          if (!comp.renderReady() || !comp.optionsToDisplay?.length) {
             comp.showNoOptionsFallback = true;
             comp.cdRef.detectChanges();  // force immediate update for OnPush
           }

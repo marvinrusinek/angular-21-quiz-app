@@ -1,7 +1,7 @@
 import { Injectable, Injector, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
-import { QUIZ_DATA } from '../../quiz';
+import { getQuizData } from '../../quiz-data-cache';
 import { QuizScore } from '../../models/QuizScore.model';
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
@@ -165,7 +165,7 @@ export class QuizScoringService {
       // cross-validate: the right pristine question's correct texts will
       // ALL appear in confirmed clicks.
       let pristineCorrectTexts: string[] = [];
-      const pristineQuiz = QUIZ_DATA.find((qz: any) => qz?.quizId === quizId);
+      const pristineQuiz = getQuizData().find((qz: any) => qz?.quizId === quizId);
 
       // PRIMARY: index-based lookup
       const pristineQ = pristineQuiz?.questions?.[scoringKey];

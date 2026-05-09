@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, from, Observable, of } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 
-import { QUIZ_DATA, QUIZ_RESOURCES } from '../../quiz';
+import { getQuizData, getQuizResources } from '../../quiz-data-cache';
 import { QuestionType } from '../../models/question-type.enum';
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -17,8 +17,8 @@ import { Utils } from '../../utils/utils';
 
 @Injectable({ providedIn: 'root' })
 export class QuizDataLoaderService {
-  quizInitialState: Quiz[] = structuredClone(QUIZ_DATA);
-  quizData: Quiz[] | null = structuredClone(QUIZ_DATA);
+  quizInitialState: Quiz[] = structuredClone(getQuizData());
+  quizData: Quiz[] | null = structuredClone(getQuizData());
   quizResources: QuizResource[] = [];
   resources: Resource[] = [];
 
@@ -71,11 +71,12 @@ export class QuizDataLoaderService {
     setQuestions: (qs: QuizQuestion[]) => void,
     setTotalQuestions: (n: number) => void
   ): { questions: QuizQuestion[]; totalQuestions: number; resolvedQuizId: string } {
-    if (!QUIZ_DATA || !Array.isArray(QUIZ_DATA)) {
+    const cachedQuizData = getQuizData();
+    if (!cachedQuizData || !Array.isArray(cachedQuizData)) {
       this.quizData = [];
     } else {
-      // Deep-clone so gameplay mutations never propagate back to QUIZ_DATA
-      this.quizData = structuredClone(QUIZ_DATA);
+      // Deep-clone so gameplay mutations never propagate back to the cache
+      this.quizData = structuredClone(cachedQuizData);
     }
 
     let questions: QuizQuestion[] = [];
@@ -83,9 +84,9 @@ export class QuizDataLoaderService {
     let resolvedQuizId = quizId;
 
     if (this.quizData.length > 0) {
-      // Always clone from the ORIGINAL QUIZ_DATA constant — never from
+      // Always clone from the cached pristine dataset — never from
       // this.quizData which may carry mutations from prior quiz runs.
-      this.quizInitialState = structuredClone(QUIZ_DATA);
+      this.quizInitialState = structuredClone(getQuizData());
       let selectedQuiz = quizId
         ? this.quizData.find((quiz) => quiz.quizId === quizId) : undefined;
 
@@ -107,7 +108,8 @@ export class QuizDataLoaderService {
       questions = [];
     }
 
-    this.quizResources = Array.isArray(QUIZ_RESOURCES) ? QUIZ_RESOURCES : [];
+    const cachedResources = getQuizResources();
+    this.quizResources = Array.isArray(cachedResources) ? cachedResources : [];
 
     if (questions.length > 0) {
       const firstQuestion = questions[0];

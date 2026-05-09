@@ -4,7 +4,7 @@ import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import {
   auditTime, distinctUntilChanged, filter, map, shareReplay
 } from 'rxjs/operators';
-import { QUIZ_DATA } from '../../quiz';
+import { getQuizData } from '../../quiz-data-cache';
 import { QuizStatus } from '../../models/quiz-status.enum';
 import { FinalResult } from '../../models/Final-Result.model';
 import { Option } from '../../models/Option.model';
@@ -40,7 +40,7 @@ export class QuizService {
     this.currentQuestionIndexSubject.next(v);
   }
   activeQuiz: Quiz | null = null;
-  quizInitialState: Quiz[] = structuredClone(QUIZ_DATA);
+  quizInitialState: Quiz[] = structuredClone(getQuizData());
   quizData: Quiz[] | null = this.quizInitialState;
   data: {
     questionText: string,

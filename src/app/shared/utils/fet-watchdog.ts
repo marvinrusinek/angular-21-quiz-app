@@ -1,4 +1,4 @@
-import { QUIZ_DATA } from '../quiz';
+import { getQuizData } from '../quiz-data-cache';
 
 // ══════════════════════════════════════════════════════════════════════
 // GLOBAL FET WATCHDOG. Installed before Angular bootstrap. Watches the
@@ -15,7 +15,7 @@ export function installGlobalFetWatchdog(): void {
     const findPristineForText = (qText: string): { correctTexts: string[]; raw: string; explanation: string } | null => {
       const k = nrm(qText);
       if (!k) return null;
-      for (const quiz of (QUIZ_DATA as any[]) ?? []) {
+      for (const quiz of (getQuizData() as any[]) ?? []) {
         for (const pq of quiz?.questions ?? []) {
           if (nrm(pq?.questionText) !== k) continue;
           const correctTexts = ((pq?.options ?? []) as any[])
@@ -67,7 +67,7 @@ export function installGlobalFetWatchdog(): void {
       { qText: string; correctTexts: string[]; explanation: string } | null => {
       const bodyText = nrm(document.body?.textContent ?? '');
       if (!bodyText) return null;
-      for (const quiz of (QUIZ_DATA as any[]) ?? []) {
+      for (const quiz of (getQuizData() as any[]) ?? []) {
         for (const pq of quiz?.questions ?? []) {
           const qt = nrm(pq?.questionText ?? '');
           if (!qt) continue;
