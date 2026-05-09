@@ -80,13 +80,13 @@ export class SharedOptionBindingService {
       // of incorrect highlights before the next CD cycle corrects them.
       if (comp.optionBindingsInitialized && comp.optionBindings?.length > 0) {
         comp.showOptions = true;
-        comp.renderReady = true;
+        comp.renderReady.set(true);
         comp.cdRef.markForCheck();
         return;
       }
       comp.optionBindings = bindings;
       comp.showOptions = true;
-      comp.renderReady = true;
+      comp.renderReady.set(true);
       comp.cdRef.detectChanges();
     });
 
@@ -240,7 +240,7 @@ export class SharedOptionBindingService {
 
     comp.showOptions = true;
     comp.optionsReady = true;
-    comp.renderReady = true;
+    comp.renderReady.set(true);
 
     comp.markRenderReady('Bindings refreshed');
     comp.cdRef.markForCheck();
@@ -358,7 +358,7 @@ export class SharedOptionBindingService {
     comp.rehydrateUiFromState('processOptionBindings');
 
     comp.optionsReady = true;
-    comp.renderReady = true;
+    comp.renderReady.set(true);
     comp.viewReady = true;
     comp.cdRef.detectChanges();
   }
@@ -886,9 +886,8 @@ export class SharedOptionBindingService {
       Array.isArray(comp.optionsToDisplay) && comp.optionsToDisplay.length > 0;
 
     if (bindingsReady && optionsReady) {
-      comp.renderReady = true;
+      comp.renderReady.set(true);
       comp.renderReadyChange.emit(true);
-      comp.renderReadySubject?.next(true);
     }
   }
 

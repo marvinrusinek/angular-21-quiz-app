@@ -287,7 +287,7 @@ export class SharedOptionInitService {
           if (!comp.showOptions || !comp.renderReady) {
 
             comp.showOptions = true;
-            comp.renderReady = true;
+            comp.renderReady.set(true);
             comp.optionsReady = true;
             comp.showNoOptionsFallback = false;
             comp.cdRef.detectChanges();  // force immediate update for OnPush
@@ -326,7 +326,7 @@ export class SharedOptionInitService {
       comp.optionsToDisplay = configOptions;
     }
   
-    comp.renderReady = !!comp.optionsToDisplay?.length;
+    comp.renderReady.set(!!comp.optionsToDisplay?.length);
   }
 
   /**
@@ -363,7 +363,7 @@ export class SharedOptionInitService {
       comp.optionBindings?.length > 0 &&
       comp.optionsToDisplay?.length > 0
     ) {
-      comp.renderReady = true;
+      comp.renderReady.set(true);
       comp.viewReady = true;
     }
 
@@ -374,7 +374,7 @@ export class SharedOptionInitService {
 
     // Immediately set display flags if options are available
     if (comp.optionsToDisplay?.length > 0) {
-      comp.renderReady = true;
+      comp.renderReady.set(true);
       comp.showOptions = true;
       comp.optionsReady = true;
       comp.cdRef.detectChanges();
@@ -383,7 +383,7 @@ export class SharedOptionInitService {
     // Fallback: retry after short delay for Stackblitz timing issues
     setTimeout(() => {
       if (comp.optionsToDisplay?.length > 0 && !comp.showOptions) {
-        comp.renderReady = true;
+        comp.renderReady.set(true);
         comp.showOptions = true;
         comp.optionsReady = true;
         comp.cdRef.detectChanges();
@@ -620,8 +620,10 @@ export class SharedOptionInitService {
    * Corresponds to SharedOptionComponent.setupRehydrateTriggers().
    */
   setupRehydrateTriggers(comp: SharedOptionComponentLike): void {
-    const renderReady$ =
-      comp.finalRenderReady$() ?? comp.renderReadySubject.asObservable();
+    // renderReadySubject was replaced with a signal in commit 2e084f59;
+    // fall back to of(false) when no parent finalRenderReady$ is provided
+    // so this trigger is a no-op rather than throwing on undefined.
+    const renderReady$ = comp.finalRenderReady$() ?? of(false);
 
     const qIndex$ = this.quizService?.currentQuestionIndex$ ?? of(0);
 

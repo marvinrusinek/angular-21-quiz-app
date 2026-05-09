@@ -35,8 +35,8 @@ export class QqcOrchResetService {
       host.shouldRenderOptions.set(false);
     }
 
-    host.finalRenderReadySubject.next(false);
-    host.renderReadySubject.next(false);
+    host.finalRenderReady.set(false);
+    host.renderReady.set(false);
     setTimeout(() => {
       if (host.sharedOptionComponent) {
         host.sharedOptionComponent.freezeOptionBindings = false;

@@ -21,8 +21,8 @@ export class QqcOrchDisplayService {
     });
 
     if (result.needsSwap) {
-      host.renderReadySubject.next(false);
-      host.finalRenderReady = false;
+      host.renderReady.set(false);
+      host.finalRenderReady.set(false);
       host.questionForm = result.formGroup;
       if (result.serialized !== host.lastSerializedOptions) {
         host.lastSerializedOptions = result.serialized;
@@ -52,10 +52,11 @@ export class QqcOrchDisplayService {
     });
     if (!result) return;
 
-    host.renderReady = false;
-    host.finalRenderReady = false;
-    host.renderReadySubject.next(false);
-    host.finalRenderReadySubject.next(false);
+    // renderReady / finalRenderReady were converted from Subjects to signals
+    // in commit 2e084f59; the matching .next calls and plain assignments need
+    // signal API (.set) to keep the host fields valid signals.
+    host.renderReady.set(false);
+    host.finalRenderReady.set(false);
     host.cdRef.detectChanges();
 
     host.currentQuestion.set(result.currentQuestion);

@@ -67,7 +67,7 @@ export class QqcOrchLifecycleService {
         host.sharedOptionConfig = null;
       },
       onExplanationReset: () => host.resetExplanation(),
-      onRenderReset: () => { host.renderReady = false; },
+      onRenderReset: () => { host.renderReady.set(false); },
       onResetUIForNewQuestion: () => host.resetUIForNewQuestion()
     });
     for (const sub of navSubs) {
@@ -132,8 +132,11 @@ export class QqcOrchLifecycleService {
         setCurrentQuestion: (q: QuizQuestion | null) => { host.currentQuestion.set(q); },
         setOptionsToDisplay: (opts: Option[]) => { host.optionsToDisplay.set(opts); },
         setExplanationToDisplay: (text: string) => { host.explanationToDisplay.set(text); },
-        setRenderReady: (val: boolean) => { host.renderReady = val; },
-        emitRenderReady: (val: boolean) => host.renderReadySubject.next(val)
+        setRenderReady: (val: boolean) => { host.renderReady.set(val); },
+        // renderReadySubject was replaced with the renderReady signal
+        // in commit 2e084f59; .set() drives both the signal and any
+        // toObservable-derived stream consumers.
+        emitRenderReady: (val: boolean) => host.renderReady.set(val)
       });
       host.renderReadySubscription = host.renderReady$.subscribe();
 
@@ -293,10 +296,10 @@ export class QqcOrchLifecycleService {
       host.questionPayloadSig.set(host.questionPayload);
       setTimeout(() => {
         if (host.displayStateManager.shouldTriggerHydrationFallback({
-          renderReady: host.renderReady,
+          renderReady: host.renderReady(),
           options: host.optionsToDisplay()
         })) {
-          host.renderReady = true;
+          host.renderReady.set(true);
           host.cdRef.detectChanges();
         }
       }, 150);
@@ -328,9 +331,9 @@ export class QqcOrchLifecycleService {
     });
 
     if (isRenderReady) {
-      setTimeout(() => host.renderReadySubject.next(true), 0);
+      setTimeout(() => host.renderReady.set(true), 0);
     } else {
-      host.renderReadySubject.next(false);
+      host.renderReady.set(false);
     }
   }
 

@@ -89,6 +89,12 @@ export class SelectedOptionService {
   private optionSnapshotByQuestion = new Map<number, Option[]>();
 
   readonly isNextButtonEnabledSig = signal<boolean>(false);
+  // Initialized as a field so toObservable() runs in field-initializer
+  // injection context. Calling toObservable() lazily from a getter
+  // (the previous shape) throws NG0203 because consumers like
+  // QuizInitializationService.initializeAnswerSync read it from
+  // outside the injection context.
+  public isNextButtonEnabled$ = toObservable(this.isNextButtonEnabledSig);
 
   stopTimer$ = new Subject<void>();
   stopTimerEmitted = false;
@@ -101,10 +107,6 @@ export class SelectedOptionService {
 
   set isNextButtonEnabled(value: boolean) {
     this.isNextButtonEnabledSig.set(value);
-  }
-
-  get isNextButtonEnabled$(): Observable<boolean> {
-    return toObservable(this.isNextButtonEnabledSig);
   }
 
   constructor(

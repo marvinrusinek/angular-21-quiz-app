@@ -410,9 +410,8 @@ export class SharedOptionOrchestratorService {
       Array.isArray(host.optionsToDisplay) && host.optionsToDisplay.length > 0;
 
     if (bindingsReady && optionsReady) {
-      host.renderReady = true;
+      host.renderReady.set(true);
       host.renderReadyChange.emit(true);
-      host.renderReadySubject.next(true);
     }
   }
 

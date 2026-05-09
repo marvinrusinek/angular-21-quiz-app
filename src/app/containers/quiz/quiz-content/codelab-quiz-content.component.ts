@@ -96,6 +96,15 @@ export class CodelabQuizContentComponent implements OnInit, OnChanges, OnDestroy
   currentIndex$ = this.questionIndexSubject.asObservable();
   private readonly questionLoadingText = 'Loading question…';
 
+  // Restored after commit ed9f41d2 ("Clean up CodelabQuizContentComponent")
+  // dropped them — runSetupCorrectAnswersTextDisplay reads both .pipe before
+  // reassigning them and crashes when they're undefined.
+  private shouldDisplayCorrectAnswersSubject = new BehaviorSubject<boolean>(false);
+  shouldDisplayCorrectAnswers$: Observable<boolean> =
+    this.shouldDisplayCorrectAnswersSubject.asObservable();
+  isExplanationDisplayed$ = new BehaviorSubject<boolean>(false);
+  displayCorrectAnswersText$!: Observable<string | null>;
+
   isExplanationTextDisplayed$: Observable<boolean>;
 
   private get _fetLocked(): boolean { return this.displayService._fetLockedSig(); }

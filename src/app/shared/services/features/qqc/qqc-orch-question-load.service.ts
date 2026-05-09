@@ -120,7 +120,7 @@ export class QqcOrchQuestionLoadService {
 
       if (!shouldKeepExplanationVisible) {
         const clearResult = host.questionLoader.performPostResetExplanationClear();
-        host.renderReadySubject.next(false);
+        host.renderReady.set(false);
         host.displayState = clearResult.displayState;
         host.forceQuestionDisplay = clearResult.forceQuestionDisplay;
         host.readyForExplanationDisplay = clearResult.readyForExplanationDisplay;
