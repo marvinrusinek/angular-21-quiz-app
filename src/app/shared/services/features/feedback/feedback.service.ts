@@ -43,13 +43,16 @@ export class FeedbackService {
   ): string {
     if (timedOut) return 'Time\'s up. Review the explanation above.';
 
-    // URL-AUTHORITATIVE EARLY-EXIT: when on /question/{quizId}/{N} AND
-    // any recorded click (targetOption, the `selected` array, or the
-    // selectedOptionService) matches a correct option in the URL
-    // question, emit "You're right!" immediately. Bypasses the count
-    // logic below which has been intermittently producing "Not this
-    // one" on the last question (Q6 of dependency-injection) when
-    // bindings/optionsToDisplay/etc. lose their correct flag.
+    // URL-AUTHORITATIVE EARLY-EXIT: when on /question/{quizId}/{N},
+    // collect every recorded click (targetOption, the `selected` array,
+    // and the selectedOptionService) and reconcile it against the URL
+    // question's correct options.
+    //
+    // Single-answer: any one correct match → "You're right!".
+    // Multi-answer: ALL correct options selected AND zero incorrect
+    //   selections → "You're right!"; otherwise fall through to the
+    //   count logic below which produces "Select N more correct
+    //   answer(s)" or "Not this one" as appropriate.
     try {
       const m = window.location.pathname.match(/\/question\/[^/]+\/(\d+)/);
       if (m) {
@@ -60,13 +63,17 @@ export class FeedbackService {
         if (urlOpts.length > 0) {
           const correctIdxsURL: number[] = [];
           const correctTextsURL = new Set<string>();
+          const allTextsURL = new Set<string>();
           for (const [i, o] of urlOpts.entries()) {
             const c = (o as any)?.correct;
+            const text = String(o?.text ?? '').trim().toLowerCase();
+            if (text) allTextsURL.add(text);
             if (c === true || c === 1 || String(c) === 'true') {
               correctIdxsURL.push(i + 1);
-              if (o?.text) correctTextsURL.add(String(o.text).trim().toLowerCase());
+              if (text) correctTextsURL.add(text);
             }
           }
+
           if (correctTextsURL.size > 0) {
             const candidateTexts = new Set<string>();
             if (targetOption?.text) {
@@ -84,18 +91,33 @@ export class FeedbackService {
               }
             } catch { /* ignore */ }
 
+            const isMultiURL = correctTextsURL.size > 1;
+            let candidateCorrect = 0;
+            let candidateIncorrect = 0;
             for (const t of candidateTexts) {
-              if (correctTextsURL.has(t)) {
-                const dedupedC = Array.from(new Set(correctIdxsURL)).sort((a, b) => a - b);
-                if (dedupedC.length === 1) {
-                  return `You're right! The correct answer is Option ${dedupedC[0]}.`;
-                }
-                if (dedupedC.length > 1) {
-                  const listC = `${dedupedC.slice(0, -1).join(', ')} and ${dedupedC[dedupedC.length - 1]}`;
-                  return `You're right! The correct answers are Options ${listC}.`;
-                }
-                return `You're right!`;
+              if (correctTextsURL.has(t)) candidateCorrect++;
+              else if (allTextsURL.has(t)) candidateIncorrect++;
+            }
+
+            const allCorrectChosen = candidateCorrect >= correctTextsURL.size;
+            const noIncorrectChosen = candidateIncorrect === 0;
+
+            // Single-answer: one correct match is sufficient.
+            // Multi-answer: require all correct selected with no incorrect.
+            const shouldShortCircuit = isMultiURL
+              ? (allCorrectChosen && noIncorrectChosen)
+              : (candidateCorrect >= 1);
+
+            if (shouldShortCircuit) {
+              const dedupedC = Array.from(new Set(correctIdxsURL)).sort((a, b) => a - b);
+              if (dedupedC.length === 1) {
+                return `You're right! The correct answer is Option ${dedupedC[0]}.`;
               }
+              if (dedupedC.length > 1) {
+                const listC = `${dedupedC.slice(0, -1).join(', ')} and ${dedupedC[dedupedC.length - 1]}`;
+                return `You're right! The correct answers are Options ${listC}.`;
+              }
+              return `You're right!`;
             }
           }
         }
