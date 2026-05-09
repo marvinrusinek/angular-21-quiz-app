@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "deploy": "ng build --configuration=production && ngh --dir=dist/demo/browser --no-silent"
   },
   "dependencies": {
     "@angular/animations": "20.3.14",
