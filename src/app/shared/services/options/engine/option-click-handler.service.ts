@@ -424,6 +424,42 @@ export class OptionClickHandlerService {
       }
     }
 
+    // SINGLE-ANSWER GUARD: while no correct option has been selected for this
+    // question, every option must remain clickable so the user can recover
+    // from a wrong pick. The downstream lock signals (disabledBySet,
+    // optionLocked, lockedIncorrectOptionIds, flashDisabled) occasionally
+    // leak true on incorrect-only single-answer clicks; bypass them here
+    // until the user actually picks the correct answer.
+    if (!forceDisableAll) {
+      try {
+        const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
+        const saSelections =
+          this.selectedOptionService.getSelectedOptionsForQuestion(qIndex) ?? [];
+        const isShuffledSA = this.quizService?.isShuffleEnabled?.() &&
+          this.quizService?.shuffledQuestions?.length > 0;
+        const saQ = isShuffledSA
+          ? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIndex]
+            ?? (this.quizService as any)?.shuffledQuestions?.[qIndex]
+          : (this.quizService as any)?.questions?.[qIndex];
+        const saOpts = saQ?.options ?? [];
+        const correctTextsSA = new Set(
+          saOpts
+            .filter((o: any) =>
+              o?.correct === true || String(o?.correct) === 'true' ||
+              o?.correct === 1 || o?.correct === '1'
+            )
+            .map((o: any) => nrmSA(o?.text))
+            .filter((t: string) => !!t)
+        );
+        if (correctTextsSA.size === 1) {
+          const anyCorrectSelected = saSelections.some((s: any) =>
+            correctTextsSA.has(nrmSA(s?.text))
+          );
+          if (!anyCorrectSelected) return false;
+        }
+      } catch { /* ignore — fall through to legacy lock checks */ }
+    }
+
     const disabledSet = disabledOptionsPerQuestion.get(qIndex);
     const disabledBySet = disabledSet && (disabledSet.has(index) || disabledSet.has(lockId));
     const forceDisabled = forceDisableAll;

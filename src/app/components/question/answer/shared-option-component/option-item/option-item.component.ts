@@ -453,14 +453,22 @@ export class OptionItemComponent implements OnChanges, OnInit {
       if (clickConfirmed !== 'correct') return false;
     }
 
-    if (this.b?.disabled === true) return true;
-
     // SINGLE-ANSWER GUARD: if any sibling selection for the current question
     // is correct, lock every non-selected option. Strictly question-scoped via
     // questionIndex on the selection record, so navigation cannot leak.
+    // Runs BEFORE the b.disabled early-return so a stale/incorrect b.disabled=true
+    // flag (set by upstream pipelines that don't recompute on incorrect-only
+    // single-answer clicks) doesn't lock the unclicked siblings — the user must
+    // be able to recover from an incorrect pick by clicking another option.
     if (this.type() === 'single') {
       const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
-      let selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
+      // Read the signal directly — auto-tracks as a template dependency so
+      // OnPush re-evaluates this method on every selection mutation.
+      const selectionsMapSA = this.selectedOptionService.selectedOptionsMapSig();
+      let selections: any[] = selectionsMapSA.get(qIdx) ?? [];
+      if (selections.length === 0) {
+        selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
+      }
       if (selections.length === 0) {
         selections = this.selectedOptionService.getRefreshBackup(qIdx);
       }
@@ -519,22 +527,29 @@ export class OptionItemComponent implements OnChanges, OnInit {
         return isCorrectFlag(s?.correct ?? s?.isCorrect);
       });
 
-      if (anyCorrectSelected) {
-        // Lock self if NOT the currently-selected one.
-        // Prev-clicked entries (selected:false + showIcon:true + highlight:true)
-        // must NOT count as self-selected here — they represent the user's
-        // earlier wrong click that should now render dark gray/disabled after
-        // the correct answer has been chosen.
-        const selfSelected = filtered.some((s: any) => {
-          if (s?.selected === false) return false;
-          const sIdx = s?.displayIndex ?? s?.index ?? s?.idx;
-          if (typeof sIdx === 'number' && sIdx === this.i) return true;
-          const sId = s?.optionId;
-          return sId != null && this.b?.option?.optionId != null && String(sId) === String(this.b.option.optionId);
-        });
-        return !selfSelected;
-      }
+      // No correct yet → all options remain clickable so the user can recover.
+      // Do NOT consult b.disabled here; upstream pipelines occasionally leave
+      // it stale on incorrect-only single-answer clicks (the lock policy
+      // returns disabled=false but the WRITE site doesn't always reach it),
+      // and honoring that flag is what was making the siblings appear locked.
+      if (!anyCorrectSelected) return false;
+
+      // Correct was selected: lock self unless this binding is the selected one.
+      // Prev-clicked entries (selected:false + showIcon:true + highlight:true)
+      // must NOT count as self-selected here — they represent the user's
+      // earlier wrong click that should now render dark gray/disabled after
+      // the correct answer has been chosen.
+      const selfSelected = filtered.some((s: any) => {
+        if (s?.selected === false) return false;
+        const sIdx = s?.displayIndex ?? s?.index ?? s?.idx;
+        if (typeof sIdx === 'number' && sIdx === this.i) return true;
+        const sId = s?.optionId;
+        return sId != null && this.b?.option?.optionId != null && String(sId) === String(this.b.option.optionId);
+      });
+      return !selfSelected;
     }
+
+    if (this.b?.disabled === true) return true;
 
     return false;
   }
@@ -637,6 +652,49 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
     const _sh = this.shouldHighlightOption();
     if (!_sh) {
+      // Single-answer suppression: while no correct option has been selected
+      // for this question, never gray any non-selected option. Upstream
+      // pipelines occasionally leak b.disabled=true onto previously-clicked
+      // and never-clicked single-answer bindings, which would otherwise
+      // paint them gray after the user picks a 2nd incorrect option. The
+      // user must remain free to keep trying with a clear visual state.
+      const _qIdxSA = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      if (this.type() === 'single' && !this.b?.isSelected) {
+        const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
+        const liveQTSA = nrmSA(
+          (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdxSA]?.questionText
+          ?? (this.quizService as any)?.questions?.[_qIdxSA]?.questionText
+        );
+        const bundleSA: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        let pristineCorrectTextsSA: Set<string> | null = null;
+        if (liveQTSA) {
+          outerSA: for (const qSA of bundleSA) {
+            for (const pqSA of (qSA?.questions ?? [])) {
+              if (nrmSA(pqSA?.questionText) !== liveQTSA) continue;
+              pristineCorrectTextsSA = new Set(
+                (pqSA?.options ?? [])
+                  .filter((o: any) =>
+                    o?.correct === true || String(o?.correct) === 'true' ||
+                    o?.correct === 1 || o?.correct === '1'
+                  )
+                  .map((o: any) => nrmSA(o?.text))
+                  .filter((t: string) => !!t)
+              );
+              break outerSA;
+            }
+          }
+        }
+        if (pristineCorrectTextsSA && pristineCorrectTextsSA.size === 1) {
+          const selectionsMapSA = this.selectedOptionService.selectedOptionsMapSig();
+          const selectionsSA = selectionsMapSA.get(_qIdxSA) ?? [];
+          const noCorrectSelectedSA = !selectionsSA.some((s: any) => {
+            const txt = nrmSA(s?.text);
+            return !!txt && pristineCorrectTextsSA!.has(txt);
+          });
+          if (noCorrectSelectedSA) return null;
+        }
+      }
+
       // Dark gray for disabled unselected options (e.g. remaining
       // incorrect after all correct answers selected in multi-answer)
       if (this.b?.disabled && !this.b?.isSelected) return '#a0a0a0';
@@ -687,7 +745,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
           }
         }
         // Legacy flag fallback
-        const perfectMap = 
+        const perfectMap =
           (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
         if (perfectMap?.get(_qIdx) === true && !this.isOptionCorrect()) {
           return '#a0a0a0';
