@@ -126,15 +126,19 @@
   }
 }
 
-/* GRAY-DISABLED visual driven by `.is-locked`, a class fully under our
-   control via [class.is-locked]="isVisuallyLocked()". mat-radio-button's
-   [disabled] is hard-wired to false so Material never gets in the way of
-   legit clicks; click prevention for locked options is handled inside
-   onChanged()/onContentClick() in option-item.ts. */
-.option-row.is-locked:not(.correct-option):not(.incorrect-option) {
+/* DISABLED STATE — gray-fill for unselected/non-highlighted options when
+   mat-radio-button's [disabled] returns true. Material adds the
+   .mat-mdc-radio-disabled class only when isDisabled() returns true, and
+   isDisabled() is now precise: it returns true ONLY when a correct option
+   has been selected for the current question (single-answer) or the
+   multi-answer post-resolved state. So this rule only fires for genuine
+   locked-out cases. */
+.option-row.mat-mdc-radio-disabled:not(.correct-option):not(.incorrect-option),
+.option-row.mat-mdc-checkbox-disabled:not(.correct-option):not(.incorrect-option) {
   background-color: #a0a0a0 !important;
   border-color: #888 !important;
   cursor: default !important;
+  pointer-events: none !important;
 
   .option-text {
     color: #444 !important;

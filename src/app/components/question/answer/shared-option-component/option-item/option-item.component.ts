@@ -342,37 +342,6 @@ export class OptionItemComponent implements OnChanges, OnInit {
     return this.b.optionCursor || 'default';
   }
 
-  /**
-   * True when this is a single-answer question, no correct option has been
-   * selected yet, and this binding is not currently selected. Used to apply
-   * the `.sa-trying` class which forces clear background + clickable cursor
-   * and pointer-events:auto via SCSS, beating any Material-added disabled
-   * styling that might leak through other code paths.
-   */
-  isSingleAnswerTrying(): boolean {
-    // Lockstep with isDisabled(): a single-answer option that isn't
-    // selected and isn't currently disabled is by definition "still
-    // open for the user to try." Deriving it this way avoids drift
-    // between two parallel implementations of "is the user mid-attempt."
-    if (this.type() !== 'single') return false;
-    if (this.b?.isSelected) return false;
-    return !this.isDisabled();
-  }
-
-  /**
-   * True when the option should be visually locked (gray + non-interactive).
-   * Drives the `.is-locked` CSS class. Click prevention is handled in
-   * `onChangedSafe()` instead of mat-radio-button's [disabled] property,
-   * because Material's disabled-class application timing was over-blocking
-   * legit clicks on Q5+. Keeping [disabled]=false on the radio button
-   * means mat-radio always fires (change), and our handler decides whether
-   * to process or drop the event.
-   */
-  isVisuallyLocked(): boolean {
-    if (this.b?.isSelected) return false;
-    return this.isDisabled();
-  }
-
   isDisabled(): boolean {
     // Timer-expiry handler stamped all bindings as disabled
     if (this.isTimerStamped()) return true;
@@ -925,13 +894,6 @@ export class OptionItemComponent implements OnChanges, OnInit {
   }
 
   onChanged(event: any): void {
-    // Drop the click for visually-locked options (post-correct siblings,
-    // multi-answer perfect wrongs). [disabled] on mat-radio-button is
-    // wired to a constant `false` so Material never gets in the way of
-    // legit clicks; the lock check lives here instead.
-    if (this.isVisuallyLocked()) {
-      return;
-    }
     this._userHasClicked = true;
     this.optionUI.emit({
       optionId: this.optionId,
@@ -944,10 +906,6 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
   onContentClick(event: MouseEvent): void {
     event.stopPropagation();  // prevents double firing with parent (click)
-    if (this.isVisuallyLocked()) {
-      event.preventDefault();
-      return;
-    }
     this._userHasClicked = true;
     this.optionUI.emit({
       optionId: this.optionId,
