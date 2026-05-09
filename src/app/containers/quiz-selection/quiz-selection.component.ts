@@ -185,7 +185,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
       }
       
       await this.router.navigate([QuizRoutes.INTRO, quizId]);
-    } catch (error) {
+    } catch (error: any) {
       // error handled silently
     }
   }
