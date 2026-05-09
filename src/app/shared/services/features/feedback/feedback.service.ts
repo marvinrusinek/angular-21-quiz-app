@@ -43,6 +43,65 @@ export class FeedbackService {
   ): string {
     if (timedOut) return 'Time\'s up. Review the explanation above.';
 
+    // URL-AUTHORITATIVE EARLY-EXIT: when on /question/{quizId}/{N} AND
+    // any recorded click (targetOption, the `selected` array, or the
+    // selectedOptionService) matches a correct option in the URL
+    // question, emit "You're right!" immediately. Bypasses the count
+    // logic below which has been intermittently producing "Not this
+    // one" on the last question (Q6 of dependency-injection) when
+    // bindings/optionsToDisplay/etc. lose their correct flag.
+    try {
+      const m = window.location.pathname.match(/\/question\/[^/]+\/(\d+)/);
+      if (m) {
+        const urlIdx = Number(m[1]) - 1;
+        const quizSvcEarly: any = this.injector.get(QuizService, null);
+        const urlQ: any = (quizSvcEarly?.questions ?? [])[urlIdx];
+        const urlOpts: any[] = urlQ?.options ?? [];
+        if (urlOpts.length > 0) {
+          const correctIdxsURL: number[] = [];
+          const correctTextsURL = new Set<string>();
+          for (const [i, o] of urlOpts.entries()) {
+            const c = (o as any)?.correct;
+            if (c === true || c === 1 || String(c) === 'true') {
+              correctIdxsURL.push(i + 1);
+              if (o?.text) correctTextsURL.add(String(o.text).trim().toLowerCase());
+            }
+          }
+          if (correctTextsURL.size > 0) {
+            const candidateTexts = new Set<string>();
+            if (targetOption?.text) {
+              candidateTexts.add(String(targetOption.text).trim().toLowerCase());
+            }
+            for (const s of (selected ?? []) as any[]) {
+              if (s?.text) candidateTexts.add(String(s.text).trim().toLowerCase());
+            }
+            try {
+              const liveSelections =
+                quizSvcEarly?.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ??
+                this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
+              for (const s of liveSelections) {
+                if (s?.text) candidateTexts.add(String(s.text).trim().toLowerCase());
+              }
+            } catch { /* ignore */ }
+
+            for (const t of candidateTexts) {
+              if (correctTextsURL.has(t)) {
+                const dedupedC = Array.from(new Set(correctIdxsURL)).sort((a, b) => a - b);
+                if (dedupedC.length === 1) {
+                  return `You're right! The correct answer is Option ${dedupedC[0]}.`;
+                }
+                if (dedupedC.length > 1) {
+                  const listC = `${dedupedC.slice(0, -1).join(', ')} and ${dedupedC[dedupedC.length - 1]}`;
+                  return `You're right! The correct answers are Options ${listC}.`;
+                }
+                return `You're right!`;
+              }
+            }
+          }
+        }
+      }
+    } catch { /* non-browser env */ }
+
     /* const quizSvc = this.injector.get(QuizService, null);
     const qIdx = displayIndex ?? (question as any).questionIndex ?? quizSvc?.currentQuestionIndex ?? 0;
     let correctIndices = this.explanationTextService.getCorrectOptionIndices(question, optionsToDisplay ?? question.options ?? [], qIdx); */
