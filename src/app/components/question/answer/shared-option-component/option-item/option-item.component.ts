@@ -48,9 +48,9 @@ export interface OptionUIEvent {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OptionItemComponent implements OnChanges, OnInit {
+  readonly optionUI = output<OptionUIEvent>();
   readonly binding = input.required<OptionBindings>();
   readonly displayIndex = input.required<number>();
-  readonly optionUI = output<OptionUIEvent>();  // ONE output
   readonly type = input<'single' | 'multiple'>('single');
   readonly form = input.required<FormGroup>();
   readonly shouldResetBackground = input(false);
