@@ -1,6 +1,6 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, effect,
-  HostListener, input, OnChanges, OnDestroy, OnInit, output, signal, SimpleChanges
+  HostListener, input, OnDestroy, OnInit, output, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,7 +33,6 @@ import { OptionLockService } from '../../../../shared/services/options/policy/op
 import { OptionSelectionUiService } from '../../../../shared/services/options/engine/option-selection-ui.service';
 import { SharedOptionExplanationService } from '../../../../shared/services/features/shared-option/shared-option-explanation.service';
 import { OptionClickHandlerService } from '../../../../shared/services/options/engine/option-click-handler.service';
-import { SharedOptionChangeHandlerService, ChangeResult } from '../../../../shared/services/options/engine/shared-option-change-handler.service';
 import { SharedOptionFeedbackService, FeedbackContext, DisplayFeedbackResult } from '../../../../shared/services/features/shared-option/shared-option-feedback.service';
 import { SharedOptionInitService } from '../../../../shared/services/options/engine/shared-option-init.service';
 import { SharedOptionBindingService } from '../../../../shared/services/options/engine/shared-option-binding.service';
@@ -63,7 +62,7 @@ import { TimerService } from '../../../../shared/services/features/timer/timer.s
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SharedOptionComponent
-    implements OnInit, OnChanges, DoCheck, OnDestroy, AfterViewInit {
+    implements OnInit, DoCheck, OnDestroy, AfterViewInit {
   readonly optionClicked = output<OptionClickedPayload>();
   readonly optionEvent = output<OptionUIEvent>();
   readonly reselectionDetected = output<boolean>();
@@ -185,7 +184,6 @@ export class SharedOptionComponent
     private sharedOptionStateAdapterService: SharedOptionStateAdapterService,
     private explanationHandler: SharedOptionExplanationService,
     private clickHandler: OptionClickHandlerService,
-    private changeHandler: SharedOptionChangeHandlerService,
     private feedbackManager: SharedOptionFeedbackService,
     private initService: SharedOptionInitService,
     private bindingService: SharedOptionBindingService,
@@ -463,10 +461,6 @@ export class SharedOptionComponent
 
   private subscribeToSelectionChanges(): void {
     this.initService.subscribeToSelectionChanges(this as any);
-  }
-
-  async ngOnChanges(changes: SimpleChanges): Promise<void> {
-    return this.orchestrator.runOnChanges(this, changes);
   }
 
   ngAfterViewInit(): void {

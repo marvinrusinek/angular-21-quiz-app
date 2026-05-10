@@ -4,7 +4,6 @@ import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { ChangeResult } from '../../options/engine/shared-option-change-handler.service';
 import { FeedbackContext } from './shared-option-feedback.service';
 
 type Host = any;
@@ -38,100 +37,6 @@ export class SharedOptionOrchestratorService {
     try { host.destroy$?.complete(); } catch {}
     host.selectionSub?.unsubscribe();
     host.finalRenderReadySub?.unsubscribe();
-  }
-
-  // ===== ngOnChanges =====
-  async runOnChanges(host: Host, changes: any): Promise<void> {
-    const result = host.changeHandler.handleChanges(changes, {
-      currentQuestionIndex: host.currentQuestionIndex,
-      questionIndex: host.questionIndex(),
-      optionsToDisplay: host.optionsToDisplay,
-      config: host.config(),
-      type: host.type,
-      optionBindings: host.optionBindings,
-      selectedOption: host.selectedOption,
-      showFeedbackForOption: host.showFeedbackForOption,
-      showFeedback: host.showFeedback,
-      questionVersion: host.questionVersion(),
-      lastProcessedQuestionIndex: host.lastProcessedQuestionIndex,
-      resolvedQuestionIndex: host.resolvedQuestionIndex,
-      isMultiMode: host.isMultiMode,
-      form: host.form,
-      optionsToDisplay$: host.optionsToDisplay$,
-      resolveCurrentQuestionIndex: () => host.resolveCurrentQuestionIndex(),
-      updateResolvedQuestionIndex: (idx: number) => host.updateResolvedQuestionIndex(idx),
-      computeDisabledState: (opt: Option, idx: number) => host.computeDisabledState(opt, idx),
-      hydrateOptionsFromSelectionState: () => host.hydrateOptionsFromSelectionState(),
-      generateOptionBindings: () => host.generateOptionBindings(),
-      resetStateForNewQuestion: () => host.resetStateForNewQuestion(),
-      clearForceDisableAllOptions: () => host.clearForceDisableAllOptions(),
-      fullyResetRows: () => host.fullyResetRows(),
-      processOptionBindings: () => host.processOptionBindings(),
-      updateHighlighting: () => host.updateHighlighting()
-    });
-    this.runApplyChangeResult(host, result);
-  }
-
-  runApplyChangeResult(host: Host, r: ChangeResult): void {
-    if (r.selectedOptions === 'clear') host.selectedOptions.clear();
-    if (r.clickedOptionIds === 'clear') host.clickedOptionIds.clear();
-    if (r.selectedOptionMap === 'clear') host.selectedOptionMap.clear();
-    if (r.selectedOptionHistory !== undefined) host.selectedOptionHistory = r.selectedOptionHistory;
-    if (r.isMultiModeCache === null) host._isMultiModeCache = null;
-    if (r.lastHandledIndex === null) host._lastHandledIndex = null;
-    if (r.lastHandledTime === null) host._lastHandledTime = null;
-    if (r.forceDisableAll !== undefined) host.forceDisableAll = r.forceDisableAll;
-    if (r.lockedIncorrectOptionIds === 'clear') host.lockedIncorrectOptionIds.clear();
-    if (r.showFeedbackForOption !== undefined) host.showFeedbackForOption = r.showFeedbackForOption;
-    if (r.feedbackConfigs !== undefined) host.feedbackConfigs = r.feedbackConfigs;
-    if (r.lastFeedbackOptionId !== undefined) host.lastFeedbackOptionId = r.lastFeedbackOptionId as number;
-    if (r.lastFeedbackQuestionIndex !== undefined) host.lastFeedbackQuestionIndex = r.lastFeedbackQuestionIndex;
-    if (r.showFeedback !== undefined) host.showFeedback = r.showFeedback;
-    if (r.lastProcessedQuestionIndex !== undefined) host.lastProcessedQuestionIndex = r.lastProcessedQuestionIndex;
-    if (r.lastClickFeedback === null) host._lastClickFeedback = null;
-    if (r.feedbackDisplay === null) host._feedbackDisplay = null;
-    if (r.resolvedQuestionIndex !== undefined) host.resolvedQuestionIndex = r.resolvedQuestionIndex;
-    if (r.currentQuestionIndex !== undefined) host.currentQuestionIndex = r.currentQuestionIndex;
-    if (r.disabledOptionsPerQuestion === 'clear') host.disabledOptionsPerQuestion.clear();
-    if (r.activeFeedbackConfig === null) host.activeFeedbackConfig = null;
-    if (r.disableRenderTrigger === 'increment') host.disableRenderTrigger++;
-    if (r.optionsToDisplay !== undefined) host.optionsToDisplay = r.optionsToDisplay;
-    if (r.highlightedOptionIds === 'clear') host.highlightedOptionIds.clear();
-    if (r.selectedOption === null) host.selectedOption = null;
-    if (r.type !== undefined) host.type = r.type;
-    // questionVersion is now a signal input — write removed.
-    if (r.flashDisabledSet === 'clear') host.flashDisabledSet.clear();
-    if (r.correctClicksPerQuestion === 'clear') host.correctClicksPerQuestion.clear();
-
-    if (r.optionsToDisplay !== undefined) {
-      // optional-chain `next` so this is a no-op when the host doesn't
-      // expose optionsToDisplay$ (the subject was removed in commit
-      // a9164c67 along with its only subscriber). Without the guard,
-      // calling `.next` on undefined throws and aborts runApplyChangeResult,
-      // which leaves the host in a partially-applied state and triggers
-      // NG0953 emits on a now-destroyed output.
-      host.optionsToDisplay$?.next?.(
-        Array.isArray(host.optionsToDisplay) ? [...host.optionsToDisplay] : []
-      );
-    }
-
-    if (r.callResetStateForNewQuestion) host.resetStateForNewQuestion();
-    if (r.callClearForceDisableAllOptions) host.clearForceDisableAllOptions();
-    if (r.callFullyResetRows) host.fullyResetRows();
-    if (r.resetFormSelectedOptionId) {
-      host.form.get('selectedOptionId')?.setValue(null, { emitEvent: false });
-    }
-    if (r.callProcessOptionBindings) host.processOptionBindings();
-    if (r.callHydrateAndGenerate) {
-      host.hydrateOptionsFromSelectionState();
-      host.generateOptionBindings();
-    } else if (r.callGenerateOnly) {
-      host.generateOptionBindings();
-    }
-    if (r.callUpdateHighlighting) host.updateHighlighting();
-
-    if (r.detectChanges) host.cdRef.detectChanges();
-    else if (r.markForCheck) host.cdRef.markForCheck();
   }
 
   // ===== Index helpers =====
