@@ -90,6 +90,15 @@ export class SocAnswerProcessingService {
     const clickState = this.clickHandler.computeMultiAnswerClickState(
       index, durableSet, effectiveCorrectIndices
     );
+    console.log('[Q2-DEBUG] clickState',
+      'index=', index,
+      'durableSet=', JSON.stringify([...durableSet]),
+      'effectiveCorrectIndices=', JSON.stringify(effectiveCorrectIndices),
+      'qIdx=', qIdx,
+      'correctSelected=', clickState.correctSelected,
+      'remaining=', clickState.remaining,
+      'isClickedCorrect=', clickState.isClickedCorrect
+    );
 
     if (!comp.disabledOptionsPerQuestion.has(qIdx)) {
       comp.disabledOptionsPerQuestion.set(qIdx, new Set<number>());
