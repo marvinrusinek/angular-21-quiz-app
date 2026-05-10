@@ -42,6 +42,7 @@ export class SharedOptionClickService {
   ) {}
 
   onOptionUI(comp: any, ev: any): void {
+    console.log('[Q5-DEBUG] onOptionUI', 'kind=', ev?.kind, 'optionId=', ev?.optionId, 'displayIndex=', ev?.displayIndex, 'text=', comp.optionBindings?.[ev?.displayIndex]?.option?.text);
     if (ev == null || ev.optionId == null) return;
 
     const index = ev.displayIndex ?? comp.findBindingByOptionId(ev.optionId)?.i;
@@ -161,6 +162,15 @@ export class SharedOptionClickService {
   }
 
   runOptionContentClick(comp: any, binding: any, index: number, event: any): void {
+    const now0 = Date.now();
+    console.log('[Q5-DEBUG] runOptionContentClick ENTRY',
+      'index=', index,
+      'optionText=', binding?.option?.text,
+      '_lastRunClickIndex=', comp._lastRunClickIndex,
+      '_lastRunClickTime=', comp._lastRunClickTime,
+      'now=', now0,
+      'rateLimitHit=', comp._lastRunClickIndex === index && comp._lastRunClickTime && (now0 - comp._lastRunClickTime) < 200
+    );
     try {
       const _qIdx = comp.getActiveQuestionIndex();
       const _dispQ = (this.quizService as any)?.getQuestionsInDisplayOrder?.();
