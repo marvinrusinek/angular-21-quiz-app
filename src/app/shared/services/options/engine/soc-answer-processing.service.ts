@@ -527,6 +527,15 @@ export class SocAnswerProcessingService {
       }
     } catch { /* ignore */ }
 
+    console.log('[Q6-DEBUG] processSingleAnswerClick',
+      'qIdx=', qIdx,
+      'index=', index,
+      'pristineSingleCorrect=', pristineSingleCorrect,
+      'clickedBinding.option.text=', comp.optionBindings?.[index]?.option?.text,
+      'clickedBinding.option.correct=', comp.optionBindings?.[index]?.option?.correct,
+      'currentQuestion.text=', comp.currentQuestion?.questionText,
+      'correctIdxs=', JSON.stringify(correctIdxs)
+    );
     if (pristineSingleCorrect) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
 
