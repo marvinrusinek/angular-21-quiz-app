@@ -181,13 +181,22 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         // from clearing valid options that may have arrived via @Input
         if (!opts?.length) return;
 
-        // Sync currentQuestionIndex with quizService on every Q->Q
-        // emission. Without this, the dynamic AnswerComponent's
-        // currentQuestionIndex stays at its init value (0) and SOC's
-        // Q->Q cleanup effect never fires, leaking visual state.
+        // Sync currentQuestionIndex + questionData with quizService on every
+        // Q->Q emission. Without this, the dynamic AnswerComponent's
+        // currentQuestionIndex stays at its init value (0) and questionData
+        // stays at Q1's value (set once in configureDynamicInstance during
+        // dynamic load). SOC mirrors questionData -> currentQuestion, so a
+        // stale questionData makes pristine lookups (by questionText) target
+        // Q1's data while the bindings are Q2's, returning the wrong
+        // correctIndices and flipping the 2nd-correct click to sad.
         const svcIdx = this.quizService.currentQuestionIndex;
         if (typeof svcIdx === 'number' && Number.isFinite(svcIdx)) {
           this.currentQuestionIndex.set(svcIdx);
+        }
+        const liveQ = this.quizService.questions?.[svcIdx];
+        if (liveQ) {
+          this.questionData.set({ ...liveQ, options: opts });
+          this.question.set({ ...liveQ });
         }
 
         this.incomingOptions = this.answerOptionsService.normalizeOptions(
