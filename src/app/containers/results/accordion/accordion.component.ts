@@ -59,77 +59,105 @@ export class AccordionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Recover selections from durable localStorage store.
-    // clearState/resetAll wipes rawSelectionsMap AND sessionStorage,
-    // but the durable 'quizAnswersForResults' key in localStorage survives.
+    const userAnswersData = this.recoverUserAnswers();
+    this.initializeResults(userAnswersData);
+    this.loadInitialQuestionsFromService();
+    this.subscribeToQuestionsStream();
+    this.normalizeUserAnswers();
+  }
+
+  // Recover selections from durable localStorage store. clearState/resetAll
+  // wipes rawSelectionsMap AND sessionStorage, but the durable
+  // 'quizAnswersForResults' key in localStorage survives. Falls back to the
+  // service's userAnswers if localStorage is empty.
+  private recoverUserAnswers(): any[] {
     this.selectedOptionService.recoverAnswersForResults();
 
-    // Read userAnswers directly from localStorage to ensure we have the latest data
     let storedAnswers: any[] = [];
     try {
       const stored = localStorage.getItem('userAnswers');
       storedAnswers = stored ? JSON.parse(stored) : [];
-    } catch (error) {
+    } catch (error: any) {
       // error handled silently
     }
 
-    // Use localStorage data as primary source, fallback to service
-    const userAnswersData =
-      storedAnswers.length > 0 ? storedAnswers : this.quizService.userAnswers;
-    
-    // Initialize results in ngOnInit when service data is available
+    return storedAnswers.length > 0 ? storedAnswers : this.quizService.userAnswers;
+  }
+
+  private initializeResults(userAnswersData: any[]): void {
     this.results = {
       userAnswers: userAnswersData,
       elapsedTimes: this.timerService.elapsedTimes
     };
+  }
 
-    // Try to load questions immediately from service state first (for navigation back scenarios)
+  // For navigation-back scenarios — populate from service state synchronously
+  // so the accordion renders without waiting for the questions$ stream.
+  private loadInitialQuestionsFromService(): void {
     const currentQuestions = this.quizService.questions;
     if (currentQuestions && currentQuestions.length > 0) {
       this.questions = currentQuestions;
       this.cdRef.detectChanges();  // force immediate update for OnPush
     }
- 
-    this.quizService.questions$.pipe(takeUntil(this.destroy$)).subscribe((questions) => {
-      this.questions = questions;
-      this.cdRef.detectChanges();  // force immediate update for OnPush
-      
-      if (this.questions.length === 0 && !this.hasRetried) {
-        this.hasRetried = true;
-        // Use a small timeout to let other initializations settle
-        setTimeout(() => {
-          // Priority: URL params > Service State
-          let id = this.activatedRoute.snapshot.paramMap.get('quizId') || 
-            this.activatedRoute.parent?.snapshot.paramMap.get('quizId');
-            
-          if (!id) {
-            id = this.quizService.quizId;
-          } else {
-            // Sync service state if it's currently empty or different
-            if (this.quizService.quizId !== id) {
-              this.quizService.setQuizId(id);
-            }
+  }
+
+  private subscribeToQuestionsStream(): void {
+    this.quizService.questions$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((questions) => {
+        this.questions = questions;
+        this.cdRef.detectChanges();  // force immediate update for OnPush
+
+        if (this.questions.length === 0 && !this.hasRetried) {
+          this.hasRetried = true;
+          this.retryLoadQuestionsViaDataService();
+        }
+      });
+  }
+
+  // Fallback path when questions$ emits empty: resolve quizId from route or
+  // service, then fetch directly from QuizDataService (bypasses shuffling /
+  // state complexity).
+  private retryLoadQuestionsViaDataService(): void {
+    // Use a small timeout to let other initializations settle
+    setTimeout(() => {
+      const id = this.resolveQuizId();
+      if (!id) return;
+
+      this.quizDataService.getQuestionsForQuiz(id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((qs: QuizQuestion[]) => {
+          if (qs && qs.length > 0) {
+            this.questions = qs;
+            this.cdRef.detectChanges();  // force immediate update for OnPush
           }
+        });
+    }, 100);
+  }
 
-          if (!id) return;
+  // Priority: URL params > service state. Syncs the service if the URL had
+  // a different id so downstream consumers see consistent state.
+  private resolveQuizId(): string | null {
+    let id = this.activatedRoute.snapshot.paramMap.get('quizId') ||
+      this.activatedRoute.parent?.snapshot.paramMap.get('quizId') ||
+      null;
 
-          // Fallback to QuizDataService to ensure clarity (bypasses shuffling/state complexity)
-          this.quizDataService.getQuestionsForQuiz(id).pipe(takeUntil(this.destroy$)).subscribe((qs: QuizQuestion[]) => {
-            if (qs && qs.length > 0) {
-              this.questions = qs;
-              this.cdRef.detectChanges();  // force immediate update for OnPush
-            }
-          });
-        }, 100);
-      }
-    });
-
-    // Normalize userAnswers so Angular can always iterate
-    if (this.results?.userAnswers) {
-      this.results.userAnswers = this.results.userAnswers.map((ans) =>
-        Array.isArray(ans) ? ans : (ans !== null && ans !== undefined ? [ans] : [])
-      );
+    if (!id) {
+      id = this.quizService.quizId;
+    } else if (this.quizService.quizId !== id) {
+      this.quizService.setQuizId(id);
     }
+
+    return id;
+  }
+
+  // Coerce userAnswers entries into arrays so Angular's template can iterate
+  // them uniformly (raw values come back as either scalar or array).
+  private normalizeUserAnswers(): void {
+    if (!this.results?.userAnswers) return;
+    this.results.userAnswers = this.results.userAnswers.map((ans) =>
+      Array.isArray(ans) ? ans : (ans !== null && ans !== undefined ? [ans] : [])
+    );
   }
 
   checkIfAnswersAreCorrect(
