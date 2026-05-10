@@ -174,14 +174,25 @@ export class SocAnswerProcessingService {
     // correctly show green. Pristine indices are the immutable source of truth.
     const freshOption = comp.optionBindings?.[index]?.option ?? binding.option;
     const isClickedCorrect = new Set(effectiveCorrectIndices).has(index);
-    console.log('[Q2-DEBUG] processMultiAnswerClick',
-      'index=', index,
-      'effectiveCorrectIndices=', JSON.stringify(effectiveCorrectIndices),
-      'isClickedCorrect=', isClickedCorrect,
-      'freshOption.text=', freshOption?.text,
-      'freshOption.correct=', freshOption?.correct,
-      'binding.option.correct=', binding?.option?.correct
-    );
+    try {
+      const liveQT = comp.currentQuestion?.questionText;
+      const pristineTexts = this.quizService.getPristineCorrectTextsForQuestion(liveQT);
+      const bundleSize = ((this.quizService as any)?.quizInitialState ?? []).length;
+      const bindingTexts = (comp.optionBindings ?? []).map((b: any) => b?.option?.text);
+      const bindingCorrects = (comp.optionBindings ?? []).map((b: any) => b?.option?.correct);
+      console.log('[Q2-DEBUG] processMultiAnswerClick',
+        'index=', index,
+        'effectiveCorrectIndices=', JSON.stringify(effectiveCorrectIndices),
+        'isClickedCorrect=', isClickedCorrect,
+        '|| liveQText=', liveQT,
+        '|| pristineCorrectTexts=', JSON.stringify([...pristineTexts]),
+        '|| bundleSize=', bundleSize,
+        '|| bindingTexts=', JSON.stringify(bindingTexts),
+        '|| bindingCorrects=', JSON.stringify(bindingCorrects)
+      );
+    } catch (e: any) {
+      console.log('[Q2-DEBUG] log error:', e?.message);
+    }
     comp._feedbackDisplay = {
       idx: index,
       config: {
