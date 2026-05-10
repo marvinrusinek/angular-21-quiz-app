@@ -1,21 +1,21 @@
 <div
   class="option-cursor-wrapper"
   [class.cursor-not-allowed]="getOptionCursor() === 'not-allowed'"
-  [attr.data-option-id]="b.option.optionId"
+  [attr.data-option-id]="binding().option.optionId"
 >
   @if (type() === 'single') {
     <mat-radio-button
       class="option-row single-option"
       appHighlightOption
       [sharedOptionConfig]="sharedOptionConfig()"
-      [optionBinding]="b"
-      [value]="i"
+      [optionBinding]="binding()"
+      [value]="displayIndex()"
       [ngClass]="getOptionClasses()"
       [style.background-color]="getOptionBackgroundColor()"
       [disabled]="isDisabled()"
       [disableRipple]="true"
       (change)="onChanged($event)"
-      [attr.data-option-id]="b.option.optionId"
+      [attr.data-option-id]="binding().option.optionId"
     >
       <ng-container *ngTemplateOutlet="optionContent"></ng-container>
     </mat-radio-button>
@@ -24,14 +24,14 @@
       class="option-row multiple-option"
       appHighlightOption
       [sharedOptionConfig]="sharedOptionConfig()"
-      [optionBinding]="b"
-      [checked]="b.isSelected"
+      [optionBinding]="binding()"
+      [checked]="binding().isSelected"
       [ngClass]="getOptionClasses()"
       [style.background-color]="getOptionBackgroundColor()"
       [disabled]="isDisabled()"
       [disableRipple]="true"
       (change)="onChanged($event)"
-      [attr.data-option-id]="b.option.optionId"
+      [attr.data-option-id]="binding().option.optionId"
     >
       <ng-container *ngTemplateOutlet="optionContent"></ng-container>
     </mat-checkbox>
@@ -44,9 +44,9 @@
       {{ getOptionDisplayText() }}
     </span>
 
-    @if (shouldShowIcon(b.option, i)) {
+    @if (shouldShowIcon(binding().option, displayIndex())) {
       <mat-icon class="opt-icon">
-        {{ getOptionIcon(b.option, i) }}
+        {{ getOptionIcon(binding().option, displayIndex()) }}
       </mat-icon>
     }
   </div>

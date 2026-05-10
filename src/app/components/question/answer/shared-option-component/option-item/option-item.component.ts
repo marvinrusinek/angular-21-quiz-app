@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, OnInit, SimpleChanges, ViewEncapsulation, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnChanges, OnInit, SimpleChanges, ViewEncapsulation, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -48,8 +48,8 @@ export interface OptionUIEvent {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OptionItemComponent implements OnChanges, OnInit {
-  @Input() b!: OptionBindings;
-  @Input() i!: number;
+  readonly binding = input.required<OptionBindings>();
+  readonly displayIndex = input.required<number>();
   readonly optionUI = output<OptionUIEvent>();  // ONE output
   readonly type = input<'single' | 'multiple'>('single');
   readonly form = input.required<FormGroup>();
@@ -116,7 +116,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
   // sync ensures consistent state.
   private applyMultiAnswerDisableState(): void {
     try {
-      if (!this.b?.option) return;
+      if (!this.binding()?.option) return;
       const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
 
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
@@ -137,10 +137,10 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
       if (!allPristineCorrectSelected) return;
 
-      const myText = nrm(this.b.option.text);
+      const myText = nrm(this.binding().option.text);
       if (!selectedTexts.has(myText)) {
-        this.b.disabled = true;
-        if (this.b.option) (this.b.option as any).active = false;
+        this.binding().disabled = true;
+        if (this.binding().option) (this.binding().option as any).active = false;
       }
     } catch { /* never throw from a CD-triggered method */ }
   }
@@ -158,14 +158,15 @@ export class OptionItemComponent implements OnChanges, OnInit {
           this._wasTimerExpired = false;
           this._directTimerExpired = false;
           this._directTimerExpiredForIndex = -1;
-          if (this.b) {
-            this.b.isSelected = false;
-            this.b.disabled = false;
-            this.b.cssClasses = {};
-            if (this.b.option) {
-              this.b.option.selected = false;
-              this.b.option.highlight = false;
-              this.b.option.showIcon = false;
+          const b = this.binding();
+          if (b) {
+            b.isSelected = false;
+            b.disabled = false;
+            b.cssClasses = {};
+            if (b.option) {
+              b.option.selected = false;
+              b.option.highlight = false;
+              b.option.showIcon = false;
             }
           }
           this._userHasClicked = false;
@@ -192,7 +193,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // so _wasSelected would already be latched — causing ghost highlights
     // (e.g. 2nd correct answer in multi-answer). Gating on _userHasClicked
     // ensures only actual user clicks latch the highlight.
-    if (this.b?.isSelected && this._userHasClicked) this._wasSelected = true;
+    if (this.binding()?.isSelected && this._userHasClicked) this._wasSelected = true;
   }
 
   /**
@@ -223,8 +224,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
   }
 
   get optionId(): number {
-    return (this.b?.option?.optionId != null && this.b.option.optionId !== -1)
-      ? Number(this.b.option.optionId) : this.i;
+    return (this.binding()?.option?.optionId != null && this.binding().option.optionId !== -1)
+      ? Number(this.binding().option.optionId) : this.displayIndex();
   }
 
   private get inputType(): 'radio' | 'checkbox' {
@@ -232,17 +233,17 @@ export class OptionItemComponent implements OnChanges, OnInit {
   }
 
   getOptionDisplayText(): string {
-    return this.optionService.getOptionDisplayText(this.b.option, this.i);
+    return this.optionService.getOptionDisplayText(this.binding().option, this.displayIndex());
   }
 
   private isOptionCorrect(): boolean {
-    const opt = this.b?.option as any;
+    const opt = this.binding()?.option as any;
     if (
       opt?.correct === true ||
       String(opt?.correct) === 'true' ||
       opt?.correct === 1 ||
       opt?.correct === '1' ||
-      this.b?.isCorrect === true
+      this.binding()?.isCorrect === true
     ) return true;
 
     // Fallback: check authoritative question data from quiz service.
@@ -269,11 +270,11 @@ export class OptionItemComponent implements OnChanges, OnInit {
     if (this.shouldShowFeedback() || this.shouldShowCorrectOnTimeout()) {
       return this.isOptionCorrect() ? 'check' : 'close';
     }
-    return this.b.optionIcon || '';
+    return this.binding().optionIcon || '';
   }
 
   getOptionClasses(): { [key: string]: boolean } {
-    const classes = { ...this.b.cssClasses };
+    const classes = { ...this.binding().cssClasses };
 
     // If the timer-expiry handler pre-stamped CSS classes on this binding
     // FOR THIS question, return them directly — do NOT let downstream
@@ -284,8 +285,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     if (this.isTimerExpiredForThisQuestion()) {
       // Preserve the user's selected state on timer expiry: a selected
       // wrong option must still paint red with its close icon.
-      const wasSelected = this.b?.isSelected
-        || !!this.b?.option?.highlight
+      const wasSelected = this.binding()?.isSelected
+        || !!this.binding()?.option?.highlight
         || this._wasSelected
         || this.isSelectedForCurrentQuestion();
       const showCorrect = this.shouldShowCorrectOnTimeout();
@@ -318,7 +319,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
   }
 
   getOptionCursor(): string {
-    return this.b.optionCursor || 'default';
+    return this.binding().optionCursor || 'default';
   }
 
   isDisabled(): boolean {
@@ -334,7 +335,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // template passed. This catches cases where isMultiMode resolved
     // false in the template (e.g. Q2 of dependency-injection quiz)
     // due to mutated/missing live binding flags.
-    if (_type !== 'multiple' && this.b?.option?.text) {
+    if (_type !== 'multiple' && this.binding()?.option?.text) {
       const liveQT =
         (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
         ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText;
@@ -371,7 +372,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
         const allPristineCorrectSelected =
           [...pristineCorrectTexts].every(t => selectedTexts.has(t));
         if (allPristineCorrectSelected) {
-          const myText = nrm(this.b?.option?.text);
+          const myText = nrm(this.binding()?.option?.text);
           return !selectedTexts.has(myText);
         }
       }
@@ -380,7 +381,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
       // (no quizInitialState match, etc.).
       const perfectMap = 
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-      if (perfectMap?.get(_qIdx) === true && this.b?.disabled === true) {
+      if (perfectMap?.get(_qIdx) === true && this.binding()?.disabled === true) {
         return true;
       }
       return false;
@@ -391,7 +392,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     //          for this question.
     // The currently-selected option is never disabled.
     // While no correct option has been selected, every option stays clickable.
-    if (this.b?.isSelected) return false;
+    if (this.binding()?.isSelected) return false;
 
     const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
     // Read signal directly — OnPush auto-tracks selection mutations.
@@ -434,10 +435,10 @@ export class OptionItemComponent implements OnChanges, OnInit {
    * Q2's options don't inherit Q1's expired state.
    */
   private isTimerStamped(): boolean {
-    const stamped = (this.b as any)?._timerExpiredStamped;
+    const stamped = (this.binding() as any)?._timerExpiredStamped;
     if (!stamped) return false;
 
-    const stampedFor = (this.b as any)?._timerExpiredStampedForIndex;
+    const stampedFor = (this.binding() as any)?._timerExpiredStampedForIndex;
     if (stampedFor == null) return true;  // legacy stamps with no scope
 
     const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
@@ -446,20 +447,20 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
   /** True when this binding was stamped as a correct option by the timer handler. */
   private isStampedCorrect(): boolean {
-    return this.isTimerStamped() && this.b?.cssClasses?.['correct-option'] === true;
+    return this.isTimerStamped() && this.binding()?.cssClasses?.['correct-option'] === true;
   }
 
   shouldShowIcon(option?: any, i?: number): boolean {
     if (this.isTimerStamped()) {
       if (this.isStampedCorrect()) return true;
-      return !!this.b?.isSelected || this._wasSelected;
+      return !!this.binding()?.isSelected || this._wasSelected;
     }
     if (this.isTimerExpiredForThisQuestion()) {
       // Show icon for correct options AND for any option the user
       // actually selected (so a selected wrong answer keeps its X).
       if (this.shouldShowCorrectOnTimeout()) return true;
-      return this.b?.isSelected
-        || !!this.b?.option?.highlight
+      return this.binding()?.isSelected
+        || !!this.binding()?.option?.highlight
         || this._wasSelected
         || this.isSelectedForCurrentQuestion();
     }
@@ -478,7 +479,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
       // effectiveId collisions or stale entries.
       // On refresh/initial-load, showIcon is typically undefined (not
       // explicitly false), so the service check below still runs.
-      if (this.b?.option?.showIcon === false) return false;
+      if (this.binding()?.option?.showIcon === false) return false;
 
       // No live click this session → only show icon if a saved
       // selection actually matches this exact binding position.
@@ -486,12 +487,12 @@ export class OptionItemComponent implements OnChanges, OnInit {
     }
 
     const hasAnyPerBindingSignal =
-      this.b?.option?.showIcon === true
-      || this.b?.isSelected === true
-      || !!this.b?.option?.highlight
+      this.binding()?.option?.showIcon === true
+      || this.binding()?.isSelected === true
+      || !!this.binding()?.option?.highlight
       || this._wasSelected;
     if (!hasAnyPerBindingSignal) {
-      if (this.b?.disabled === true) return false;
+      if (this.binding()?.disabled === true) return false;
       if (!this.isSelectedForCurrentQuestion()) return false;
     }
 
@@ -510,14 +511,14 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // Timer-expiry handler stamped this binding — use stamped classes for color
     if (this.isTimerStamped()) {
       if (this.isStampedCorrect()) return '#43e756';
-      const wasSelected = this.b?.isSelected || this._wasSelected;
+      const wasSelected = this.binding()?.isSelected || this._wasSelected;
       return wasSelected && !this.isStampedCorrect() ? '#ff0000' : null;
     }
     if (this.isTimerExpiredForThisQuestion()) {
       if (this.shouldShowCorrectOnTimeout()) return '#43e756';
       // Keep the user's wrong selection red on timer expiry.
-      const wasSelected = this.b?.isSelected
-        || !!this.b?.option?.highlight
+      const wasSelected = this.binding()?.isSelected
+        || !!this.binding()?.option?.highlight
         || this._wasSelected
         || this.isSelectedForCurrentQuestion();
       return wasSelected && !this.isOptionCorrect() ? '#ff0000' : null;
@@ -526,8 +527,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // AUTO-REVEAL backup: persistent custom flag wins over any state that
     // might cause shouldHighlightOption() to return false. Paints green
     // directly via inline style.
-    if ((this.b as any)?._autoRevealedCorrect === true ||
-        (this.b?.option as any)?._autoRevealedCorrect === true) {
+    if ((this.binding() as any)?._autoRevealedCorrect === true ||
+        (this.binding()?.option as any)?._autoRevealedCorrect === true) {
       return '#43e756';
     }
     if (this.isOptionCorrect()) {
@@ -535,7 +536,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
       const perfectMapARBg =
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMapARBg?.get(_qIdxARBg) === true ||
-          this.b?.cssClasses?.['correct-option'] === true) {
+          this.binding()?.cssClasses?.['correct-option'] === true) {
         return '#43e756';
       }
     }
@@ -549,7 +550,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
       // paint them gray after the user picks a 2nd incorrect option. The
       // user must remain free to keep trying with a clear visual state.
       const _qIdxSA = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
-      if (this.type() === 'single' && !this.b?.isSelected) {
+      if (this.type() === 'single' && !this.binding()?.isSelected) {
         const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
         const liveQTSA =
           (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdxSA]?.questionText
@@ -569,14 +570,14 @@ export class OptionItemComponent implements OnChanges, OnInit {
 
       // Dark gray for disabled unselected options (e.g. remaining
       // incorrect after all correct answers selected in multi-answer)
-      if (this.b?.disabled && !this.b?.isSelected) return '#a0a0a0';
+      if (this.binding()?.disabled && !this.binding()?.isSelected) return '#a0a0a0';
 
       // Multi-answer data-driven gray: when the user has selected every
       // pristine-correct option for this question, every unselected
       // (incorrect) option goes gray. Mirrors the isDisabled() check so
       // visuals stay in lockstep without depending on _multiAnswerPerfect
       // or b.disabled flags being set in sync.
-      if (this.type() === 'multiple' && !this.b?.isSelected) {
+      if (this.type() === 'multiple' && !this.binding()?.isSelected) {
         const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
         const nrmBg = (t: any) => String(t ?? '').trim().toLowerCase();
         const liveQTBg =
@@ -593,7 +594,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
           );
           const allPristineCorrectSelectedBg =
             [...pristineCorrectTextsBg].every(t => selectedTextsBg.has(t));
-          const myTextBg = nrmBg(this.b?.option?.text);
+          const myTextBg = nrmBg(this.binding()?.option?.text);
           if (allPristineCorrectSelectedBg && !selectedTextsBg.has(myTextBg)) {
             return '#a0a0a0';
           }
@@ -673,7 +674,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // TEXT MATCH (most reliable — immune to synthetic ID mismatches
     // and index collisions from different init paths).
     const selText = ((sel as any)?.text ?? '').trim().toLowerCase();
-    const bText = (this.b?.option?.text ?? '').trim().toLowerCase();
+    const bText = (this.binding()?.option?.text ?? '').trim().toLowerCase();
     if (selText && bText) return selText === bText;
 
     // Prefer `displayIndex` — that's what setSelectedOption enriches with
@@ -687,13 +688,13 @@ export class OptionItemComponent implements OnChanges, OnInit {
       rawIdx != null && Number.isFinite(Number(rawIdx)) ? Number(rawIdx) : null;
 
     if (normalizedSelectedIndex != null) {
-      if (normalizedSelectedIndex !== this.i) return false;
+      if (normalizedSelectedIndex !== this.displayIndex()) return false;
 
       // Position matches — cross-check optionId to prevent false
       // positives when options reload in a different order or when
       // stale displayIndex values leak from a prior session.
       const selId = sel?.optionId;
-      const bId = this.b?.option?.optionId;
+      const bId = this.binding()?.option?.optionId;
       const selIdIsReal =
         selId != null && selId !== -1 && String(selId) !== '-1';
       const bIdIsReal =
@@ -706,7 +707,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // Require a real, non-sentinel id on BOTH sides so that multiple
     // bindings sharing a -1/null optionId don't all match the same record.
     const selId = sel?.optionId;
-    const bId = this.b?.option?.optionId;
+    const bId = this.binding()?.option?.optionId;
     const selIdIsReal =
       selId != null && selId !== -1 && String(selId) !== '-1';
     const bIdIsReal =
@@ -723,7 +724,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     this._userHasClicked = true;
     this.optionUI.emit({
       optionId: this.optionId,
-      displayIndex: this.i,
+      displayIndex: this.displayIndex(),
       kind: 'change',
       inputType: this.inputType,
       nativeEvent: event
@@ -735,7 +736,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     this._userHasClicked = true;
     this.optionUI.emit({
       optionId: this.optionId,
-      displayIndex: this.i,
+      displayIndex: this.displayIndex(),
       kind: 'contentClick',
       inputType: this.inputType,
       nativeEvent: event
@@ -749,7 +750,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // binding's selection is confirmed by authoritative saved state.
     // Without the guard, transient b.isSelected from stale option.selected
     // data latches _wasSelected and bypasses the refresh guard below.
-    if (this.b?.isSelected && !this._wasSelected) {
+    if (this.binding()?.isSelected && !this._wasSelected) {
       if (this._userHasClicked || this.isSelectedForCurrentQuestion()) {
         this._wasSelected = true;
       }
@@ -760,8 +761,8 @@ export class OptionItemComponent implements OnChanges, OnInit {
     // spread AND the updateBindingSnapshots cssClasses rebuild that wipes
     // option.highlight-derived classes. Checked first so the green
     // highlight wins regardless of any downstream class/flag mutations.
-    if ((this.b as any)?._autoRevealedCorrect === true ||
-        (this.b?.option as any)?._autoRevealedCorrect === true) {
+    if ((this.binding() as any)?._autoRevealedCorrect === true ||
+        (this.binding()?.option as any)?._autoRevealedCorrect === true) {
       return true;
     }
     // Secondary auto-reveal signals: _multiAnswerPerfect map (cross-mechanism
@@ -772,7 +773,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
       const perfectMapAR =
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMapAR?.get(_qIdxAR) === true) return true;
-      if (this.b?.cssClasses?.['correct-option'] === true) return true;
+      if (this.binding()?.cssClasses?.['correct-option'] === true) return true;
     }
 
     // On refresh (no live click), ONLY trust authoritative saved
@@ -781,7 +782,7 @@ export class OptionItemComponent implements OnChanges, OnInit {
     if (!this._userHasClicked && !this._wasSelected) {
       // During live interaction, trust the binding's highlight flag
       // when explicitly false — prevents service-level false positives.
-      if (this.b?.option?.highlight === false) return false;
+      if (this.binding()?.option?.highlight === false) return false;
 
       return this.isSelectedForCurrentQuestion();
     }
@@ -796,18 +797,18 @@ export class OptionItemComponent implements OnChanges, OnInit {
       if (cfg?.option && !cfg.option.highlight && !cfg.isOptionSelected) {
         return false;
       }
-      return this.isOptionIndividuallySelected() || !!this.b.option?.highlight ||
+      return this.isOptionIndividuallySelected() || !!this.binding().option?.highlight ||
         this._wasSelected;
     }
-    return this.b.isSelected || !!this.b.option?.highlight || this._wasSelected
+    return this.binding().isSelected || !!this.binding().option?.highlight || this._wasSelected
       || this.isSelectedForCurrentQuestion();
   }
 
   private isOptionIndividuallySelected(): boolean {
     return (
-      this.b.isSelected ||
-      this.b.checked ||
-      this.b.option?.selected === true ||
+      this.binding().isSelected ||
+      this.binding().checked ||
+      this.binding().option?.selected === true ||
       this.isSelectedForCurrentQuestion()
     );
   }

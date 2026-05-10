@@ -20,8 +20,8 @@
         <mat-radio-group class="options-group options" formControlName="selectedOptionId">
           @for (b of opts; let i = $index; track trackByOptionId(b, i)) {
             <app-option-item
-              [b]="b"
-              [i]="i"
+              [binding]="b"
+              [displayIndex]="i"
               [type]="'single'"
               [form]="form"
               [shouldResetBackground]="shouldResetBackground"
@@ -40,8 +40,8 @@
         <div class="options-group options" role="group" aria-label="Select one or more options">
           @for (b of opts; let i = $index; track trackByOptionId(b, i)) {
             <app-option-item
-              [b]="b"
-              [i]="i"
+              [binding]="b"
+              [displayIndex]="i"
               [type]="'multiple'"
               [form]="form"
               [shouldResetBackground]="shouldResetBackground"

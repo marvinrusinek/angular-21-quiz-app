@@ -1,6 +1,6 @@
 import {
-  ChangeDetectorRef, ChangeDetectionStrategy, Component, Input, input, OnInit,
-  OnChanges, signal, SimpleChanges
+  ChangeDetectorRef, ChangeDetectionStrategy, Component, effect, input,
+  signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,8 +18,8 @@ import { SelectedOptionService } from '../../../../shared/services/state/selecte
   styleUrls: ['./feedback.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FeedbackComponent implements OnInit, OnChanges {
-  @Input() feedbackConfig?: FeedbackProps | null;
+export class FeedbackComponent {
+  readonly feedbackConfig = input<FeedbackProps | null | undefined>(undefined);
   readonly stylePreset = input<'default' | 'inline'>('default');
   readonly feedbackMessageClass = signal('');
   readonly displayMessage = signal('');
@@ -29,27 +29,22 @@ export class FeedbackComponent implements OnInit, OnChanges {
     private quizService: QuizService,
     private selectedOptionService: SelectedOptionService,
     private cdRef: ChangeDetectorRef
-  ) { }
-
-  ngOnInit(): void {
-    this.updateFeedback();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (this.shouldUpdateFeedback(changes)) {
-      this.updateFeedback();
-      this.cdRef.markForCheck();  // force view update
-    }
-  }
-
-  private shouldUpdateFeedback(changes: SimpleChanges): boolean {
-    return (
-      'feedbackConfig' in changes && !!changes['feedbackConfig'].currentValue
-    );
+  ) {
+    // Re-runs whenever the feedbackConfig signal input changes (replaces
+    // the prior ngOnInit + ngOnChanges pair). Truthy-only gate matches the
+    // old `'feedbackConfig' in changes && !!currentValue` check; an
+    // initial undefined value is just ignored until the parent provides one.
+    effect(() => {
+      const cfg = this.feedbackConfig();
+      if (cfg) {
+        this.updateFeedback();
+        this.cdRef.markForCheck();
+      }
+    });
   }
 
   private updateFeedback(): void {
-    if (this.feedbackConfig?.showFeedback) {
+    if (this.feedbackConfig()?.showFeedback) {
       this.updateDisplayMessage();
       this.feedbackMessageClass.set(this.determineFeedbackMessageClass());
     } else {
@@ -60,12 +55,16 @@ export class FeedbackComponent implements OnInit, OnChanges {
 
 
   private determineFeedbackMessageClass(): string {
-    const isCorrect = !!this.feedbackConfig?.selectedOption?.correct;
+    const isCorrect = !!this.feedbackConfig()?.selectedOption?.correct;
     return isCorrect ? 'correct-message' : 'wrong-message';
   }
 
   private updateDisplayMessage(): void {
-    if (!this.feedbackConfig) {
+    // Cache the signal value once — TypeScript can't narrow null/undefined
+    // across separate signal calls, and re-reading risks a different value
+    // mid-method anyway.
+    const cfg = this.feedbackConfig();
+    if (!cfg) {
       this.displayMessage.set('');
       return;
     }
@@ -75,7 +74,7 @@ export class FeedbackComponent implements OnInit, OnChanges {
     // the live URL question's actual correct option index. Without this
     // gate, a Q1-built feedback string ("The correct answer is Option 1.")
     // displays verbatim on Q3 even after navigation.
-    const cachedFeedback = this.feedbackConfig?.feedback?.trim();
+    const cachedFeedback = cfg.feedback?.trim();
     if (cachedFeedback) {
       let cacheMatchesUrl = true;
       try {
@@ -101,7 +100,7 @@ export class FeedbackComponent implements OnInit, OnChanges {
           // click handler couldn't see the canonical correct flag.
           if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
             const candidates: string[] = [];
-            const sel: any = this.feedbackConfig?.selectedOption;
+            const sel: any = cfg.selectedOption;
             if (sel?.text) candidates.push(String(sel.text).trim().toLowerCase());
 
             // Also look at the selectedOptionService — it carries the
@@ -135,21 +134,17 @@ export class FeedbackComponent implements OnInit, OnChanges {
           }
         }
       } catch {}
-      if (cacheMatchesUrl) {
-        this.displayMessage.set(this.feedbackConfig!.feedback!);
+      if (cacheMatchesUrl && cfg.feedback) {
+        this.displayMessage.set(cfg.feedback);
         return;
       }
     }
 
-    const fallbackIndex = Number.isFinite(this.feedbackConfig.idx)
-      ? this.feedbackConfig.idx
-      : 0;
+    const fallbackIndex = Number.isFinite(cfg.idx) ? cfg.idx : 0;
     const selectedQuestionIndex = Number.isFinite(
-      (this.feedbackConfig.selectedOption as { questionIndex?: number } | null)
-        ?.questionIndex
+      (cfg.selectedOption as { questionIndex?: number } | null)?.questionIndex
     )
-      ? ((this.feedbackConfig.selectedOption as { questionIndex?: number })
-        .questionIndex as number)
+      ? ((cfg.selectedOption as { questionIndex?: number }).questionIndex as number)
       : undefined;
     const activeQuestionIndex = Number.isFinite(
       this.quizService.currentQuestionIndex
@@ -157,15 +152,15 @@ export class FeedbackComponent implements OnInit, OnChanges {
       ? (this.quizService.currentQuestionIndex as number)
       : undefined;
     const idx =
-      this.feedbackConfig.questionIndex ?? selectedQuestionIndex ?? activeQuestionIndex ?? fallbackIndex;
+      cfg.questionIndex ?? selectedQuestionIndex ?? activeQuestionIndex ?? fallbackIndex;
 
     const question =
-      this.feedbackConfig.question ??
+      cfg.question ??
       this.quizService.questions?.[idx] ??
-      (this.feedbackConfig.options
+      (cfg.options
         ? {
           questionText: '',
-          options: this.feedbackConfig.options,
+          options: cfg.options,
           explanation: '',
           type: undefined
         }
@@ -174,10 +169,10 @@ export class FeedbackComponent implements OnInit, OnChanges {
     // MULTI-ANSWER: use ALL selections for this question
     const selectedFromMap =
       this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
-    const fallbackSelected = this.feedbackConfig.selectedOption
+    const fallbackSelected = cfg.selectedOption
       ? [
         {
-          ...this.feedbackConfig.selectedOption,
+          ...cfg.selectedOption,
           selected: true,
           questionIndex: idx
         }
@@ -191,7 +186,7 @@ export class FeedbackComponent implements OnInit, OnChanges {
         question,
         selected,
         false,
-        this.feedbackConfig?.timedOut === true,
+        cfg.timedOut === true,
         idx
       )
       : '';
