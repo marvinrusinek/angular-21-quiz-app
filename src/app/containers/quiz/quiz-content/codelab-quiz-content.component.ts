@@ -1,8 +1,8 @@
 
 import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, ElementRef,
-  input, OnChanges, OnDestroy, OnInit, output, Renderer2, signal, SimpleChanges, 
-  untracked, ViewChild 
+  input, OnDestroy, OnInit, output, Renderer2, signal,
+  untracked, ViewChild
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -37,7 +37,7 @@ import { CqcOrchestratorService } from '../../../shared/services/features/quiz-c
   styleUrls: ['./codelab-quiz-content.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CodelabQuizContentComponent implements OnInit, OnChanges, OnDestroy {
+export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   @ViewChild(QuizQuestionComponent, { static: false })
   quizQuestionComponent!: QuizQuestionComponent;
   @ViewChild('qText', { static: true })
@@ -190,6 +190,16 @@ export class CodelabQuizContentComponent implements OnInit, OnChanges, OnDestroy
         this.cdRef.markForCheck();
       });
     });
+
+    // First-render latch. Replaces a now-unreachable ngOnChanges that
+    // tried to flip questionRenderedSig the first time questionText
+    // resolved to a non-empty string. Signal-input changes don't fire
+    // ngOnChanges, so this only runs as an effect.
+    effect(() => {
+      if (!!this.questionText() && !this.questionRenderedSig()) {
+        this.questionRenderedSig.set(true);
+      }
+    });
   }
 
   async ngOnInit(): Promise<void> {
@@ -203,12 +213,6 @@ export class CodelabQuizContentComponent implements OnInit, OnChanges, OnDestroy
   // downstream setup sees the correct currentIndex / FET state.
   private primeQuestionIndex(): void {
     this.orchestrator.runQuestionIndexSet(this, this.questionIndex());
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (!!this.questionText() && !this.questionRenderedSig()) {
-      this.questionRenderedSig.set(true);
-    }
   }
 
   ngOnDestroy(): void {
