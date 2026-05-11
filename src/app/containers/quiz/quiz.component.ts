@@ -84,7 +84,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   subscriptions: Subscription = new Subscription();
 
   answers: Option[] = [];
-  selectionMessage$: Observable<string>;
+  readonly selectionMessage = this.selectionMessageService.selectionMessageSig;
   isAnswered = false;
   cardFooterClass = '';
   showScrollIndicator = false;
@@ -189,7 +189,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   isNavigatedByUrl = false;
   navigatingToResults = false;
 
-  nextButtonEnabled$: Observable<boolean> = this.nextButtonStateService.isButtonEnabled$;
+  readonly nextButtonEnabled = this.nextButtonStateService.isButtonEnabled;
   isButtonEnabled$: Observable<boolean>;
   isAnswered$: Observable<boolean>;
   isNextButtonEnabled = false;
@@ -227,7 +227,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     public cdRef: ChangeDetectorRef
   ) {
     this.isAnswered$ = this.selectedOptionService.isAnswered$;
-    this.selectionMessage$ = this.selectionMessageService.selectionMessage$;
     this.isButtonEnabled$ = this.selectedOptionService.isOptionSelected$().pipe(debounceTime(300), shareReplay(1));
     this.isContentAvailable$ = this.quizDataService.isContentAvailable$;
     this.quizSetupService.wireConstructor(this);

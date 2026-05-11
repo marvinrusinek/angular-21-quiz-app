@@ -37,7 +37,7 @@
               <!-- Row 1: Selection Message (left) + Navigation (right) -->
               <section class="footer-row-1">
                 <div class="message-area">
-                  @if (selectionMessage$ | async; as message) {
+                  @if (selectionMessage(); as message) {
                     <span class="instructions-message">{{ message }}</span>
                   }
                 </div>
@@ -60,7 +60,7 @@
 
                     @if (shouldShowNextButton) {
                       <button type="button" class="nav-btn" #nextButton="matTooltip"
-                        [disabled]="!(nextButtonEnabled$ | async)" (click)="advanceToNextQuestion()"
+                        [disabled]="!nextButtonEnabled()" (click)="advanceToNextQuestion()"
                         matTooltip="Next Question »" matTooltipPosition="above" aria-label="Next Question">
                         <i class="material-icons">navigate_next</i>
                       </button>
