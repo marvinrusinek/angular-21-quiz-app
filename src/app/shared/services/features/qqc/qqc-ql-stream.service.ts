@@ -20,7 +20,6 @@ import { ResetStateService } from '../../state/reset-state.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { TimerService } from '../timer/timer.service';
-import { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
 /**
  * Manages reactive streams, DOM freeze/thaw, and legacy question-loading pipeline.
@@ -28,7 +27,6 @@ import { QuizQuestionComponent } from '../../../../components/question/quiz-ques
  */
 @Injectable({ providedIn: 'root' })
 export class QqcQlStreamService {
-  private quizQuestionComponent!: QuizQuestionComponent;
   question: QuizQuestion | null = null;
   questionData: QuizQuestion | null = null;
   questionPayload: QuestionPayload | null = null;
@@ -647,15 +645,6 @@ export class QqcQlStreamService {
     this.explanationTextSig.set('');
     this.questionPayloadReadySig.set(false);
     this.questionPayload = null;
-
-    if (this.quizQuestionComponent) {
-      if (typeof this.quizQuestionComponent.resetFeedback === 'function') {
-        this.quizQuestionComponent.resetFeedback();
-      }
-      if (typeof this.quizQuestionComponent.resetState === 'function') {
-        this.quizQuestionComponent.resetState();
-      }
-    }
 
     this.showFeedbackForOption = {};
 

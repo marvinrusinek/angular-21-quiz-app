@@ -62,8 +62,7 @@ type AnimationState = 'animationStarted' | 'none';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
-  @ViewChild(QuizQuestionComponent, { static: false })
-  quizQuestionComponent!: QuizQuestionComponent;
+  readonly quizQuestionComponent = viewChild(QuizQuestionComponent);
   @ViewChild(SharedOptionComponent, { static: false })
   sharedOptionComponent!: SharedOptionComponent;
   readonly nextButtonTooltip = viewChild<MatTooltip>('nextButton');
@@ -350,8 +349,8 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.optionsToDisplay = [];
     this.isAnswered = false;
     this.isNextButtonEnabled = false;
-    this.quizQuestionComponent?.resetFeedback?.();
-    this.quizQuestionComponent?.resetState?.();
+    this.quizQuestionComponent()?.resetFeedback?.();
+    this.quizQuestionComponent()?.resetState?.();
     this.cdRef.detectChanges();
   }
 

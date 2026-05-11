@@ -192,7 +192,8 @@ export class QuizSetupDataService {
     host.hasOptionsLoaded = result.normalizedOptions.length > 0;
     host.shouldRenderOptions = host.hasOptionsLoaded;
     host.explanationToDisplay = result.trimmedExplanation;
-    if (host.quizQuestionComponent) host.quizQuestionComponent.optionsToDisplay.set([...result.normalizedOptions]);
+    const qqc = host.quizQuestionComponent?.();
+    if (qqc) qqc.optionsToDisplay.set([...result.normalizedOptions]);
   }
 
   // ── Quiz initialization ──────────────────────────────────────

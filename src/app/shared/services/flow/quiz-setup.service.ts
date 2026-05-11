@@ -199,7 +199,8 @@ export class QuizSetupService {
 
   // ── Constructor wiring (subscriptions + observables) ──────────
   wireConstructor(host: Host): void {
-    if (host.quizQuestionComponent) host.quizQuestionComponent.renderReady = false;
+    const qqc = host.quizQuestionComponent?.();
+    if (qqc) qqc.renderReady = false;
 
     this.sharedVisibilityService.pageVisibility$.subscribe((isHidden: boolean) => {
       const needsRender = this.quizVisibilityRestoreService.handleVisibilityChange(isHidden, {
@@ -441,7 +442,7 @@ export class QuizSetupService {
   restartQuiz(host: Host): void {
     this.quizResetService.performRestartServiceResets(host.quizId, host.totalQuestions);
     this.dotStatusService.clearAllMaps();
-    host.quizQuestionComponent?.selectedIndices?.clear();
+    host.quizQuestionComponent?.()?.selectedIndices?.clear();
     this.timerService.stopTimer?.(undefined, { force: true });
     host.answeredQuestionIndices.clear();
     host.progress = 0;
@@ -867,14 +868,15 @@ export class QuizSetupService {
       const opts = host.quizQuestionLoaderService.pendingOptions;
       host.quizQuestionLoaderService.pendingOptions = null;
       Promise.resolve().then(() => {
-        if (host.quizQuestionComponent && opts?.length) {
-          host.quizQuestionComponent.optionsToDisplay.set([...opts]);
+        const qqcLate = host.quizQuestionComponent?.();
+        if (qqcLate && opts?.length) {
+          qqcLate.optionsToDisplay.set([...opts]);
         }
       });
     }
 
     setTimeout(() => {
-      host.quizQuestionComponent?.renderReady$
+      host.quizQuestionComponent?.()?.renderReady$
         ?.pipe(debounceTime(10))
         .subscribe((isReady: boolean) => {
           host.isQuizRenderReadySig.set(isReady);

@@ -383,7 +383,7 @@ export class CqcFetGuardService {
             };
             collect(storedSelections);
             collect(mapSel);
-            const liveQQC: any = host.quizQuestionComponent;
+            const liveQQC: any = host.quizQuestionComponent?.();
             const liveBindings: any[] = Array.isArray(liveQQC?.optionBindings)
               ? liveQQC.optionBindings
               : [];

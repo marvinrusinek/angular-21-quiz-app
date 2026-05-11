@@ -220,7 +220,7 @@ export class CqcOrchestratorService {
         console.warn('[FET-TIMER] expired$ FIRED idx=' + idx, 'hasExplanation=' + !!q?.explanation, 'hasQText=' + !!host.qText?.()?.nativeElement);
 
         if (q?.explanation) {
-          const visualOpts = host.quizQuestionComponent?.optionsToDisplay ?? q.options;
+          const visualOpts = host.quizQuestionComponent?.()?.optionsToDisplay ?? q.options;
           host.explanationTextService.storeFormattedExplanation(idx, q.explanation, q, visualOpts);
         }
 
@@ -228,7 +228,7 @@ export class CqcOrchestratorService {
         try {
           const el = host.qText?.()?.nativeElement;
           if (el && q) {
-            const opts = q.options ?? host.quizQuestionComponent?.optionsToDisplay ?? [];
+            const opts = q.options ?? host.quizQuestionComponent?.()?.optionsToDisplay ?? [];
             const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, opts, idx);
             let fetHtml = '';
             if (correctIndices.length > 0) {
