@@ -151,7 +151,7 @@ export class SharedOptionComponent
   private lockedIncorrectOptionIds = new Set<number>();
   public forceDisableAll = false;
   public timerExpiredForQuestion = false;  // track timer expiration
-  private timeoutCorrectOptionKeys = new Set<string>();
+  timeoutCorrectOptionKeys = new Set<string>();
   private resolvedQuestionIndex: number | null = null;
 
   private _isMultiModeCache: boolean | null = null;
@@ -191,7 +191,7 @@ export class SharedOptionComponent
     private clickService: SharedOptionClickService,
     private orchestrator: SharedOptionOrchestratorService,
     private timerService: TimerService,
-    private cdRef: ChangeDetectorRef,
+    public cdRef: ChangeDetectorRef,
     private fb: FormBuilder
   ) {
     this.ui = this.sharedOptionStateAdapterService.createInitialUiState();

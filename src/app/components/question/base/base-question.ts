@@ -53,13 +53,13 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
   containerInitialized = false;
 
   protected constructor(
-    protected fb: FormBuilder,
-    protected dynamicComponentService: DynamicComponentService,
-    protected feedbackService: FeedbackService,
-    protected quizService: QuizService,
-    protected quizStateService: QuizStateService,
-    protected selectedOptionService: SelectedOptionService,
-    protected cdRef: ChangeDetectorRef
+    public fb: FormBuilder,
+    public dynamicComponentService: DynamicComponentService,
+    public feedbackService: FeedbackService,
+    public quizService: QuizService,
+    public quizStateService: QuizStateService,
+    public selectedOptionService: SelectedOptionService,
+    public cdRef: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {

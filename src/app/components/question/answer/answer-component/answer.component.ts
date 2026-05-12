@@ -70,16 +70,16 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
   constructor(
     protected quizQuestionLoaderService: QqcQuestionLoaderService,
     protected quizQuestionManagerService: QuizQuestionManagerService,
-    protected override dynamicComponentService: DynamicComponentService,
-    protected override feedbackService: FeedbackService,
-    protected override quizService: QuizService,
-    protected override quizStateService: QuizStateService,
-    protected override selectedOptionService: SelectedOptionService,
+    public override dynamicComponentService: DynamicComponentService,
+    public override feedbackService: FeedbackService,
+    public override quizService: QuizService,
+    public override quizStateService: QuizStateService,
+    public override selectedOptionService: SelectedOptionService,
     private answerOptionsService: AnswerOptionsService,
     private answerSelectionService: AnswerSelectionService,
     private answerBindingsService: AnswerBindingsService,
-    protected override fb: FormBuilder,
-    protected override cdRef: ChangeDetectorRef
+    public override fb: FormBuilder,
+    public override cdRef: ChangeDetectorRef
   ) {
     super(
       fb,
