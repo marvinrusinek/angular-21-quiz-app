@@ -77,18 +77,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     this.showFeedback.set(true);
   }
 
-  private updateQuizStateService(): void {
-    if (this.quizStateService) {
-      try {
-        if (this.question()) {
-          this.quizService.setCurrentQuestion(this.question()!);
-        }
-      } catch (error: any) {
-        // error handled silently
-      }
-    }
-  }
-
   protected initializeQuestion(): void {
     try {
       const qqc = (this as any).quizQuestionComponent ??

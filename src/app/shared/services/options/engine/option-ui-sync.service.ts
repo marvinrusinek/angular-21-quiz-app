@@ -285,21 +285,6 @@ export class OptionUiSyncService {
     }
   }
 
-  private preservePreviousFeedbackAnchor(index: number, ctx: OptionUiSyncContext): void {
-    if (
-      ctx.lastFeedbackOptionId !== -1 &&
-      ctx.lastFeedbackOptionId !== index
-    ) {
-      for (const k of Object.keys(ctx.showFeedbackForOption)) {
-        ctx.showFeedbackForOption[k] = false;
-      }
-
-      ctx.showFeedbackForOption[ctx.lastFeedbackOptionId] = true;
-
-      const cfg = ctx.feedbackConfigs[ctx.lastFeedbackOptionId];
-      if (cfg) cfg.showFeedback = true;
-    }
-  }
 
   private isRapidDuplicateUnselect(
     optionId: number | string | undefined,
@@ -450,47 +435,6 @@ export class OptionUiSyncService {
     // Update Next Button State based on ACTUAL selection count
     const hasSelection = ctx.selectedOptionMap.size > 0;
     this.nextButtonStateService.setNextButtonState(hasSelection);
-  }
-
-  private syncHighlightStateFromService(ctx: OptionUiSyncContext): void {
-    const qIdx = ctx.getActiveQuestionIndex() ?? 0;
-    const selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
-
-    const isCorrectHelper = (o: any): boolean => {
-      if (!o) return false;
-      const c = o.correct ?? o.isCorrect ?? (o as any).correct;
-      return c === true || String(c) === 'true' || c === 1 || c === '1';
-    };
-    const correctCount = ctx.optionBindings.filter(b => isCorrectHelper(b.option)).length;
-    const isTrulyMulti = ctx.type === 'multiple' || (ctx as any).isMultiMode || correctCount > 1;
-
-    for (const b of ctx.optionBindings) {
-      const isSelected = selections.some((sel: any) => {
-        const sIdx = sel.displayIndex ?? sel.index ?? sel.idx;
-        const sId = sel.optionId;
-        
-        // Priority 1: Match by index (most reliable for unique options)
-        if (sIdx != null && Number(sIdx) === b.index) return true;
-        
-        // Priority 2: Match by ID - ONLY if ID is valid and unique (not -1, not null)
-        const bId = b.option?.optionId;
-        if (sId != null && sId !== -1 && bId != null && bId !== -1 && String(sId) === String(bId)) {
-          // Additional check: if another binding already claimed this index, don't double-match
-          return true;
-        }
-        
-        return false;
-      });
-      
-      b.isSelected = isSelected;
-      if (b.option) {
-        b.option.selected = isSelected;
-        // In Multi-answer, all selected are highlighted (Incorrect=Red, Correct=Green)
-        // In Single-answer, all selected are also highlighted.
-        b.option.highlight = isSelected;
-        b.option.showIcon = isSelected;
-      }
-    }
   }
 
   private applySingleSelectionPainting(
@@ -883,116 +827,6 @@ export class OptionUiSyncService {
 
     // keep array ref refresh if your UI depends on it
     ctx.optionsToDisplay = [...ctx.optionsToDisplay];
-  }
-
-  /* private isCorrectHelper(o: any): boolean {
-    return o && (o.correct === true || String(o.correct) === 'true' || o.correct === 1 || o.correct === '1');
-  } */
-
-  private applyHighlighting(optionBinding: OptionBindings): void {
-    const isHighlighted = !!optionBinding.option?.highlight;
-    const isCorrect = (optionBinding.option as any)?.correct === true ||
-      String((optionBinding.option as any)?.correct) === 'true' ||
-      (optionBinding.option as any)?.correct === 1 ||
-      (optionBinding.option as any)?.correct === '1';
-
-    // Set binding-level highlight flags for component template consumption
-    optionBinding.highlightCorrect = isHighlighted && isCorrect;
-    optionBinding.highlightIncorrect = isHighlighted && !isCorrect;
-
-    // Use binding-level cssClasses for robust [ngClass] updates
-    optionBinding.cssClasses = {
-      ...(optionBinding.cssClasses || {}),
-      'correct-option': optionBinding.highlightCorrect,
-      'incorrect-option': optionBinding.highlightIncorrect
-    };
-
-    // Ensure styleClass matches for backward compatibility with older templates
-    optionBinding.styleClass = isHighlighted
-      ? (isCorrect ? 'correct-option' : 'incorrect-option') : '';
-  }
-
-  private applyFeedback(
-    optionBinding: OptionBindings,
-    displayIndex: number,
-    ctx: OptionUiSyncContext
-  ): void {
-    const qIdx = ctx.getActiveQuestionIndex() ?? 0;
-    const question =
-      ctx.getQuestionAtDisplayIndex(qIdx) ??
-      ctx.getQuestionAtDisplayIndex(ctx.currentQuestionIndex ?? qIdx) ?? null;
-
-    if (!question) return;
-
-    const visualOptions =
-      (ctx.optionsToDisplay?.length ?? 0) > 0
-        ? ctx.optionsToDisplay : (question.options ?? []);
-
-    const isCorrectHelper = (val: any) => {
-      if (!val) return false;
-      if (val === true || val === 'true' || val === 1 || val === '1') return true;
-      if (typeof val === 'object') {
-        const c = val.correct ?? val.isCorrect ?? (val as any).correct;
-        return c === true || String(c) === 'true' || c === 1 || c === '1';
-      }
-      return false;
-    };
-    const correctCountInBindings = ctx.optionBindings.filter(b => isCorrectHelper(b.option)).length;
-    const canonicalCorrectCount = this.resolveCanonicalCorrectCount(ctx.optionBindings);
-    const effectiveCorrectCount = Math.max(correctCountInBindings, canonicalCorrectCount);
-    const isMultipleMode = ctx.type === 'multiple' || (ctx as any).isMultiMode === true || effectiveCorrectCount > 1;
-    const isTrulyMulti = isMultipleMode;
-    const getEffId = (o: any, i: number) => (o?.optionId != null && o.optionId !== -1) ? o.optionId : i;
-    const selectedOptions: Option[] = ctx.optionBindings
-      .filter((b, idx) => {
-        const eid = getEffId(b.option, idx);
-        return ctx.selectedOptionMap.has(eid);
-      })
-      .map(b => b.option);
-
-    // Build dynamic feedback
-    const freshFeedback = this.feedbackService.buildFeedbackMessage(
-      question,
-      selectedOptions,
-      false,
-      false,
-      qIdx,
-      visualOptions,
-      optionBinding.option
-    );
-
-    // Reveal message for correctMessage
-    const correctMessage = this.feedbackService.generateFeedbackForOptions(
-      visualOptions.filter(o => isCorrectHelper(o)),
-      visualOptions
-    );
-
-    const key = ctx.keyOf(optionBinding.option, displayIndex);
-
-    ctx.feedbackConfigs[key] = {
-      feedback: freshFeedback,
-      showFeedback: true,
-      options: visualOptions,
-      question,
-      selectedOption: optionBinding.option,
-      correctMessage: correctMessage,
-      idx: displayIndex,
-      questionIndex: qIdx
-    } as any;
-
-    if (ctx.feedbackConfigs[key]) ctx.feedbackConfigs[key].showFeedback = true;
-
-    ctx.showFeedbackForOption[displayIndex] = true;
-    ctx.showFeedbackForOption[String(displayIndex)] = true;
-
-    const optionId = optionBinding.option?.optionId;
-    if (optionId != null && optionId !== -1) {
-      ctx.showFeedbackForOption[optionId as any] = true;
-      ctx.showFeedbackForOption[String(optionId)] = true;
-    }
-
-    ctx.lastFeedbackOptionId = displayIndex;
-    ctx.showFeedback = true;
   }
 
   // ── Inlined from OptionVisualEffectsService ──────────────────────

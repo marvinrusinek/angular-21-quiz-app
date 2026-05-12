@@ -358,15 +358,6 @@ export class SelectedOptionService {
     return this.selectionCrud.selectOption(this, optionId, questionIndex, text, isMultiSelect, optionsSnapshot);
   }
 
-  private isSelectedOptionType(obj: unknown): obj is SelectedOption {
-    return (
-      !!obj &&
-      typeof obj === 'object' &&
-      'optionId' in obj &&
-      'questionIndex' in obj
-    );
-  }
-
   isOptionCurrentlySelected(option: Option): boolean {
     if (!option) return false;
 

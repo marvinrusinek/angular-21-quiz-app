@@ -876,17 +876,6 @@ export class SharedOptionBindingService {
 
   // ── Inlined from OptionHydrationService ──────────────────────────
 
-  private applySavedSelections(
-    bindings: OptionBindings[] | null | undefined,
-    savedIds: Set<number | string>
-  ): void {
-    if (!bindings?.length) return;
-    for (const b of bindings) {
-      const id = b?.option?.optionId;
-      b.isSelected = id !== undefined && id !== null && savedIds.has(id);
-    }
-  }
-
   private toIdSet(
     saved: Array<{ optionId?: number | string; selected?: boolean }> | null | undefined
   ): Set<number | string> {

@@ -344,13 +344,4 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
     );
   }
 
-  private normalizeKeySource(value: string | null | undefined): string {
-    return (value ?? '')
-      .toString()
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ');
-  }
 }
