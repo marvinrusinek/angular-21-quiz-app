@@ -63,8 +63,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
   readonly quizQuestionComponentLoaded = output<void>();
 
-  private _wasComplete = false;
-
   private destroy$ = new Subject<void>();
 
   readonly questionIndex = input<number | null>(null);
@@ -100,7 +98,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         const correctCount = q.options?.filter((o: Option) => o.correct).length ?? 0;
         this.type.set(correctCount > 1 ? 'multiple' : 'single');
       }
-      this._wasComplete = false;
       this.cdRef.markForCheck();
     });
 
@@ -214,7 +211,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
   ngAfterViewInit(): void {
     if (this.viewContainerRefs) {
-      this.viewContainerRefs?.changes.subscribe((refs) => {
+      this.viewContainerRefs?.changes.subscribe(() => {
         this.handleViewContainerRef();
       });
     } else {
@@ -446,8 +443,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         this.questionIndex(),
         question
       );
-  
-    this._wasComplete = complete;
   
     this.answerSelectionService.updateScoringAndAnswerSelectedState(
       activeQuestionIndex,

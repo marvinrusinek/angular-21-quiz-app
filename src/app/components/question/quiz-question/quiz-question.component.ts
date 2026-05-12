@@ -1,7 +1,7 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component,
   computed, effect, HostListener, input, model, OnDestroy, OnInit,
-  output, signal, viewChild, ViewChild, ViewContainerRef
+  output, signal, viewChild, ViewContainerRef
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -101,7 +101,6 @@ export class QuizQuestionComponent extends BaseQuestion
   questionsArray: QuizQuestion[] = [];
   questionsObservableSubscription!: Subscription;
   override questionForm: FormGroup = new FormGroup({});
-  private _questionPayload: QuestionPayload | null = null;
   totalQuestions!: number;
   fixedQuestionIndex = 0;
   lastLoggedIndex = -1;
@@ -256,7 +255,6 @@ export class QuizQuestionComponent extends BaseQuestion
       const value = this.questionPayload();
       if (!value) return;
       try {
-        this._questionPayload = value;
         this.questionPayloadSig.set(value);
         this.hydrateFromPayload(value);
       } catch {

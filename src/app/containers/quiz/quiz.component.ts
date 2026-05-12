@@ -1,6 +1,6 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, computed,
-  HostListener, OnDestroy, OnInit, signal, viewChild, ViewChild, ViewEncapsulation
+  HostListener, OnDestroy, OnInit, signal, viewChild, ViewEncapsulation
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, AsyncPipe } from '@angular/common';
