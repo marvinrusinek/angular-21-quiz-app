@@ -86,7 +86,7 @@ export class SelectedOptionService {
   readonly selectedOptionsMapSig = signal<Map<number, SelectedOption[]>>(new Map());
   public selectedOptionsMap$ = toObservable(this.selectedOptionsMapSig);
 
-  private optionSnapshotByQuestion = new Map<number, Option[]>();
+  optionSnapshotByQuestion = new Map<number, Option[]>();
 
   readonly isNextButtonEnabledSig = signal<boolean>(false);
   // Initialized as a field so toObservable() runs in field-initializer
@@ -145,7 +145,7 @@ export class SelectedOptionService {
     this.selectionCrud.syncSelectionState(this, questionIndex, options);
   }
 
-  private persistAnswerForResults(questionIndex: number, selections: { optionId: number; text: string }[]): void {
+  persistAnswerForResults(questionIndex: number, selections: { optionId: number; text: string }[]): void {
     this.persistence.persistAnswerForResults(questionIndex, selections);
   }
 
@@ -551,11 +551,11 @@ export class SelectedOptionService {
     );
   }
 
-  private isMultiAnswerQuestion(questionIndex: number): boolean {
+  isMultiAnswerQuestion(questionIndex: number): boolean {
     return this.answerEval.isMultiAnswerQuestion(questionIndex);
   }
 
-  private commitSelections(
+  commitSelections(
     questionIndex: number,
     selections: SelectedOption[]
   ): SelectedOption[] {
@@ -659,7 +659,7 @@ export class SelectedOptionService {
     this.persistence.loadState(this as any);
   }
 
-  private saveState(): void {
+  saveState(): void {
     this.persistence.saveState(this as any);
   }
 
@@ -742,7 +742,7 @@ export class SelectedOptionService {
     } catch (error: any) { }
   }
 
-  private getFallbackQuestionIndex(): number {
+  getFallbackQuestionIndex(): number {
     return this.selectedOptionsMap.keys().next().value ?? -1;
   }
 
@@ -826,7 +826,7 @@ export class SelectedOptionService {
     return this.idResolver.overlaySelectedByIdentity(canonical, ui);
   }
 
-  private ensureBucket(idx: number): SelectedOption[] {
+  ensureBucket(idx: number): SelectedOption[] {
     if (!Number.isFinite(idx) || idx < 0) idx = 0;
     if (!this.selectedOptionsMap.has(idx)) this.selectedOptionsMap.set(idx, []);
     return this.selectedOptionsMap.get(idx)!;

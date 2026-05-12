@@ -4,8 +4,9 @@ import { Option } from '../../models/Option.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 import { OptionIdResolverService } from './option-id-resolver.service';
 import { QuizService } from '../data/quiz.service';
+import type { SelectedOptionService } from './selectedoption.service';
 
-type Host = any;
+type Host = SelectedOptionService;
 
 /**
  * Handles selection CRUD operations (add, remove, set, update, commit).
