@@ -73,8 +73,8 @@ export class QuizQuestionEmitterService {
   prepareQuestionAndOptions(
     currentQuestion: QuizQuestion,
     options: Option[],
-    currentQuestionIndex: number,
-    indexOverride: number | undefined,
+    _currentQuestionIndex: number,
+    _indexOverride: number | undefined,
     isShuffleEnabled: boolean,
     canonical: QuizQuestion | null
   ): {
@@ -84,11 +84,6 @@ export class QuizQuestionEmitterService {
     if (!currentQuestion) return null;
 
     const rawOptions = Array.isArray(options) ? options : [];
-    const _normalizedIndex = Number.isFinite(indexOverride as number)
-      ? Math.max(0, Math.trunc(indexOverride as number))
-      : Number.isFinite(currentQuestionIndex)
-        ? Math.max(0, Math.trunc(currentQuestionIndex as number))
-        : 0;
 
     let questionToEmit = currentQuestion;
     let optionsToUse = rawOptions;

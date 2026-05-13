@@ -1,16 +1,12 @@
 ﻿import { Injectable } from '@angular/core';
 
-import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { FeedbackService } from '../../features/feedback/feedback.service';
-import { SelectionMessageService } from '../../features/selection-message/selection-message.service';
 import { TimerService } from '../../features/timer/timer.service';
-import { ExplanationTextService } from '../../features/explanation/explanation-text.service';
 import { OptionInteractionService } from './option-interaction.service';
 import { OptionClickHandlerService } from './option-click-handler.service';
 import { OptionUiSyncService } from './option-ui-sync.service';
@@ -29,10 +25,7 @@ export class SharedOptionClickService {
     private quizService: QuizService,
     private quizStateService: QuizStateService,
     private selectedOptionService: SelectedOptionService,
-    private feedbackService: FeedbackService,
-    private selectionMessageService: SelectionMessageService,
     private timerService: TimerService,
-    private explanationTextService: ExplanationTextService,
     private optionInteractionService: OptionInteractionService,
     private optionUiSyncService: OptionUiSyncService,
     private clickHandler: OptionClickHandlerService,
@@ -161,13 +154,6 @@ export class SharedOptionClickService {
   }
 
   runOptionContentClick(comp: any, binding: any, index: number, event: any): void {
-    try {
-      const _qIdx = comp.getActiveQuestionIndex();
-      const _dispQ = (this.quizService as any)?.getQuestionsInDisplayOrder?.();
-      const _shufQ = (this.quizService as any)?.shuffledQuestions;
-      const _origQ = (this.quizService as any)?.questions;
-    } catch {}
-
     const now = Date.now();
     if (comp._lastRunClickIndex === index && comp._lastRunClickTime && (now - comp._lastRunClickTime) < 200) {
       return;
@@ -332,11 +318,6 @@ export class SharedOptionClickService {
           if (matched) break;
         }
         if (matched) break;
-      }
-      if (!matched) {
-        for (const quiz of bundleP) {
-          const pqTexts = (quiz?.questions ?? []).map((pq: any) => nrmP(pq?.questionText)?.slice(0, 50));
-        }
       }
     } catch {
       // Pristine rebuild failed

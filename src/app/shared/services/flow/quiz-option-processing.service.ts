@@ -569,10 +569,8 @@ export class QuizOptionProcessingService {
     option: SelectedOption;
     isQuestionComplete?: boolean;
   }): void {
-    const { idx, quizId, isQuestionComplete = true } = params;
+    const { idx, isQuestionComplete = true } = params;
 
-    // Update QuizStateService QuestionState
-    const _prev = (this.quizService as any).quizStateService?.getQuestionState?.(quizId, idx);
     // Note: QuizStateService update is handled by the component since it needs the service reference
 
     // Persist to session

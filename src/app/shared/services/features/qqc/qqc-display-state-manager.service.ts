@@ -24,8 +24,6 @@ export class QqcDisplayStateManagerService {
   buildOptionsToDisplay(
     sourceQuestion: QuizQuestion | null | undefined
   ): Option[] | null {
-    const _context = '[buildOptionsToDisplay]';
-
     if (!sourceQuestion || !Array.isArray(sourceQuestion.options)) return null;
 
     const validOptions = (sourceQuestion.options ?? []).filter(

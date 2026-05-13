@@ -15,7 +15,6 @@ import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 import { ExplanationTextService } from '../../features/explanation/explanation-text.service';
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { QuizService } from '../../data/quiz.service';
-import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { TimerService } from '../../features/timer/timer.service';
 
@@ -137,7 +136,6 @@ export class SharedOptionInitService {
     private selectedOptionService: SelectedOptionService,
     private explanationTextService: ExplanationTextService,
     private feedbackService: FeedbackService,
-    private quizStateService: QuizStateService,
     private timerService: TimerService
   ) {}
 
@@ -504,17 +502,6 @@ export class SharedOptionInitService {
           const question = comp.getQuestionAtDisplayIndex(idx);
 
           if (question?.options) {
-            const correctOptions = opts.filter(
-              (o: Option) => o.correct === true
-            );
-
-            const serviceDisplayOrders = question.options
-              ?.map((o: Option) => o.displayOrder)
-              .join(',');
-            const inputDisplayOrders = opts
-              ?.map((o) => o.displayOrder)
-              .join(',');
-
             const selections = this.selectedOptionService.getSelectedOptionsForQuestion(idx) || [];
             const freshFeedback = this.feedbackService.buildFeedbackMessage(
               question,

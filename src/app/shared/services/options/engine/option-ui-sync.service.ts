@@ -807,8 +807,7 @@ export class OptionUiSyncService {
         if (isClicked) {
           o.selected = checked;
         }
-        
-        const _isCorrect = isCorrectHelper(o);
+
         const isSelected = !!o.selected;
 
         o.highlight = isSelected;

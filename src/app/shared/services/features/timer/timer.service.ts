@@ -272,9 +272,6 @@ export class TimerService implements OnDestroy {
 
     if (questionIndex == null || questionIndex < 0) return false;
 
-    const _snapshot = Array.isArray(options.optionsSnapshot)
-      ? options.optionsSnapshot : undefined;
-
     // If we get here, all correct answers are selected.
     // Mark this question as stopped FIRST so subsequent restartForQuestion
     // re-emits bail out, regardless of whether the underlying stopTimer

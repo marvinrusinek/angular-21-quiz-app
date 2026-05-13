@@ -3,7 +3,6 @@
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { OptionClickHandlerService } from './option-click-handler.service';
@@ -36,7 +35,6 @@ export class SharedOptionBindingService {
     if (comp.freezeOptionBindings || comp.hasUserClicked) return;
 
     const bindings = comp.optionsToDisplay.map((option: any, idx: number) => {
-      const isSelected = option.selected ?? false;
       const isCorrect = option.correct ?? false;
       return {
         option: {
@@ -401,7 +399,7 @@ export class SharedOptionBindingService {
     comp.cdRef.markForCheck();
   }
 
-  rehydrateUiFromState(comp: any, reason: string): void {
+  rehydrateUiFromState(comp: any, _reason: string): void {
     try {
       // Guard: if the user has already clicked or bindings are frozen,
       if (comp.hasUserClicked || comp.freezeOptionBindings) return;
@@ -861,7 +859,7 @@ export class SharedOptionBindingService {
     comp.clickService?.updateBindingSnapshots(comp);
   }
 
-  markRenderReady(comp: any, reason: string = ''): void {
+  markRenderReady(comp: any, _reason: string = ''): void {
     const bindingsReady =
       Array.isArray(comp.optionBindings) && comp.optionBindings.length > 0;
 

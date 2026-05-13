@@ -124,11 +124,6 @@ export class SocOptionUiService {
       }
     }
 
-    const _isCorrect = (o: any) => {
-      if (!o) return false;
-      return o.correct === true || String(o.correct) === 'true' || o.correct === 1 || o.correct === '1';
-    };
-
     for (let i = 0; i < comp.optionsToDisplay.length; i++) {
       const opt = comp.optionsToDisplay[i];
       const isSelected = selIndices.has(i);

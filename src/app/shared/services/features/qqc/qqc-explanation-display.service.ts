@@ -391,12 +391,11 @@ export class QqcExplanationDisplayService {
    */
   resetExplanation(
     force: boolean,
-    fixedQuestionIndex: number,
-    currentQuestionIndex: number
+    _fixedQuestionIndex: number,
+    _currentQuestionIndex: number
   ): boolean {
     this.explanationTextService.resetExplanationText();
 
-    const _qIndex = fixedQuestionIndex ?? currentQuestionIndex ?? 0;
     const locked = this.explanationTextService.isExplanationLocked?.();
     if (!force && locked) return true;  // blocked
 
