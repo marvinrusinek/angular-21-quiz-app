@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+﻿import { Injectable, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -31,7 +31,7 @@ export class SelectedOptionService {
   rawSelectionsMap = new Map<number, { optionId: number; text: string }[]>();
   selectedOptionIndices: { [key: number]: number[] } = {};
 
-  // Durable backup that survives clearState() — used for refresh restore.
+  // Durable backup that survives clearState() â€” used for refresh restore.
   _refreshBackup = new Map<number, SelectedOption[]>();
 
   // Accumulates ALL selections per question (including prior single-answer picks)
@@ -65,7 +65,7 @@ export class SelectedOptionService {
     this._refreshBackup.clear();
   }
 
-  // ── Signal-first state ─────────────────────────────────────────
+  // â”€â”€ Signal-first state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   readonly selectedOptionSig = signal<SelectedOption[]>([]);
   selectedOption$ = toObservable(this.selectedOptionSig);
 
@@ -203,7 +203,7 @@ export class SelectedOptionService {
     this._selectionHistory.delete(idx);
 
     // Clear the durable per-question sessionStorage key BEFORE saveState
-    // runs — otherwise saveState's merge reads the old key and re-adds
+    // runs â€” otherwise saveState's merge reads the old key and re-adds
     // entries that were just cleared. This prevents stale wrong-click
     // entries from accumulating across multiple click attempts.
     this.persistence.clearPerQuestionSessionKey(idx);
@@ -270,7 +270,7 @@ export class SelectedOptionService {
     const keyOf = (o: any) =>
       `${o?.optionId ?? '?'}|${o?.displayIndex ?? o?.index ?? -1}`;
 
-    // 1. Durable sessionStorage FIRST — the cleanest source of truth.
+    // 1. Durable sessionStorage FIRST â€” the cleanest source of truth.
     try {
       const storedStr = sessionStorage.getItem('sel_Q' + questionIndex);
       if (storedStr) {
@@ -542,7 +542,7 @@ export class SelectedOptionService {
 
   private buildCanonicalSelectionSnapshot(
     questionIndex: number,
-    overrides: Option[]
+    _overrides: Option[]
   ): Option[] {
     return this.idResolver.buildCanonicalSelectionSnapshot(
       questionIndex,
@@ -569,7 +569,7 @@ export class SelectedOptionService {
       selections
     ).map((sel) => ({ ...sel }));  // ensure new object identity
 
-    // Do NOT force highlight/showIcon here — let calling logic or sync methods decide
+    // Do NOT force highlight/showIcon here â€” let calling logic or sync methods decide
     // based on multi-answer rules (e.g. only highlight the last selection).
 
     if (canonicalSelections.length > 0) {
@@ -768,17 +768,17 @@ export class SelectedOptionService {
       }
 
       if (!isMultiSelect) {
-        // Single → deterministic on first selection
+        // Single â†’ deterministic on first selection
         this.setAnswered(true);  // stream sees answered=true
         this.isOptionSelectedSig.set(true);
         this.nextButtonStateService.setNextButtonState(true);
         return;
       }
 
-      // Multi → enable on ANY selection (your policy)
+      // Multi â†’ enable on ANY selection (your policy)
       const anySelected = selected.length > 0;
 
-      // Tell the stream it's answered so it won’t re-disable the button
+      // Tell the stream it's answered so it wonâ€™t re-disable the button
       this.setAnswered(anySelected);
 
       this.isOptionSelectedSig.set(anySelected);
@@ -832,7 +832,7 @@ export class SelectedOptionService {
     return this.selectedOptionsMap.get(idx)!;
   }
 
-  public reapplySelectionForQuestion(option: Option, index: number): void {
+  public reapplySelectionForQuestion(option: Option, _index: number): void {
     option.selected = true;  // mark as selected again
     this.setAnswered(true);  // mark question as answered
   }

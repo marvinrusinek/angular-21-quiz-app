@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -67,7 +67,7 @@ export class QuizQuestionEmitterService {
 
   /**
    * Prepare and normalize a question + options for emission.
-   * Returns the normalized question, options, and payload — or null if
+   * Returns the normalized question, options, and payload â€” or null if
    * the input is invalid.
    */
   prepareQuestionAndOptions(
@@ -84,7 +84,7 @@ export class QuizQuestionEmitterService {
     if (!currentQuestion) return null;
 
     const rawOptions = Array.isArray(options) ? options : [];
-    const normalizedIndex = Number.isFinite(indexOverride as number)
+    const _normalizedIndex = Number.isFinite(indexOverride as number)
       ? Math.max(0, Math.trunc(indexOverride as number))
       : Number.isFinite(currentQuestionIndex)
         ? Math.max(0, Math.trunc(currentQuestionIndex as number))

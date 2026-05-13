@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, Injector } from '@angular/core';
+﻿import { Injectable, Inject, forwardRef, Injector } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -18,7 +18,7 @@ export class FeedbackService {
   ) { }
 
   public generateFeedbackForOptions(
-    correctOptions: Option[],
+    _correctOptions: Option[],
     optionsToDisplay: Option[]
   ): string {
     const validOptionsToDisplay = (optionsToDisplay || []).filter(opt => opt && typeof opt === 'object');
@@ -34,7 +34,7 @@ export class FeedbackService {
   public buildFeedbackMessage(
     question: QuizQuestion,
     selected: Array<SelectedOption | Option> | null,
-    strict: boolean = false,
+    _strict: boolean = false,
     timedOut: boolean = false,
     displayIndex?: number,
     optionsToDisplay?: Option[],
@@ -47,9 +47,9 @@ export class FeedbackService {
     // and the selectedOptionService) and reconcile it against the URL
     // question's correct options.
     //
-    // Single-answer: any one correct match → "You're right!".
+    // Single-answer: any one correct match â†’ "You're right!".
     // Multi-answer: ALL correct options selected AND zero incorrect
-    //   selections → "You're right!"; otherwise fall through to the
+    //   selections â†’ "You're right!"; otherwise fall through to the
     //   count logic below which produces "Select N more correct
     //   answer(s)" or "Not this one" as appropriate.
     try {
@@ -153,7 +153,7 @@ export class FeedbackService {
       const allQs: QuizQuestion[] = (quizSvc as any)?.questions ?? [];
 
       // FIRST: parse the URL directly. The URL is the only truly reliable
-      // source — signals/services can lag during rapid navigation, and
+      // source â€” signals/services can lag during rapid navigation, and
       // upstream callers can pass stale `question` references (e.g. Q1's
       // object while the user is actually on Q3). The route is structured
       // /question/{quizId}/{1-based-index}.
@@ -235,15 +235,15 @@ export class FeedbackService {
     const optionsRaw = optionsToDisplay || (question.options || []);
 
     // Prefer the RAW source-of-truth options from quizService for correctness
-    // checks — optionsToDisplay can carry stale/polluted `correct` flags from
+    // checks â€” optionsToDisplay can carry stale/polluted `correct` flags from
     // prior question rendering, which yields wrong feedback option numbers.
-    // Use the resolvedQuestion's options as the truth source — these come
+    // Use the resolvedQuestion's options as the truth source â€” these come
     // from quizService.questions[resolvedIdx] (located above by text match).
     let truthOptions: Option[] = (resolvedQuestion?.options?.length
       ? resolvedQuestion.options
       : optionsRaw) as Option[];
 
-    // ── GUARDRAIL: Cross-validate correctIndices against visual correct flags ──
+    // â”€â”€ GUARDRAIL: Cross-validate correctIndices against visual correct flags â”€â”€
     if (truthOptions.length > 0) {
       const visualCorrect = truthOptions
         .map((o: Option, i: number) => isCorrectHelper(o) ? i + 1 : null)
@@ -309,7 +309,7 @@ export class FeedbackService {
 
       // CANONICAL TEXT MATCH: lookup the selected option in the URL-resolved
       // question's options by text and read THAT correct flag. Survives
-      // bindings whose `correct: true` was wiped after Q→Q→Q navigation.
+      // bindings whose `correct: true` was wiped after Qâ†’Qâ†’Q navigation.
       let canonicalCorrect = false;
       if (sel?.text && canonicalOptionsForMatch.length) {
         const selText = String(sel.text).trim();

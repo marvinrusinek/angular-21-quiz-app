@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -39,9 +39,9 @@ export class SharedOptionExplanationService {
     private selectedOptionService: SelectedOptionService
   ) {}
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Main Explanation Emission
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Resolves the question index, applies stale-call guard, builds context,
@@ -99,7 +99,7 @@ export class SharedOptionExplanationService {
    * the explanation text through all required service channels.
    */
   emitExplanation(ctx: ExplanationContext, skipGuard = false): void {
-    const { resolvedIndex, question, currentQuestion } = ctx;
+    const { resolvedIndex, question } = ctx;
 
     // Guard: Emit FET only when the question is resolved correctly.
     // Use display-order question source to handle shuffled mode correctly.
@@ -111,7 +111,7 @@ export class SharedOptionExplanationService {
         const resolved = this.checkResolution(ctx);
         if (!resolved) return;
       } else if (!question || !Array.isArray(question?.options)) {
-        // No question data available — cannot verify resolution. Block FET.
+        // No question data available â€” cannot verify resolution. Block FET.
         return;
       }
     }
@@ -140,9 +140,9 @@ export class SharedOptionExplanationService {
     this.scheduleExplanationVerification(resolvedIndex, explanationText);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Resolution Check
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Checks whether the question is resolved (all correct answers selected).
@@ -151,7 +151,7 @@ export class SharedOptionExplanationService {
   private checkResolution(ctx: ExplanationContext): boolean {
     const { resolvedIndex, question, optionBindings, optionsToDisplay } = ctx;
 
-    // Use authoritative question source — the component's question.options
+    // Use authoritative question source â€” the component's question.options
     // often lack the `correct` flag, making correctCount=0 and falling to
     // single-answer logic which resolves on 1 correct selection.
     const authQuestion = this.quizService.getQuestionsInDisplayOrder?.()?.[resolvedIndex]
@@ -300,9 +300,9 @@ export class SharedOptionExplanationService {
     return resolved;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Apply & Verify
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   applyExplanationText(
     explanationText: string,
@@ -425,9 +425,9 @@ export class SharedOptionExplanationService {
     return 0;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Explanation Text Resolution
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   cacheResolvedFormattedExplanation(index: number, formatted: string): void {
     const text = (formatted ?? '').trim();
@@ -525,9 +525,9 @@ export class SharedOptionExplanationService {
     return formatted;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Utilities
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   private normalize(value: unknown): string {
     return String(value ?? '')

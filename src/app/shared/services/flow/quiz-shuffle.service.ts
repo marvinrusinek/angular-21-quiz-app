@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -36,7 +36,7 @@ export class QuizShuffleService {
         this.normalizeOptionOrders(quizId, questions);
         return;
       }
-      // Persisted shuffle length mismatch — regenerating
+      // Persisted shuffle length mismatch â€” regenerating
       this.shuffleByQuizId.delete(quizId);
       localStorage.removeItem(`shuffleState:${quizId}`);
     }
@@ -65,7 +65,7 @@ export class QuizShuffleService {
    * Resets all option orders to identity (no option shuffling).
    * Called to fix pre-existing shuffle states that had option shuffling enabled.
    */
-  private normalizeOptionOrders(quizId: string, questions: QuizQuestion[]): void {
+  private normalizeOptionOrders(quizId: string, _questions: QuizQuestion[]): void {
     const state = this.shuffleByQuizId.get(quizId);
     if (!state) return;
 
@@ -106,7 +106,7 @@ export class QuizShuffleService {
       };
       localStorage.setItem(`shuffleState:${quizId}`, JSON.stringify(serializedState));
     } catch (err: any) {
-      // persist failed — non-critical
+      // persist failed â€” non-critical
     }
   }
 
@@ -126,7 +126,7 @@ export class QuizShuffleService {
       this.shuffleByQuizId.set(quizId, state);
       return true;
     } catch (err: any) {
-      // load failed — non-critical
+      // load failed â€” non-critical
       return false;
     }
   }
@@ -389,7 +389,7 @@ export class QuizShuffleService {
         }
       }
     } catch (err: any) {
-      // clear failed — non-critical
+      // clear failed â€” non-critical
     }
   }
 

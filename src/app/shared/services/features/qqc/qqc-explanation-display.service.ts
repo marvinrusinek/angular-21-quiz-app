@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
@@ -396,7 +396,7 @@ export class QqcExplanationDisplayService {
   ): boolean {
     this.explanationTextService.resetExplanationText();
 
-    const qIndex = fixedQuestionIndex ?? currentQuestionIndex ?? 0;
+    const _qIndex = fixedQuestionIndex ?? currentQuestionIndex ?? 0;
     const locked = this.explanationTextService.isExplanationLocked?.();
     if (!force && locked) return true;  // blocked
 
@@ -417,8 +417,8 @@ export class QqcExplanationDisplayService {
    * Marks explanation as answered/displayed in quiz state.
    */
   markExplanationDisplayed(
-    quizId: string,
-    questionIndex: number,
+    _quizId: string,
+    _questionIndex: number,
     lastAllCorrect: boolean
   ): void {
     this.quizStateService.setDisplayState({
@@ -704,9 +704,9 @@ export class QqcExplanationDisplayService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // FORMATTED EXPLANATION RESOLUTION
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Resolves and returns a formatted explanation text for a given question index.
@@ -737,9 +737,9 @@ export class QqcExplanationDisplayService {
     let text = '';
 
     try {
-      // ────────────────────────────────────────────────
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Resolve the FET using the specific index i0
-      // ────────────────────────────────────────────────
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
       // Try direct return first
       const out = await this.updateExplanationText({
@@ -753,9 +753,9 @@ export class QqcExplanationDisplayService {
       });
       text = (out ?? '').toString().trim();
 
-      // ────────────────────────────────────────────────
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Fallback: formatter writes to a stream
-      // ────────────────────────────────────────────────
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if ((!text || text === 'No explanation available for this question.') &&
         this.explanationTextService.formattedExplanation$) {
 
@@ -775,9 +775,9 @@ export class QqcExplanationDisplayService {
         }
       }
 
-      // ────────────────────────────────────────────────
-      // Final check — only emit real explanation text
-      // ────────────────────────────────────────────────
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // Final check â€” only emit real explanation text
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (!text || text === 'No explanation available for this question.') {
         return '';
       }
@@ -789,9 +789,9 @@ export class QqcExplanationDisplayService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PREPARE AND SET EXPLANATION TEXT
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Prepares and sets explanation text for a given question index.

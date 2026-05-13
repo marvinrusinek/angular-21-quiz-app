@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+﻿import { Injectable, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import { firstValueFrom, forkJoin, lastValueFrom, of } from 'rxjs';
@@ -447,7 +447,7 @@ export class QqcQlStreamService {
 
   private hydrateAndClone(
     q: QuizQuestion,
-    qIndex: number
+    _qIndex: number
   ): { question: QuizQuestion; options: Option[] } {
     const question: QuizQuestion = { ...q };
     const baseOpts: Option[] = Array.isArray(q?.options) ? q.options : [];

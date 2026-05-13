@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -72,7 +72,7 @@ export class SharedOptionOrchestratorService {
     return 0;
   }
 
-  runNormalizeQuestionIndex(host: Host, candidate: unknown): number | null {
+  runNormalizeQuestionIndex(_host: Host, candidate: unknown): number | null {
     if (typeof candidate !== 'number' || !Number.isFinite(candidate)) {
       return null;
     }
@@ -105,7 +105,7 @@ export class SharedOptionOrchestratorService {
 
     // PRISTINE-FIRST via OPTION-TEXT FINGERPRINT.
     // Question-text matching can fail (currentQuestion may be null/stale at
-    // initial render). Match by the option-text fingerprint instead — it
+    // initial render). Match by the option-text fingerprint instead â€” it
     // uniquely identifies a question across the entire QUIZ_DATA.
     let result = false;
     try {
@@ -308,7 +308,7 @@ export class SharedOptionOrchestratorService {
   }
 
   // ===== Rendering / explanation =====
-  runMarkRenderReady(host: Host, reason: string): void {
+  runMarkRenderReady(host: Host, _reason: string): void {
     const bindingsReady =
       Array.isArray(host.optionBindings) && host.optionBindings.length > 0;
     const optionsReady =

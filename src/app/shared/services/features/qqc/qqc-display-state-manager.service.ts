@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 
 import { Option } from '../../../models/Option.model';
@@ -24,7 +24,7 @@ export class QqcDisplayStateManagerService {
   buildOptionsToDisplay(
     sourceQuestion: QuizQuestion | null | undefined
   ): Option[] | null {
-    const context = '[buildOptionsToDisplay]';
+    const _context = '[buildOptionsToDisplay]';
 
     if (!sourceQuestion || !Array.isArray(sourceQuestion.options)) return null;
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -259,7 +259,7 @@ export class QqcOptionSelectionService {
   /**
    * Sets correct message via the feedback service.
    */
-  setCorrectMessage(optionsToDisplay: Option[], question: QuizQuestion): string {
+  setCorrectMessage(optionsToDisplay: Option[], _question: QuizQuestion): string {
     const correctAnswers = optionsToDisplay.filter((opt) => opt.correct);
     return this.feedbackService.setCorrectMessage(
       correctAnswers,

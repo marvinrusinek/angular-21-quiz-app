@@ -1,4 +1,4 @@
-import { Injectable, Injector } from '@angular/core';
+﻿import { Injectable, Injector } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -80,7 +80,7 @@ export class QuizAnswerEvaluationService {
    * Returns { isCorrect, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers }.
    */
   async evaluateCorrectness(
-    qIndex: number,
+    _qIndex: number,
     currentQuestion: QuizQuestion,
     userAnswerIds: number[]
   ): Promise<{

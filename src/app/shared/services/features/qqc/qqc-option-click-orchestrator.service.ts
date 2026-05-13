@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
@@ -21,7 +21,7 @@ export class QqcOptionClickOrchestratorService {
 
   /**
    * Per-question multi-answer selection tracking.
-   * Maps question index → set of selected option indices.
+   * Maps question index â†’ set of selected option indices.
    */
   private _multiAnswerSelections = new Map<number, Set<number>>();
 
@@ -304,7 +304,7 @@ export class QqcOptionClickOrchestratorService {
 
     // For multi-answer, cross-check against RAW question data so a mutated
     // canonicalOpts with fewer correct flags than the ground truth can't
-    // flip allCorrect=true prematurely (e.g. inc→correct where canonicalOpts
+    // flip allCorrect=true prematurely (e.g. incâ†’correct where canonicalOpts
     // only marks 1 option as correct, giving selectedCorrectCount===1===correctOpts.length).
     let rawAllCorrect = true;
     if (isMultiForSelection) {
@@ -373,7 +373,7 @@ export class QqcOptionClickOrchestratorService {
   /**
    * Resolves the pristine (pre-shuffle) question for the current index.
    * Uses shuffle mapping first, then falls back to text-based lookup.
-   * Extracted from onOptionClicked post-click RAF block (lines 2296–2317).
+   * Extracted from onOptionClicked post-click RAF block (lines 2296â€“2317).
    */
   resolvePristineQuestion(params: {
     quizId: string;
@@ -402,7 +402,7 @@ export class QqcOptionClickOrchestratorService {
    * Performs the post-click RAF tasks: resolves pristine question,
    * generates feedback text, runs post-click tasks, handles core
    * selection, marks bindings selected, and refreshes feedback.
-   * Extracted from onOptionClicked RAF block (lines 2292–2328).
+   * Extracted from onOptionClicked RAF block (lines 2292â€“2328).
    */
   async performPostClickRafTasks(params: {
     idx: number;
@@ -524,7 +524,7 @@ export class QqcOptionClickOrchestratorService {
 
     // Track multi-answer scoring
     if (isMultiForSelection && question?.options) {
-      const { allCorrectSelected, selections } = this.trackMultiAnswerSelection({
+      const { allCorrectSelected } = this.trackMultiAnswerSelection({
         questionIndex,
         evtIdx,
         checked,

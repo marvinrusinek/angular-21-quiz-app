@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take } from 'rxjs/operators';
 
@@ -299,7 +299,7 @@ export class QclQuestionFetchService {
     quizId: string;
     totalQuestions: number;
   }): Promise<RouteQuestionResult> {
-    const { routeIndex, quiz, quizId, totalQuestions } = params;
+    const { routeIndex, quiz, totalQuestions } = params;
     const empty: RouteQuestionResult = {
       success: false,
       question: null,

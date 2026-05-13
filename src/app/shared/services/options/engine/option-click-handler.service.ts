@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -72,9 +72,9 @@ export class OptionClickHandlerService {
     private selectedOptionService: SelectedOptionService
   ) {}
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Correct Indices Resolution
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Resolves the correct option indices for a question, cross-referencing
@@ -82,7 +82,7 @@ export class OptionClickHandlerService {
    */
   resolveCorrectIndices(
     question: QuizQuestion | null,
-    questionIndex: number,
+    _questionIndex: number,
     isMultiModeFromComponent: boolean,
     typeFromComponent: string
   ): CorrectIndicesResult {
@@ -112,7 +112,7 @@ export class OptionClickHandlerService {
       }
     }
 
-    // SOURCE 3: Pristine quizInitialState — most reliable, never mutated
+    // SOURCE 3: Pristine quizInitialState â€” most reliable, never mutated
     let fromPristine: number[] = [];
     if (qText) {
       try {
@@ -142,9 +142,9 @@ export class OptionClickHandlerService {
     return { correctIndices, correctCount, isMultiMode };
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Multi-Answer Click State
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Computes the multi-answer state after a click, given the durable
@@ -178,9 +178,9 @@ export class OptionClickHandlerService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Multi-Answer Feedback Text
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Generates the feedback text for a multi-answer click.
@@ -203,9 +203,9 @@ export class OptionClickHandlerService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Multi-Answer Binding Updates
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Computes what each binding should look like after a multi-answer click.
@@ -283,7 +283,7 @@ export class OptionClickHandlerService {
               ).length;
               if (pristineCorrectCount > correctIndices.length) {
                 // Pristine has more correct than passed-in correctIndices.
-                // This is the undercounted case — bail without locking.
+                // This is the undercounted case â€” bail without locking.
                 return;
               }
               break;
@@ -298,9 +298,9 @@ export class OptionClickHandlerService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Single-Answer Feedback Override
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * For single-answer mode, verifies and potentially overrides the feedback
@@ -357,13 +357,13 @@ export class OptionClickHandlerService {
     return cfg;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Disabled State Computation
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Computes whether an option should be disabled, given the component's
-   * current state context. Pure decision logic — no side effects.
+   * current state context. Pure decision logic â€” no side effects.
    */
   computeDisabledState(
     option: Option,
@@ -375,7 +375,7 @@ export class OptionClickHandlerService {
     const lockId = (option?.optionId != null && Number(option.optionId) !== -1)
       ? option.optionId : index;
 
-    // Detect multi-answer from data as well as the context flag — isMultiMode
+    // Detect multi-answer from data as well as the context flag â€” isMultiMode
     // can be stale/false during initialization before runIsMultiMode computes.
     let effectiveMulti = isMultiMode;
     if (!effectiveMulti) {
@@ -451,7 +451,7 @@ export class OptionClickHandlerService {
           this.quizService.getPristineCorrectTextsForQuestion(liveSAQ?.questionText);
         // anyCorrectSelected: trust the selection's own `correct` flag
         // (spread from the canonical binding option) as a fallback when
-        // the cache misses — stale questionText on Q3+ would otherwise
+        // the cache misses â€” stale questionText on Q3+ would otherwise
         // wrongly leave siblings clickable after a real correct pick.
         const anyCorrectSelected = saSelections.some((s: any) => {
           if (s?.correct === true || String(s?.correct) === 'true' ||
@@ -461,7 +461,7 @@ export class OptionClickHandlerService {
           return correctTextsSA.has(nrmSA(s?.text));
         });
         if (!anyCorrectSelected && correctTextsSA.size <= 1) return false;
-      } catch { /* ignore — fall through to legacy lock checks */ }
+      } catch { /* ignore â€” fall through to legacy lock checks */ }
     }
 
     const disabledSet = disabledOptionsPerQuestion.get(qIndex);
@@ -484,9 +484,9 @@ export class OptionClickHandlerService {
     return result;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Question Type Detection
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Determines if a question is single or multiple answer.
@@ -531,9 +531,9 @@ export class OptionClickHandlerService {
     return result;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Shared Utilities
-  // ═══════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   private isCorrectFlag(o: any): boolean {
     if (!o) return false;

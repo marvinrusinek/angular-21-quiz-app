@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -71,9 +71,9 @@ export class QuizOptionProcessingService {
     private nextButtonStateService: NextButtonStateService
   ) {}
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // FULL OPTION CLICK ORCHESTRATION
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /**
    * Runs the full evaluation chain after a user option click.
@@ -150,9 +150,9 @@ export class QuizOptionProcessingService {
   }
 
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // EVALUATE IMMEDIATE CORRECTNESS
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   evaluateImmediateCorrectness(params: {
     option: SelectedOption;
@@ -164,7 +164,7 @@ export class QuizOptionProcessingService {
     quizId: string;
     currentQuestionIndex: number;
   }): ImmediateCorrectnessResult {
-    const { option, idx, liveSelections, questionsArray, currentQuestion, optionsToDisplay, quizId, currentQuestionIndex } = params;
+    const { option, idx, liveSelections, questionsArray, currentQuestion, optionsToDisplay, currentQuestionIndex } = params;
 
     const questionForSelection =
       this.quizService.questions?.[idx] ||
@@ -260,9 +260,9 @@ export class QuizOptionProcessingService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // EVALUATE SINGLE-ANSWER SCORING
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   evaluateSingleAnswer(params: {
     option: SelectedOption;
@@ -316,9 +316,9 @@ export class QuizOptionProcessingService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // EVALUATE MULTI-ANSWER SCORING
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   evaluateMultiAnswer(params: {
     option: SelectedOption;
@@ -366,7 +366,7 @@ export class QuizOptionProcessingService {
       // Cross-check against PRISTINE quiz data. Mutated question data can have
       // reduced correct flags, letting `everyCorrectSelected` fire on only 1 of
       // 2 correct answers, which then marks isQuestionComplete=true and
-      // persists displayMode=explanation — causing premature FET display.
+      // persists displayMode=explanation â€” causing premature FET display.
       let rawAllCorrectSelected = everyCorrectSelected;
       try {
         const norm = (t: any) => String(t ?? '').trim().toLowerCase();
@@ -487,9 +487,9 @@ export class QuizOptionProcessingService {
     };
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // HANDLE AUTHORITATIVE CORRECTNESS CHECK
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async handleAuthoritativeCheck(params: {
     idx: number;
@@ -558,9 +558,9 @@ export class QuizOptionProcessingService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PERSIST OPTION SELECTION TO SESSION
-  // ═══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   persistOptionSelection(params: {
     idx: number;
@@ -569,10 +569,10 @@ export class QuizOptionProcessingService {
     option: SelectedOption;
     isQuestionComplete?: boolean;
   }): void {
-    const { idx, quizId, explanationToDisplay, isQuestionComplete = true } = params;
+    const { idx, quizId, isQuestionComplete = true } = params;
 
     // Update QuizStateService QuestionState
-    const prev = (this.quizService as any).quizStateService?.getQuestionState?.(quizId, idx);
+    const _prev = (this.quizService as any).quizStateService?.getQuestionState?.(quizId, idx);
     // Note: QuizStateService update is handled by the component since it needs the service reference
 
     // Persist to session

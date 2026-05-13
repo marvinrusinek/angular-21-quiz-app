@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -25,7 +25,7 @@ export class OptionService {
   /**
    * Returns the icon to display for an option based on its state
    */
-  getOptionIcon(binding: OptionBindings, i: number): string {
+  getOptionIcon(binding: OptionBindings, _i: number): string {
     const option = binding.option;
     if (option.showIcon === false) { return ''; }
 
@@ -69,8 +69,8 @@ export class OptionService {
    * options or when timer expired
    */
   getOptionCursor(
-    binding: OptionBindings,
-    index: number,
+    _binding: OptionBindings,
+    _index: number,
     isDisabled: boolean,
     timerExpiredForQuestion: boolean
   ): string {

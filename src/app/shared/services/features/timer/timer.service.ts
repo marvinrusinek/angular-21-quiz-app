@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
+﻿import { Injectable, OnDestroy, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Subject, Subscription, timer } from 'rxjs';
 import { finalize, takeUntil, tap } from 'rxjs/operators';
@@ -31,7 +31,7 @@ export class TimerService implements OnDestroy {
   })();
 
   isTimerRunning = false;  // tracks whether the timer is currently running
-  /** Derived from timerTypeSig — single source of truth. */
+  /** Derived from timerTypeSig â€” single source of truth. */
   get isCountdown(): boolean { return this.timerTypeSig() === 'countdown'; }
   isTimerStoppedForCurrentQuestion = false;
   stoppedForQuestion = new Set<number>();
@@ -65,9 +65,9 @@ export class TimerService implements OnDestroy {
 
   private _authoritativeStop = false;
   private hasExpiredForRun = false;
-  /** Signal version — read this in OnPush templates so Angular auto-tracks it. */
+  /** Signal version â€” read this in OnPush templates so Angular auto-tracks it. */
   public readonly expiredForQuestionIndexSig = signal(-1);
-  /** Derived from expiredForQuestionIndexSig — single source of truth. */
+  /** Derived from expiredForQuestionIndexSig â€” single source of truth. */
   public get expiredForQuestionIndex(): number { return this.expiredForQuestionIndexSig(); }
 
   constructor(
@@ -178,7 +178,7 @@ export class TimerService implements OnDestroy {
     // Start ticking after 1s so the initial value stays visible for a second
     const timer$ = timer(1000, 1000).pipe(
       tap((tick) => {
-        // Tick starts at 0 after 1s → elapsed = tick + 1 (1,2,3,…)
+        // Tick starts at 0 after 1s â†’ elapsed = tick + 1 (1,2,3,â€¦)
         const elapsed = tick + 1;
 
         this.elapsedTimeSig.set(elapsed);
@@ -272,7 +272,7 @@ export class TimerService implements OnDestroy {
 
     if (questionIndex == null || questionIndex < 0) return false;
 
-    const snapshot = Array.isArray(options.optionsSnapshot)
+    const _snapshot = Array.isArray(options.optionsSnapshot)
       ? options.optionsSnapshot : undefined;
 
     // If we get here, all correct answers are selected.
@@ -310,8 +310,8 @@ export class TimerService implements OnDestroy {
   /**
    * Stops the timer if the answer conditions are met.
    *
-   * Single-answer → stop when the clicked option is correct.
-   * Multiple-answer → stop when all correct answers are selected.
+   * Single-answer â†’ stop when the clicked option is correct.
+   * Multiple-answer â†’ stop when all correct answers are selected.
    */
   public async stopTimerIfApplicable(
     question: QuizQuestion,
@@ -408,7 +408,7 @@ export class TimerService implements OnDestroy {
     // Prevent double-stops
     if (this.isTimerStoppedForCurrentQuestion) return;
 
-    // Authoritative Stop — grant authority immediately before stopping
+    // Authoritative Stop â€” grant authority immediately before stopping
     this._authoritativeStop = true;
 
     const stopped = this.attemptStopTimerForQuestion({
@@ -471,13 +471,13 @@ export class TimerService implements OnDestroy {
 
   public async requestStopEvaluationFromClick(
     questionIndex: number,
-    selectedOption: SelectedOption | null
+    _selectedOption: SelectedOption | null
   ): Promise<void> {
     const normalizedIndex = this.normalizeQuestionIndex(questionIndex);
     const q = this.quizService?.questions?.[normalizedIndex];
     if (!q) return;
 
-    // Always convert SelectedOption → SelectedOption[]
+    // Always convert SelectedOption â†’ SelectedOption[]
     const selectedOptionsArray =
       this.selectedOptionService.getSelectedOptionsForQuestion(normalizedIndex);
 

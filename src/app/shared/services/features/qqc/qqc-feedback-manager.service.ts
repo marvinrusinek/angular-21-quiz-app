@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
@@ -330,8 +330,8 @@ export class QqcFeedbackManagerService {
       feedback:
         option.optionId === selectedOption.optionId
           ? option.correct
-            ? '✅ This is a correct answer!'
-            : '❌ Incorrect answer!'
+            ? 'âœ… This is a correct answer!'
+            : 'âŒ Incorrect answer!'
           : option.feedback,
       showIcon: option.optionId === selectedOption.optionId,
       selected: option.optionId === selectedOption.optionId
@@ -554,7 +554,7 @@ export class QqcFeedbackManagerService {
     wasCorrect: boolean;
     optId: number;
   } {
-    const { prevSelected, nowSelected, option, currentQuestionIndex } = params;
+    const { prevSelected, nowSelected, option } = params;
     const becameSelected = !prevSelected && nowSelected;
     const becameDeselected = prevSelected && !nowSelected;
     const optId = Number(option.optionId);

@@ -1,4 +1,4 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+﻿import { Injectable, signal, WritableSignal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
@@ -56,7 +56,7 @@ export class QuizService {
   })();
   private _questions: QuizQuestion[] = [];
 
-  // Scoring state delegated to QuizScoringService — getters for backwards compat
+  // Scoring state delegated to QuizScoringService â€” getters for backwards compat
   public get questionCorrectness(): Map<number, boolean> {
     return this.scoringService.questionCorrectness;
   }
@@ -82,7 +82,7 @@ export class QuizService {
 
   currentQuestionIndexSig = signal<number>(0);
   // Sync mirror so observable subscribers (displayText$, etc.) receive
-  // index changes in the same microtask as the signal write — avoids the
+  // index changes in the same microtask as the signal write â€” avoids the
   // toObservable() async lag that caused FET-to-q-text flicker on Next.
   currentQuestionIndexSubject = new BehaviorSubject<number>(0);
   currentQuestionIndex$: Observable<number> = this.currentQuestionIndexSubject.asObservable();
@@ -155,7 +155,7 @@ export class QuizService {
     }
   })();
 
-  // Canonical question data is stored in dataLoader — access via getters below
+  // Canonical question data is stored in dataLoader â€” access via getters below
   private get canonicalQuestionsByQuiz(): Map<string, QuizQuestion[]> {
     return this.dataLoader.getCanonicalQuestionsByQuiz();
   }
@@ -738,7 +738,7 @@ export class QuizService {
    * questionText. Replaces the nested `for (quiz) for (question)` scan
    * over `quizInitialState` that was being run inside hot template
    * methods (isDisabled / getOptionBackgroundColor / etc.) on every CD
-   * cycle for every option-item — easily thousands of string compares
+   * cycle for every option-item â€” easily thousands of string compares
    * per click. Derived on-demand from the pristine-by-text cache and
    * memoized so repeat lookups are also O(1).
    */
@@ -929,7 +929,7 @@ export class QuizService {
 
   resetAll(): void {
     this.sessionManager.resetAll(this, this.quizResetSource);
-    // Tail items not on the QuizSessionState interface — kept here so the
+    // Tail items not on the QuizSessionState interface â€” kept here so the
     // session manager doesn't need to know about dataLoader internals or
     // private QuizService fields.
     this.questionsQuizId = null;
@@ -1002,7 +1002,7 @@ export class QuizService {
 
   // When the service receives a new question (usually in a method
   // that loads the next question), push the text into the source:
-  public updateCurrentQuestion(question: QuizQuestion): void {
+  public updateCurrentQuestion(_question: QuizQuestion): void {
     // Kept as an extension point; callers notify QuizService of question changes
   }
 

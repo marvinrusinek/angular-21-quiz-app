@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
@@ -124,7 +124,7 @@ export class SocOptionUiService {
       }
     }
 
-    const isCorrect = (o: any) => {
+    const _isCorrect = (o: any) => {
       if (!o) return false;
       return o.correct === true || String(o.correct) === 'true' || o.correct === 1 || o.correct === '1';
     };

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { Option } from '../../../models/Option.model';
@@ -85,7 +85,7 @@ export class QqcOrchSelectionService {
     host: Host,
     opt: SelectedOption,
     idx: number,
-    checked: boolean,
+    _checked: boolean,
     wasPreviouslySelected: boolean,
     questionIndex?: number
   ): Promise<void> {

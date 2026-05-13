@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
+﻿import { Injectable, OnDestroy, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, Observable, of, Subject, throwError } from 'rxjs';
@@ -306,7 +306,7 @@ export class QuizDataService implements OnDestroy {
         this.quizService.questions = this.cloneQuestions(sessionQuestions);
         
         // Stamp multi-answer flag for each question
-        for (const [qIndex, question] of this.quizService.questions.entries()) {
+        for (const [_qIndex, question] of this.quizService.questions.entries()) {
           (question as any).isMulti =
             question.type === QuestionType.MultipleAnswer ||
             (Array.isArray(question.options) &&
@@ -349,7 +349,7 @@ export class QuizDataService implements OnDestroy {
       if (existingShuffled?.length > 0) {
         return of(this.cloneQuestions(existingShuffled));
       }
-      // No shuffled data yet — fall through to buildSessionQuestions to generate initial shuffle
+      // No shuffled data yet â€” fall through to buildSessionQuestions to generate initial shuffle
     }
 
     const baseQuestions = this.baseQuizQuestionCache.get(quizId);

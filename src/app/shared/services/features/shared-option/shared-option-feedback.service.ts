@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -466,7 +466,7 @@ export class SharedOptionFeedbackService {
    * Mirrors SharedOptionComponent.getInlineFeedbackConfig (lines ~3181-3219).
    */
   getInlineFeedbackConfig(
-    b: OptionBindings,
+    _b: OptionBindings,
     i: number,
     ctx: FeedbackContext
   ): FeedbackProps | null {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef,
+﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef,
   effect, inject, input, OnInit, output, ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -73,7 +73,7 @@ export class OptionItemComponent implements OnInit {
   // clear timer-expiry highlighting on question change even when the
   // user never clicked an option (_userHasClicked is false).
   private _wasTimerExpired = false;
-  // Direct timer expiry flag — set by subscribing to timerService.expired$
+  // Direct timer expiry flag â€” set by subscribing to timerService.expired$
   // directly, bypassing the parent OnPush binding chain.
   private _directTimerExpired = false;
   private _directTimerExpiredForIndex = -1;
@@ -88,7 +88,7 @@ export class OptionItemComponent implements OnInit {
     private timerService: TimerService
   ) {
     // Question-change cleanup. Replaces the prior ngOnChanges
-    // `changes['currentQuestionIndex']` block — necessary because
+    // `changes['currentQuestionIndex']` block â€” necessary because
     // currentQuestionIndex is now a signal input and signal-input
     // changes don't fire ngOnChanges.
     effect(() => {
@@ -121,7 +121,7 @@ export class OptionItemComponent implements OnInit {
       this._lastQuestionIndex = nextQuestionIndex;
     });
 
-    // shouldResetBackground reset. Truthy → clear sticky highlight latch.
+    // shouldResetBackground reset. Truthy â†’ clear sticky highlight latch.
     effect(() => {
       if (this.shouldResetBackground()) this._wasSelected = false;
     });
@@ -276,7 +276,7 @@ export class OptionItemComponent implements OnInit {
     return false;
   }
 
-  getOptionIcon(option?: any, i?: number): string {
+  getOptionIcon(_option?: any, _i?: number): string {
     if (this.isTimerStamped()) {
       return this.isStampedCorrect() ? 'check' : 'close';
     }
@@ -290,7 +290,7 @@ export class OptionItemComponent implements OnInit {
     const classes = { ...this.binding().cssClasses };
 
     // If the timer-expiry handler pre-stamped CSS classes on this binding
-    // FOR THIS question, return them directly — do NOT let downstream
+    // FOR THIS question, return them directly â€” do NOT let downstream
     // logic overwrite them. Stale stamps from a previous question fall
     // through to the normal class-derivation path.
     if (this.isTimerStamped()) return classes;
@@ -375,7 +375,7 @@ export class OptionItemComponent implements OnInit {
         this.quizService.getPristineCorrectTextsForQuestion(liveQT);
 
       if (pristineCorrectTexts.size > 0) {
-        // Read the signal directly — registers as a template dependency
+        // Read the signal directly â€” registers as a template dependency
         // so this OnPush component re-renders when selections change.
         const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
         const selections = selectionsMap.get(_qIdx) ?? [];
@@ -400,7 +400,7 @@ export class OptionItemComponent implements OnInit {
       return false;
     }
 
-    // SINGLE-ANSWER MODE — single, direct rule:
+    // SINGLE-ANSWER MODE â€” single, direct rule:
     //   Lock = NOT-selected AND a pristine-correct option is already selected
     //          for this question.
     // The currently-selected option is never disabled.
@@ -408,7 +408,7 @@ export class OptionItemComponent implements OnInit {
     if (this.binding()?.isSelected) return false;
 
     const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
-    // Read signal directly — OnPush auto-tracks selection mutations.
+    // Read signal directly â€” OnPush auto-tracks selection mutations.
     const selectionsMapSig = this.selectedOptionService.selectedOptionsMapSig();
     const selections = selectionsMapSig.get(qIdx) ?? [];
     if (selections.length === 0) return false;
@@ -463,7 +463,7 @@ export class OptionItemComponent implements OnInit {
     return this.isTimerStamped() && this.binding()?.cssClasses?.['correct-option'] === true;
   }
 
-  shouldShowIcon(option?: any, i?: number): boolean {
+  shouldShowIcon(_option?: any, _i?: number): boolean {
     if (this.isTimerStamped()) {
       if (this.isStampedCorrect()) return true;
       return !!this.binding()?.isSelected || this._wasSelected;
@@ -494,7 +494,7 @@ export class OptionItemComponent implements OnInit {
       // explicitly false), so the service check below still runs.
       if (this.binding()?.option?.showIcon === false) return false;
 
-      // No live click this session → only show icon if a saved
+      // No live click this session â†’ only show icon if a saved
       // selection actually matches this exact binding position.
       return this.isSelectedForCurrentQuestion();
     }
@@ -521,7 +521,7 @@ export class OptionItemComponent implements OnInit {
   }
 
   getOptionBackgroundColor(): string | null {
-    // Timer-expiry handler stamped this binding — use stamped classes for color
+    // Timer-expiry handler stamped this binding â€” use stamped classes for color
     if (this.isTimerStamped()) {
       if (this.isStampedCorrect()) return '#43e756';
       const wasSelected = this.binding()?.isSelected || this._wasSelected;
@@ -654,7 +654,7 @@ export class OptionItemComponent implements OnInit {
     let qIndex =
       this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
 
-    // Same URL fallback as getSelectionsForCurrentBinding — on refresh
+    // Same URL fallback as getSelectionsForCurrentBinding â€” on refresh
     // the input may still be 0 before the route resolves.
     if (qIndex === 0) {
       try {
@@ -675,22 +675,22 @@ export class OptionItemComponent implements OnInit {
     }
 
     // Saved record must represent an actual selection. `selected: false`
-    // is an unselect trace — ignore it so a never-clicked binding that
+    // is an unselect trace â€” ignore it so a never-clicked binding that
     // happens to share an index with an unselect entry never lights up.
     // EXCEPTION: entries with explicit showIcon/highlight are previously-
-    // clicked wrong options saved by the correct-click handler — they
+    // clicked wrong options saved by the correct-click handler â€” they
     // MUST match so the red+X icon restores on refresh.
     if (sel?.selected === false && !sel?.showIcon && !sel?.highlight) {
       return false;
     }
 
-    // TEXT MATCH (most reliable — immune to synthetic ID mismatches
+    // TEXT MATCH (most reliable â€” immune to synthetic ID mismatches
     // and index collisions from different init paths).
     const selText = ((sel as any)?.text ?? '').trim().toLowerCase();
     const bText = (this.binding()?.option?.text ?? '').trim().toLowerCase();
     if (selText && bText) return selText === bText;
 
-    // Prefer `displayIndex` — that's what setSelectedOption enriches with
+    // Prefer `displayIndex` â€” that's what setSelectedOption enriches with
     // and it is stable across refresh. `sel.index` can be a stale legacy
     // field with an unrelated value (e.g. an array position), causing a
     // false positive against this binding's `this.i`. Fall back to
@@ -703,7 +703,7 @@ export class OptionItemComponent implements OnInit {
     if (normalizedSelectedIndex != null) {
       if (normalizedSelectedIndex !== this.displayIndex()) return false;
 
-      // Position matches — cross-check optionId to prevent false
+      // Position matches â€” cross-check optionId to prevent false
       // positives when options reload in a different order or when
       // stale displayIndex values leak from a prior session.
       const selId = sel?.optionId;
@@ -790,11 +790,11 @@ export class OptionItemComponent implements OnInit {
     }
 
     // On refresh (no live click), ONLY trust authoritative saved
-    // selection state — not binding flags which can be transiently
+    // selection state â€” not binding flags which can be transiently
     // stale from processOptionBindings / hydrateOptions / setOptionBindingsIfChanged.
     if (!this._userHasClicked && !this._wasSelected) {
       // During live interaction, trust the binding's highlight flag
-      // when explicitly false — prevents service-level false positives.
+      // when explicitly false â€” prevents service-level false positives.
       if (this.binding()?.option?.highlight === false) return false;
 
       return this.isSelectedForCurrentQuestion();

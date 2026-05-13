@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 
@@ -10,7 +10,7 @@ export class OptionSelectionPolicyService {
     showFeedbackForOption: Record<number, boolean>;
     updateFeedbackState: (id: number) => void;
   }): void {
-    const { optionBindings, selectedBinding, showFeedbackForOption, updateFeedbackState } = params;
+    const { optionBindings, selectedBinding } = params;
 
     for (const binding of optionBindings ?? []) {
       const isTarget = binding === selectedBinding;

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { MatRadioChange } from '@angular/material/radio';
 
@@ -298,7 +298,7 @@ export class OptionUiSyncService {
 
   private forceSelectIntoServices(
     optionBinding: OptionBindings,
-    optionId: number | string | undefined,
+    _optionId: number | string | undefined,
     index: number,
     currentIndex: number,
     checked: boolean,
@@ -337,7 +337,7 @@ export class OptionUiSyncService {
       }
 
       // 2. Catch any selected options not in history (redundancy)
-      // Use the binding's effectiveId for the map lookup — the map
+      // Use the binding's effectiveId for the map lookup â€” the map
       // key is effectiveId (optionId), not position index. Using the
       // raw position idx would false-positive when a 1-based optionId
       // from another option collides with this binding's array index.
@@ -359,7 +359,7 @@ export class OptionUiSyncService {
           if (!hasRealId) {
             const owner = realIdOwnerForSelect.get(bEffId);
             if (owner !== undefined && owner !== idx) {
-              continue; // skip — this binding doesn't actually match the map entry
+              continue; // skip â€” this binding doesn't actually match the map entry
             }
           }
           fullSelections.push({
@@ -384,7 +384,7 @@ export class OptionUiSyncService {
     // Only set answered=true and emit FET for single-answer when the
     // clicked option is actually correct (pristine check). After Restart Quiz,
     // binding correct flags can be stale, so resolve from quizInitialState.
-    // In SHUFFLED mode, skip entirely — SOC handles all scoring/FET.
+    // In SHUFFLED mode, skip entirely â€” SOC handles all scoring/FET.
     const isShufForFET = (this.quizService as any)?.isShuffleEnabled?.()
       && (this.quizService as any)?.shuffledQuestions?.length > 0;
     if (ctx.type === 'single' && !isShufForFET) {
@@ -394,7 +394,7 @@ export class OptionUiSyncService {
         const clickedText = nrm(optionBinding?.option?.text);
         const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
         if (clickedText && bundle.length > 0) {
-          // Use TEXT-BASED question matching — index-based lookup fails in
+          // Use TEXT-BASED question matching â€” index-based lookup fails in
           // shuffled mode because pristineQuiz.questions[displayIndex] is
           // the WRONG question (original order).
           const isShuf = (this.quizService as any)?.isShuffleEnabled?.()
@@ -487,7 +487,7 @@ export class OptionUiSyncService {
     };
 
     // Use existing binding state (set by handleOptionClick) as the source of truth.
-    // Do NOT overwrite bindings from service — handleOptionClick already set the
+    // Do NOT overwrite bindings from service â€” handleOptionClick already set the
     // correct isSelected state for each binding, and overwriting from the service
     // can restore stale/accumulated selections.
     const selectedOptions: Option[] = ctx.optionBindings
@@ -501,7 +501,7 @@ export class OptionUiSyncService {
 
     const correctMessage = this.feedbackService.setCorrectMessage(freshOptions, currentQuestion!);
 
-    // EVALUATE RESOLUTION — use bindings as single source of truth for both
+    // EVALUATE RESOLUTION â€” use bindings as single source of truth for both
     // correct indices and selected indices to guarantee index consistency.
     const correctIndicesSet = new Set<number>();
     const futureIndices = new Set<number>();
@@ -587,7 +587,7 @@ export class OptionUiSyncService {
     // Collision guard: when a binding has no real optionId, getEffId falls back
     // to the array index.  That index can collide with another binding's real
     // optionId (e.g. binding[0].optionId=1 vs binding[1] fallback index=1).
-    // Map real optionIds → their owning binding index so we can reject false matches.
+    // Map real optionIds â†’ their owning binding index so we can reject false matches.
     const realIdOwner = new Map<number | string, number>();
     for (let i = 0; i < (ctx.optionBindings?.length ?? 0); i++) {
       const id = ctx.optionBindings[i].option?.optionId;
@@ -646,7 +646,7 @@ export class OptionUiSyncService {
     try {
       const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
       if (bundle.length > 0) {
-        // Use TEXT-BASED question matching — index-based lookup
+        // Use TEXT-BASED question matching â€” index-based lookup
         // (pristineQuiz.questions[displayIndex]) fails in shuffled mode.
         const isShuf = (this.quizService as any)?.isShuffleEnabled?.()
           && (this.quizService as any)?.shuffledQuestions?.length > 0;
@@ -773,7 +773,7 @@ export class OptionUiSyncService {
           sessionStorage.setItem(`displayMode_${questionIndex}`, 'explanation');
         } catch { /* ignore */ }
         this.nextButtonStateService.setNextButtonState(true);
-        // Emit FET — the shared-option-click path handles this when
+        // Emit FET â€” the shared-option-click path handles this when
         // clickState.remaining === 0, but when that path doesn't fire,
         // the explanation never renders. Emit here as a safety net.
         // skipGuard=true bypasses the lock that otherwise suppresses FET.
@@ -784,7 +784,7 @@ export class OptionUiSyncService {
     }
   }
 
-  private toggleSelectedOption(clicked: Option, clickedIndex: number, checked: boolean, ctx: OptionUiSyncContext): void {
+  private toggleSelectedOption(_clicked: Option, clickedIndex: number, checked: boolean, ctx: OptionUiSyncContext): void {
     const isCorrectHelper = (val: any) => {
       if (val === true || val === 'true' || val === 1 || val === '1') return true;
       if (val && typeof val === 'object') {
@@ -808,7 +808,7 @@ export class OptionUiSyncService {
           o.selected = checked;
         }
         
-        const isCorrect = isCorrectHelper(o);
+        const _isCorrect = isCorrectHelper(o);
         const isSelected = !!o.selected;
 
         o.highlight = isSelected;
@@ -824,7 +824,7 @@ export class OptionUiSyncService {
     ctx.optionsToDisplay = [...ctx.optionsToDisplay];
   }
 
-  // ── Inlined from OptionVisualEffectsService ──────────────────────
+  // â”€â”€ Inlined from OptionVisualEffectsService â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private refreshHighlights(bindings: OptionBindings[]): void {
     for (const b of bindings ?? []) {
@@ -832,7 +832,7 @@ export class OptionUiSyncService {
     }
   }
 
-  // ── Inlined from OptionLockRulesService ──────────────────────────
+  // â”€â”€ Inlined from OptionLockRulesService â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private computeShouldLockIncorrectOptions(
     type: QuestionType,

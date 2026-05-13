@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, OnDestroy, OnInit, 
+﻿import { ChangeDetectionStrategy, Component, computed, OnDestroy, OnInit, 
   signal, ViewEncapsulation } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
@@ -118,7 +118,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
   }
 
   private consumeCompletedQuizIds(): string[] {
-    // Read but DON'T remove — the user's accessed-quiz history needs to
+    // Read but DON'T remove â€” the user's accessed-quiz history needs to
     // persist across visits to the selection page, otherwise the
     // "You've accessed N quizzes" banner resets to whatever the latest
     // results page wrote (typically 1).
@@ -140,7 +140,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
   }
 
   private consumeStartedQuizIds(): string[] {
-    // Read but DON'T remove — see consumeCompletedQuizIds.
+    // Read but DON'T remove â€” see consumeCompletedQuizIds.
     const startedIds: string[] = JSON.parse(
       sessionStorage.getItem('startedQuizIds') || '[]'
     );
@@ -180,7 +180,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
     } catch { /* ignore storage failures */ }
   }
 
-  // Load quizzes once – replaces constructor side-effect
+  // Load quizzes once â€“ replaces constructor side-effect
   private loadQuizCatalog(): void {
     this.quizDataService.loadQuizzes().subscribe((quizzes) => {
       this.totalQuizCountSig.set(quizzes?.length ?? 0);
@@ -201,7 +201,7 @@ export class QuizSelectionComponent implements OnInit, OnDestroy {
       });
   }
 
-  async onSelect(quizId: string, index: number): Promise<void> {
+  async onSelect(quizId: string, _index: number): Promise<void> {
     try {
       if (!quizId) return;
 

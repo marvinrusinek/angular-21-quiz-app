@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionUiSyncContext } from '../engine/option-ui-sync.service';
@@ -35,9 +35,9 @@ export class OptionUiContextBuilderService {
         src.selectedOptionMap?.set(opt, !src.selectedOptionMap?.get(opt));
       },
 
-      onSelect: (binding: any, checked: boolean, questionIndex: number) => {
+      onSelect: (_binding: any, _checked: boolean, _questionIndex: number) => {
         // NO-OP: Do NOT emit optionClicked here.
-        // The SOC click handler (handleOptionClick → updateOptionAndUI) already
+        // The SOC click handler (handleOptionClick â†’ updateOptionAndUI) already
         // handles selection state, service sync, feedback, and scoring.
         // Emitting optionClicked triggers QQC's onOptionClicked which
         // double-processes the click: setSelectedOption TOGGLES for multi-answer
