@@ -4,8 +4,9 @@ import { debounceTime, take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC question loading and dynamic component initialization.
@@ -84,14 +85,14 @@ export class QqcOrchQuestionLoadService {
     const explanationSnapshot = host.explanationManager.captureExplanationSnapshot({
       preserveVisualState: shouldPreserveVisualState,
       index: host.currentQuestionIndex(),
-      explanationToDisplay: host.explanationToDisplay(),
+      explanationToDisplay: host.explanationToDisplay() ?? '',
       quizId: host.quizId(),
-      isAnswered: host.isAnswered as boolean,
+      isAnswered: host.isAnswered(),
       displayMode: host.displayMode(),
       shouldDisplayExplanation: host.shouldDisplayExplanation,
       explanationVisible: host.explanationVisible,
       displayExplanation: host.displayExplanation,
-      displayStateAnswered: host.displayState?.answered
+      displayStateAnswered: host.displayState().answered
     });
     const shouldKeepExplanationVisible = explanationSnapshot.shouldRestore;
 
@@ -122,7 +123,8 @@ export class QqcOrchQuestionLoadService {
       if (!shouldKeepExplanationVisible) {
         const clearResult = host.questionLoader.performPostResetExplanationClear();
         host.renderReady.set(false);
-        host.displayState = clearResult.displayState;
+        host.displayMode.set(clearResult.displayState.mode);
+        host.isAnswered.set(clearResult.displayState.answered);
         host.forceQuestionDisplay = clearResult.forceQuestionDisplay;
         host.readyForExplanationDisplay = clearResult.readyForExplanationDisplay;
         host.isExplanationReady = clearResult.isExplanationReady;
@@ -163,7 +165,6 @@ export class QqcOrchQuestionLoadService {
       host.questionsArray = loadResult.questionsArray;
       host.currentQuestion.set(loadResult.currentQuestion);
       host.optionsToDisplay.set(loadResult.optionsToDisplay);
-      host.questionToDisplay = loadResult.questionToDisplay;
       host.updateShouldRenderOptions(host.optionsToDisplay());
 
       const banner = host.feedbackManager.computeCorrectAnswersBanner({
@@ -175,10 +176,11 @@ export class QqcOrchQuestionLoadService {
       host.sharedOptionComponent?.()?.initializeOptionBindings();
       host.cdRef.markForCheck();
 
-      if (host.currentQuestion() && host.optionsToDisplay()?.length > 0) {
+      const cq = host.currentQuestion();
+      if (cq && host.optionsToDisplay()?.length > 0) {
         host.questionAndOptionsReady.emit();
         host.quizService.emitQuestionAndOptions(
-          host.currentQuestion(),
+          cq,
           host.optionsToDisplay(),
           host.currentQuestionIndex()
         );
@@ -253,7 +255,7 @@ export class QqcOrchQuestionLoadService {
       const result = await host.initializer.performFullQuizInit({
         currentQuestionIndex: host.currentQuestionIndex(),
         questionsArray: host.questionsArray,
-        routeQuizId: host.quizId(),
+        routeQuizId: host.quizId() ?? null,
         setQuestionOptions: () => host.setQuestionOptions(),
         questionLoader: host.questionLoader,
         prepareExplanationForQuestion: (p: any) => host.initializer.prepareExplanationForQuestion(p),

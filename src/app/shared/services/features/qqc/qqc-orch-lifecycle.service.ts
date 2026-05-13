@@ -4,8 +4,9 @@ import { filter, take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC lifecycle methods (ngOnInit, ngAfterViewInit, ngOnChanges, ngOnDestroy).
@@ -128,7 +129,7 @@ export class QqcOrchLifecycleService {
         host.currentQuestionIndex()
       );
 
-      host.renderReady$ = host.lifecycle.createRenderReadyObservable({
+      const renderReady$ = host.lifecycle.createRenderReadyObservable({
         questionPayload$: host.questionPayload$,
         setCurrentQuestion: (q: QuizQuestion | null) => { host.currentQuestion.set(q); },
         setOptionsToDisplay: (opts: Option[]) => { host.optionsToDisplay.set(opts); },
@@ -139,7 +140,7 @@ export class QqcOrchLifecycleService {
         // toObservable-derived stream consumers.
         emitRenderReady: (val: boolean) => host.renderReady.set(val)
       });
-      host.renderReadySubscription = host.renderReady$.subscribe();
+      host.renderReadySubscription = renderReady$.subscribe();
 
       document.addEventListener('visibilitychange', host.onVisibilityChange.bind(host));
 
@@ -151,10 +152,13 @@ export class QqcOrchLifecycleService {
         host.questionsArray = result.questionsArray;
         host.currentQuestionIndex.set(result.currentQuestionIndex);
         host.currentQuestion.set(result.currentQuestion);
-        host.generateFeedbackText(host.currentQuestion()).then(
-          (text: string) => { host.feedbackText = text; },
-          () => { host.feedbackText = 'Unable to generate feedback.'; }
-        );
+        const cq = host.currentQuestion();
+        if (cq) {
+          host.generateFeedbackText(cq).then(
+            (text: string) => { host.feedbackText = text; },
+            () => { host.feedbackText = 'Unable to generate feedback.'; }
+          );
+        }
       });
 
       host.questionLoader.waitForQuestionData({
@@ -177,8 +181,9 @@ export class QqcOrchLifecycleService {
         window.scrollTo(0, 0);
       });
 
-      if (host.question()) {
-        host.data.set(host.questionLoader.buildInitialData(host.question(), host.options()));
+      const qInit = host.question();
+      if (qInit) {
+        host.data.set(host.questionLoader.buildInitialData(qInit, host.options()));
       }
       host.initializeForm();
       host.quizStateService.setLoading(true);
@@ -210,7 +215,7 @@ export class QqcOrchLifecycleService {
         }, 50);
       }
 
-      if (host.currentQuestionIndex === 0) {
+      if (host.currentQuestionIndex() === 0) {
         const initialMessage = 'Please start the quiz by selecting an option.';
         if (host.selectionMessage() !== initialMessage) {
           host.selectionMessage.set(initialMessage);
@@ -258,9 +263,18 @@ export class QqcOrchLifecycleService {
       subscribeToRenderReady: () => {
         const soc = host.sharedOptionComponent?.();
         if (!soc) return;
-        soc.renderReady$
-          .pipe(filter((ready: boolean) => ready === true), take(1))
-          .subscribe(() => host.cdRef.detectChanges());
+        // soc.renderReady is now a WritableSignal (was a Subject pre-migration).
+        // Poll once on next microtask — if already ready, fire detectChanges; else
+        // back off via rAF until ready. Preserves the "wait for next true" semantic
+        // without needing a reactive context inside this service callback.
+        const check = (): void => {
+          if (soc.renderReady()) {
+            host.cdRef.detectChanges();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        queueMicrotask(check);
       }
     });
 

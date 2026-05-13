@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC explanation display, visibility restore, and explanation state management.
@@ -81,7 +82,7 @@ export class QqcOrchExplanationService {
         }
       });
 
-      host.displayState.mode = restoreResult.displayMode as 'question' | 'explanation';
+      host.displayMode.set(restoreResult.displayMode as 'question' | 'explanation');
       host.optionsToDisplay.set(restoreResult.optionsToDisplay);
       host.feedbackText = restoreResult.feedbackText;
       host.displayExplanation = restoreResult.shouldShowExplanation;
@@ -144,7 +145,7 @@ export class QqcOrchExplanationService {
       questionIndex,
       questionsArray: host.questionsArray,
       quizId: host.quizId(),
-      isAnswered: host.isAnswered as boolean,
+      isAnswered: host.isAnswered(),
       shouldDisplayExplanation: host.shouldDisplayExplanation,
       ensureQuestionsLoaded: ensureLoaded,
       ensureQuestionIsFullyLoaded: (idx: number) =>
@@ -156,12 +157,12 @@ export class QqcOrchExplanationService {
     if (result.success) {
       host.currentQuestionIndex.set(questionIndex);
       host.explanationToDisplay.set(result.explanationToDisplay);
-      host.explanationTextService.updateFormattedExplanation(host.explanationToDisplay());
-      host.explanationToDisplayChange.emit(host.explanationToDisplay());
+      host.explanationTextService.updateFormattedExplanation(host.explanationToDisplay() ?? '');
+      host.explanationToDisplayChange.emit(host.explanationToDisplay() ?? '');
     } else if (result.explanationToDisplay) {
       host.explanationToDisplay.set(host.explanationFlow.getExplanationErrorText());
-      if (host.isAnswered && host.shouldDisplayExplanation) {
-        host.emitExplanationChange(host.explanationToDisplay(), true);
+      if (host.isAnswered() && host.shouldDisplayExplanation) {
+        host.emitExplanationChange(host.explanationToDisplay() ?? '', true);
       }
     }
   }
@@ -180,7 +181,7 @@ export class QqcOrchExplanationService {
           if (host.shouldDisplayExplanation && (await host.isAnyOptionSelected(validated.adjustedIndex))) {
             host.emitExplanationChange('', false);
             host.explanationToDisplay.set(explanationText);
-            host.emitExplanationChange(host.explanationToDisplay(), true);
+            host.emitExplanationChange(host.explanationToDisplay() ?? '', true);
             host.isAnswerSelectedChange.emit(true);
           }
         })
@@ -199,7 +200,7 @@ export class QqcOrchExplanationService {
     });
     if (result.shouldUpdate) {
       host.explanationToDisplay.set(result.explanationText);
-      host.emitExplanationChange(host.explanationToDisplay(), true);
+      host.emitExplanationChange(host.explanationToDisplay() ?? '', true);
       host.isAnswerSelectedChange.emit(true);
     }
   }
@@ -250,7 +251,7 @@ export class QqcOrchExplanationService {
 
   async runPrepareAndSetExplanationText(host: Host, questionIndex: number): Promise<string> {
     host.explanationToDisplay.set(await host.explanationFlow.prepareExplanationText(questionIndex));
-    return host.explanationToDisplay();
+    return host.explanationToDisplay() ?? '';
   }
 
   async runUpdateExplanationText(host: Host, index: number): Promise<string> {
@@ -261,7 +262,7 @@ export class QqcOrchExplanationService {
         currentQuestionIndex: host.currentQuestionIndex(), 
         currentQuestion: host.currentQuestion(), 
         optionsToDisplay: host.optionsToDisplay(), 
-        options: host.options
+        options: host.options()
       });
   }
 }

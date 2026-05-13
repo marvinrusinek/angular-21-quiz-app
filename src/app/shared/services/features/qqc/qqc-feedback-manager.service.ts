@@ -521,7 +521,7 @@ export class QqcFeedbackManagerService {
    * Extracted from loadQuestion().
    */
   computeCorrectAnswersBanner(params: {
-    currentQuestion: QuizQuestion;
+    currentQuestion: QuizQuestion | null;
     currentQuestionIndex: number;
   }): { bannerText: string; numCorrect: number } {
     try {

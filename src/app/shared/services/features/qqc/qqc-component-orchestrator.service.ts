@@ -11,8 +11,9 @@ import { QqcOrchExplanationService } from './qqc-orch-explanation.service';
 import { QqcOrchSelectionService } from './qqc-orch-selection.service';
 import { QqcOrchResetService } from './qqc-orch-reset.service';
 import { QqcOrchDisplayService } from './qqc-orch-display.service';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QuizQuestionComponent lifecycle/event method bodies.

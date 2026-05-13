@@ -5,8 +5,9 @@ import { filter, take } from 'rxjs/operators';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionType } from '../../../models/question-type.enum';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC option click handling.
@@ -225,7 +226,8 @@ export class QqcOrchClickService {
         host.explanationFlow.triggerMultiAnswerFet({ lockedIndex, question: displayQForFet }).then((fetResult: any) => {
           if (host.currentQuestionIndex() !== lockedIndex || !fetResult) return;
           host.displayExplanation = true;
-          host.displayStateSubject?.next({ mode: 'explanation', answered: true });
+          host.displayMode.set('explanation');
+          host.isAnswered.set(true);
           host.showExplanationChange.emit(true);
           host.explanationToDisplay.set(fetResult.formatted);
           host.explanationToDisplayChange?.emit(fetResult.formatted);
@@ -267,11 +269,11 @@ export class QqcOrchClickService {
               forceQuestionDisplay: host.forceQuestionDisplay,
               lastAllCorrect: host._lastAllCorrect,
             });
-            if (coreResult.isAnswered) host.isAnswered = true;
+            if (coreResult.isAnswered) host.isAnswered.set(true);
             host.forceQuestionDisplay = coreResult.forceQuestionDisplay;
             if (coreResult.displayStateAnswered) {
-              host.displayState.answered = coreResult.displayStateAnswered;
-              host.displayState.mode = coreResult.displayStateMode;
+              host.isAnswered.set(coreResult.displayStateAnswered);
+              host.displayMode.set(coreResult.displayStateMode);
             }
             host.cdRef.detectChanges();
           },

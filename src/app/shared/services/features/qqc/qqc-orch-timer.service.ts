@@ -1,8 +1,9 @@
 import { afterNextRender, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC timer expiry and timeout handling.
@@ -162,7 +163,7 @@ export class QqcOrchTimerService {
           currentQuestionIndex: host.currentQuestionIndex(),
           updateExplanationText: (idx: number) => host.updateExplanationText(idx)
         })
-        .then((repaired: string) => {
+        .then((repaired: string | null) => {
           if (repaired) host.applyExplanationTextInZone(repaired);
         })
         .catch(() => {});

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC reset, per-question state clearing, and selection restore.
@@ -23,14 +24,13 @@ export class QqcOrchResetService {
     if (!result.preserveExplanation) {
       host.feedbackText = result.feedbackText;
       host.applyDisplayState(result.displayState);
-      host.quizStateService.setDisplayState(host.displayState);
+      host.quizStateService.setDisplayState(host.displayState());
       host.updateDisplayMode(result.displayMode);
       host.applyExplanationFlags(result);
       host.explanationToDisplay.set(result.explanationToDisplay);
       host.emitExplanationChange('', false);
     }
     if (!result.preserveVisualState) {
-      host.questionToDisplay = '';
       host.updateShouldRenderOptions([]);
       host.shouldRenderOptions.set(false);
     }

@@ -4,8 +4,9 @@ import { take } from 'rxjs/operators';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { Utils } from '../../../utils/utils';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC display state, option rendering, feedback, and misc wrappers.
@@ -49,7 +50,7 @@ export class QqcOrchDisplayService {
     const result = host.displayStateManager.hydrateFromPayload({
       payload,
       currentQuestionText: host.currentQuestion()?.questionText?.trim(),
-      isAlreadyRendered: host.finalRenderReady
+      isAlreadyRendered: host.finalRenderReady()
     });
     if (!result) return;
 
@@ -66,7 +67,8 @@ export class QqcOrchDisplayService {
     host.explanationToDisplay.set(result.explanationToDisplay);
 
     if (!host.containerInitialized && host.dynamicAnswerContainer?.()) {
-      host.loadDynamicComponent(host.currentQuestion(), host.optionsToDisplay());
+      const cq = host.currentQuestion();
+      if (cq) host.loadDynamicComponent(cq, host.optionsToDisplay());
       host.containerInitialized = true;
     }
     host.sharedOptionComponent?.()?.initializeOptionBindings();
@@ -156,7 +158,7 @@ export class QqcOrchDisplayService {
 
     const soc = host.sharedOptionComponent?.();
     if (soc) {
-      soc.feedbackConfigs = result.feedbackConfigs;
+      soc.feedbackConfigs = result.feedbackConfigs as any;
       soc.showFeedbackForOption = result.showFeedbackForOption;
       soc.cdRef.markForCheck();
     }
@@ -179,6 +181,7 @@ export class QqcOrchDisplayService {
     })) {
       return;
     }
-    host.displayStateSubject?.next(state);
+    host.displayMode.set(state.mode);
+    host.isAnswered.set(state.answered);
   }
 }

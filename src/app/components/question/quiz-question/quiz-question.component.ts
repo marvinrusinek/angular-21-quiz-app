@@ -105,6 +105,7 @@ export class QuizQuestionComponent extends BaseQuestion
   fixedQuestionIndex = 0;
   lastLoggedIndex = -1;
   lastLoggedQuestionIndex = -1;
+  lastProcessedQuestionIndex = -1;
   _clickGate = false;  // same-tick re-entrancy guard
   readonly events = output<QuizQuestionEvent>();
   public selectedIndices = new Set<number>();

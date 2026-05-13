@@ -4,8 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
+import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-type Host = any;
+type Host = QuizQuestionComponent;
 
 /**
  * Orchestrates QQC option selection, feedback, and post-click flows.
@@ -73,7 +74,8 @@ export class QqcOrchSelectionService {
       correctAnswersText: computed.correctAnswersText,
       questionType: computed.questionType
     });
-    host.displayStateSubject?.next({ mode: 'explanation', answered: true });
+    host.displayMode.set('explanation');
+    host.isAnswered.set(true);
     host.displayExplanation = true;
     host.explanationToDisplay.set(computed.formatted);
     host.explanationToDisplayChange?.emit(computed.formatted);
@@ -126,7 +128,7 @@ export class QqcOrchSelectionService {
       currentQuestionIndex: host.currentQuestionIndex(),
       optionsToDisplay: host.optionsToDisplay(),
       currentQuestionOptions: host.currentQuestion()?.options,
-      isAnswered: host.isAnswered as boolean
+      isAnswered: host.isAnswered()
     });
   }
 
@@ -157,7 +159,7 @@ export class QqcOrchSelectionService {
     host.optionsToDisplay.set(result.optionsToDisplay);
     host.showFeedbackForOption = result.showFeedbackForOption;
     host.selectedOptionIndex = result.selectedOptionIndex;
-    host.feedbackApplied.emit(selectedOption.optionId);
+    host.feedbackApplied.emit(selectedOption.optionId ?? -1);
     await new Promise((resolve) => setTimeout(resolve, 50));
     host.cdRef.markForCheck();
   }
@@ -190,7 +192,8 @@ export class QqcOrchSelectionService {
     });
     if (!result) return;
     host.updateExplanationDisplay(result.shouldDisplay);
-    host.questionAnswered.emit();
+    const cq = host.currentQuestion();
+    if (cq) host.questionAnswered.emit(cq);
     host.timerEffect.stopTimerIfAllCorrectSelected({
       currentQuestionIndex: host.currentQuestionIndex(),
       questions: host.questions,
@@ -237,8 +240,8 @@ export class QqcOrchSelectionService {
     host.showFeedbackForOption = result.showFeedbackForOption;
     host.selectedOption = result.selectedOption;
     host.isOptionSelected.set(result.isOptionSelected);
-    host.isAnswered = result.isAnswered;
-    host.isAnswerSelectedChange.emit(host.isAnswered);
+    host.isAnswered.set(result.isAnswered);
+    host.isAnswerSelectedChange.emit(host.isAnswered());
     host.optionSelected.emit(result.selectedOption);
     host.events.emit({ type: 'optionSelected', payload: result.selectedOption });
     host.selectionChanged.emit({ question: currentQuestion, selectedOptions: host.selectedOptions });
@@ -262,7 +265,8 @@ export class QqcOrchSelectionService {
         currentQuestionIndex: host.currentQuestionIndex(),
         answers: host.answers
       });
-    host.questionAnswered.emit();
+    const cq2 = host.currentQuestion();
+    if (cq2) host.questionAnswered.emit(cq2);
   }
 
   runEmitPassiveNow(host: Host, index: number): void {
