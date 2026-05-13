@@ -293,12 +293,7 @@ export class QuizService {
   }
 
   initializeData(): void {
-    const result = this.dataLoader.initializeData(
-      this.quizId,
-      this.questionsSig,
-      (qs) => { this.questions = qs; },
-      (n) => { this.totalQuestions = n; }
-    );
+    const result = this.dataLoader.initializeData(this.quizId);
 
     this.quizId = result.resolvedQuizId;
     this.questions = result.questions;

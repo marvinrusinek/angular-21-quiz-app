@@ -6,8 +6,6 @@ import { firstValueFrom, from, Observable, of } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 
 import { getQuizData, getQuizResources } from '../../quiz-data-cache';
-import { QuestionType } from '../../models/question-type.enum';
-import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { QuizResource } from '../../models/QuizResource.model';
@@ -66,10 +64,7 @@ export class QuizDataLoaderService {
   ) {}
 
   initializeData(
-    quizId: string,
-    questionsSig: WritableSignal<QuizQuestion[]>,
-    setQuestions: (qs: QuizQuestion[]) => void,
-    setTotalQuestions: (n: number) => void
+    quizId: string
   ): { questions: QuizQuestion[]; totalQuestions: number; resolvedQuizId: string } {
     const cachedQuizData = getQuizData();
     if (!cachedQuizData || !Array.isArray(cachedQuizData)) {
@@ -248,7 +243,6 @@ export class QuizDataLoaderService {
         if (!quiz) return [];
 
         this.currentQuizSig.set(quiz);
-        const totalQuestions = quiz.questions?.length || 0;
 
         const isSameQuiz = quizId && this.questionsQuizId === quizId;
         const cachedLen = this.shuffledQuestions?.length || 0;

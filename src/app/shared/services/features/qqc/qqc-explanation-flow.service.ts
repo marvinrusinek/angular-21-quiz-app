@@ -1,20 +1,16 @@
 import { Injectable } from '@angular/core';
-import { firstValueFrom, from, of } from 'rxjs';
-import { catchError, debounceTime } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
-import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionState } from '../../../models/QuestionState.model';
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
 import { QuestionType } from '../../../models/question-type.enum';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { QuizService } from '../../data/quiz.service';
-import { QuizDataService } from '../../data/quizdata.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
 import { QqcExplanationDisplayService } from './qqc-explanation-display.service';
 import { QqcExplanationManagerService } from './qqc-explanation-manager.service';
-import { QqcQuestionLoaderService } from './qqc-question-loader.service';
 
 /**
  * Orchestrates explanation flow lifecycle for QQC.
@@ -30,12 +26,10 @@ export class QqcExplanationFlowService {
   constructor(
     private explanationTextService: ExplanationTextService,
     private quizService: QuizService,
-    private quizDataService: QuizDataService,
     private quizStateService: QuizStateService,
     private quizQuestionManagerService: QuizQuestionManagerService,
     private explanationManager: QqcExplanationManagerService,
-    private explanationDisplay: QqcExplanationDisplayService,
-    private questionLoader: QqcQuestionLoaderService
+    private explanationDisplay: QqcExplanationDisplayService
   ) {}
 
   /**

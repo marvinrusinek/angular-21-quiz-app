@@ -1,5 +1,5 @@
 import { Injectable, Injector, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
@@ -9,7 +9,6 @@ import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuizService } from '../../data/quiz.service';
 import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
 
 @Injectable({ providedIn: 'root' })
 export class ExplanationFormatterService {
@@ -32,8 +31,7 @@ export class ExplanationFormatterService {
 
   constructor(
     private injector: Injector,
-    private activatedRoute: ActivatedRoute,
-    private quizShuffleService: QuizShuffleService
+    private activatedRoute: ActivatedRoute
   ) {}
 
   // Synchronous lookup by question index

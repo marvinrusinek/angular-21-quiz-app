@@ -1,5 +1,4 @@
-import { Injectable, Optional } from '@angular/core';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
+﻿import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import {
   BehaviorSubject, combineLatest, firstValueFrom, forkJoin, Observable, of, Subject
@@ -29,8 +28,7 @@ export class CqcOrchestratorService {
   constructor(
     private fetGuard: CqcFetGuardService,
     private displayText: CqcDisplayTextService,
-    private questionNav: CqcQuestionNavService,
-    @Optional() private selectionMessageService?: SelectionMessageService
+    private questionNav: CqcQuestionNavService
   ) {}
 
   async runOnInit(host: Host): Promise<void> {
@@ -38,7 +36,7 @@ export class CqcOrchestratorService {
 
     // Preserve sessionStorage-restored interaction state across F5 refresh.
     // `_hasUserInteracted` is restored by quizStateService.restoreInteractionState()
-    // when performance.navigation.type === 'reload' — wiping it here would undo
+    // when performance.navigation.type === 'reload' â€” wiping it here would undo
     // that and break FET display after refresh.
     let isPageRefresh = false;
     try {
@@ -75,7 +73,7 @@ export class CqcOrchestratorService {
     // the visibility handler, replay retries, and the MutationObserver
     // safety net all derive the same value.
     const computeIntendedQText = (): string => {
-      // Read from the input signal — host.currentIndex lags by a microtask
+      // Read from the input signal â€” host.currentIndex lags by a microtask
       // because it's a plain field updated by an effect. Using the signal
       // means the MutationObserver and visibility-restore replays compute
       // the intended HTML for the LIVE question, never the prior one.
@@ -88,7 +86,7 @@ export class CqcOrchestratorService {
       let intended = '';
       const hasInteracted = this.fetGuard.hasInteractionEvidence(host, idx);
       if (hasInteracted) {
-        // Check FET caches first — but only if the question is resolved.
+        // Check FET caches first â€” but only if the question is resolved.
         // For multi-answer questions, the cache may have been populated by
         // an upstream path before all correct answers were selected.
         const isResolvedForCache = this.fetGuard.isQuestionResolvedFromStorage(host, idx);
@@ -98,7 +96,7 @@ export class CqcOrchestratorService {
           : '';
         if (cachedFet) intended = cachedFet;
         
-        // No cached FET — try on-the-fly if quiz data is available
+        // No cached FET â€” try on-the-fly if quiz data is available
         if (!intended) {
           try {
             const questions = host.quizService.getQuestionsInDisplayOrder?.()
@@ -113,13 +111,13 @@ export class CqcOrchestratorService {
                   intended = host.explanationTextService.formatExplanation(q, correctIndices, q.explanation);
                 }
               } else {
-                // Unresolved (partial multi-answer) — show question text
+                // Unresolved (partial multi-answer) â€” show question text
                 intended = this.fetGuard.buildQuestionDisplayHTML(host, idx);
               }
             }
           } catch { /* ignore */ }
           // If no FET was resolved, fall through to question text below
-          // instead of returning '' — that would leave the heading blank.
+          // instead of returning '' â€” that would leave the heading blank.
         }
       }
       if (!intended) {
@@ -138,7 +136,7 @@ export class CqcOrchestratorService {
     };
     host._cqcComputeIntendedQText = computeIntendedQText;
 
-    const forceStampIfBlank = (reason: string): void => {
+    const forceStampIfBlank = (_reason: string): void => {
       const el = host.qText?.()?.nativeElement;
       if (!el) return;
       const current = (el.innerHTML ?? '').trim();
@@ -179,7 +177,7 @@ export class CqcOrchestratorService {
             // live index from the input signal). Using the cached
             // _lastDisplayedText was unsafe across navigation: after Next
             // from Q(N), if qText briefly emptied, this branch would
-            // restore Q(N)'s FET — exactly the FET->q-txt flash bug.
+            // restore Q(N)'s FET â€” exactly the FET->q-txt flash bug.
             const restore = computeIntendedQText();
             if (restore) this.fetGuard.writeQText(host, restore);
           }, 80);
@@ -225,7 +223,7 @@ export class CqcOrchestratorService {
           host.explanationTextService.storeFormattedExplanation(idx, q.explanation, q, visualOpts);
         }
 
-        // DIRECT DOM FET WRITE on timer expiry — bypasses all service/guard layers
+        // DIRECT DOM FET WRITE on timer expiry â€” bypasses all service/guard layers
         try {
           const el = host.qText?.()?.nativeElement;
           if (el && q) {
@@ -238,7 +236,7 @@ export class CqcOrchestratorService {
             if (!fetHtml) fetHtml = q.explanation || '';
             if (fetHtml) {
               // Guard the delayed writes against the user navigating away
-              // before they fire. Read from the input signal directly —
+              // before they fire. Read from the input signal directly â€”
               // host.currentIndex is a plain field updated asynchronously
               // by an effect, so it lags the signal by a microtask and
               // would let stale Q(N) writes leak into Q(N+1).
@@ -286,14 +284,6 @@ export class CqcOrchestratorService {
     this.fetGuard.installFetWatchdog(host);
   }
 
-  private stampQuestionTextNow(host: Host, idx: number): boolean {
-    return this.questionNav.stampQuestionTextNow(host, idx);
-  }
-
-  private cleanupStaleStateForIndex(host: Host, idx: number): void {
-    this.questionNav.cleanupStaleStateForIndex(host, idx);
-  }
-
   runQuestionIndexSet(host: Host, idx: number): void {
     this.questionNav.runQuestionIndexSet(host, idx);
   }
@@ -335,7 +325,7 @@ export class CqcOrchestratorService {
         return !!currentQuestion && currentOptions.length > 0;
       }),
       distinctUntilChanged(),
-      catchError((error: Error) => {
+      catchError((_error: Error) => {
         return of(false);
       }),
       startWith(false)
@@ -409,12 +399,12 @@ export class CqcOrchestratorService {
 
     return forkJoin([
       host.quizDataService.getQuestionsForQuiz(qid).pipe(
-        catchError((error: Error) => {
+        catchError((_error: Error) => {
           return of([] as QuizQuestion[]);
         })
       ),
       host.quizDataService.getAllExplanationTextsForQuiz(qid).pipe(
-        catchError((error: Error) => {
+        catchError((_error: Error) => {
           return of([] as string[]);
         })
       )
@@ -460,7 +450,7 @@ export class CqcOrchestratorService {
     const currentQuizAndOptions$ = host.combineCurrentQuestionAndOptions();
 
     currentQuizAndOptions$.pipe(takeUntil(host.destroy$)).subscribe({
-      next: (data: any) => {},
+      next: () => {},
       error: () => { }
     });
 
@@ -513,7 +503,7 @@ export class CqcOrchestratorService {
         }
       ),
       filter((data: CombinedQuestionDataType | null): data is CombinedQuestionDataType => data !== null),
-      catchError((error: Error) => {
+      catchError((_error: Error) => {
         const fallback: CombinedQuestionDataType = {
           currentQuestion: {
             questionText: 'Error loading question',
@@ -567,15 +557,6 @@ export class CqcOrchestratorService {
             ? host.currentIndex
             : 0
       })),
-      filter(({ payload, index }: { payload: QuestionPayload; index: number }) => {
-        const expected =
-          Array.isArray(host.questions()) && index >= 0
-            ? (host.questions()[index] ?? null) : null;
-
-        if (!expected) return true;
-
-        return true;
-      }),
       map(({ payload, index }: { payload: QuestionPayload; index: number }) => {
         const normalizedOptions = payload.options
           .map((option, optionIndex) => ({
@@ -626,7 +607,7 @@ export class CqcOrchestratorService {
           return host.haveSameOptionOrder(prev.currentOptions, curr.currentOptions);
         }),
       shareReplay({ bufferSize: 1, refCount: true }),
-      catchError((error: Error) => {
+      catchError((_error: Error) => {
         return of({
           currentQuestion: null,
           currentOptions: [],
@@ -712,7 +693,7 @@ export class CqcOrchestratorService {
     ]).pipe(
       map((arr: any) => !!arr[0] && !arr[1]),
       distinctUntilChanged(),
-      catchError((error: Error) => {
+      catchError((_error: Error) => {
         return of(false);
       })
     );
@@ -722,7 +703,7 @@ export class CqcOrchestratorService {
         return shouldDisplay ? host.correctAnswersText$ : of(null);
       }),
       distinctUntilChanged(),
-      catchError((error: Error) => {
+      catchError((_error: Error) => {
         return of(null);
       })
     );

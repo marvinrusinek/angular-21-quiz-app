@@ -1,18 +1,13 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { firstValueFrom, Observable, Subject, Subscription } from 'rxjs';
-import { 
+import { Observable, Subscription } from 'rxjs';
+import {
   distinctUntilChanged, filter, map, switchMap, take, tap
 } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionPayload } from '../../../models/QuestionPayload.model';
-import { QuizService } from '../../data/quiz.service';
-import { QuizStateService } from '../../state/quizstate.service';
-import { TimerService } from '../timer/timer.service';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
 
 /**
  * Manages lifecycle-related orchestration for QuizQuestionComponent:
@@ -25,13 +20,6 @@ import { SelectionMessageService } from '../selection-message/selection-message.
  */
 @Injectable({ providedIn: 'root' })
 export class QqcLifecycleService {
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectionMessageService: SelectionMessageService,
-    private timerService: TimerService
-  ) {}
 
   // ═══════════════════════════════════════════════════════════════
   // ngOnInit HELPERS
@@ -81,23 +69,6 @@ export class QqcLifecycleService {
       )
     )
     .subscribe((i0: number) => params.onTimerExpiredFor(i0));
-  }
-
-  /**
-   * Performs the initial REF TRACE diagnostic from ngOnInit.
-   * Extracted from ngOnInit (lines 421–428).
-   */
-  performRefTrace(params: {
-    questions: QuizQuestion[] | null;
-    qIndex: number;
-  }): void {
-    const { questions, qIndex } = params;
-    const current = questions?.[qIndex];
-    const next = questions?.[qIndex + 1];
-
-    if (current && next && current.options && next.options) {
-      const shared = current.options.some((o: Option, i: number) => o === next.options[i]);
-    }
   }
 
   /**

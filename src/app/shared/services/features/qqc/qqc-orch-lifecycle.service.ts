@@ -16,9 +16,6 @@ type Host = QuizQuestionComponent;
 export class QqcOrchLifecycleService {
 
   async runOnInit(host: Host): Promise<void> {
-    const qIndex = host.quizService.getCurrentQuestionIndex();
-    host.lifecycle.performRefTrace({ questions: host.quizService.questions, qIndex });
-
     host.idxSub = host.lifecycle.createIndexTimerSubscription({
       currentQuestionIndex$: host.quizService.currentQuestionIndex$,
       elapsedTime$: host.timerService.elapsedTime$,

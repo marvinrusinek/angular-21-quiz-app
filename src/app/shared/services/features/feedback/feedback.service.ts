@@ -21,7 +21,6 @@ export class FeedbackService {
     correctOptions: Option[],
     optionsToDisplay: Option[]
   ): string {
-    const validCorrectOptions = (correctOptions || []).filter(opt => opt && typeof opt === 'object');
     const validOptionsToDisplay = (optionsToDisplay || []).filter(opt => opt && typeof opt === 'object');
 
     if (validOptionsToDisplay.length === 0) return 'Feedback unavailable.';
@@ -128,7 +127,6 @@ export class FeedbackService {
     const qIdx = displayIndex ?? (question as any).questionIndex ?? quizSvc?.currentQuestionIndex ?? 0;
     let correctIndices = this.explanationTextService.getCorrectOptionIndices(question, optionsToDisplay ?? question.options ?? [], qIdx); */
     const quizSvc = this.injector.get(QuizService, null);
-    const qIdx = displayIndex ?? (question as any).questionIndex ?? quizSvc?.currentQuestionIndex ?? 0;
     const currentIndex = quizSvc?.currentQuestionIndex;
 
     // CRITICAL: when the caller passes a stale `question` object (e.g. Q1
@@ -260,8 +258,6 @@ export class FeedbackService {
         if (!match) correctIndices = visualCorrect;
       }
     }
-
-    const totalCorrectInQ = correctIndices.length;
 
     // Multi-Answer detection: trust multiple indices OR multiple database flags
     const isMultiMode =
