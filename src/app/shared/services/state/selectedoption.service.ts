@@ -646,9 +646,7 @@ export class SelectedOptionService {
   }
 
   setAnsweredState(isAnswered: boolean): void {
-    const current = this.isAnsweredSig();
-
-    if (current !== isAnswered) this.isAnsweredSig.set(isAnswered);
+    this.isAnsweredSig.set(isAnswered);
   }
 
   getAnsweredState(): boolean {

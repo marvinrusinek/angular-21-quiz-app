@@ -44,7 +44,6 @@ import { SelectedOptionService } from '../../shared/services/state/selectedoptio
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IntroductionComponent implements OnInit {
-  quiz: Quiz | null = null;
   quizId: string | undefined;
   readonly selectedQuiz = signal<Quiz | null>(null);
   preferencesForm: FormGroup;
@@ -54,12 +53,10 @@ export class IntroductionComponent implements OnInit {
   readonly questionLabelSig = computed(() =>
     this.questionCountSig() === 1 ? 'question' : 'questions'
   );
+  readonly introImgSig = signal('');
 
   highlightPreference = false;
   isImmediateFeedback = false;
-
-  questionLabel = '';
-  introImg = '';
 
   constructor(
     private quizService: QuizService,
@@ -148,34 +145,25 @@ export class IntroductionComponent implements OnInit {
   private handleLoadedQuiz(quiz: Quiz | null): void {
     if (quiz) {
       const questionCount = quiz.questions?.length ?? 0;
-  
+
       this.selectedQuiz.set(quiz);
-      this.quiz = quiz;
-      this.introImg = quiz.image;
+      this.introImgSig.set(quiz.image);
       this.questionCountSig.set(questionCount);
-  
-      this.cdRef.markForCheck();
     } else {
       console.warn('[QuizSelection] Quiz was not found or failed to load.');
-  
+
       this.selectedQuiz.set(null);
-      this.quiz = null;
-      this.introImg = '';
+      this.introImgSig.set('');
       this.questionCountSig.set(0);
-  
-      this.cdRef.markForCheck();
     }
   }
 
   private handleError(error: unknown): void {
     console.error('[QuizSelection] Failed to load quiz:', error);
-  
+
     this.selectedQuiz.set(null);
-    this.quiz = null;
-    this.introImg = '';
+    this.introImgSig.set('');
     this.questionCountSig.set(0);
-  
-    this.cdRef.markForCheck();
   }
 
   onSlideToggleChange(event: MatSlideToggleChange): void {
@@ -338,7 +326,7 @@ export class IntroductionComponent implements OnInit {
   }
 
   private async resolveActiveQuiz(targetQuizId: string): Promise<Quiz | null> {
-    const quizFromState = this.selectedQuiz() ?? this.quiz ?? null;
+    const quizFromState = this.selectedQuiz();
 
     if (quizFromState?.quizId === targetQuizId) return quizFromState;
 
@@ -346,7 +334,6 @@ export class IntroductionComponent implements OnInit {
       const loadedQuiz = await this.quizDataService.loadQuizById(targetQuizId);
       if (loadedQuiz) {
         this.selectedQuiz.set(loadedQuiz);
-        this.quiz = loadedQuiz;
       }
       return loadedQuiz;
     } catch (error) {

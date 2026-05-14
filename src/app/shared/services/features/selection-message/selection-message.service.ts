@@ -186,8 +186,7 @@ export class SelectionMessageService {
   }
 
   public pushMessage(newMsg: string, _index: number): void {
-    const prev = this.selectionMessageSig();
-    if (prev !== newMsg) this.selectionMessageSig.set(newMsg);
+    this.selectionMessageSig.set(newMsg);
   }
 
   public releaseBaseline(index: number): void {
@@ -364,7 +363,6 @@ export class SelectionMessageService {
   }
 
   public setSelectionMessageText(message: string): void {
-    const prev = this.selectionMessageSig();
-    if (prev !== message) this.selectionMessageSig.set(message);
+    this.selectionMessageSig.set(message);
   }
 }
