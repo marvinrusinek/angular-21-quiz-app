@@ -83,7 +83,7 @@ export class SummaryReportComponent implements OnInit {
       this.quizMetadata.set({
         totalQuestions: this.quizService.totalQuestions,
         totalQuestionsAttempted: this.quizService.totalQuestions,
-        correctAnswersCount$: this.quizService.correctAnswersCount$,
+        correctAnswersCount: this.quizService.correctAnswersCountSig,
         percentage:
           this.quizService.calculatePercentageOfCorrectlyAnsweredQuestions(),
         completionTime: this.timerService.calculateTotalElapsedTime(

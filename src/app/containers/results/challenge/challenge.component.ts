@@ -30,7 +30,7 @@ export class ChallengeComponent implements OnInit {
   quizMetadata: Partial<QuizMetadata> = {
     totalQuestions: this.quizService.totalQuestions,
     totalQuestionsAttempted: this.quizService.totalQuestions,
-    correctAnswersCount$: this.quizService.correctAnswersCount$,
+    correctAnswersCount: this.quizService.correctAnswersCountSig,
     percentage: this.percentageCorrect(),
     completionTime: this.timerService.calculateTotalElapsedTime(
       this.timerService.elapsedTimes

@@ -51,7 +51,7 @@
               <div class="score-text-container">
                 <span class="your-score" i18n>
                   You scored
-                  <span class="result">{{ quizMetadata().correctAnswersCount$ | async }}</span>
+                  <span class="result">{{ quizMetadata().correctAnswersCount?.() ?? 0 }}</span>
                   out of <span class="result">{{ quizMetadata().totalQuestions }}</span>
                   {{ quizMetadata().totalQuestions === 1 ? 'question' : 'questions' }}
                   correctly.
@@ -147,7 +147,7 @@
   <details class="resources-section" open>
     <summary class="resources-header">
       <span class="resources-icon">📚</span>
-      <span i18n>Brush up your knowledge of <strong><em>{{ milestoneName$ | async }}</em></strong> with these resources:</span>
+      <span i18n>Brush up your knowledge of <strong><em>{{ milestoneName() }}</em></strong> with these resources:</span>
     </summary>
 
     <ul>

@@ -3,8 +3,6 @@ import {
   input, OnInit, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 import { QuizStatus } from '../../../shared/models/quiz-status.enum'
 import { Quiz } from '../../../shared/models/Quiz.model';
@@ -24,11 +22,21 @@ import { TimerService } from '../../../shared/services/features/timer/timer.serv
 })
 export class StatisticsComponent implements OnInit {
   readonly quizzes = this.quizDataService.quizzesSig;
-  milestoneName$: Observable<string> = of('');
   // Signal input aliased to "quizId" so parent template binding stays the same.
   // Internal code may reassign the backing field, so we mirror via effect().
   readonly quizIdInput = input<string>('', { alias: 'quizId' });
-  quizId = '';
+  private readonly quizIdSig = signal('');
+  get quizId(): string { return this.quizIdSig(); }
+  set quizId(v: string) { this.quizIdSig.set(v); }
+
+  readonly milestoneName = computed(() => {
+    const qId = this.quizIdSig();
+    if (!qId) return '';
+    const cached = this.quizDataService.getCachedQuizById(qId);
+    if (cached?.milestone) return cached.milestone;
+    const found = this.quizzes().find(q => q.quizId === qId);
+    return found?.milestone ?? qId;
+  });
   readonly viewMode=
     input<'score' | 'resources' | 'all'>('all');
 
@@ -89,22 +97,10 @@ export class StatisticsComponent implements OnInit {
     this.quizMetadata.set({
       totalQuestions: this.quizService.totalQuestions,
       totalQuestionsAttempted: this.quizService.totalQuestions,
-      correctAnswersCount$: this.quizService.correctAnswersCount$,
+      correctAnswersCount: this.quizService.correctAnswersCountSig,
       percentage: this.calculatePercentageOfCorrectlyAnsweredQuestions(),
       completionTime: totalElapsedTime
     });
-
-    const cachedQuiz = this.quizDataService.getCachedQuizById(this.quizId);
-
-    // Use milestone name when available.
-    this.milestoneName$ = cachedQuiz?.milestone
-      ? of(cachedQuiz.milestone)
-      : this.quizDataService.quizzes$.pipe(
-          map((quizzes) =>
-            quizzes.find((quiz) => quiz.quizId === this.quizId)?.milestone ??
-            this.quizId
-          )
-        );
 
     // Ensure resources are loaded for this quiz
     if (this.quizId) {

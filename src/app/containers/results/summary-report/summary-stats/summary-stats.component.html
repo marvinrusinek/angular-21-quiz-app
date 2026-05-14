@@ -1,7 +1,7 @@
 <ul class="summary-stats">
   <li>
     <span class="summary-stats-leader">Your Score: </span>
-    <span class="result">{{ quizMetadata()?.correctAnswersCount$ | async }}</span>
+    <span class="result">{{ quizMetadata()?.correctAnswersCount?.() ?? 0 }}</span>
   </li>
 
   <li>

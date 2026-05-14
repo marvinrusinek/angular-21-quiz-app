@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { of } from 'rxjs';
 
 import { QuizMetadata } from '../../../../shared/models/QuizMetadata.model';
 import { QuizScore } from '../../../../shared/models/QuizScore.model';
@@ -15,12 +14,12 @@ import { QuizScore } from '../../../../shared/models/QuizScore.model';
 })
 export class SummaryStatsComponent {
   readonly quizMetadata = input<Partial<QuizMetadata> | null>({
-    correctAnswersCount$: of(0),
+    correctAnswersCount: signal(0),
     totalQuestions: 0,
     totalQuestionsAttempted: 0,
     percentage: 0,
     completionTime: 0
-});
+  });
   readonly score = input<QuizScore | null>(null);
   readonly elapsedMinutes = input(0);
   readonly elapsedSeconds = input(0);

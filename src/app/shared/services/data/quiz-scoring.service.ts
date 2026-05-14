@@ -1,5 +1,4 @@
 ﻿import { Injectable, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 
 import { getQuizData } from '../../quiz-data-cache';
 import { QuizScore } from '../../models/QuizScore.model';
@@ -17,7 +16,6 @@ export class QuizScoringService {
   highScoresLocal = JSON.parse(localStorage.getItem('highScoresLocal') ?? '[]');
 
   public readonly correctAnswersCountSig = signal<number>(0);
-  public readonly correctAnswersCount$ = toObservable(this.correctAnswersCountSig);
 
   // Tracks confirmed correct clicks per question. Each call to recordCorrectClick
   // adds the option text; the pristine gate only allows scoring when the count

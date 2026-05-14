@@ -107,9 +107,6 @@ export class QuizService {
 
   correctAnswers: Map<string, number[]> = new Map<string, number[]>();
 
-  public get correctAnswersCount$(): Observable<number> {
-    return this.scoringService.correctAnswersCount$;
-  }
   public get correctAnswersCountSig() {
     return this.scoringService.correctAnswersCountSig;
   }
