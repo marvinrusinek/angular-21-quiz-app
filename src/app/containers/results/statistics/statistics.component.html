@@ -151,7 +151,7 @@
     </summary>
 
     <ul>
-      @for (resource of resources; track resource.url) {
+      @for (resource of resources(); track resource.url) {
         <li>
           <a [href]="resource.url" target="_blank" rel="noopener">
             <span class="resource-title">{{ resource.title }}</span>

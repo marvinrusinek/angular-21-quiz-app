@@ -3,10 +3,8 @@ import {
   input, OnInit, signal
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Observable, of } from 'rxjs';
 import { take } from 'rxjs/operators';
 
-import { Quiz } from '../../../shared/models/Quiz.model';
 import { QuizMetadata } from '../../../shared/models/QuizMetadata.model';
 import { QuizScore } from '../../../shared/models/QuizScore.model';
 import { SummaryIconsComponent } from './summary-icons/summary-icons.component';
@@ -37,15 +35,12 @@ export class SummaryReportComponent implements OnInit {
   quizId = '';
   readonly viewMode = input<'summary' | 'highscores' | 'all'>('all');
 
-  quizzes$: Observable<Quiz[]> = of([]);
-  quizName$: Observable<string> = of('');
   readonly quizMetadata = signal<Partial<QuizMetadata>>({});
   readonly quizPercentage = computed(() => this.quizMetadata().percentage ?? 0);
   readonly completionTimeSig = signal(0);
   readonly elapsedMinutes = computed(() => Math.floor(this.completionTimeSig() / 60));
   readonly elapsedSeconds = computed(() => this.completionTimeSig() % 60);
   readonly checkedShuffle = signal(false);
-  checkedShuffle$: Observable<boolean> = of(false);
   readonly highScores = signal<QuizScore[]>([]);
   quizMilestones: Record<string, string> = {};
   readonly currentScore = signal<QuizScore | null>(null);  // current quiz attempt score
@@ -91,8 +86,7 @@ export class SummaryReportComponent implements OnInit {
         )
       });
 
-      this.quizzes$ = this.quizDataService.getQuizzes();
-      this.quizzes$.pipe(take(1)).subscribe((quizzes) => {
+      this.quizDataService.getQuizzes().pipe(take(1)).subscribe((quizzes) => {
         this.quizMilestones = quizzes.reduce<Record<string, string>>((acc, quiz) => {
           acc[quiz.quizId] = quiz.milestone;
           return acc;
@@ -100,8 +94,6 @@ export class SummaryReportComponent implements OnInit {
         this.cdRef.markForCheck();
       });
 
-      this.quizName$ = of(this.quizId);
-      this.checkedShuffle$ = this.quizService.checkedShuffle$;
       this.checkedShuffle.set(this.quizService.isShuffleEnabled());
       this.calculateElapsedTime();
       this.quizService.saveHighScores();

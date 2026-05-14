@@ -43,7 +43,6 @@ import { BackToTopComponent } from '../../components/back-to-top/back-to-top.com
 })
 export class QuizSelectionComponent implements OnInit {
   readonly quizzes = this.quizDataService.quizzesSig;
-  currentQuestionIndex = 0;
   private completedQuizIds = new Set<string>();
   
   readonly accessedCount = signal(0);
@@ -85,7 +84,6 @@ export class QuizSelectionComponent implements OnInit {
   }
 
   private initializeQuizSelection(): void {
-    this.currentQuestionIndex = this.quizService.currentQuestionIndex;
     this.restoreSessionAccessState();
     this.selectionParams = this.quizService.returnQuizSelectionParams();
     this.loadQuizCatalog();

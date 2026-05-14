@@ -41,8 +41,7 @@ export class StatisticsComponent implements OnInit {
     input<'score' | 'resources' | 'all'>('all');
 
   readonly quizMetadata = signal<Partial<QuizMetadata>>({});
-  resources: Resource[] = [];
-  status: QuizStatus = QuizStatus.STARTED;
+  readonly resources = signal<Resource[]>([]);
   readonly completionTimeSig = signal(0);
   readonly elapsedMinutes = computed(() => Math.floor(this.completionTimeSig() / 60));
   readonly elapsedSeconds = computed(() => this.completionTimeSig() % 60);
@@ -106,8 +105,7 @@ export class StatisticsComponent implements OnInit {
     if (this.quizId) {
       this.quizService.loadResourcesForQuiz(this.quizId);
     }
-    this.resources = this.quizService.resources;
-    this.status = QuizStatus.COMPLETED;
+    this.resources.set(this.quizService.resources);
     this.calculateElapsedTime();
     this.sendQuizStatusToQuizService();
 
@@ -131,6 +129,6 @@ export class StatisticsComponent implements OnInit {
   }
 
   private sendQuizStatusToQuizService(): void {
-    this.quizService.setQuizStatus(this.status);
+    this.quizService.setQuizStatus(QuizStatus.COMPLETED);
   }
 }

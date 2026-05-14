@@ -29,7 +29,6 @@ import { QuizService } from '../../shared/services/data/quiz.service';
 })
 export class ScoreboardComponent implements OnInit {
   private readonly routeIsOneBased = true;
-  totalQuestions = 0;
   questionNumber = 0;
 
   // Normalize/clamp helper
@@ -141,8 +140,6 @@ export class ScoreboardComponent implements OnInit {
       )
       .subscribe((totalQuestions: number | null) => {
         if (totalQuestions !== null) {
-          this.totalQuestions = totalQuestions;
-
           const validQuestionNumber =
             this.questionNumber >= 1 ? this.questionNumber : 1;
 
