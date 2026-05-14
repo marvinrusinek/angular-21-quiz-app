@@ -110,7 +110,6 @@ export class QuizSetupRouteService {
   private resetComponentStateForQuizSwitch(host: Host, routeQuizId: string): void {
     host.questionsArray = [];
     host.currentQuestion = null;
-    host.optionsToDisplay = [];
     host.optionsToDisplaySig.set([]);
     host.combinedQuestionData.set(null);
     host.questionToDisplaySig.set('');
@@ -120,7 +119,7 @@ export class QuizSetupRouteService {
     host.navigatingToResults = false;
     host.isQuizLoaded = false;
     host.isQuizDataLoaded = false;
-    host.totalQuestions = 0;
+    host.totalQuestions.set(0);
     host.progressSig.set(0);
     host.quizId = routeQuizId;
     this.quizService.setQuizId(routeQuizId);
@@ -130,7 +129,7 @@ export class QuizSetupRouteService {
     this.quizService.getTotalQuestionsCount(host.quizId)
       .pipe()
       .subscribe((total: number) => {
-        host.totalQuestions = total;
+        host.totalQuestions.set(total);
         host.cdRef.markForCheck();
       });
   }
@@ -157,7 +156,7 @@ export class QuizSetupRouteService {
 
         if (isNavigation) {
           host.explanationToDisplay.set('');
-          host.optionsToDisplay = [];
+          host.optionsToDisplaySig.set([]);
           host.updateDotStatus(idx);
         }
         // Nuclear clear: wipe ALL locks on navigation so disable state
@@ -201,7 +200,7 @@ export class QuizSetupRouteService {
 
     if (host.quizId && host.quizId !== quizId) {
       this.dotStatusService.clearAllMaps();
-      this.quizPersistence.clearClickConfirmedDotStatus(host.totalQuestions || 20);
+      this.quizPersistence.clearClickConfirmedDotStatus(host.totalQuestions() || 20);
       host.progressSig.set(0);
       this.quizStateService.reset();
     }
@@ -218,7 +217,7 @@ export class QuizSetupRouteService {
       const result = await this.quizContentLoaderService.loadQuestionFromRouteChange({ quizId, index });
       if (!result.success || !result.question) return;
 
-      host.totalQuestions = result.totalQuestions;
+      host.totalQuestions.set(result.totalQuestions);
       host.currentQuestion = result.question;
       host.question = result.question;
       const payload = {
@@ -226,7 +225,6 @@ export class QuizSetupRouteService {
       };
       host.combinedQuestionData.set(payload);
       host.questionToDisplaySig.set(result.question.questionText?.trim() ?? '');
-      host.optionsToDisplay = [...result.options];
       host.optionsToDisplaySig.set([...result.options]);
       host.explanationToDisplay.set(result.explanation);
       host.qaToDisplay = { question: result.question, options: result.options };
@@ -331,7 +329,7 @@ export class QuizSetupRouteService {
   async loadQuestionByRouteIndex(host: Host, routeIndex: number): Promise<void> {
     try {
       const result = await this.quizContentLoaderService.loadQuestionByRoute({
-        routeIndex, quiz: host.quiz, quizId: host.quizId, totalQuestions: host.totalQuestions,
+        routeIndex, quiz: host.quiz, quizId: host.quizId, totalQuestions: host.totalQuestions(),
       });
       if (result.questionIndex === -1) {
         void this.router.navigate(['/question/', host.quizId, 1]);
@@ -347,11 +345,11 @@ export class QuizSetupRouteService {
         question: result.question, options: result.question.options ?? [], explanation: result.question.explanation ?? ''
       });
       host.questionToDisplaySig.set(result.questionText);
-      host.optionsToDisplay = result.optionsWithIds;
+      host.optionsToDisplaySig.set(result.optionsWithIds);
       setTimeout(() => {
-        this.quizContentLoaderService.restoreSelectedOptionsFromSession(host.optionsToDisplay);
+        this.quizContentLoaderService.restoreSelectedOptionsFromSession(host.optionsToDisplaySig());
         setTimeout(() => {
-          const prev = host.optionsToDisplay.find((opt: Option) => opt.selected);
+          const prev = host.optionsToDisplaySig().find((opt: Option) => opt.selected);
           if (prev) this.selectedOptionService.reapplySelectionForQuestion(prev, host.currentQuestionIndex());
         }, 50);
       }, 50);
@@ -361,7 +359,7 @@ export class QuizSetupRouteService {
   }
 
   private resetFeedbackState(host: Host): void {
-    for (const option of host.optionsToDisplay) {
+    for (const option of host.optionsToDisplaySig()) {
       option.feedback = '';
       option.showIcon = false;
       option.selected = false;

@@ -134,7 +134,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   questionIndex = 0;
   readonly currentQuestionIndex = signal<number>(0);
   lastLoggedIndex = -1;
-  totalQuestions = 0;
+  readonly totalQuestions = signal<number>(0);
   readonly progressSig = signal<number>(0);
   public answeredQuestionIndices = new Set<number>();
 
@@ -166,8 +166,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   });
   public questionToDisplay$ = toObservable(this.questionToDisplayTextView);
 
-  optionsToDisplay: Option[] = [];
-  optionsToDisplaySig = signal<Option[]>([]);
+  readonly optionsToDisplaySig = signal<Option[]>([]);
   readonly explanationToDisplay = signal<string>('');
 
   isLoading = false;
@@ -229,8 +228,9 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   onTabFocus(): void {
     if (!this.isLoading && !this.quizStateService.isLoading()) {
       const idx = this.quizService.getCurrentQuestionIndex();
-      if (idx >= 0 && idx < this.totalQuestions) {
-        this.quizService.updateBadgeText(idx + 1, this.totalQuestions);
+      const total = this.totalQuestions();
+      if (idx >= 0 && idx < total) {
+        this.quizService.updateBadgeText(idx + 1, total);
       }
       this.cdRef.markForCheck();
     }
@@ -329,7 +329,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.quizResetService.resetQuestionServiceState();
     this.currentQuestion = null;
     this.question = null;
-    this.optionsToDisplay = [];
+    this.optionsToDisplaySig.set([]);
     this.quizQuestionComponent()?.resetFeedback?.();
     this.quizQuestionComponent()?.resetState?.();
     this.cdRef.detectChanges();
@@ -342,7 +342,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── Template getters ──────────────────────────────────────────
   public get showPaging(): boolean {
-    return this.isQuizDataLoaded && this.totalQuestions > 0;
+    return this.isQuizDataLoaded && this.totalQuestions() > 0;
   }
 
   // Read the URL question index — used as a fallback when
@@ -368,19 +368,19 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   public get shouldShowRestartButton(): boolean {
     const idx = this.getEffectiveQuestionIndex();
     const serviceCount = this.quizService.questions?.length || 0;
-    const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
+    const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     return idx > 0 && idx <= effectiveTotal - 1;
   }
 
   public get shouldShowNextButton(): boolean {
     const serviceCount = this.quizService.questions?.length || 0;
-    const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
+    const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     return this.getEffectiveQuestionIndex() < effectiveTotal - 1;
   }
 
   public get shouldShowResultsButton(): boolean {
     const serviceCount = this.quizService.questions?.length || 0;
-    const effectiveTotal = Math.max(this.totalQuestions, serviceCount);
+    const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     const idx = this.getEffectiveQuestionIndex();
     const isLast = effectiveTotal > 0 && idx === effectiveTotal - 1;
     if (!isLast) return false;
@@ -495,7 +495,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private get totalCount(): number {
     return this.dotStatusService.computeTotalCount(
-      this.totalQuestions,
+      this.totalQuestions(),
       (this.quizService as any).questions?.length || 0,
       this.quiz?.questions?.length || 0
     );
@@ -505,7 +505,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     return {
       quizId: this.quizId,
       currentQuestionIndex: this.currentQuestionIndex(),
-      optionsToDisplay: this.optionsToDisplay,
+      optionsToDisplay: this.optionsToDisplaySig(),
       currentQuestion: this.currentQuestion,
       questionsArray: this.questionsArray
     };

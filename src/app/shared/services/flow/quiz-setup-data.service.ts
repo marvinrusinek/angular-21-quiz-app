@@ -47,7 +47,7 @@ export class QuizSetupDataService {
       const questions = await this.quizService.fetchQuizQuestions(host.quizId);
       if (!questions?.length) return;
       host.questionsArray = [...questions];
-      host.totalQuestions = questions.length;
+      host.totalQuestions.set(questions.length);
       host.isQuizDataLoaded = true;
       host.cdRef.detectChanges();
     } catch (error: any) {
@@ -113,13 +113,13 @@ export class QuizSetupDataService {
           host.question = question;
           this.quizService.getOptions(host.currentQuestionIndex()).subscribe({
             next: (options: Option[]) => {
-              host.optionsToDisplay = options || [];
+              host.optionsToDisplaySig.set(options || []);
               if (!this.selectedOptionService.isQuestionAnswered(host.currentQuestionIndex())) {
                 this.timerService.restartForQuestion(host.currentQuestionIndex());
               }
             },
             error: () => {
-              host.optionsToDisplay = [];
+              host.optionsToDisplaySig.set([]);
             }
           });
         }),
@@ -176,7 +176,6 @@ export class QuizSetupDataService {
       host.questionToDisplaySig.set('');
       host.qaToDisplay = undefined;
       host.currentQuestion = null;
-      host.optionsToDisplay = [];
       host.optionsToDisplaySig.set([]);
       host.hasOptionsLoaded = false;
       host.shouldRenderOptions.set(false);
@@ -189,7 +188,6 @@ export class QuizSetupDataService {
     host.currentQuestion = result.question;
     host.qaToDisplay = { question: result.question!, options: result.normalizedOptions };
     host.questionToDisplaySig.set(result.trimmedQuestionText);
-    host.optionsToDisplay = [...result.normalizedOptions];
     host.optionsToDisplaySig.set([...result.normalizedOptions]);
     host.hasOptionsLoaded = result.normalizedOptions.length > 0;
     host.shouldRenderOptions.set(host.hasOptionsLoaded);
@@ -323,7 +321,6 @@ export class QuizSetupDataService {
         host.explanationToDisplay.set(payload.explanation ?? '');
         host.question = payload.question;
         host.currentQuestion = payload.question;
-        host.optionsToDisplay = [...payload.options];
         host.optionsToDisplaySig.set([...payload.options]);
         host.cdRef.detectChanges();
       });
@@ -363,7 +360,7 @@ export class QuizSetupDataService {
     const result = this.quizContentLoaderService.processSelectedAnswer({
       optionIndex,
       question: host.question,
-      optionsToDisplay: host.optionsToDisplay,
+      optionsToDisplay: host.optionsToDisplaySig(),
       currentQuestionIndex: idx,
       answers: host.answers
     });

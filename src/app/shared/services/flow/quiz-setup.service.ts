@@ -206,7 +206,7 @@ export class QuizSetupService {
     this.sharedVisibilityService.pageVisibility$.subscribe((isHidden: boolean) => {
       const needsRender = this.quizVisibilityRestoreService.handleVisibilityChange(isHidden, {
         currentQuestion: host.currentQuestion,
-        optionsToDisplay: host.optionsToDisplay,
+        optionsToDisplay: host.optionsToDisplaySig(),
         explanationToDisplay: host.explanationToDisplay(),
         combinedQuestionData: host.combinedQuestionData,
         optionsToDisplaySig: host.optionsToDisplaySig
@@ -256,7 +256,7 @@ export class QuizSetupService {
               ? shuffled : questions;
           host.questions = effectiveQuestions;
           host.questionsArray = [...effectiveQuestions];
-          host.totalQuestions = effectiveQuestions.length;
+          host.totalQuestions.set(effectiveQuestions.length);
           host.cdRef.markForCheck();
         }
       })
@@ -342,7 +342,7 @@ export class QuizSetupService {
       currentQuestionIndex: host.currentQuestionIndex(),
       questionsArray: host.questionsArray,
       currentQuestion: host.currentQuestion,
-      optionsToDisplay: host.optionsToDisplay,
+      optionsToDisplay: host.optionsToDisplaySig(),
       liveSelections: host.getSelectionsForQuestion(idx),
       explanationToDisplay: host.explanationToDisplay()
     });
@@ -401,7 +401,7 @@ export class QuizSetupService {
     this.quizStateService.resetInteraction();
     if (direction === 'next') {
       const destIndex = host.currentQuestionIndex() + 1;
-      if (destIndex < host.totalQuestions) {
+      if (destIndex < host.totalQuestions()) {
         this.dotStatusService.clearForIndex(destIndex);
         this.selectedOptionService.lastClickedCorrectByQuestion.delete(destIndex);
         this.selectedOptionService.clickConfirmedDotStatus.delete(destIndex);
@@ -431,16 +431,17 @@ export class QuizSetupService {
   }
 
   restartQuiz(host: Host): void {
-    this.quizResetService.performRestartServiceResets(host.quizId, host.totalQuestions);
+    const totalQs = host.totalQuestions();
+    this.quizResetService.performRestartServiceResets(host.quizId, totalQs);
     this.dotStatusService.clearAllMaps();
     host.quizQuestionComponent?.()?.selectedIndices?.clear();
     this.timerService.stopTimer?.(undefined, { force: true });
     host.answeredQuestionIndices.clear();
     host.progressSig.set(0);
-    this.quizPersistence.clearClickConfirmedDotStatus(host.totalQuestions);
+    this.quizPersistence.clearClickConfirmedDotStatus(totalQs);
 
     try {
-      for (let i = 0; i < host.totalQuestions; i++) {
+      for (let i = 0; i < totalQs; i++) {
         sessionStorage.removeItem('sel_Q' + i);
       }
       sessionStorage.removeItem('answeredQuestionIndices');
@@ -457,7 +458,7 @@ export class QuizSetupService {
     this.router.navigate(['/quiz/question', host.quizId, 1])
       .then(() => {
         host.currentQuestionIndex.set(0);
-        this.quizResetService.applyPostRestartState(host.totalQuestions, () => {
+        this.quizResetService.applyPostRestartState(host.totalQuestions(), () => {
           host.sharedOptionComponent?.()?.generateOptionBindings();
           host.cdRef.detectChanges();
         });
@@ -690,9 +691,9 @@ subscribeToTimerExpiry(host: Host): void {
     } catch {}
 
     if (freshFromResults) {
-      this.quizResetService.performRestartServiceResets(host.quizId, host.totalQuestions || 20);
+      this.quizResetService.performRestartServiceResets(host.quizId, host.totalQuestions() || 20);
       this.dotStatusService.clearAllMaps();
-      this.quizPersistence.clearClickConfirmedDotStatus(host.totalQuestions || 20);
+      this.quizPersistence.clearClickConfirmedDotStatus(host.totalQuestions() || 20);
       this.quizPersistence.clearAllPersistedDotStatus(host.quizId);
       this.selectedOptionService.lastClickedCorrectByQuestion.clear();
       this.selectedOptionService.clearRefreshBackup();
@@ -714,7 +715,7 @@ subscribeToTimerExpiry(host: Host): void {
     }
 
     const cleared = this.quizResetService.clearStaleProgressAndDotStateForFreshStart(
-      host.currentQuestionIndex(), host.quizId, host.totalQuestions
+      host.currentQuestionIndex(), host.quizId, host.totalQuestions()
     );
     if (cleared) host.progressSig.set(0);
 
@@ -731,7 +732,7 @@ subscribeToTimerExpiry(host: Host): void {
       }
     }
     if (host.answeredQuestionIndices.size > 0) {
-      host.progressSig.set(Math.round((host.answeredQuestionIndices.size / host.totalQuestions) * 100));
+      host.progressSig.set(Math.round((host.answeredQuestionIndices.size / host.totalQuestions()) * 100));
     }
 
     if (host.progressSig() === 0 && !freshFromResults) {
