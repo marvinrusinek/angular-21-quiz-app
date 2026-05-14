@@ -335,7 +335,7 @@ export class QuizSetupDataService {
         if (question?.type != null) this.quizDataService.setQuestionType(question);
         this.quizContentLoaderService.restoreSelectionState(host.currentQuestionIndex);
         this.nextButtonStateService.evaluateNextButtonState(
-          host.isAnswered,
+          this.selectedOptionService.isAnsweredSig(),
           this.quizStateService.isLoadingSig(),
           this.quizStateService.isNavigatingSig()
         );

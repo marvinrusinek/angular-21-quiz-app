@@ -241,8 +241,6 @@ export class QuizSetupService {
       }
     });
 
-    host.isAnswered$ = this.selectedOptionService.isAnswered$;
-
     host.subscriptions.add(
       this.quizService.quizReset$.subscribe(() => this.dataService.refreshQuestionOnReset(host))
     );
@@ -266,15 +264,6 @@ export class QuizSetupService {
     host.isButtonEnabled$ = this.selectedOptionService
       .isOptionSelected$()
       .pipe(debounceTime(300), shareReplay(1));
-
-    this.selectedOptionService.isNextButtonEnabled$.subscribe((enabled: boolean) => {
-      host.isNextButtonEnabled = enabled;
-    });
-
-    this.selectedOptionService.isOptionSelected$().subscribe((isSelected: boolean) => {
-      host.isCurrentQuestionAnswered = isSelected;
-      host.cdRef.markForCheck();
-    });
 
     this.selectedOptionService.selectedOption$.subscribe((selections: any[]) => {
       const qIndex = selections?.[0]?.questionIndex ?? host.currentQuestionIndex;
@@ -493,16 +482,7 @@ export class QuizSetupService {
       .catch(() => { });
   }
 
-  subscribeToNextButtonState(host: Host): void {
-    this.nextButtonStateService.isButtonEnabled$
-      .pipe(takeUntilDestroyed(host.destroyRef))
-      .subscribe((enabled: boolean) => {
-        host.isNextButtonEnabled = enabled;
-        host.cdRef.markForCheck();
-      });
-  }
-
-  subscribeToTimerExpiry(host: Host): void {
+subscribeToTimerExpiry(host: Host): void {
     this.timerService.expired$
       .pipe(takeUntilDestroyed(host.destroyRef))
       .subscribe(() => {
@@ -794,7 +774,6 @@ export class QuizSetupService {
     }
     Promise.resolve().then(() => host.cdRef.detectChanges());
 
-    this.subscribeToNextButtonState(host);
     this.subscribeToTimerExpiry(host);
 
     this.setupQuiz(host);
@@ -802,12 +781,7 @@ export class QuizSetupService {
     this.subscribeRouterAndInit(host);
     this.subscribeToRouteParams(host);
 
-    host.quizInitializationService.initializeAnswerSync(
-      (enabled: boolean) => (host.isNextButtonEnabled = enabled),
-      (answered: boolean) => (host.isCurrentQuestionAnswered = answered),
-      (_message: string) => {},
-      host.destroyRef
-    );
+    host.quizInitializationService.initializeAnswerSync(host.destroyRef);
 
     host.resetQuestionState();
     this.initializeExplanationText(host);
@@ -819,8 +793,6 @@ export class QuizSetupService {
         this.selectedOptionService.setAnswered(true, true);
         this.selectedOptionService.setNextButtonEnabled(true);
         this.nextButtonStateService.forceEnable(60000);
-        host.isNextButtonEnabled = true;
-        host.isAnswered = true;
         host.cdRef.detectChanges();
       }, 100);
     }

@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup } from '@angular/forms';
 import {
   animationFrameScheduler, BehaviorSubject, combineLatest, Observable, of,
-  Subject, Subscription
+  Subscription
 } from 'rxjs';
 import { distinctUntilChanged, filter, observeOn } from 'rxjs/operators';
 

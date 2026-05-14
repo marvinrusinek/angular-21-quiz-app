@@ -13,7 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleChange, MatSlideToggleModule }
   from '@angular/material/slide-toggle';
-import { EMPTY, firstValueFrom, of } from 'rxjs';
+import { EMPTY, firstValueFrom } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 
 import { Quiz } from '../../shared/models/Quiz.model';

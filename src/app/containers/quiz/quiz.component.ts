@@ -80,7 +80,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   answers: Option[] = [];
   readonly selectionMessage = this.selectionMessageService.selectionMessageSig;
-  isAnswered = false;
   cardFooterClass = '';
   showScrollIndicator = false;
 
@@ -178,7 +177,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   quizAlreadyInitialized = false;
   public hasOptionsLoaded = false;
   public shouldRenderOptions = false;
-  isCurrentQuestionAnswered = false;
 
   previousIndex: number | null = null;
   isNavigatedByUrl = false;
@@ -186,8 +184,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   readonly nextButtonEnabled = this.nextButtonStateService.isButtonEnabled;
   isButtonEnabled$: Observable<boolean>;
-  isAnswered$: Observable<boolean>;
-  isNextButtonEnabled = false;
   isContentAvailable$: Observable<boolean>;
 
   animationStateSig = signal<AnimationState>('none');
@@ -215,7 +211,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     public cdRef: ChangeDetectorRef,
     public destroyRef: DestroyRef
   ) {
-    this.isAnswered$ = this.selectedOptionService.isAnswered$;
     this.isButtonEnabled$ = this.selectedOptionService.isOptionSelected$().pipe(debounceTime(300), shareReplay(1));
     this.isContentAvailable$ = this.quizDataService.isContentAvailable$;
     this.quizSetupService.wireConstructor(this);
@@ -334,8 +329,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.currentQuestion = null;
     this.question = null;
     this.optionsToDisplay = [];
-    this.isAnswered = false;
-    this.isNextButtonEnabled = false;
     this.quizQuestionComponent()?.resetFeedback?.();
     this.quizQuestionComponent()?.resetState?.();
     this.cdRef.detectChanges();

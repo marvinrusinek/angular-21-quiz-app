@@ -6,7 +6,7 @@ import {
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, ParamMap } from '@angular/router';
-import { BehaviorSubject, Observable, of, Subject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 
 import { CombinedQuestionDataType } from
   '../../../shared/models/CombinedQuestionDataType.model';
