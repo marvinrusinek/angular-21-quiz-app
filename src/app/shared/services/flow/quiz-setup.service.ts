@@ -87,7 +87,7 @@ export class QuizSetupService {
       .subscribe((params: any) => {
         host.quizId = params['quizId'];
         host.questionIndex = +params['questionIndex'];
-        host.currentQuestionIndex = host.questionIndex - 1;
+        host.currentQuestionIndex.set(host.questionIndex - 1);
         void this.dataService.loadQuizData(host);
       });
   }
@@ -162,8 +162,9 @@ export class QuizSetupService {
         // would otherwise display Q1's text until a downstream emission
         // overrides it â€” visible to the user as a "Q1 then Q3" flash, or
         // worse, as Q1 stuck if the override never lands.
-        const seedIdx = Number.isFinite(host.currentQuestionIndex) && host.currentQuestionIndex >= 0
-          ? host.currentQuestionIndex : 0;
+        const currentIdx = host.currentQuestionIndex();
+        const seedIdx = Number.isFinite(currentIdx) && currentIdx >= 0
+          ? currentIdx : 0;
         const trimmed = (this.quizService.questions?.[seedIdx]?.questionText ?? '').trim();
         if (trimmed) host.questionToDisplaySig.set(trimmed);
         this.quizContentLoaderService.seedFirstQuestionText();
@@ -216,7 +217,7 @@ export class QuizSetupService {
 
       // When tab becomes visible, restore selection message for current question
       if (!isHidden) {
-        const idx = host.currentQuestionIndex;
+        const idx = host.currentQuestionIndex();
         const isAnswered = this.selectedOptionService.isQuestionAnswered(idx);
         if (!isAnswered) this.selectionMessageService.forceBaseline(idx);
         const question = this.quizService.questions?.[idx]
@@ -266,7 +267,7 @@ export class QuizSetupService {
       .pipe(debounceTime(300), shareReplay(1));
 
     this.selectedOptionService.selectedOption$.subscribe((selections: any[]) => {
-      const qIndex = selections?.[0]?.questionIndex ?? host.currentQuestionIndex;
+      const qIndex = selections?.[0]?.questionIndex ?? host.currentQuestionIndex();
       if (selections && selections.length > 0) host.markQuestionAnswered(qIndex);
       host.updateDotStatus(qIndex);
       host.cdRef.detectChanges();
@@ -338,7 +339,7 @@ export class QuizSetupService {
 
     await this.quizOptionProcessingService.processOptionClick({
       option, idx, quizId: host.quizId,
-      currentQuestionIndex: host.currentQuestionIndex,
+      currentQuestionIndex: host.currentQuestionIndex(),
       questionsArray: host.questionsArray,
       currentQuestion: host.currentQuestion,
       optionsToDisplay: host.optionsToDisplay,
@@ -352,9 +353,10 @@ export class QuizSetupService {
     // markQuestionAnswered called with 0 on every question (already in
     // the set, early-returns, progress freezes).
     const liveQIdx = (this.quizService as any)?.currentQuestionIndex;
+    const hostIdx = host.currentQuestionIndex();
     const progressIdx = Number.isFinite(liveQIdx)
       ? liveQIdx
-      : (Number.isFinite(host.currentQuestionIndex) ? host.currentQuestionIndex : idx);
+      : (Number.isFinite(hostIdx) ? hostIdx : idx);
     host.markQuestionAnswered(progressIdx);
     host.updateDotStatus(idx);
 
@@ -384,20 +386,21 @@ export class QuizSetupService {
 
   // â”€â”€ advanceQuestion / restartQuiz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async advanceQuestion(host: Host, direction: 'next' | 'previous'): Promise<void> {
+    const leavingIdx = host.currentQuestionIndex();
     this.quizContentLoaderService.snapshotLeavingQuestion({
-      leavingIdx: host.currentQuestionIndex,
-      leavingDotClass: host.getDotClass(host.currentQuestionIndex),
+      leavingIdx,
+      leavingDotClass: host.getDotClass(leavingIdx),
       quizId: host.quizId,
       getScoringKey: (idx: number) => this.dotStatusService.getScoringKey(host.quizId, idx),
     });
-    const leavingDotClass = host.getDotClass(host.currentQuestionIndex);
-    if (leavingDotClass.includes('correct')) this.quizPersistence.setPersistedDotStatus(host.quizId, host.currentQuestionIndex, 'correct');
-    else if (leavingDotClass.includes('wrong')) this.quizPersistence.setPersistedDotStatus(host.quizId, host.currentQuestionIndex, 'wrong');
+    const leavingDotClass = host.getDotClass(leavingIdx);
+    if (leavingDotClass.includes('correct')) this.quizPersistence.setPersistedDotStatus(host.quizId, leavingIdx, 'correct');
+    else if (leavingDotClass.includes('wrong')) this.quizPersistence.setPersistedDotStatus(host.quizId, leavingIdx, 'wrong');
     host.animationStateSig.set('animationStarted');
     this.selectedOptionService.setAnswered(false);
     this.quizStateService.resetInteraction();
     if (direction === 'next') {
-      const destIndex = host.currentQuestionIndex + 1;
+      const destIndex = host.currentQuestionIndex() + 1;
       if (destIndex < host.totalQuestions) {
         this.dotStatusService.clearForIndex(destIndex);
         this.selectedOptionService.lastClickedCorrectByQuestion.delete(destIndex);
@@ -407,7 +410,7 @@ export class QuizSetupService {
       }
     }
     if (direction === 'next') {
-      const destIdx = host.currentQuestionIndex + 1;
+      const destIdx = host.currentQuestionIndex() + 1;
       this.selectionMessageService.setOptionsSnapshot([]);
       this.selectionMessageService._singleAnswerCorrectLock.delete(destIdx);
       this.selectionMessageService._singleAnswerIncorrectLock.delete(destIdx);
@@ -453,7 +456,7 @@ export class QuizSetupService {
 
     this.router.navigate(['/quiz/question', host.quizId, 1])
       .then(() => {
-        host.currentQuestionIndex = 0;
+        host.currentQuestionIndex.set(0);
         this.quizResetService.applyPostRestartState(host.totalQuestions, () => {
           host.sharedOptionComponent?.()?.generateOptionBindings();
           host.cdRef.detectChanges();
@@ -486,7 +489,7 @@ subscribeToTimerExpiry(host: Host): void {
     this.timerService.expired$
       .pipe(takeUntilDestroyed(host.destroyRef))
       .subscribe(() => {
-        const idx = host.currentQuestionIndex;
+        const idx = host.currentQuestionIndex();
         const selections = host.getSelectionsForQuestion(idx);
         if (selections.length === 0) {
           this.dotStatusService.timerExpiredUnanswered.add(idx);
@@ -502,13 +505,13 @@ subscribeToTimerExpiry(host: Host): void {
     this.loadQuizQuestionsForCurrentQuiz(host);
     this.createQuestionData(host);
     void this.getQuestion(host);
-    void this.handleNavigationToQuestion(host, host.currentQuestionIndex);
+    void this.handleNavigationToQuestion(host, host.currentQuestionIndex());
   }
 
   showExplanationForQuestion(host: Host, qIdx: number): void {
     const { explanationHtml } = this.quizContentLoaderService.prepareExplanationForQuestion({
       qIdx, questionsArray: host.questionsArray, quiz: host.quiz,
-      currentQuestionIndex: host.currentQuestionIndex, currentQuestion: host.currentQuestion,
+      currentQuestionIndex: host.currentQuestionIndex(), currentQuestion: host.currentQuestion,
     });
     host.explanationToDisplay.set(explanationHtml);
     host.cdRef.detectChanges();
@@ -711,7 +714,7 @@ subscribeToTimerExpiry(host: Host): void {
     }
 
     const cleared = this.quizResetService.clearStaleProgressAndDotStateForFreshStart(
-      host.currentQuestionIndex, host.quizId, host.totalQuestions
+      host.currentQuestionIndex(), host.quizId, host.totalQuestions
     );
     if (cleared) host.progressSig.set(0);
 
@@ -751,7 +754,7 @@ subscribeToTimerExpiry(host: Host): void {
       } catch {}
     }
 
-    const initialIndex = host.currentQuestionIndex || 0;
+    const initialIndex = host.currentQuestionIndex() || 0;
     this.quizService.setCurrentQuestionIndex(initialIndex);
     host.updateDotStatus(initialIndex);
 
@@ -776,7 +779,7 @@ subscribeToTimerExpiry(host: Host): void {
 
     host.resetQuestionState();
 
-    const confirmedStatus = this.selectedOptionService.clickConfirmedDotStatus.get(host.currentQuestionIndex);
+    const confirmedStatus = this.selectedOptionService.clickConfirmedDotStatus.get(host.currentQuestionIndex());
     const isAnsweredOnRefresh = confirmedStatus === 'correct' || confirmedStatus === 'wrong';
     if (isAnsweredOnRefresh) {
       setTimeout(() => {
@@ -819,7 +822,7 @@ subscribeToTimerExpiry(host: Host): void {
 
   async runAfterViewInit(host: Host): Promise<void> {
     setTimeout(() => host.checkScrollIndicator(), 500);
-    void host.quizQuestionLoaderService.loadQuestionContents(host.currentQuestionIndex);
+    void host.quizQuestionLoaderService.loadQuestionContents(host.currentQuestionIndex());
 
     if (host.quizQuestionLoaderService.pendingOptions?.length) {
       const opts = host.quizQuestionLoaderService.pendingOptions;

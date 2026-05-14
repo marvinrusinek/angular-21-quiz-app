@@ -117,7 +117,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     const shuffled = this.quizService.shuffledQuestions;
     const isShuffleActive = this.quizService.isShuffleEnabled() && shuffled?.length > 0;
     if (isShuffleActive) {
-      const idx = this.currentQuestionIndex ?? 0;
+      const idx = this.currentQuestionIndex() ?? 0;
       const correctQ = shuffled[idx];
       if (correctQ) {
         // ALWAYS use shuffled data when shuffle is active
@@ -132,7 +132,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   questionIndex = 0;
-  currentQuestionIndex = 0;
+  readonly currentQuestionIndex = signal<number>(0);
   lastLoggedIndex = -1;
   totalQuestions = 0;
   readonly progressSig = signal<number>(0);
@@ -301,7 +301,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   initializeQuestionIndex(): void {
     const idx = this.quizRouteService.getRouteQuestionIndex(this.activatedRoute, this.router);
-    this.currentQuestionIndex = idx;
+    this.currentQuestionIndex.set(idx);
     this.quizService.setCurrentQuestionIndex(idx);
     try { localStorage.setItem('savedQuestionIndex', JSON.stringify(idx)); } catch {}
   }
@@ -311,11 +311,12 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public normalizeQuestionIndex(rawIndex: number | undefined): number {
-    if (!Number.isInteger(rawIndex)) return this.currentQuestionIndex;
+    const current = this.currentQuestionIndex();
+    if (!Number.isInteger(rawIndex)) return current;
     const idx = Number(rawIndex);
     const total = this.totalCount;
-    if (idx === this.currentQuestionIndex) return idx;
-    if (idx === this.currentQuestionIndex + 1) return this.currentQuestionIndex;
+    if (idx === current) return idx;
+    if (idx === current + 1) return current;
     if (total > 0 && idx >= total && idx - 1 >= 0 && idx - 1 < total) return idx - 1;
     return idx;
   }
@@ -357,7 +358,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
         if (urlIdx >= 0) return urlIdx;
       }
     } catch { /* non-browser env */ }
-    return this.currentQuestionIndex;
+    return this.currentQuestionIndex();
   }
 
   public get shouldShowPrevButton(): boolean {
@@ -432,7 +433,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.navigatingToResults = true;
 
     // Record elapsed time and stop timer (no navigation from service)
-    this.quizNavigationService.recordElapsedAndGoToResults(this.currentQuestionIndex);
+    this.quizNavigationService.recordElapsedAndGoToResults(this.currentQuestionIndex());
 
     // Navigate to results from the component
     const quizId = this.quizId
@@ -503,7 +504,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   private get _dotParams() {
     return {
       quizId: this.quizId,
-      currentQuestionIndex: this.currentQuestionIndex,
+      currentQuestionIndex: this.currentQuestionIndex(),
       optionsToDisplay: this.optionsToDisplay,
       currentQuestion: this.currentQuestion,
       questionsArray: this.questionsArray
@@ -552,7 +553,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   isDotClickable(index: number): boolean {
-    if (index === this.currentQuestionIndex) return true;
+    if (index === this.currentQuestionIndex()) return true;
     const status = this.getQuestionStatus(index);
     if (status === 'correct' || status === 'wrong') return true;
     return true;

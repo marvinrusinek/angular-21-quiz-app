@@ -3,7 +3,7 @@
 <ng-container>
   @if (qa && qa.options && qa.options.length > 0) {
     <div class="animation-shell">
-      <div class="anim-host" [@changeRoute]="currentQuestionIndex">
+      <div class="anim-host" [@changeRoute]="currentQuestionIndex()">
         <div class="quiz-card-wrapper">
           <mat-card class="quiz-card">
             <codelab-theme-toggle />
@@ -15,7 +15,7 @@
               <ng-content></ng-content>
 
               <codelab-quiz-content
-                [questionIndex]="currentQuestionIndex"
+                [questionIndex]="currentQuestionIndex()"
                 [questionToDisplay$]="questionToDisplay$"
                 [explanationToDisplay]="explanationToDisplay()"
                 [displayState$]="displayState$" />
@@ -25,7 +25,7 @@
                 [question]="qa.question"
                 [options]="qa.options"
                 [explanation]="qa.explanation ?? ''"
-                [currentQuestionIndex]="currentQuestionIndex"
+                [currentQuestionIndex]="currentQuestionIndex()"
                 [displayState$]="displayState$"
                 [shouldRenderOptions]="shouldRenderOptions()"
                 [questionToDisplay$]="questionToDisplay$"

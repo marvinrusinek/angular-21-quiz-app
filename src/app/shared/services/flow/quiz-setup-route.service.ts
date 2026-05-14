@@ -62,7 +62,7 @@ export class QuizSetupRouteService {
           host.isQuizLoaded = true;
         }
 
-        host.currentQuestionIndex = idx;
+        host.currentQuestionIndex.set(idx);
         this.quizService.setCurrentQuestionIndex(idx);
         host.updateDotStatus(idx);
 
@@ -115,7 +115,7 @@ export class QuizSetupRouteService {
     host.combinedQuestionData.set(null);
     host.questionToDisplaySig.set('');
     host.explanationToDisplay.set('');
-    host.currentQuestionIndex = 0;
+    host.currentQuestionIndex.set(0);
     host.lastLoggedIndex = -1;
     host.navigatingToResults = false;
     host.isQuizLoaded = false;
@@ -141,7 +141,7 @@ export class QuizSetupRouteService {
       .subscribe((idx: number) => {
         const prevIdx = host.lastLoggedIndex;
         host.lastLoggedIndex = idx;
-        host.currentQuestionIndex = idx;
+        host.currentQuestionIndex.set(idx);
         const { question, isNavigation } = this.quizContentLoaderService.handleQuestionIndexTransition({
           idx, prevIdx, quizId: host.quizId, questionsArray: host.questionsArray
         });
@@ -207,7 +207,7 @@ export class QuizSetupRouteService {
     }
 
     host.quizId = quizId;
-    host.currentQuestionIndex = index;
+    host.currentQuestionIndex.set(index);
     this.quizService.setQuizId(quizId);
     this.quizService.setCurrentQuestionIndex(index);
     this.timerService.stopTimer?.(undefined, { force: true });
@@ -260,7 +260,7 @@ export class QuizSetupRouteService {
       .subscribe((params: Params) => {
         host.quizId = params['quizId'];
         host.questionIndex = +params['questionIndex'];
-        host.currentQuestionIndex = host.questionIndex - 1;
+        host.currentQuestionIndex.set(host.questionIndex - 1);
       });
   }
 
@@ -301,13 +301,13 @@ export class QuizSetupRouteService {
 
     if (host.previousIndex === adjustedIndex && !host.isNavigatedByUrl) return;
 
-    host.currentQuestionIndex = adjustedIndex;
+    host.currentQuestionIndex.set(adjustedIndex);
     host.previousIndex = adjustedIndex;
     this.quizService.currentQuestionIndexSig.set(adjustedIndex);
     this.quizService.currentQuestionIndexSubject.next(adjustedIndex);
 
     host.explanationToDisplay.set('');
-    this.quizContentLoaderService.resetDisplayExplanationText(host.currentQuestionIndex);
+    this.quizContentLoaderService.resetDisplayExplanationText(host.currentQuestionIndex());
     this.quizContentLoaderService.clearAllOptionStates();
     this.nextButtonStateService.setNextButtonState(false);
 
@@ -317,7 +317,7 @@ export class QuizSetupRouteService {
       await this.loadQuestionByRouteIndex(host, index);
       this.quizContentLoaderService.unlockFetGateAfterRender(
         adjustedIndex,
-        () => host.currentQuestionIndex,
+        () => host.currentQuestionIndex(),
         () => host.cdRef.detectChanges()
       );
       setTimeout(() => this.quizContentLoaderService.enableAllOptionPointerEvents(), 200);
@@ -338,7 +338,7 @@ export class QuizSetupRouteService {
         return;
       }
       if (!result.success || !result.question) return;
-      host.currentQuestionIndex = result.questionIndex;
+      host.currentQuestionIndex.set(result.questionIndex);
       this.timerService.resetTimer();
       this.timerService.startTimer(this.timerService.timePerQuestion, this.timerService.isCountdown, true);
       this.resetFeedbackState(host);
@@ -352,7 +352,7 @@ export class QuizSetupRouteService {
         this.quizContentLoaderService.restoreSelectedOptionsFromSession(host.optionsToDisplay);
         setTimeout(() => {
           const prev = host.optionsToDisplay.find((opt: Option) => opt.selected);
-          if (prev) this.selectedOptionService.reapplySelectionForQuestion(prev, host.currentQuestionIndex);
+          if (prev) this.selectedOptionService.reapplySelectionForQuestion(prev, host.currentQuestionIndex());
         }, 50);
       }, 50);
     } catch {
