@@ -1,5 +1,5 @@
 @for (quiz of quizzes(); track quiz.quizId) {
-  @if (quiz.quizId === quizId) {
+  @if (quiz.quizId === quizId()) {
     <div class="statistics">
       
       <!-- === SCORE ANALYSIS SECTION === -->

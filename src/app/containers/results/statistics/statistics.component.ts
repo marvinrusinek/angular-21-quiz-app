@@ -25,12 +25,10 @@ export class StatisticsComponent implements OnInit {
   // Signal input aliased to "quizId" so parent template binding stays the same.
   // Internal code may reassign the backing field, so we mirror via effect().
   readonly quizIdInput = input<string>('', { alias: 'quizId' });
-  private readonly quizIdSig = signal('');
-  get quizId(): string { return this.quizIdSig(); }
-  set quizId(v: string) { this.quizIdSig.set(v); }
+  readonly quizId = signal('');
 
   readonly milestoneName = computed(() => {
-    const qId = this.quizIdSig();
+    const qId = this.quizId();
     if (!qId) return '';
     const cached = this.quizDataService.getCachedQuizById(qId);
     if (cached?.milestone) return cached.milestone;
@@ -63,7 +61,7 @@ export class StatisticsComponent implements OnInit {
     let firstRun = true;
     effect(() => {
       const incoming = this.quizIdInput();
-      if (incoming) this.quizId = incoming;
+      if (incoming) this.quizId.set(incoming);
       if (firstRun) {
         firstRun = false;
         return;
@@ -78,8 +76,8 @@ export class StatisticsComponent implements OnInit {
 
   private initComponent(): void {
     // Priority: Input quizId > Service quizId > Stored quizId
-    if (!this.quizId) {
-      this.quizId = this.quizService.quizId || localStorage.getItem('quizId') || '';
+    if (!this.quizId()) {
+      this.quizId.set(this.quizService.quizId || localStorage.getItem('quizId') || '');
     }
 
     // Calculate elapsed time from array or use completionTime as fallback
@@ -102,8 +100,8 @@ export class StatisticsComponent implements OnInit {
     });
 
     // Ensure resources are loaded for this quiz
-    if (this.quizId) {
-      this.quizService.loadResourcesForQuiz(this.quizId);
+    if (this.quizId()) {
+      this.quizService.loadResourcesForQuiz(this.quizId());
     }
     this.resources.set(this.quizService.resources);
     this.calculateElapsedTime();
