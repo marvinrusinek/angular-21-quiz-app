@@ -70,7 +70,7 @@ export class QuizNavigationService {
     const currentIndex = this.quizService.getCurrentQuestionIndex();
     if (currentIndex >= 0) {
       // Get elapsed time from the timer's current value if not already stored
-      const currentElapsed = (this.timerService as any).elapsedTime ?? 0;
+      const currentElapsed = this.timerService.elapsedTimeSig() ?? 0;
       if (!this.timerService.elapsedTimes[currentIndex] && currentElapsed > 0) {
         this.timerService.elapsedTimes[currentIndex] = currentElapsed;
       }
@@ -560,7 +560,7 @@ export class QuizNavigationService {
    */
   recordElapsedAndGoToResults(currentQuestionIndex: number): void {
     const idx = this.quizService.getCurrentQuestionIndex?.() ?? currentQuestionIndex;
-    const elapsed = (this.timerService as any).elapsedTime ?? 0;
+    const elapsed = this.timerService.elapsedTimeSig() ?? 0;
     if (idx != null && idx >= 0 && !this.timerService.elapsedTimes[idx] && elapsed > 0) {
       this.timerService.elapsedTimes[idx] = elapsed;
     }

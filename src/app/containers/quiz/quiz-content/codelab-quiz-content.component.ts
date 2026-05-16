@@ -68,10 +68,8 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   currentQuestionIndexValue = 0;
   currentQuestionIndex$!: Observable<number>;
 
-  // Read live from the navigation service signal — no local mirror needed.
-  get isNavigatingToPrevious(): boolean {
-    return this.quizNavigationService.isNavigatingToPreviousSig();
-  }
+  // Aliased directly from the navigation service signal — no wrapper getter needed.
+  readonly isNavigatingToPrevious = this.quizNavigationService.isNavigatingToPreviousSig;
 
   get _lastQuestionTextByIndex(): Map<number, string> {
     return this.displayService._lastQuestionTextByIndex;

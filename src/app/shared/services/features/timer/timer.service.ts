@@ -19,8 +19,6 @@ interface StopTimerAttemptOptions {
 @Injectable({ providedIn: 'root' })
 export class TimerService implements OnDestroy {
   timePerQuestion = 30;
-  /** Live elapsed time for the current run, derived from elapsedTimeSig. */
-  public get elapsedTime(): number { return this.elapsedTimeSig(); }
   completionTime = Number(sessionStorage.getItem('completionTime')) || 0;
   elapsedTimes: number[] = (() => {
     try {
@@ -234,7 +232,7 @@ export class TimerService implements OnDestroy {
     this.stopSig.update(v => v + 1);  // emit stop signal to stop the timer
     this.isStop.next();
 
-    if (callback) callback(this.elapsedTime);
+    if (callback) callback(this.elapsedTimeSig());
   }
 
   // Resets the timer

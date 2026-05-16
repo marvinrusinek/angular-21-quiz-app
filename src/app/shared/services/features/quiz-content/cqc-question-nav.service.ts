@@ -170,7 +170,7 @@ export class CqcQuestionNavService {
     const selectedForIdx = (host.selectedOptionService.selectedOptionsMap?.get(idx) ?? []) as Option[];
     const isActuallyResolved = currentQuestion && host.selectedOptionService.isQuestionResolvedCorrectly(currentQuestion, selectedForIdx);
 
-    if (isActuallyResolved && !host.isNavigatingToPrevious) {
+    if (isActuallyResolved && !host.isNavigatingToPrevious()) {
       host.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
     } else {
       host.quizStateService.setDisplayState({ mode: 'question', answered: false });
