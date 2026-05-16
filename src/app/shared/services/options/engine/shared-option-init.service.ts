@@ -71,10 +71,10 @@ export interface SharedOptionComponentLike {
   highlightedOptionIds: Set<number | string>;
   disableRenderTrigger: number;
   flashDisabledSet: Set<number>;
-  forceDisableAll: boolean;
+  forceDisableAll: WritableSignal<boolean>;
   timerExpiredForQuestion: WritableSignal<boolean>;
   _timerExpiryHandled: boolean;
-  viewReady: boolean;
+  viewReady: WritableSignal<boolean>;
   optionsReady: boolean;
   showOptions: boolean;
   showNoOptionsFallback: boolean;
@@ -152,7 +152,7 @@ export class SharedOptionInitService {
     comp.timerExpiredForQuestion.set(false);
     comp._timerExpiryHandled = false;
     comp.timeoutCorrectOptionKeys.clear();
-    comp.forceDisableAll = false;  // reset forceDisableAll for new question
+    comp.forceDisableAll.set(false);  // reset forceDisableAll for new question
 
     // Clear per-binding timer-expiry stamps applied by the timer-expiry
     // handler in shared-option.component.ts. Without this, Q2's options
@@ -363,7 +363,7 @@ export class SharedOptionInitService {
       comp.optionsToDisplay?.length > 0
     ) {
       comp.renderReady.set(true);
-      comp.viewReady = true;
+      comp.viewReady.set(true);
     }
 
     // Initial feedback generation for Q1

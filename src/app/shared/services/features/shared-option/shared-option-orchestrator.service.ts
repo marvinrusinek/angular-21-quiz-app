@@ -25,7 +25,7 @@ export class SharedOptionOrchestratorService {
   }
 
   runAfterViewInit(host: Host): void {
-    host.viewReady = true;
+    host.viewReady.set(true);
     host.setupRehydrateTriggers();
 
     if (!host.optionBindings?.length && host.optionsToDisplay?.length) {
@@ -271,7 +271,7 @@ export class SharedOptionOrchestratorService {
     return host.clickHandler.computeDisabledState(option, index, {
       currentQuestionIndex: host.currentQuestionIndex,
       isMultiMode: host.isMultiMode,
-      forceDisableAll: host.forceDisableAll,
+      forceDisableAll: host.forceDisableAll(),
       disabledOptionsPerQuestion: host.disabledOptionsPerQuestion,
       lockedIncorrectOptionIds: host.lockedIncorrectOptionIds,
       flashDisabledSet: host.flashDisabledSet
@@ -280,7 +280,7 @@ export class SharedOptionOrchestratorService {
 
   runShouldDisableOption(host: Host, binding: OptionBindings): boolean {
     if (!binding || !binding.option) return false;
-    if (host.isMultiMode) return host.forceDisableAll;
+    if (host.isMultiMode) return host.forceDisableAll();
     return true;
   }
 
@@ -373,7 +373,7 @@ export class SharedOptionOrchestratorService {
     host.lockedIncorrectOptionIds.clear();
     host.timerExpiredForQuestion.set(false);
     host._timerExpiryHandled = false;
-    host.forceDisableAll = false;
+    host.forceDisableAll.set(false);
     host.timeoutCorrectOptionKeys?.clear?.();
     host.flashDisabledSet?.clear?.();
   }

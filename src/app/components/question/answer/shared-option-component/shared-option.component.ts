@@ -148,7 +148,7 @@ export class SharedOptionComponent
 
   public flashDisabledSet = new Set<number>();
   lockedIncorrectOptionIds = new Set<number>();
-  public forceDisableAll = false;
+  readonly forceDisableAll = signal<boolean>(false);
   readonly timerExpiredForQuestion = signal<boolean>(false);  // track timer expiration
   timeoutCorrectOptionKeys = new Set<string>();
   resolvedQuestionIndex: number | null = null;
@@ -174,7 +174,7 @@ export class SharedOptionComponent
   // Runtime-mutated state used by the orchestrator service. Declared here so
   // the Host type (SharedOptionComponent) sees them; values default to falsy
   // until the orchestrator writes on init.
-  viewReady = false;
+  readonly viewReady = signal<boolean>(false);
   selectionSub?: import('rxjs').Subscription;
   finalRenderReadySub?: import('rxjs').Subscription;
   lastProcessedQuestionIndex = -1;
@@ -261,7 +261,7 @@ export class SharedOptionComponent
           this.highlightedOptionIds.clear();
           this.flashDisabledSet.clear();
           this.lockedIncorrectOptionIds.clear();
-          this.forceDisableAll = false;
+          this.forceDisableAll.set(false);
           this._feedbackDisplay = null;
           this._lastClickFeedback = null;
           this.activeFeedbackConfig.set(null);

@@ -359,7 +359,7 @@ export class SharedOptionBindingService {
 
     comp.optionsReady = true;
     comp.renderReady.set(true);
-    comp.viewReady = true;
+    comp.viewReady.set(true);
     comp.cdRef.detectChanges();
   }
 
@@ -831,7 +831,7 @@ export class SharedOptionBindingService {
   }
 
   forceDisableAllOptions(comp: any): void {
-    comp.forceDisableAll = true;
+    comp.forceDisableAll.set(true);
     for (const binding of comp.optionBindings ?? []) {
       if (binding.option) binding.option.active = false;
     }
@@ -843,7 +843,7 @@ export class SharedOptionBindingService {
   }
 
   clearForceDisableAllOptions(comp: any): void {
-    comp.forceDisableAll = false;
+    comp.forceDisableAll.set(false);
     for (const binding of comp.optionBindings ?? []) {
       if (binding.option) {
         binding.option.active = true;
