@@ -219,7 +219,7 @@ export class QuizSetupRouteService {
 
       host.totalQuestions.set(result.totalQuestions);
       host.currentQuestion = result.question;
-      host.question = result.question;
+      host.question.set(result.question);
       const payload = {
         question: result.question, options: result.options, explanation: result.explanation
       };

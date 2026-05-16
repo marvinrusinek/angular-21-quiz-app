@@ -94,7 +94,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         const correctCount = q.options?.filter((o: Option) => o.correct).length ?? 0;
         this.type.set(correctCount > 1 ? 'multiple' : 'single');
       }
-      this.cdRef.markForCheck();
     });
 
     effect(() => {
@@ -125,7 +124,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource));
         this.renderReady.set(true);
         this.syncOptionsWithSelections();
-        this.cdRef.markForCheck();
       } else {
         this.optionBindingsSource = [];
         this.optionBindings.set([]);
@@ -161,7 +159,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           this.syncOptionsWithSelections();
           this.quizQuestionComponentLoaded.emit();
         }
-        this.cdRef.markForCheck();
       });
 
     // Displays the unique options to the UI
@@ -252,7 +249,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
     this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource));
     this.renderReady.set(true);
     this.syncOptionsWithSelections();
-    this.cdRef.markForCheck();
   }
 
   /**
@@ -400,8 +396,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       );
   
     this.optionBindings.set(updatedBindings);
-    this.cdRef.markForCheck();
-  
+
     this.answerSelectionService.updateDotStatus(
       activeQuestionIndex,
       enrichedOption

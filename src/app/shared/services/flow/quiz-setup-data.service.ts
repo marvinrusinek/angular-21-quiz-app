@@ -110,7 +110,7 @@ export class QuizSetupDataService {
       .pipe(
         tap((question: QuizQuestion | null) => {
           if (!question) return;
-          host.question = question;
+          host.question.set(question);
           this.quizService.getOptions(host.currentQuestionIndex()).subscribe({
             next: (options: Option[]) => {
               host.optionsToDisplaySig.set(options || []);
@@ -145,7 +145,7 @@ export class QuizSetupDataService {
     const question = await this.quizContentLoaderService.fetchQuestionFromAPI(
       quizId, host.currentQuestionIndex()
     );
-    host.question = question ?? null;
+    host.question.set(question ?? null);
   }
 
   // â”€â”€ Session hydration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -184,7 +184,7 @@ export class QuizSetupDataService {
       return;
     }
     host.currentQuestionIndex.set(result.normalizedIndex);
-    host.question = result.question;
+    host.question.set(result.question);
     host.currentQuestion = result.question;
     host.qaToDisplay = { question: result.question!, options: result.normalizedOptions };
     host.questionToDisplaySig.set(result.trimmedQuestionText);
@@ -319,7 +319,7 @@ export class QuizSetupDataService {
         host.qaToDisplay = { question: payload.question, options: payload.options };
         host.questionToDisplaySig.set(payload.question?.questionText?.trim() ?? 'No question available');
         host.explanationToDisplay.set(payload.explanation ?? '');
-        host.question = payload.question;
+        host.question.set(payload.question);
         host.currentQuestion = payload.question;
         host.optionsToDisplaySig.set([...payload.options]);
         host.cdRef.detectChanges();
@@ -359,7 +359,7 @@ export class QuizSetupDataService {
 
     const result = this.quizContentLoaderService.processSelectedAnswer({
       optionIndex,
-      question: host.question,
+      question: host.question(),
       optionsToDisplay: host.optionsToDisplaySig(),
       currentQuestionIndex: idx,
       answers: host.answers

@@ -65,7 +65,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   currentQuestion: QuizQuestion | null = null;
   quiz!: Quiz;
   quizId = '';
-  question: QuizQuestion | null = null;
+  readonly question = signal<QuizQuestion | null>(null);
   questions: QuizQuestion[] = [];
   questionsArray: QuizQuestion[] = [];
   questions$: Observable<QuizQuestion[]> = this.quizService.questions$;
@@ -327,7 +327,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   resetQuestionState(): void {
     this.quizResetService.resetQuestionServiceState();
     this.currentQuestion = null;
-    this.question = null;
+    this.question.set(null);
     this.optionsToDisplaySig.set([]);
     this.quizQuestionComponent()?.resetFeedback?.();
     this.quizQuestionComponent()?.resetState?.();
@@ -383,7 +383,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!isLast) return false;
 
     const question: QuizQuestion | null =
-      (this.question as QuizQuestion | null) ??
+      this.question() ??
       ((this.quizService as any).currentQuestion?.value as QuizQuestion | null) ??
       (this.quizService.questions?.[idx] ?? null) ??
       ((this.quizService as any).shuffledQuestions?.[idx] ?? null);
@@ -458,7 +458,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
       sessionStorage.setItem('answeredQuestionIndices', JSON.stringify([...this.answeredQuestionIndices]));
     } catch { }
     this.cdRef.detectChanges();
-    this.cdRef.markForCheck();
   }
 
   /**
@@ -531,7 +530,6 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.dotStatusService.dotStatusCache.set(index, status);
 
     this.cdRef.detectChanges();
-    this.cdRef.markForCheck();
   }
 
   getDotClass(index: number): string {
