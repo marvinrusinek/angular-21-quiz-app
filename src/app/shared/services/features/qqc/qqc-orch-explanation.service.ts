@@ -135,7 +135,7 @@ export class QqcOrchExplanationService {
     const ensureLoaded = async () => {
       const r = await host.questionLoader.ensureQuestionsLoaded(host.questionsArray(), host.quizId());
       if (r.loaded && r.questions) {
-        host.questions = r.questions;
+        host.questions.set(r.questions);
         host.questionsArray.set(r.questions);
       }
       return r.loaded;

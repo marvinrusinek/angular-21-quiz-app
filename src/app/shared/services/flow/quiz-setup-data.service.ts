@@ -92,16 +92,16 @@ export class QuizSetupDataService {
       host.quiz.set(result.quiz);
       this.applyQuestionsFromSession(host, result.questions);
 
-      const safeIndex = Math.min(Math.max(host.currentQuestionIndex() ?? 0, 0), host.questions.length - 1);
+      const safeIndex = Math.min(Math.max(host.currentQuestionIndex() ?? 0, 0), host.questions().length - 1);
       host.currentQuestionIndex.set(safeIndex);
-      host.currentQuestion.set(host.questions[safeIndex] ?? null);
+      host.currentQuestion.set(host.questions()[safeIndex] ?? null);
 
       const currentQuiz = host.quiz();
       if (currentQuiz) this.quizService.setCurrentQuiz(currentQuiz);
       host.isQuizLoaded.set(true);
       return true;
     } catch (error: any) {
-      host.questions = [];
+      host.questions.set([]);
       return false;
     }
   }
@@ -156,7 +156,7 @@ export class QuizSetupDataService {
       questions, quiz: host.quiz(), selectedQuiz: host.selectedQuiz(),
     });
 
-    host.questions = result.hydratedQuestions;
+    host.questions.set(result.hydratedQuestions);
 
     const currentQuiz = host.quiz();
     if (result.quizQuestions && currentQuiz) {

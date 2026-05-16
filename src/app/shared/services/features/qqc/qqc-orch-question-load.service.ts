@@ -153,7 +153,7 @@ export class QqcOrchQuestionLoadService {
         questionsArray: host.questionsArray(),
         quizId: host.quizId(),
         signal,
-        questions: host.questions
+        questions: host.questions()
       });
 
       if (!loadResult) return false;
@@ -263,7 +263,7 @@ export class QqcOrchQuestionLoadService {
       });
       if (result) {
         host.questionsArray.set(result.questionsArray);
-        host.questions = result.questions;
+        host.questions.set(result.questions);
         host.quizId.set(result.quizId);
       }
     } finally {
@@ -278,7 +278,7 @@ export class QqcOrchQuestionLoadService {
       );
     if (!result) return;
 
-    host.questions = result.questions;
+    host.questions.set(result.questions);
     host.questionsArray.set(result.questions);
     if (result.quiz) host.quiz.set(result.quiz);
     if (!host.quiz()) return;

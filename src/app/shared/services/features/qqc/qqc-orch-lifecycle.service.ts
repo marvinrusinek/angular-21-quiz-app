@@ -228,7 +228,7 @@ export class QqcOrchLifecycleService {
 
       host.subscriptionWiring.createRouteListener({
         activatedRoute: host.activatedRoute,
-        getQuestionsLength: () => host.questions?.length ?? 0,
+        getQuestionsLength: () => host.questions()?.length ?? 0,
         onRouteChange: (adjustedIndex: number) => {
           host.quizService.updateCurrentQuestionIndex(adjustedIndex);
           host.fetchAndSetExplanationText(adjustedIndex);

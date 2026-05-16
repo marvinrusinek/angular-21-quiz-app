@@ -65,7 +65,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly quiz = signal<Quiz | null>(null);
   readonly quizId = signal<string>('');
   readonly question = signal<QuizQuestion | null>(null);
-  questions: QuizQuestion[] = [];
+  readonly questions = signal<QuizQuestion[]>([]);
   readonly questionsArray = signal<QuizQuestion[]>([]);
   questions$: Observable<QuizQuestion[]> = this.quizService.questions$;
   readonly questionsList = this.quizService.questionsSig;

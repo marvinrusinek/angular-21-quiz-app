@@ -254,7 +254,7 @@ export class QuizSetupService {
           const effectiveQuestions =
             this.quizService.isShuffleEnabled() && shuffled?.length > 0
               ? shuffled : questions;
-          host.questions = effectiveQuestions;
+          host.questions.set(effectiveQuestions);
           host.questionsArray.set([...effectiveQuestions]);
           host.totalQuestions.set(effectiveQuestions.length);
           host.cdRef.markForCheck();

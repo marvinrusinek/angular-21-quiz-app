@@ -37,7 +37,7 @@ export class QqcOrchClickService {
 
     const idx = host.quizService.getCurrentQuestionIndex() ?? 0;
     const q = host.quizService.getQuestionsInDisplayOrder?.()?.[idx]
-      ?? host.questions?.[idx];
+      ?? host.questions()?.[idx];
     const evtIdx = event.index;
     const evtOpt = event.option;
 

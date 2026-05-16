@@ -196,7 +196,7 @@ export class QqcOrchSelectionService {
     if (cq) host.questionAnswered.emit(cq);
     host.timerEffect.stopTimerIfAllCorrectSelected({
       currentQuestionIndex: host.currentQuestionIndex(),
-      questions: host.questions,
+      questions: host.questions(),
       optionsToDisplay: host.optionsToDisplay()
     });
   }

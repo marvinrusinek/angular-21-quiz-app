@@ -33,7 +33,7 @@ export class QqcOrchTimerService {
     const result = host.timerEffect.onQuestionTimedOut({
       targetIndex,
       currentQuestionIndex: host.currentQuestionIndex(),
-      questions: host.questions,
+      questions: host.questions(),
       currentQuestion: host.currentQuestion(),
       optionsToDisplay: host.optionsToDisplay(),
       sharedOptionBindings: soc?.optionBindings,
@@ -65,7 +65,7 @@ export class QqcOrchTimerService {
       const qTextEl = document.querySelector('codelab-quiz-content h3');
       if (qTextEl) {
         const i0 = host.normalizeIndex(targetIndex ?? host.currentQuestionIndex() ?? 0);
-        const q = host.questions?.[i0] ?? host.currentQuestion();
+        const q = host.questions()?.[i0] ?? host.currentQuestion();
         if (q) {
           const opts = q.options ?? host.optionsToDisplay() ?? [];
           const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, opts, i0);
@@ -110,7 +110,7 @@ export class QqcOrchTimerService {
       reason,
       timerStoppedForQuestion: host._timerStoppedForQuestion,
       currentQuestionIndex: host.currentQuestionIndex(),
-      questions: host.questions,
+      questions: host.questions(),
       questionFresh: host.questionFresh,
       optionsToDisplay: host.optionsToDisplay(),
       sharedOptionBindings: host.sharedOptionComponent?.()?.optionBindings,
@@ -133,7 +133,7 @@ export class QqcOrchTimerService {
 
     const expiryState = host.timerEffect.applyTimerExpiryState({
       i0,
-      questions: host.questions,
+      questions: host.questions(),
       currentQuestionType: host.currentQuestion()?.type
     });
     host.feedbackText = expiryState.feedbackText;
@@ -144,7 +144,7 @@ export class QqcOrchTimerService {
     const { formattedText, needsAsyncRepair } = await host.timerEffect.performTimerExpiredForAsync({
       i0,
       normalizeIndex: (idx: number) => host.normalizeIndex(idx),
-      questions: host.questions,
+      questions: host.questions(),
       currentQuestionIndex: host.currentQuestionIndex(),
       currentQuestion: host.currentQuestion(),
       formattedByIndex: host._formattedByIndex,
