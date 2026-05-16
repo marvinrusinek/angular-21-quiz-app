@@ -709,7 +709,7 @@ export class SharedOptionBindingService {
       feedback: b.feedback ?? '',
       showFeedbackForOption: comp.showFeedbackForOption,
       optionsToDisplay: comp.optionsToDisplay,
-      selectedOption: comp.selectedOption,
+      selectedOption: comp.selectedOption(),
       currentQuestion: comp.currentQuestion,
       showFeedback: comp.showFeedback,
       correctMessage: comp.correctMessage,

@@ -92,7 +92,7 @@ export class SharedOptionComponent
   public currentQuestionIndex!: number;
   public optionsToDisplay!: Option[];
   public type: 'single' | 'multiple' = 'single';
-  public selectedOption: Option | null = null;
+  readonly selectedOption = signal<Option | null>(null);
   public showFeedbackForOption!: { [key: string | number]: boolean };
   public correctMessage = '';
   public showFeedback = false;

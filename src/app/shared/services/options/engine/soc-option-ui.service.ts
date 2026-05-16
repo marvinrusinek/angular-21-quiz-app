@@ -46,7 +46,7 @@ export class SocOptionUiService {
       }
       const cfgClick = comp.config();
       if (cfgClick) cfgClick.selectedOptionIndex = index;
-      comp.selectedOption = option;
+      comp.selectedOption.set(option);
 
       comp.selectedOptions.clear();
       comp.selectedOptions.add(effectiveId);
@@ -89,7 +89,7 @@ export class SocOptionUiService {
         binding.isSelected = isThis;
         binding.option.showIcon = isThis;
       }
-      comp.selectedOption = option;
+      comp.selectedOption.set(option);
       comp.selectedOptions.clear();
       const optId = option.optionId ?? -1;
       comp.selectedOptions.add(optId);

@@ -33,7 +33,7 @@ export interface SharedOptionComponentLike {
   quizId: () => string;
   type: 'single' | 'multiple';
   config: () => SharedOptionConfig;
-  selectedOption: Option | null;
+  selectedOption: WritableSignal<Option | null>;
   showFeedbackForOption: { [key: string | number]: boolean };
   correctMessage: string;
   showFeedback: boolean;
@@ -640,7 +640,7 @@ export class SharedOptionInitService {
 
     // Full reset
     comp.optionBindings = [];
-    comp.selectedOption = null;
+    comp.selectedOption.set(null);
     comp.selectedOptionIndex.set(-1);
     comp.showFeedbackForOption = {};
     comp.correctMessage = '';
