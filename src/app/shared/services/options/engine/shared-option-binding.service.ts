@@ -225,7 +225,7 @@ export class SharedOptionBindingService {
       showFeedback: comp.showFeedback,
       showFeedbackForOption: {},
       highlightCorrectAfterIncorrect: comp.highlightCorrectAfterIncorrect(),
-      shouldResetBackground: comp.shouldResetBackground,
+      shouldResetBackground: comp.shouldResetBackground(),
       ariaLabelPrefix: 'Option',
       onChange: (opt: any, idx: number) => comp.handleOptionClick(opt, idx),
       isSelected: () => false,
@@ -707,7 +707,7 @@ export class SharedOptionBindingService {
       isAnswerCorrect: b.isCorrect,
       highlightCorrectAfterIncorrect: comp.highlightCorrectAfterIncorrect(),
       shouldResetBackground:
-        (comp.shouldResetBackground || (!isOnCorrectQuestion && currentSelections.length === 0))
+        (comp.shouldResetBackground() || (!isOnCorrectQuestion && currentSelections.length === 0))
         && !shouldHighlight,
       feedback: b.feedback ?? '',
       showFeedbackForOption: comp.showFeedbackForOption,
@@ -747,8 +747,8 @@ export class SharedOptionBindingService {
       type: comp.resolveInteractionType(),
       appHighlightOption: false,
       appHighlightInputType: inferredType === 'multiple' ? 'checkbox' : 'radio',
-      appHighlightReset: comp.shouldResetBackground,
-      appResetBackground: comp.shouldResetBackground,
+      appHighlightReset: comp.shouldResetBackground(),
+      appResetBackground: comp.shouldResetBackground(),
       optionsToDisplay: comp.optionsToDisplay,
       isSelected: selected,
       active: option.active ?? true,

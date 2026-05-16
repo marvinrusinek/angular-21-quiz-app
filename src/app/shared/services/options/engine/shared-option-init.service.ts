@@ -645,7 +645,7 @@ export class SharedOptionInitService {
     comp.showFeedbackForOption = {};
     comp.correctMessage = '';
     comp.showFeedback = false;
-    comp.shouldResetBackground = false;
+    comp.shouldResetBackground.set(false);
     comp.optionsRestored = false;
     comp.currentQuestion.set(null);
     comp.optionsToDisplay = [];

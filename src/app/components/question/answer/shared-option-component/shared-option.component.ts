@@ -96,7 +96,7 @@ export class SharedOptionComponent
   public showFeedbackForOption!: { [key: string | number]: boolean };
   public correctMessage = '';
   public showFeedback = false;
-  public shouldResetBackground = false;
+  readonly shouldResetBackground = signal<boolean>(false);
   public optionBindings: OptionBindings[] = [];
   readonly selectedOptionIndex = signal<number | null>(null);
   public isNavigatingBackwards = false;
