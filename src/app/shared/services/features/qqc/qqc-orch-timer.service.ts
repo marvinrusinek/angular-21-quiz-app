@@ -37,7 +37,7 @@ export class QqcOrchTimerService {
       currentQuestion: host.currentQuestion(),
       optionsToDisplay: host.optionsToDisplay(),
       sharedOptionBindings: soc?.optionBindings,
-      totalQuestions: host.totalQuestions,
+      totalQuestions: host.totalQuestions(),
       formattedByIndex: host._formattedByIndex,
       lastAllCorrect: host._lastAllCorrect,
       normalizeIndex: (idx: number) => host.normalizeIndex(idx),

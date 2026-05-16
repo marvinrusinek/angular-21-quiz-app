@@ -209,7 +209,7 @@ export class QqcOrchSelectionService {
         host.selectionMessage() !==
         host.selectionMessageService.determineSelectionMessage(
           host.currentQuestionIndex(),
-          host.totalQuestions,
+          host.totalQuestions(),
           isAnswered
         ),
     });

@@ -245,7 +245,7 @@ export class QqcOrchLifecycleService {
       host.subscriptionWiring.createTotalQuestionsSubscription({
         quizId: host.quizId()!,
         destroyRef: host.destroyRef,
-        onTotal: (totalQuestions: number) => { host.totalQuestions = totalQuestions; }
+        onTotal: (totalQuestions: number) => { host.totalQuestions.set(totalQuestions); }
       });
     } catch (error) {
     }

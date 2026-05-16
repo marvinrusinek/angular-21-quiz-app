@@ -96,12 +96,12 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly displayState$ = input<Observable<{ mode: 'question' | 'explanation'; answered: boolean }>>(of({ mode: 'question', answered: false }));
   readonly explanation = input<string>('');
   readonly shouldRenderOptions = model<boolean>(false);
-  quiz!: Quiz | null;
-  questions: QuizQuestion[] = [];
-  questionsArray: QuizQuestion[] = [];
+  readonly quiz = signal<Quiz | null>(null);
+  readonly questions = signal<QuizQuestion[]>([]);
+  readonly questionsArray = signal<QuizQuestion[]>([]);
   questionsObservableSubscription!: Subscription;
   override questionForm: FormGroup = new FormGroup({});
-  totalQuestions!: number;
+  readonly totalQuestions = signal<number>(0);
   fixedQuestionIndex = 0;
   lastLoggedIndex = -1;
   lastLoggedQuestionIndex = -1;
@@ -515,7 +515,7 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runOnTimerExpiredFor(this, index);
   }
 
-  normalizeIndex(idx: number): number { return this.explanationManager.normalizeIndex(idx, this.questions); }
+  normalizeIndex(idx: number): number { return this.explanationManager.normalizeIndex(idx, this.questions()); }
 
   async resolveFormatted(index: number, opts: { useCache?: boolean; setCache?: boolean; timeoutMs?: number } = {}): Promise<string> {
     return this.componentOrchestrator.runResolveFormatted(this, index, opts);

@@ -65,7 +65,7 @@ export class QqcOrchClickService {
         checked: event.checked,
         optionsToDisplay: host.optionsToDisplay(),
         currentQuestionOptions: host.currentQuestion()?.options,
-        totalQuestions: host.totalQuestions,
+        totalQuestions: host.totalQuestions(),
         msgTok: host._msgTok
       });
 

@@ -201,9 +201,9 @@ export class QqcOrchQuestionLoadService {
   runSetupRouteChangeHandler(host: Host): void {
     host.subscriptionWiring.createRouteChangeHandlerSubscription({
       activatedRoute: host.activatedRoute,
-      getTotalQuestions: () => host.totalQuestions,
+      getTotalQuestions: () => host.totalQuestions(),
       parseRouteIndex: (rawParam: string | null) =>
-        host.initializer.handleRouteChangeParsing({ rawParam, totalQuestions: host.totalQuestions }),
+        host.initializer.handleRouteChangeParsing({ rawParam, totalQuestions: host.totalQuestions() }),
       onRouteChange: async (zeroBasedIndex: number, _displayIndex: number) => {
         host.currentQuestionIndex.set(zeroBasedIndex);
         host.explanationVisible = false;
