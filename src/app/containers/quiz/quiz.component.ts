@@ -62,7 +62,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
   readonly selectedQuiz = signal<Quiz | null>(null);
   readonly currentQuestion = signal<QuizQuestion | null>(null);
-  quiz!: Quiz;
+  readonly quiz = signal<Quiz | null>(null);
   quizId = '';
   readonly question = signal<QuizQuestion | null>(null);
   questions: QuizQuestion[] = [];
@@ -493,7 +493,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.dotStatusService.computeTotalCount(
       this.totalQuestions(),
       (this.quizService as any).questions?.length || 0,
-      this.quiz?.questions?.length || 0
+      this.quiz()?.questions?.length || 0
     );
   }
 

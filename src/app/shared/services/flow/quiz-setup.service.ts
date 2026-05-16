@@ -150,7 +150,7 @@ export class QuizSetupService {
             void this.router.navigate(['/select']);
             return false;
           }
-          host.quiz = data.quizData;
+          host.quiz.set(data.quizData);
           this.quizContentLoaderService.resetFetStateForInit();
           return true;
         })
@@ -505,7 +505,7 @@ subscribeToTimerExpiry(host: Host): void {
 
   showExplanationForQuestion(host: Host, qIdx: number): void {
     const { explanationHtml } = this.quizContentLoaderService.prepareExplanationForQuestion({
-      qIdx, questionsArray: host.questionsArray, quiz: host.quiz,
+      qIdx, questionsArray: host.questionsArray, quiz: host.quiz(),
       currentQuestionIndex: host.currentQuestionIndex(), currentQuestion: host.currentQuestion(),
     });
     host.explanationToDisplay.set(explanationHtml);

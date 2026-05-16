@@ -292,7 +292,7 @@ export class QuizSetupRouteService {
 
   async updateContentBasedOnIndex(host: Host, index: number): Promise<void> {
     const adjustedIndex = index - 1;
-    const total = host.quiz?.questions?.length ?? 0;
+    const total = host.quiz()?.questions?.length ?? 0;
     if (adjustedIndex < 0 || adjustedIndex >= total) return;
 
     this.quizContentLoaderService.lockAndPurgeFet(adjustedIndex);
@@ -329,7 +329,7 @@ export class QuizSetupRouteService {
   async loadQuestionByRouteIndex(host: Host, routeIndex: number): Promise<void> {
     try {
       const result = await this.quizContentLoaderService.loadQuestionByRoute({
-        routeIndex, quiz: host.quiz, quizId: host.quizId, totalQuestions: host.totalQuestions(),
+        routeIndex, quiz: host.quiz(), quizId: host.quizId, totalQuestions: host.totalQuestions(),
       });
       if (result.questionIndex === -1) {
         void this.router.navigate(['/question/', host.quizId, 1]);

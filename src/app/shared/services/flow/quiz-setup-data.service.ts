@@ -89,14 +89,15 @@ export class QuizSetupDataService {
       const result = await this.quizContentLoaderService.loadQuizDataFromService(host.quizId);
       if (!result) return false;
 
-      host.quiz = result.quiz;
+      host.quiz.set(result.quiz);
       this.applyQuestionsFromSession(host, result.questions);
 
       const safeIndex = Math.min(Math.max(host.currentQuestionIndex() ?? 0, 0), host.questions.length - 1);
       host.currentQuestionIndex.set(safeIndex);
       host.currentQuestion.set(host.questions[safeIndex] ?? null);
 
-      this.quizService.setCurrentQuiz(host.quiz);
+      const currentQuiz = host.quiz();
+      if (currentQuiz) this.quizService.setCurrentQuiz(currentQuiz);
       host.isQuizLoaded.set(true);
       return true;
     } catch (error: any) {
@@ -152,13 +153,14 @@ export class QuizSetupDataService {
 
   applyQuestionsFromSession(host: Host, questions: QuizQuestion[]): void {
     const result = this.quizContentLoaderService.hydrateQuestionsFromSession({
-      questions, quiz: host.quiz, selectedQuiz: host.selectedQuiz(),
+      questions, quiz: host.quiz(), selectedQuiz: host.selectedQuiz(),
     });
 
     host.questions = result.hydratedQuestions;
 
-    if (result.quizQuestions && host.quiz) {
-      host.quiz = { ...host.quiz, questions: result.quizQuestions };
+    const currentQuiz = host.quiz();
+    if (result.quizQuestions && currentQuiz) {
+      host.quiz.set({ ...currentQuiz, questions: result.quizQuestions });
     }
     const currentSelectedQuiz = host.selectedQuiz();
     if (result.selectedQuizQuestions && currentSelectedQuiz) {
@@ -267,7 +269,7 @@ export class QuizSetupDataService {
             void this.router.navigate(['/select']);
             return EMPTY;
           }
-          host.quiz = data.quizData;
+          host.quiz.set(data.quizData);
           this.quizContentLoaderService.resetFetStateForInit();
           return of(true);
         })
