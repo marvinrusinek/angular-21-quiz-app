@@ -51,7 +51,7 @@ export class SharedOptionClickService {
       const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
       const quizId = this.quizService?.quizId;
       if (optText && bundle.length > 0 && quizId) {
-        const qText = nrm(comp.currentQuestion?.questionText);
+        const qText = nrm(comp.currentQuestion()?.questionText);
         let matched = false;
         if (qText) {
           for (const quiz of bundle) {
@@ -170,7 +170,7 @@ export class SharedOptionClickService {
       correctClicksPerQuestion: comp.correctClicksPerQuestion,
       freezeOptionBindings: comp.freezeOptionBindings,
       disableRenderTrigger: comp.disableRenderTrigger,
-      currentQuestion: comp.currentQuestion,
+      currentQuestion: comp.currentQuestion(),
       currentQuestionIndex: baseCtx.getActiveQuestionIndex(),
       showExplanationChange: comp.showExplanationChange,
       explanationToDisplayChange: comp.explanationToDisplayChange
@@ -232,7 +232,7 @@ export class SharedOptionClickService {
     // increments are skipped because that slot is already 'correct'.
     try {
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
-      const liveQText = nrm(comp.currentQuestion?.questionText);
+      const liveQText = nrm(comp.currentQuestion()?.questionText);
       const allQs: any[] = (this.quizService as any)?.questions ?? [];
       if (liveQText && allQs.length) {
         const atQIdx = nrm(allQs[qIdx]?.questionText);
@@ -252,7 +252,7 @@ export class SharedOptionClickService {
     this.selectedOptionService.setAnswered(true, true);
 
     if (!comp._correctIndicesByQuestion.has(qIdx)) {
-      const question = comp.currentQuestion ?? comp.getQuestionAtDisplayIndex(qIdx);
+      const question = comp.currentQuestion() ?? comp.getQuestionAtDisplayIndex(qIdx);
       const result = this.clickHandler.resolveCorrectIndices(
         question, qIdx, comp.isMultiMode, comp.type
       );
@@ -279,7 +279,7 @@ export class SharedOptionClickService {
         ].filter((t: string) => !!t);
       } else {
         qTextCandidates = [
-          nrmP(comp.currentQuestion?.questionText),
+          nrmP(comp.currentQuestion()?.questionText),
           nrmP((this.quizService as any)?.questions?.[qIdx]?.questionText),
           nrmP(comp.getQuestionAtDisplayIndex?.(qIdx)?.questionText)
         ].filter((t: string) => !!t);
@@ -329,13 +329,13 @@ export class SharedOptionClickService {
     try {
       let allCorrectIdxs: number[] = [];
       const allQs: any[] = (this.quizService as any)?.questions ?? [];
-      const passedText = (comp.currentQuestion?.questionText || '').trim().toLowerCase();
+      const passedText = (comp.currentQuestion()?.questionText || '').trim().toLowerCase();
       let canonicalQ: any = null;
       if (passedText && allQs.length) {
         const cIdx = allQs.findIndex((q: any) => (q?.questionText || '').trim().toLowerCase() === passedText);
         if (cIdx >= 0) canonicalQ = allQs[cIdx];
       }
-      if (!canonicalQ) canonicalQ = allQs[qIdx] ?? comp.currentQuestion;
+      if (!canonicalQ) canonicalQ = allQs[qIdx] ?? comp.currentQuestion();
       const rawOpts = canonicalQ?.options ?? [];
       allCorrectIdxs = rawOpts
         .map((o: any, i: number) => {

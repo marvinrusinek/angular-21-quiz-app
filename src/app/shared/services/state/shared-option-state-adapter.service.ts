@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, WritableSignal } from '@angular/core';
 
 import { FeedbackProps } from '../../models/FeedbackProps.model';
 import { Option } from '../../models/Option.model';
@@ -33,7 +33,7 @@ export interface SharedOptionHost {
   currentQuestionIndex: number;
 
   type: 'single' | 'multiple';
-  currentQuestion: QuizQuestion | null;
+  currentQuestion: WritableSignal<QuizQuestion | null>;
 
   ui?: SharedOptionUiState;
 
@@ -139,7 +139,7 @@ export class SharedOptionStateAdapterService {
       disableRenderTrigger: ui?.disableRenderTrigger ?? host.disableRenderTrigger,
 
       type: host.type,
-      currentQuestion: host.currentQuestion,
+      currentQuestion: host.currentQuestion(),
 
       selectedOptionMap: ui?.selectedOptionMap ?? host.selectedOptionMap ?? new Map(),
       showExplanationChange: host.showExplanationChange,

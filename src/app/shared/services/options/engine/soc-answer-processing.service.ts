@@ -58,7 +58,7 @@ export class SocAnswerProcessingService {
     // for multi-answer questions.
     try {
       const nrmR = (t: any) => String(t ?? '').trim().toLowerCase();
-      const liveQ: any = comp.currentQuestion
+      const liveQ: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
       const bindings: any[] = comp.optionBindings ?? [];
@@ -117,7 +117,7 @@ export class SocAnswerProcessingService {
     let suppressDisableForUnselected = false;
     try {
       const nrmS = (t: any) => String(t ?? '').trim().toLowerCase();
-      const liveQS: any = comp.currentQuestion
+      const liveQS: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
       const pristineCorrectTextsS =
@@ -160,7 +160,7 @@ export class SocAnswerProcessingService {
 
     const correctMessage = this.feedbackService.setCorrectMessage(
       (comp.optionsToDisplay ?? []).filter((o: any) => o && typeof o === 'object'),
-      comp.currentQuestion!
+      comp.currentQuestion()!
     );
     // Build selectedOption.correct from effectiveCorrectIndices (which is
     // recomputed from pristine quizInitialState above). The `binding.option`

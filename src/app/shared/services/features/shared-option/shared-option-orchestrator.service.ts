@@ -100,7 +100,7 @@ export class SharedOptionOrchestratorService {
     const idx = host.getActiveQuestionIndex();
 
     // Always resolve the display-order question for this index
-    const currentQ = host.getQuestionAtDisplayIndex(idx) ?? host.currentQuestion;
+    const currentQ = host.getQuestionAtDisplayIndex(idx) ?? host.currentQuestion();
 
     // PRISTINE-FIRST via OPTION-TEXT FINGERPRINT.
     // Question-text matching can fail (currentQuestion may be null/stale at
@@ -186,7 +186,7 @@ export class SharedOptionOrchestratorService {
   runBuildFeedbackContext(host: Host): FeedbackContext {
     return {
       optionsToDisplay: host.optionsToDisplay,
-      currentQuestion: host.currentQuestion,
+      currentQuestion: host.currentQuestion(),
       type: host.type as 'single' | 'multiple',
       selectedOptions: host.selectedOptions,
       optionBindings: host.optionBindings,
@@ -323,7 +323,7 @@ export class SharedOptionOrchestratorService {
     host.explanationHandler.resolveAndEmitExplanation({
       questionIndex,
       activeQuestionIndex: host.getActiveQuestionIndex(),
-      currentQuestion: host.currentQuestion,
+      currentQuestion: host.currentQuestion(),
       quizId: host.quizId(),
       optionBindings: host.optionBindings,
       optionsToDisplay: host.optionsToDisplay,
@@ -352,9 +352,10 @@ export class SharedOptionOrchestratorService {
         && Array.isArray(qs?.shuffledQuestions)
         && qs.shuffledQuestions.length > 0;
       const displayIdx = host.getActiveQuestionIndex();
+      const cq = host.currentQuestion();
       const questionForType = isShuf
-        ? (qs?.getQuestionsInDisplayOrder?.()?.[displayIdx] ?? qs?.shuffledQuestions?.[displayIdx] ?? host.currentQuestion)
-        : host.currentQuestion;
+        ? (qs?.getQuestionsInDisplayOrder?.()?.[displayIdx] ?? qs?.shuffledQuestions?.[displayIdx] ?? cq)
+        : cq;
       host.type = questionForType
           ? host.determineQuestionType(questionForType) : 'single';
     }

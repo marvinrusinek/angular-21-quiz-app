@@ -88,7 +88,7 @@ export class SharedOptionComponent
   readonly renderReadyInput = input<boolean>(false);
 
   // Mutable backing fields (mirrored from inputs and freely written by services)
-  public currentQuestion: QuizQuestion | null = null;
+  readonly currentQuestion = signal<QuizQuestion | null>(null);
   public currentQuestionIndex!: number;
   public optionsToDisplay!: Option[];
   public type: 'single' | 'multiple' = 'single';
@@ -211,7 +211,7 @@ export class SharedOptionComponent
     // the readonly signals directly under those names.
     effect(() => {
       const v = this.currentQuestionInput();
-      if (v !== undefined) this.currentQuestion = v;
+      if (v !== undefined) this.currentQuestion.set(v);
     });
     let _lastQIdxForStampCleanup: number | undefined;
     effect(() => {
@@ -417,7 +417,7 @@ export class SharedOptionComponent
 
         // Get correct answer texts from canonical question data
         const qIdx = this.currentQuestionIndex ?? this.quizService.currentQuestionIndex ?? 0;
-        const question = this.quizService.questions?.[qIdx] ?? this.currentQuestion;
+        const question = this.quizService.questions?.[qIdx] ?? this.currentQuestion();
         const displayOpts = this.optionsToDisplay?.length
           ? this.optionsToDisplay
           : question?.options ?? [];

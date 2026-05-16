@@ -152,7 +152,7 @@ export class SharedOptionBindingService {
         // after a partial correct click.
         // Use authoritative questions array â€” comp.currentQuestion.options
         // often lack the `correct` flag, making correctCount=0.
-        const authQ = this.quizService.questions?.[currentIdx] ?? comp.currentQuestion;
+        const authQ = this.quizService.questions?.[currentIdx] ?? comp.currentQuestion();
         const correctCount = (authQ?.options ?? []).filter(
           (o: any) => o?.correct === true || o?.correct === 1 || String(o?.correct) === 'true'
         ).length;
@@ -188,8 +188,9 @@ export class SharedOptionBindingService {
 
     const correctTexts = new Set<string>();
     const correctIds = new Set<number>();
-    if (comp.currentQuestion && Array.isArray(comp.currentQuestion.answer)) {
-      for (const a of comp.currentQuestion.answer) {
+    const cqForAnswers = comp.currentQuestion();
+    if (cqForAnswers && Array.isArray(cqForAnswers.answer)) {
+      for (const a of cqForAnswers.answer) {
         if (!a) continue;
         if (a.text) correctTexts.add(a.text.trim().toLowerCase());
         const id = Number(a.optionId);
@@ -266,7 +267,8 @@ export class SharedOptionBindingService {
       return;
     }
     if (comp.freezeOptionBindings) return;
-    if (!comp.currentQuestion) return;
+    const cqForFeedback = comp.currentQuestion();
+    if (!cqForFeedback) return;
 
     const currentIdx = comp.currentQuestionIndex ?? this.quizService.getCurrentQuestionIndex();
 
@@ -284,7 +286,7 @@ export class SharedOptionBindingService {
     const highlightSet = comp.highlightedOptionIds;
 
     const feedbackSentence = this.feedbackService.buildFeedbackMessage(
-      comp.currentQuestion,
+      cqForFeedback,
       savedSelections,
       false,
       false,
@@ -561,17 +563,18 @@ export class SharedOptionBindingService {
             }
           }
           const targetBinding = targetIdx >= 0 ? comp.optionBindings?.[targetIdx] : null;
-          if (targetBinding && comp.currentQuestion) {
+          const cqForTarget = comp.currentQuestion();
+          if (targetBinding && cqForTarget) {
             try {
               const lastSelectionOnly = [activeSelection] as any[];
               const feedbackText = this.feedbackService.buildFeedbackMessage(
-                comp.currentQuestion, lastSelectionOnly, false, false, qIndex, comp.optionsToDisplay
+                cqForTarget, lastSelectionOnly, false, false, qIndex, comp.optionsToDisplay
               ) || '';
               let correctMessage = '';
               try {
                 correctMessage = this.feedbackService.setCorrectMessage(
                   (comp.optionsToDisplay ?? []).filter((o: any) => o && typeof o === 'object'),
-                  comp.currentQuestion
+                  cqForTarget
                 );
               } catch { }
               comp._feedbackDisplay = {
@@ -582,7 +585,7 @@ export class SharedOptionBindingService {
                   correctMessage,
                   selectedOption: targetBinding.option,
                   options: comp.optionsToDisplay ?? [],
-                  question: comp.currentQuestion ?? null,
+                  question: cqForTarget,
                   idx: targetIdx
                 } as FeedbackProps
               };
@@ -710,7 +713,7 @@ export class SharedOptionBindingService {
       showFeedbackForOption: comp.showFeedbackForOption,
       optionsToDisplay: comp.optionsToDisplay,
       selectedOption: comp.selectedOption(),
-      currentQuestion: comp.currentQuestion,
+      currentQuestion: comp.currentQuestion(),
       showFeedback: comp.showFeedback,
       correctMessage: comp.correctMessage,
       showCorrectMessage: !!comp.correctMessage,
@@ -773,7 +776,7 @@ export class SharedOptionBindingService {
 
     let correctIndicesArr: number[] = comp._correctIndicesByQuestion?.get(qIdx) ?? [];
     if (correctIndicesArr.length === 0) {
-      const feedbackQ = comp.currentQuestion ?? comp.getQuestionAtDisplayIndex(qIdx);
+      const feedbackQ = comp.currentQuestion() ?? comp.getQuestionAtDisplayIndex(qIdx);
       const result = this.clickHandler.resolveCorrectIndices(
         feedbackQ, qIdx, comp.isMultiMode, comp.type
       );

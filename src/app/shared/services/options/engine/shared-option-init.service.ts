@@ -26,7 +26,7 @@ import { TimerService } from '../../features/timer/timer.service';
  */
 export interface SharedOptionComponentLike {
   // --- Inputs / public fields ---
-  currentQuestion: QuizQuestion | null;
+  currentQuestion: WritableSignal<QuizQuestion | null>;
   currentQuestionIndex: number;
   questionIndex: () => number | null;
   optionsToDisplay: Option[];
@@ -217,7 +217,7 @@ export class SharedOptionInitService {
   subscribeToTimerExpiration(comp: SharedOptionComponentLike): void {
     this.timerService.expired$.pipe(takeUntilDestroyed(comp.destroyRef)).subscribe(() => {
       comp.timerExpiredForQuestion = true;
-      const question = comp.currentQuestion
+      const question = comp.currentQuestion()
         || comp.config()?.currentQuestion
         || comp.getQuestionAtDisplayIndex(comp.currentQuestionIndex)
         || comp.getQuestionAtDisplayIndex(this.quizService.getCurrentQuestionIndex());
@@ -647,7 +647,7 @@ export class SharedOptionInitService {
     comp.showFeedback = false;
     comp.shouldResetBackground = false;
     comp.optionsRestored = false;
-    comp.currentQuestion = null;
+    comp.currentQuestion.set(null);
     comp.optionsToDisplay = [];
 
     // Guard: Config or options missing
@@ -655,15 +655,16 @@ export class SharedOptionInitService {
     if (!cfg2 || !cfg2.optionsToDisplay?.length) return;
 
     // Assign current question
-    comp.currentQuestion = cfg2.currentQuestion;
+    comp.currentQuestion.set(cfg2.currentQuestion);
 
     // Validate currentQuestion before proceeding
-    if (!comp.currentQuestion || !Array.isArray(comp.currentQuestion.options)) {
+    const cqAfterAssign = comp.currentQuestion();
+    if (!cqAfterAssign || !Array.isArray(cqAfterAssign.options)) {
       return;
     }
 
     // Populate optionsToDisplay with structured data
-    comp.optionsToDisplay = comp.currentQuestion.options.map((opt, idx) => {
+    comp.optionsToDisplay = cqAfterAssign.options.map((opt, idx) => {
       // Ensure we have a unique and valid numeric optionId
       // Fallback to index if source is missing ID or has placeholder -1
       const rawId = opt.optionId;
@@ -774,7 +775,7 @@ export class SharedOptionInitService {
 
     // Determine question type based on options, but Respect explicit input first!
     // Use authoritative question from service to ensure 'correct' flags are present for type determination
-    const authoritativeQuestion = this.quizService.questions[qIndex] || comp.currentQuestion;
+    const authoritativeQuestion = this.quizService.questions[qIndex] || comp.currentQuestion();
     if (comp.type !== 'multiple' && authoritativeQuestion) {
       comp.type = comp.determineQuestionType(authoritativeQuestion);
     }
