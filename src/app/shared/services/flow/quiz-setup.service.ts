@@ -844,7 +844,7 @@ subscribeToTimerExpiry(host: Host): void {
       case 'ArrowRight':
       case 'Enter': {
         if (!hasSelectionForCurrent) return;
-        if (host.shouldShowNextButton) {
+        if (host.shouldShowNextButton()) {
           event.preventDefault();
           await host.advanceToNextQuestion();
           return;

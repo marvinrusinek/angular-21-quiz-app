@@ -44,21 +44,21 @@
 
                 @if (showPaging()) {
                   <div class="nav-buttons">
-                    @if (shouldShowPrevButton) {
+                    @if (shouldShowPrevButton()) {
                       <button type="button" class="nav-btn" (click)="advanceToPreviousQuestion()"
                         matTooltip="« Previous Question" matTooltipPosition="above" aria-label="Previous Question">
                         <i class="material-icons">navigate_before</i>
                       </button>
                     }
 
-                    @if (shouldShowRestartButton) {
+                    @if (shouldShowRestartButton()) {
                       <button type="button" class="nav-btn restart-btn" (click)="restartQuiz()" matTooltip="Restart Quiz"
                         matTooltipPosition="above" aria-label="Restart Quiz">
                         <i class="material-icons">replay</i>
                       </button>
                     }
 
-                    @if (shouldShowNextButton) {
+                    @if (shouldShowNextButton()) {
                       <button type="button" class="nav-btn" #nextButton="matTooltip"
                         [disabled]="!nextButtonEnabled()" (click)="advanceToNextQuestion()"
                         matTooltip="Next Question »" matTooltipPosition="above" aria-label="Next Question">

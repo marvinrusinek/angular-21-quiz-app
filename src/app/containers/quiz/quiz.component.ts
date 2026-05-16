@@ -353,22 +353,20 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.currentQuestionIndex();
   }
 
-  public get shouldShowPrevButton(): boolean {
-    return this.getEffectiveQuestionIndex() > 0;
-  }
+  readonly shouldShowPrevButton = computed(() => this.getEffectiveQuestionIndex() > 0);
 
-  public get shouldShowRestartButton(): boolean {
+  readonly shouldShowRestartButton = computed(() => {
     const idx = this.getEffectiveQuestionIndex();
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     return idx > 0 && idx <= effectiveTotal - 1;
-  }
+  });
 
-  public get shouldShowNextButton(): boolean {
+  readonly shouldShowNextButton = computed(() => {
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     return this.getEffectiveQuestionIndex() < effectiveTotal - 1;
-  }
+  });
 
   public get shouldShowResultsButton(): boolean {
     const serviceCount = this.quizService.questions?.length || 0;
