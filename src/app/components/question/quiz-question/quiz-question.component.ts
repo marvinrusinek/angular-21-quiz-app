@@ -51,8 +51,11 @@ import { FeedbackKey, FeedbackConfig } from '../../../shared/models/FeedbackConf
 })
 export class QuizQuestionComponent extends BaseQuestion
   implements OnInit, OnDestroy, AfterViewInit {
+  // ── viewChilds ──────────────────────────────────────────────────
   readonly dynamicAnswerContainer = viewChild('dynamicAnswerContainer', { read: ViewContainerRef });
   readonly sharedOptionComponent = viewChild(SharedOptionComponent);
+
+  // ── outputs ─────────────────────────────────────────────────────
   readonly answer = output<number>();
   readonly answeredChange = output<boolean>();
   readonly selectionChanged = output<{
@@ -74,7 +77,16 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly feedbackApplied = output<number>();
   readonly nextButtonState = output<boolean>();
   readonly questionAndOptionsReady = output<void>();
+  readonly events = output<QuizQuestionEvent>();
 
+  // ── inputs ──────────────────────────────────────────────────────
+  readonly currentQuestion$ = input<Observable<QuizQuestion | null>>(of(null));
+  readonly reset = input<boolean>(false);
+  readonly questionToDisplay$ = input<Observable<string>>(of(''));
+  readonly displayState$ = input<Observable<{ mode: 'question' | 'explanation'; answered: boolean }>>(of({ mode: 'question', answered: false }));
+  readonly explanation = input<string>('');
+
+  // ── models ──────────────────────────────────────────────────────
   readonly data = model<{
     questionText: string,
     explanationText?: string,
@@ -84,18 +96,15 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly questionData = model<QuizQuestion>(undefined as unknown as QuizQuestion);
   readonly options = model<Option[]>(undefined as unknown as Option[]);
   readonly currentQuestion = model<QuizQuestion | null>(null);
-  readonly currentQuestion$ = input<Observable<QuizQuestion | null>>(of(null));
   readonly currentQuestionIndex = model<number>(0);
   readonly previousQuestionIndex = model<number>(undefined as unknown as number);
   readonly quizId = model<string | null | undefined>('');
   readonly explanationText = model<string | null>(null);
   readonly isOptionSelected = model<boolean>(false);
   readonly selectionMessage = model<string>(undefined as unknown as string);
-  readonly reset = input<boolean>(false);
-  readonly questionToDisplay$ = input<Observable<string>>(of(''));
-  readonly displayState$ = input<Observable<{ mode: 'question' | 'explanation'; answered: boolean }>>(of({ mode: 'question', answered: false }));
-  readonly explanation = input<string>('');
   readonly shouldRenderOptions = model<boolean>(false);
+
+  // ── remaining variables ─────────────────────────────────────────
   readonly quiz = signal<Quiz | null>(null);
   readonly questions = signal<QuizQuestion[]>([]);
   readonly questionsArray = signal<QuizQuestion[]>([]);
@@ -106,7 +115,6 @@ export class QuizQuestionComponent extends BaseQuestion
   lastLoggedQuestionIndex = -1;
   lastProcessedQuestionIndex = -1;
   _clickGate = false;  // same-tick re-entrancy guard
-  readonly events = output<QuizQuestionEvent>();
   public selectedIndices = new Set<number>();
 
   override selectedOption: SelectedOption | null = null;
