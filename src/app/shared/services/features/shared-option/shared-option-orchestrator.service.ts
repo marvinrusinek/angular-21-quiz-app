@@ -379,11 +379,11 @@ export class SharedOptionOrchestratorService {
   }
 
   runInitializeOptionBindings(host: Host): void {
-    if (host.optionBindings()Initialized()) return;
+    if (host.optionBindingsInitialized()) return;
 
-    host.optionBindings()Initialized.set(true);
+    host.optionBindingsInitialized.set(true);
     if (!host.optionsToDisplay?.length) {
-      host.optionBindings()Initialized.set(false);
+      host.optionBindingsInitialized.set(false);
       return;
     }
     host.generateOptionBindings();

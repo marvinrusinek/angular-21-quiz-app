@@ -312,7 +312,7 @@ export class SharedOptionComponent
       if (v !== undefined) this.type = v;
     });
     effect(() => {
-      const v = this.optionBindings()Input();
+      const v = this.optionBindingsInput();
       if (v !== undefined) this.optionBindings.set(v);
     });
     effect(() => {

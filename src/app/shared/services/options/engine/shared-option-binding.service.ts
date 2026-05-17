@@ -76,7 +76,7 @@ export class SharedOptionBindingService {
       // rehydrated state), skip this overwrite â€” the microtask would
       // replace them with stale option.selected data, causing a flash
       // of incorrect highlights before the next CD cycle corrects them.
-      if (comp.optionBindings()Initialized() && comp.optionBindings()?.length > 0) {
+      if (comp.optionBindingsInitialized() && comp.optionBindings()?.length > 0) {
         comp.showOptions.set(true);
         comp.renderReady.set(true);
         comp.cdRef.markForCheck();
@@ -263,7 +263,7 @@ export class SharedOptionBindingService {
     const options = comp.optionsToDisplay ?? [];
 
     if (!options.length) {
-      comp.optionBindings()Initialized.set(false);
+      comp.optionBindingsInitialized.set(false);
       return;
     }
     if (comp.freezeOptionBindings()) return;

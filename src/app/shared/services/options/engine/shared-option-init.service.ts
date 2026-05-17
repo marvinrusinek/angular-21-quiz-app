@@ -334,21 +334,21 @@ export class SharedOptionInitService {
    */
   private initializeOptionBindings(comp: SharedOptionComponentLike): void {
     try {
-      if (comp.optionBindings()Initialized()) return;
+      if (comp.optionBindingsInitialized()) return;
 
-      comp.optionBindings()Initialized.set(true);
+      comp.optionBindingsInitialized.set(true);
 
       const options = comp.optionsToDisplay;
 
       if (!options?.length) {
-        comp.optionBindings()Initialized.set(false);
+        comp.optionBindingsInitialized.set(false);
         return;
       }
 
       // Use generateOptionBindings for consistency (handles deduplication, showOptions, etc.)
       comp.generateOptionBindings();
     } catch {
-      comp.optionBindings()Initialized.set(false);
+      comp.optionBindingsInitialized.set(false);
     }
   }
 
