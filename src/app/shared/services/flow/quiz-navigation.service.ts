@@ -117,6 +117,8 @@ export class QuizNavigationService {
   }
 
   public async navigateToQuestion(index: number): Promise<boolean> {
+    // TEMP DIAGNOSTIC — verify this function is even called
+    console.log('[nav.enter.navigateToQuestion]', { index });
     // HARD reset render state before route change
     this.resetRenderStateBeforeNavigation(index);
 
@@ -135,17 +137,14 @@ export class QuizNavigationService {
       this.timerService.resetTimer();
       this.timerService.resetTimerFlagsFor(index);
 
-      // Clear stale selections on both source AND destination when neither
-      // is "answered correctly". Source clearing prevents Q1's wrong picks
-      // from bleeding into Q2's rendering during the transition (option-item
-      // isDisabled() can briefly read Q1's selections via a stale
-      // currentQuestionIndex). Destination clearing handles the
-      // back-navigation case. Questions answered correctly (per
-      // _multiAnswerPerfect) OR timer-locked keep their state so the
-      // green highlight + disabled-incorrect styling survives navigation.
+      // Clear stale selections on both source AND destination unless the
+      // question is timer-locked (then preserve the timeout-revealed state).
+      // Per user requirement: questions should be COMPLETELY CLEAN on
+      // revisit, regardless of what was clicked first visit. _multiAnswerPerfect
+      // was previously used as a "preserve correct state" gate but it was
+      // being set by buggy paths even on wrong-only clicks.
       const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-      const isResolved = (idx: number) =>
-        this.optionLockState.isQuestionLocked(idx) || perfectMap?.get(idx) === true;
+      const isResolved = (idx: number) => this.optionLockState.isQuestionLocked(idx);
       const sourceIdx = this.quizService.getCurrentQuestionIndex();
       if (sourceIdx >= 0 && sourceIdx !== index && !isResolved(sourceIdx)) {
         this.selectedOptionService.clearSelectionsForQuestion(sourceIdx);
@@ -153,6 +152,14 @@ export class QuizNavigationService {
       if (!isResolved(index)) {
         this.selectedOptionService.clearSelectionsForQuestion(index);
       }
+      // ALWAYS wipe _multiAnswerPerfect for the destination so leftover
+      // "resolved" flags from a prior visit don't make option-item's
+      // isDisabled return true via the multi.perfectMap+bindingDisabled path.
+      const _beforeDest = perfectMap?.get(index);
+      perfectMap?.delete(index);
+      if (sourceIdx >= 0 && sourceIdx !== index) perfectMap?.delete(sourceIdx);
+      // TEMP DIAGNOSTIC — verify the clear actually runs and the map is now empty for dest
+      console.log('[nav.clearPerfectMap]', { destIdx: index, sourceIdx, beforeDest: _beforeDest, afterDest: perfectMap?.get(index), mapKeys: perfectMap ? [...perfectMap.keys()] : null });
 
       // Update Service State (Index) - Update AFTER router nav success
       this.quizService.setCurrentQuestionIndex(index);

@@ -494,6 +494,19 @@ export class QuizService {
   setCurrentQuestionIndex(idx: number) {
     const safeIndex = Number.isFinite(idx) ? Math.max(0, Math.trunc(idx)) : 0;
 
+    // Wipe the incoming question's _multiAnswerPerfect entry — every
+    // navigation path (Next/Previous buttons, dots, route changes, direct
+    // restore, etc.) routes through this setter, so clearing here
+    // guarantees stale "resolved" flags don't survive a revisit. Without
+    // this, option-item.isDisabled() would return true via the
+    // multi.perfectMap+bindingDisabled branch on a 2nd visit.
+    const _perfectMap = (this as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+    const _before = _perfectMap?.get(safeIndex);
+    _perfectMap?.delete(safeIndex);
+    if (_before !== undefined) {
+      console.log('[quizService.setCurrentQuestionIndex.clearedPerfect]', { idx: safeIndex, before: _before });
+    }
+
     // Setter routes to both currentQuestionIndexSig and ...Subject.
     this.currentQuestionIndex = safeIndex;
 

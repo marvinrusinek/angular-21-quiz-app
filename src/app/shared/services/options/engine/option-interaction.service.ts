@@ -637,6 +637,7 @@ export class OptionInteractionService {
         if (!(this.quizService as any)._multiAnswerPerfect) {
           (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
         }
+        console.log('[setPerfect@option-interaction.allCorrectFound]', { qIdx });
         (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
         this.quizService.scoreDirectly(qIdx, true, isMultipleMode);
         scoreFired = true;

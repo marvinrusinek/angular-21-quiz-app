@@ -102,6 +102,7 @@ export class SocAnswerProcessingService {
       if (!(this.quizService as any)._multiAnswerPerfect) {
         (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
       }
+      console.log('[setPerfect@L105.processMultiAnswerClick]', { qIdx, clickStateRemaining: clickState.remaining });
       (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
     }
 
@@ -238,6 +239,7 @@ export class SocAnswerProcessingService {
       if (!(this.quizService as any)._multiAnswerPerfect) {
         (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
       }
+      console.log('[setPerfect@L241.allCorrectInDurable]', { qIdx });
       (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
 
       (this.explanationTextService as any)._fetLocked = false;
@@ -515,6 +517,7 @@ export class SocAnswerProcessingService {
       if (!(this.quizService as any)._multiAnswerPerfect) {
         (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
       }
+      console.log('[setPerfect@L518.pristineSingleCorrect]', { qIdx });
       (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
 
       (this.explanationTextService as any)._fetLocked = false;

@@ -760,6 +760,7 @@ export class OptionUiSyncService {
         if (!(this.quizService as any)._multiAnswerPerfect) {
           (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
         }
+        console.log('[setPerfect@option-ui-sync.allCorrectTextsSelected]', { questionIndex });
         (this.quizService as any)._multiAnswerPerfect.set(questionIndex, true);
         // Force FET readiness even if already scored correct (to be safe)
         this.selectedOptionService.setAnswered(true, true);
