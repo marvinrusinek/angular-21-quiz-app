@@ -35,7 +35,7 @@ export class SocOptionUiService {
 
     if (!isMultiMode) {
       for (const opt of comp.optionsToDisplay || []) opt.selected = false;
-      for (const b of comp.optionBindings() || []) {
+      for (const b of comp.optionBindings || []) {
         b.isSelected = false;
         b.option.selected = false;
       }
@@ -76,15 +76,15 @@ export class SocOptionUiService {
       this.selectedOptionService.addOption(qIdx, selOpt);
     }
 
-    const optionBinding = comp.optionBindings()[index];
+    const optionBinding = comp.optionBindings[index];
     if (optionBinding) optionBinding.isSelected = option.selected;
   }
 
   handleBackwardNavigationOptionClick(comp: any, option: any, index: number): void {
-    const optionBinding = comp.optionBindings()[index];
+    const optionBinding = comp.optionBindings[index];
 
     if (comp.type === 'single') {
-      for (const binding of comp.optionBindings()) {
+      for (const binding of comp.optionBindings) {
         const isThis = binding === optionBinding;
         binding.isSelected = isThis;
         binding.option.showIcon = isThis;
@@ -137,9 +137,9 @@ export class SocOptionUiService {
   }
 
   updateBindingSnapshots(comp: any): void {
-    if (!comp.optionBindings()?.length) return;
+    if (!comp.optionBindings?.length) return;
 
-    for (const binding of comp.optionBindings()) {
+    for (const binding of comp.optionBindings) {
       if (binding && binding.option) {
         binding.disabled = comp.computeDisabledState(binding.option, binding.index);
 
@@ -238,7 +238,7 @@ export class SocOptionUiService {
 
   enforceSingleSelection(comp: any, selectedBinding: OptionBindings): void {
     this.optionSelectionPolicyService.enforceSingleSelection({
-      optionBindings: comp.optionBindings(),
+      optionBindings: comp.optionBindings,
       selectedBinding,
       showFeedbackForOption: comp.showFeedbackForOption,
       updateFeedbackState: (id: number) => {

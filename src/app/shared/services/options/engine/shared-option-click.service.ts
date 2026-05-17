@@ -39,7 +39,7 @@ export class SharedOptionClickService {
 
     const index = ev.displayIndex ?? comp.findBindingByOptionId(ev.optionId)?.i;
     if (index === undefined || index < 0) return;
-    const binding = comp.optionBindings()[index];
+    const binding = comp.optionBindings[index];
     if (!binding) return;
 
     comp.cdRef.markForCheck();
@@ -221,7 +221,7 @@ export class SharedOptionClickService {
     for (const b of state.optionBindings) {
       if (b) b.showFeedbackForOption = { ...comp.showFeedbackForOption };
     }
-    comp.optionBindings.set(state.optionBindings);
+    comp.optionBindings = state.optionBindings;
 
     let qIdx = comp.getActiveQuestionIndex();
     // Self-heal: getActiveQuestionIndex falls back to quizService's signal,
@@ -302,7 +302,7 @@ export class SharedOptionClickService {
             );
             pristineCorrectCount = pristineCorrectTexts.size;
             const rebuilt: number[] = [];
-            const bindings: any[] = Array.isArray(comp.optionBindings()) ? comp.optionBindings() : [];
+            const bindings: any[] = Array.isArray(comp.optionBindings) ? comp.optionBindings : [];
             const bindingTexts: string[] = [];
             for (let i = 0; i < bindings.length; i++) {
               const bt = nrmP(bindings[i]?.option?.text);
@@ -357,14 +357,14 @@ export class SharedOptionClickService {
     // â”€â”€â”€ Delegate to answer processing sub-services â”€â”€â”€
 
     if (isMultiFromQ && effectiveCorrectCount > 0) {
-      // Use fresh binding from comp.optionBindings()[index] â€” the local
+      // Use fresh binding from comp.optionBindings[index] â€” the local
       // `binding` variable was captured before updateOptionAndUI's
-      // `comp.optionBindings() = state.optionBindings` reassign at line 238,
+      // `comp.optionBindings = state.optionBindings` reassign at line 238,
       // so its option may have a stale `correct` flag relative to the
       // bindings now driving the UI. Without this fix, _feedbackDisplay
       // captures the stale option and the 2nd correct click on a
       // multi-answer question shows a sad face instead of smiley.
-      const freshBinding = comp.optionBindings()?.[index] ?? binding;
+      const freshBinding = comp.optionBindings?.[index] ?? binding;
       this.answerProcessing.processMultiAnswerClick({
         comp, index, binding: freshBinding, qIdx, durableSet,
         effectiveCorrectIndices, effectiveCorrectCount, isShuffled
@@ -382,7 +382,7 @@ export class SharedOptionClickService {
     // â”€â”€â”€ Post-click feedback display â”€â”€â”€
     comp._feedbackDisplay = null;
     if (comp.showFeedback()) {
-      const clickedBinding = comp.optionBindings()[index];
+      const clickedBinding = comp.optionBindings[index];
       if (clickedBinding) {
         const key = comp.keyOf(clickedBinding.option, index);
         const byKey = comp.feedbackConfigs[key];
@@ -397,7 +397,7 @@ export class SharedOptionClickService {
 
         if (cfg?.showFeedback) {
           cfg = this.clickHandler.overrideMultiAnswerFeedback(
-            cfg, clickedBinding, comp.optionBindings()
+            cfg, clickedBinding, comp.optionBindings
           );
         }
 
@@ -411,7 +411,7 @@ export class SharedOptionClickService {
     // detect the input change and re-render.
     if (!isMultiFromQ) {
       const histSet = new Set<number>(durableSet ?? []);
-      comp.optionBindings.set((comp.optionBindings() ?? []).map((b: any, bi: number) => {
+      comp.optionBindings = (comp.optionBindings ?? []).map((b: any, bi: number) => {
         const isClicked = bi === index;
         const inHistory = histSet.has(bi);
         return {
@@ -424,12 +424,12 @@ export class SharedOptionClickService {
             showIcon: isClicked || inHistory
           } : b.option
         };
-      }));
+      });
     } else {
-      comp.optionBindings.set((comp.optionBindings() ?? []).map((b: any) => ({
+      comp.optionBindings = (comp.optionBindings ?? []).map((b: any) => ({
         ...b,
         option: b.option ? { ...b.option } : b.option
-      })));
+      }));
     }
 
     comp.cdRef.detectChanges();
@@ -500,14 +500,14 @@ export class SharedOptionClickService {
     }
 
     if (ctx.optionBindings) {
-      comp.optionBindings.set([...ctx.optionBindings]);
+      comp.optionBindings = [...ctx.optionBindings];
     } else {
-      comp.optionBindings.set(comp.optionBindings().map((b: any) => ({
+      comp.optionBindings = comp.optionBindings.map((b: any) => ({
         ...b,
         showFeedbackForOption: { ...comp.showFeedbackForOption },
         showFeedback: comp.showFeedback(),
         disabled: comp.computeDisabledState(b.option, b.index)
-      })));
+      }));
     }
 
     // SINGLE-ANSWER GUARD
@@ -518,8 +518,8 @@ export class SharedOptionClickService {
         return c === true || String(c) === 'true' || c === 1 || c === '1';
       }).length;
       if (correctCount <= 1) {
-        for (let bi = 0; bi < (comp.optionBindings() ?? []).length; bi++) {
-          const ob = comp.optionBindings()[bi];
+        for (let bi = 0; bi < (comp.optionBindings ?? []).length; bi++) {
+          const ob = comp.optionBindings[bi];
           if (!ob) continue;
           ob.isSelected = (bi === index);
           if (ob.option) {

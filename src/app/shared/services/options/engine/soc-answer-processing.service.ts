@@ -61,7 +61,7 @@ export class SocAnswerProcessingService {
       const liveQ: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
-      const bindings: any[] = comp.optionBindings() ?? [];
+      const bindings: any[] = comp.optionBindings ?? [];
       if (bindings.length) {
         const pristineCorrectTexts =
           this.quizService.getPristineCorrectTextsForQuestion(liveQ?.questionText);
@@ -93,7 +93,7 @@ export class SocAnswerProcessingService {
     const disabledSetRef = comp.disabledOptionsPerQuestion.get(qIdx)!;
     this.clickHandler.updateDisabledSet(
       disabledSetRef, index, clickState.isClickedCorrect,
-      clickState.remaining, comp.optionBindings().length, effectiveCorrectIndices
+      clickState.remaining, comp.optionBindings.length, effectiveCorrectIndices
     );
 
     // Set _multiAnswerPerfect BEFORE applying bindings so that
@@ -106,7 +106,7 @@ export class SocAnswerProcessingService {
     }
 
     const bindingUpdates = this.clickHandler.computeMultiAnswerBindingUpdates(
-      comp.optionBindings().length, durableSet, effectiveCorrectIndices, disabledSetRef
+      comp.optionBindings.length, durableSet, effectiveCorrectIndices, disabledSetRef
     );
 
     // Q2/Q4 GUARD: when pristine has more correct than we've selected,
@@ -123,7 +123,7 @@ export class SocAnswerProcessingService {
       const pristineCorrectTextsS =
         this.quizService.getPristineCorrectTextsForQuestion(liveQS?.questionText);
       if (pristineCorrectTextsS.size > 1) {
-        const bindingsS: any[] = comp.optionBindings() ?? [];
+        const bindingsS: any[] = comp.optionBindings ?? [];
         let selectedCorrectS = 0;
         for (const sIdx of durableSet) {
           if (pristineCorrectTextsS.has(nrmS(bindingsS[sIdx]?.option?.text))) {
@@ -136,7 +136,7 @@ export class SocAnswerProcessingService {
       }
     } catch { /* ignore */ }
 
-    comp.optionBindings.set(comp.optionBindings().map((ob: any, bi: number) => {
+    comp.optionBindings = comp.optionBindings.map((ob: any, bi: number) => {
       let disabledFinal = bindingUpdates[bi].disabled;
       // Only allow `disabled` for clicked-incorrect options before the
       // question is fully answered. Everything else stays enabled so the
@@ -154,7 +154,7 @@ export class SocAnswerProcessingService {
           ...bindingUpdates[bi].optionOverrides
         } : ob.option
       };
-    }));
+    });
 
     const feedbackText = this.clickHandler.generateMultiAnswerFeedbackText(clickState);
 
@@ -164,11 +164,11 @@ export class SocAnswerProcessingService {
     );
     // Build selectedOption.correct from effectiveCorrectIndices (which is
     // recomputed from pristine quizInitialState above). The `binding.option`
-    // and even comp.optionBindings()[index].option can be stale relative to
+    // and even comp.optionBindings[index].option can be stale relative to
     // the latest pristine rebuild on multi-answer questions, leading to
     // sad-face feedback on the 2nd correct click while the option visuals
     // correctly show green. Pristine indices are the immutable source of truth.
-    const freshOption = comp.optionBindings()?.[index]?.option ?? binding.option;
+    const freshOption = comp.optionBindings?.[index]?.option ?? binding.option;
     const isClickedCorrect = new Set(effectiveCorrectIndices).has(index);
     comp._feedbackDisplay = {
       idx: index,
@@ -183,7 +183,7 @@ export class SocAnswerProcessingService {
       } as FeedbackProps
     };
 
-    const optsForMsg: Option[] = comp.optionBindings().map((ob: any, bi: number) => ({
+    const optsForMsg: Option[] = comp.optionBindings.map((ob: any, bi: number) => ({
       ...ob.option,
       correct: new Set(effectiveCorrectIndices).has(bi),
       selected: durableSet.has(bi),
@@ -211,7 +211,7 @@ export class SocAnswerProcessingService {
       const liveQAC: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
-      const bindingsAC: any[] = comp.optionBindings() ?? [];
+      const bindingsAC: any[] = comp.optionBindings ?? [];
       if (bindingsAC.length) {
         const pristineCorrectTextsAC =
           this.quizService.getPristineCorrectTextsForQuestion(liveQAC?.questionText);
@@ -336,7 +336,7 @@ export class SocAnswerProcessingService {
     if (allCorrectInDurable) {
       queueMicrotask(() => {
         const correctSet = new Set(effectiveCorrectIndices);
-        comp.optionBindings.set((comp.optionBindings() ?? []).map((b: any, bi: number) => {
+        comp.optionBindings = (comp.optionBindings ?? []).map((b: any, bi: number) => {
           const isCorrectIdx = correctSet.has(bi);
           return {
             ...b,
@@ -347,7 +347,7 @@ export class SocAnswerProcessingService {
               active: isCorrectIdx
             } : b.option
           };
-        }));
+        });
         comp.cdRef.detectChanges();
       });
 
@@ -411,7 +411,7 @@ export class SocAnswerProcessingService {
       const pristineCorrectCount = pristineCorrectTexts.size;
       if (pristineCorrectCount > 1) {
         const correctIndicesByText: number[] = [];
-        const bindings: any[] = comp.optionBindings() ?? [];
+        const bindings: any[] = comp.optionBindings ?? [];
         for (let i = 0; i < bindings.length; i++) {
           if (pristineCorrectTexts.has(nrmGuard(bindings[i]?.option?.text))) {
             correctIndicesByText.push(i);
@@ -420,7 +420,7 @@ export class SocAnswerProcessingService {
         this.processMultiAnswerClick({
           comp,
           index,
-          binding: comp.optionBindings()?.[index],
+          binding: comp.optionBindings?.[index],
           qIdx,
           durableSet,
           effectiveCorrectIndices: correctIndicesByText.length
@@ -472,7 +472,7 @@ export class SocAnswerProcessingService {
     let pristineSingleCorrect = false;
     try {
       const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
-      const clickedBinding = comp.optionBindings()?.[index];
+      const clickedBinding = comp.optionBindings?.[index];
       const clickedText = nrmSA(clickedBinding?.option?.text);
       const clickedFlag = clickedBinding?.option?.correct;
       if (
@@ -531,7 +531,7 @@ export class SocAnswerProcessingService {
           question: singleFetQuestion,
           currentQuestion: comp.currentQuestion(),
           quizId: comp.quizId?.() ?? comp.quizId ?? '',
-          optionBindings: comp.optionBindings() ?? [],
+          optionBindings: comp.optionBindings ?? [],
           optionsToDisplay: comp.optionsToDisplay ?? [],
           isMultiMode: false
         };
@@ -565,7 +565,7 @@ export class SocAnswerProcessingService {
         question: singleFetQuestion,
         currentQuestion: comp.currentQuestion(),
         quizId: comp.quizId?.() ?? comp.quizId ?? '',
-        optionBindings: comp.optionBindings() ?? [],
+        optionBindings: comp.optionBindings ?? [],
         optionsToDisplay: comp.optionsToDisplay ?? [],
         isMultiMode: false
       };
@@ -583,9 +583,9 @@ export class SocAnswerProcessingService {
       }
       const disabledSetRef = comp.disabledOptionsPerQuestion.get(qIdx)!;
       disabledSetRef.clear();
-      const currentBindings: any[] = Array.isArray(comp.optionBindings())
-        ? comp.optionBindings()
-        : (typeof comp.optionBindings() === 'function' ? comp.optionBindings() : []);
+      const currentBindings: any[] = Array.isArray(comp.optionBindings)
+        ? comp.optionBindings
+        : (typeof comp.optionBindings === 'function' ? comp.optionBindings() : []);
       for (let i = 0; i < currentBindings.length; i++) {
         if (!correctSet.has(i)) disabledSetRef.add(i);
       }
@@ -610,7 +610,7 @@ export class SocAnswerProcessingService {
           } : ob?.option
         };
       });
-      comp.optionBindings.set(newBindings);
+      comp.optionBindings = newBindings;
 
       // Persist selections to session storage
       try {
@@ -657,9 +657,9 @@ export class SocAnswerProcessingService {
       const liveQAR: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
-      const bindingsAR: any[] = Array.isArray(comp.optionBindings())
-        ? comp.optionBindings()
-        : (typeof comp.optionBindings() === 'function' ? comp.optionBindings() : []);
+      const bindingsAR: any[] = Array.isArray(comp.optionBindings)
+        ? comp.optionBindings
+        : (typeof comp.optionBindings === 'function' ? comp.optionBindings() : []);
       if (!bindingsAR.length) return;
 
       // Pristine correct text(s) from cache. Must have at least one
@@ -686,7 +686,7 @@ export class SocAnswerProcessingService {
       }
       // Belt-and-suspenders: also include the just-clicked option in case
       // the durable set hasn't been populated yet on this CD cycle.
-      const clickedTextAR = nrmAR(comp.optionBindings()?.[index]?.option?.text);
+      const clickedTextAR = nrmAR(comp.optionBindings?.[index]?.option?.text);
       if (clickedTextAR) selectedTextsAR.add(clickedTextAR);
       // And merge any in-memory map entries (no-op for single-answer but
       // safe for any path that did populate it).
@@ -741,7 +741,7 @@ export class SocAnswerProcessingService {
       const historySetAR = new Set<number>(durableClicksAR ?? []);
       historySetAR.add(index);
 
-      comp.optionBindings.set(bindingsAR.map((ob: any, bi: number) => {
+      comp.optionBindings = bindingsAR.map((ob: any, bi: number) => {
         const isCorrectBinding = correctSetAR.has(bi);
         const isClicked = bi === index;
         const wasPreviouslyClicked = historySetAR.has(bi) && !isClicked && !isCorrectBinding;
@@ -769,7 +769,7 @@ export class SocAnswerProcessingService {
             'incorrect-option': !isCorrectBinding && (isClicked || wasPreviouslyClicked)
           }
         };
-      }));
+      });
 
       // Resolve and emit the FET text.
       const fetQuestionAR = comp.currentQuestion()
@@ -780,7 +780,7 @@ export class SocAnswerProcessingService {
         question: fetQuestionAR,
         currentQuestion: comp.currentQuestion(),
         quizId: comp.quizId?.() ?? comp.quizId ?? '',
-        optionBindings: comp.optionBindings() ?? [],
+        optionBindings: comp.optionBindings ?? [],
         optionsToDisplay: comp.optionsToDisplay ?? [],
         isMultiMode: isMultiModeAR
       };
@@ -839,9 +839,9 @@ export class SocAnswerProcessingService {
       const liveQAR: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
         ?? (this.quizService as any)?.questions?.[qIdx];
-      const bindingsAR: any[] = Array.isArray(comp.optionBindings())
-        ? comp.optionBindings()
-        : (typeof comp.optionBindings() === 'function' ? comp.optionBindings() : []);
+      const bindingsAR: any[] = Array.isArray(comp.optionBindings)
+        ? comp.optionBindings
+        : (typeof comp.optionBindings === 'function' ? comp.optionBindings() : []);
       if (!bindingsAR.length) return;
 
       // Pristine correct text(s) from cache. Must have at least one
@@ -866,7 +866,7 @@ export class SocAnswerProcessingService {
       }
       // Belt-and-suspenders: also include the just-clicked option in case
       // the durable set hasn't been populated yet on this CD cycle.
-      const clickedTextAR = nrmAR(comp.optionBindings()?.[index]?.option?.text);
+      const clickedTextAR = nrmAR(comp.optionBindings?.[index]?.option?.text);
       if (clickedTextAR) selectedTextsAR.add(clickedTextAR);
       // And merge any in-memory map entries.
       const selectionsAR =
@@ -933,7 +933,7 @@ export class SocAnswerProcessingService {
       // all-correct-selected path which rebuilds bindings via queueMicrotask
       // (~line 337) AFTER its synchronous FET write.
       queueMicrotask(() => {
-        comp.optionBindings.set(bindingsAR.map((ob: any, bi: number) => {
+        comp.optionBindings = bindingsAR.map((ob: any, bi: number) => {
           const isCorrectBinding = correctSetAR.has(bi);
           const isClicked = bi === index;
           const wasPreviouslyClicked = historySetAR.has(bi) && !isClicked && !isCorrectBinding;
@@ -957,7 +957,7 @@ export class SocAnswerProcessingService {
               'incorrect-option': !isCorrectBinding && (isClicked || wasPreviouslyClicked)
             }
           };
-        }));
+        });
         comp.cdRef?.detectChanges?.();
       });
 
@@ -970,7 +970,7 @@ export class SocAnswerProcessingService {
         question: fetQuestionAR,
         currentQuestion: comp.currentQuestion(),
         quizId: comp.quizId?.() ?? comp.quizId ?? '',
-        optionBindings: comp.optionBindings() ?? [],
+        optionBindings: comp.optionBindings ?? [],
         optionsToDisplay: comp.optionsToDisplay ?? [],
         isMultiMode: isMultiModeAR
       };

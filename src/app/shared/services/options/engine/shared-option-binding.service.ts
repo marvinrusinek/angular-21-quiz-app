@@ -27,8 +27,8 @@ export class SharedOptionBindingService {
 
   synchronizeOptionBindings(comp: any): void {
     if (!Array.isArray(comp.optionsToDisplay) || comp.optionsToDisplay.length === 0) {
-      const hasSelection = comp.optionBindings()?.some((opt: any) => opt.isSelected);
-      if (!hasSelection && !comp.freezeOptionBindings()) comp.optionBindings.set([]);
+      const hasSelection = comp.optionBindings?.some((opt: any) => opt.isSelected);
+      if (!hasSelection && !comp.freezeOptionBindings()) comp.optionBindings = [];
       return;
     }
 
@@ -76,13 +76,13 @@ export class SharedOptionBindingService {
       // rehydrated state), skip this overwrite â€” the microtask would
       // replace them with stale option.selected data, causing a flash
       // of incorrect highlights before the next CD cycle corrects them.
-      if (comp.optionBindingsInitialized() && comp.optionBindings()?.length > 0) {
+      if (comp.optionBindingsInitialized() && comp.optionBindings?.length > 0) {
         comp.showOptions.set(true);
         comp.renderReady.set(true);
         comp.cdRef.markForCheck();
         return;
       }
-      comp.optionBindings.set(bindings);
+      comp.optionBindings = bindings;
       comp.showOptions.set(true);
       comp.renderReady.set(true);
       comp.cdRef.detectChanges();
@@ -95,14 +95,14 @@ export class SharedOptionBindingService {
     if (!newOptions?.length) return;
 
     const incomingIds = newOptions.map((o: any) => o.optionId).join(',');
-    const existingIds = comp.optionBindings()?.map((b: any) => b.option.optionId).join(',');
+    const existingIds = comp.optionBindings?.map((b: any) => b.option.optionId).join(',');
 
-    if (incomingIds !== existingIds || !comp.optionBindings()?.length) {
+    if (incomingIds !== existingIds || !comp.optionBindings?.length) {
       // On refresh (no user click), force isSelected=false so the checkbox
       // [checked] binding doesn't flash. rehydrateUiFromState will set the
       // authoritative selection state from saved data afterward.
       const trustOptionSelected = !!comp.hasUserClicked();
-      comp.optionBindings.set(newOptions.map((option: any, idx: number) => ({
+      comp.optionBindings = newOptions.map((option: any, idx: number) => ({
         option: { ...option, highlight: false, showIcon: false },
         index: idx,
         isSelected: trustOptionSelected && !!option.selected,
@@ -118,11 +118,11 @@ export class SharedOptionBindingService {
         appHighlightOption: false,
         appHighlightInputType: '',
         allOptions: comp.optionsToDisplay ?? []
-      })) as unknown as OptionBindings[]);
+      })) as unknown as OptionBindings[];
     } else {
       let idx = 0;
       const trustSel = !!comp.hasUserClicked();
-      for (const binding of comp.optionBindings() ?? []) {
+      for (const binding of comp.optionBindings ?? []) {
         const updated = newOptions[idx];
         if (updated) {
           binding.option = { ...updated, highlight: false, showIcon: false };
@@ -165,7 +165,7 @@ export class SharedOptionBindingService {
   }
 
   generateOptionBindings(comp: any): void {
-    if (comp.hasUserClicked() && comp.optionBindings()?.length > 0) return;
+    if (comp.hasUserClicked() && comp.optionBindings?.length > 0) return;
 
     const currentIndex = comp.getActiveQuestionIndex() ?? 0;
 
@@ -219,7 +219,7 @@ export class SharedOptionBindingService {
       };
     });
 
-    comp.optionBindings.set(this.optionBindingFactory.createBindings({
+    comp.optionBindings = this.optionBindingFactory.createBindings({
       optionsToDisplay: comp.optionsToDisplay,
       type: comp.resolveInteractionType(),
       showFeedback: comp.showFeedback(),
@@ -230,7 +230,7 @@ export class SharedOptionBindingService {
       onChange: (opt: any, idx: number) => comp.handleOptionClick(opt, idx),
       isSelected: () => false,
       isDisabled: (opt: any, idx: number) => comp.computeDisabledState(opt, idx)
-    }));
+    });
 
     comp.rehydrateUiFromState('generateOptionBindings');
 
@@ -305,7 +305,7 @@ export class SharedOptionBindingService {
       }
     }
 
-    comp.optionBindings.set(options.map((opt: any, idx: number) => {
+    comp.optionBindings = options.map((opt: any, idx: number) => {
       const oIdNum = Number(opt.optionId);
       const effectiveId = (!isNaN(oIdNum) && oIdNum > -1) ? oIdNum : idx;
 
@@ -342,7 +342,7 @@ export class SharedOptionBindingService {
       // can contain IDs for options never clicked (e.g. both correct answers
       // in multi-answer), causing ghost isSelected=true on bindings.
       return getBindings(opt, idx, useSelected);
-    }));
+    });
 
     comp.rebuildShowFeedbackMapFromBindings();
     comp.updateSelections(-1);
@@ -407,8 +407,8 @@ export class SharedOptionBindingService {
       if (comp.hasUserClicked() || comp.freezeOptionBindings()) return;
 
       // Universal clean-slate
-      if (comp.optionBindings()?.length) {
-        for (const b of comp.optionBindings()) {
+      if (comp.optionBindings?.length) {
+        for (const b of comp.optionBindings) {
           b.isSelected = false;
           b.checked = false;
           if (b.option) {
@@ -462,8 +462,8 @@ export class SharedOptionBindingService {
         // position shifts from shuffled options. If the saved entry has
         // text, we MUST match by text â€” ID/index fallbacks can map the
         // saved entry to the wrong binding when options shuffle.
-        if (sText && comp.optionBindings()?.length) {
-          pos = comp.optionBindings().findIndex((b: any) => {
+        if (sText && comp.optionBindings?.length) {
+          pos = comp.optionBindings.findIndex((b: any) => {
             const bText = (b?.option?.text ?? '').trim().toLowerCase();
             return bText && bText === sText;
           });
@@ -473,8 +473,8 @@ export class SharedOptionBindingService {
         if (pos === -1 && !sText) {
           const sId = (s as any).optionId;
           const sIdIsReal = sId != null && sId !== -1 && String(sId) !== '-1';
-          if (sIdIsReal && comp.optionBindings()?.length) {
-            pos = comp.optionBindings().findIndex((b: any) => {
+          if (sIdIsReal && comp.optionBindings?.length) {
+            pos = comp.optionBindings.findIndex((b: any) => {
               const bId = b?.option?.optionId;
               const bIdIsReal = bId != null && bId !== -1 && String(bId) !== '-1';
               return bIdIsReal && String(sId) === String(bId);
@@ -521,8 +521,8 @@ export class SharedOptionBindingService {
         }
       }
 
-      if (comp.optionBindings()?.length) {
-        for (const [idx, b] of comp.optionBindings().entries()) {
+      if (comp.optionBindings?.length) {
+        for (const [idx, b] of comp.optionBindings.entries()) {
           let match = savedByIndex.get(idx);
           if (match) {
             const isSelected = !!match.selected;
@@ -562,7 +562,7 @@ export class SharedOptionBindingService {
               if (k > targetIdx) targetIdx = k;
             }
           }
-          const targetBinding = targetIdx >= 0 ? comp.optionBindings()?.[targetIdx] : null;
+          const targetBinding = targetIdx >= 0 ? comp.optionBindings?.[targetIdx] : null;
           const cqForTarget = comp.currentQuestion();
           if (targetBinding && cqForTarget) {
             try {
@@ -594,8 +594,8 @@ export class SharedOptionBindingService {
         }
       }
 
-      if (comp.optionBindings()?.length) {
-        comp.optionBindings.set(comp.optionBindings().map((b: any) => ({ ...b, option: { ...b.option } })));
+      if (comp.optionBindings?.length) {
+        comp.optionBindings = comp.optionBindings.map((b: any) => ({ ...b, option: { ...b.option } }));
       }
 
       if (comp.rebuildShowFeedbackMapFromBindings) comp.rebuildShowFeedbackMapFromBindings();
@@ -805,13 +805,13 @@ export class SharedOptionBindingService {
     // index) can collide with another binding's real optionId (e.g. binding[0]
     // has optionId=1, binding[1] has no id so falls back to index 1 â†’ collision).
     const realIdOwner = new Map<number, number>();
-    for (let i = 0; i < (comp.optionBindings()?.length ?? 0); i++) {
-      const id = comp.optionBindings()[i].option.optionId;
+    for (let i = 0; i < (comp.optionBindings?.length ?? 0); i++) {
+      const id = comp.optionBindings[i].option.optionId;
       if (id != null && id !== -1) realIdOwner.set(Number(id), i);
     }
 
-    for (let i = 0; i < (comp.optionBindings()?.length ?? 0); i++) {
-      const b = comp.optionBindings()[i];
+    for (let i = 0; i < (comp.optionBindings?.length ?? 0); i++) {
+      const b = comp.optionBindings[i];
       const id = b.option.optionId;
       const numericId = (id != null && id !== -1) ? Number(id) : i;
       const hasRealId = id != null && id !== -1;
@@ -832,7 +832,7 @@ export class SharedOptionBindingService {
 
   forceDisableAllOptions(comp: any): void {
     comp.forceDisableAll.set(true);
-    for (const binding of comp.optionBindings() ?? []) {
+    for (const binding of comp.optionBindings ?? []) {
       if (binding.option) binding.option.active = false;
     }
     comp.clickService?.updateBindingSnapshots(comp);
@@ -844,7 +844,7 @@ export class SharedOptionBindingService {
 
   clearForceDisableAllOptions(comp: any): void {
     comp.forceDisableAll.set(false);
-    for (const binding of comp.optionBindings() ?? []) {
+    for (const binding of comp.optionBindings ?? []) {
       if (binding.option) {
         binding.option.active = true;
       }
@@ -864,7 +864,7 @@ export class SharedOptionBindingService {
 
   markRenderReady(comp: any, _reason: string = ''): void {
     const bindingsReady =
-      Array.isArray(comp.optionBindings()) && comp.optionBindings().length > 0;
+      Array.isArray(comp.optionBindings) && comp.optionBindings.length > 0;
 
     const optionsReady =
       Array.isArray(comp.optionsToDisplay) && comp.optionsToDisplay.length > 0;

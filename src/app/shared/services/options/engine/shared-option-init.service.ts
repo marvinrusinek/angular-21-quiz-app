@@ -39,7 +39,7 @@ export interface SharedOptionComponentLike {
   showFeedback: WritableSignal<boolean>;
   shouldResetBackground: WritableSignal<boolean>;
   highlightCorrectAfterIncorrect: () => boolean;
-  optionBindings: WritableSignal<OptionBindings[]>;
+  optionBindings: OptionBindings[];
   selectedOptionId: () => number | null;
   selectedOptionIndex: WritableSignal<number | null>;
   isNavigatingBackwards: WritableSignal<boolean>;
@@ -275,14 +275,14 @@ export class SharedOptionInitService {
 
       setTimeout(() => {
         // If options are now ready, try to initialize them
-        if (comp.optionsToDisplay?.length && !comp.optionBindings()?.length) {
+        if (comp.optionsToDisplay?.length && !comp.optionBindings?.length) {
           comp.generateOptionBindings();
           comp.cdRef.detectChanges();  // force immediate update for OnPush
           return;
         }
 
         // If we have options and bindings but display flags aren't set, fix them
-        if (comp.optionsToDisplay?.length && comp.optionBindings()?.length) {
+        if (comp.optionsToDisplay?.length && comp.optionBindings?.length) {
           if (!comp.showOptions() || !comp.renderReady()) {
 
             comp.showOptions.set(true);
@@ -359,7 +359,7 @@ export class SharedOptionInitService {
     // Initialize display flags if form and bindings are ready
     if (
       comp.form &&
-      comp.optionBindings()?.length > 0 &&
+      comp.optionBindings?.length > 0 &&
       comp.optionsToDisplay?.length > 0
     ) {
       comp.renderReady.set(true);
@@ -440,7 +440,7 @@ export class SharedOptionInitService {
           } else {
             // Skip the state clear when the current bindings are already
             // aligned with the NEW question's options (same optionIds).
-            const bindingIds = (comp.optionBindings() ?? [])
+            const bindingIds = (comp.optionBindings ?? [])
               .map((b: any) => b?.option?.optionId)
               .filter((id: any) => id != null && id !== -1);
             const optsIds = (opts ?? [])
@@ -472,7 +472,7 @@ export class SharedOptionInitService {
               comp.showFeedbackForOption = {};
 
               // Reset option bindings to clear visual state
-              for (const b of comp.optionBindings() ?? []) {
+              for (const b of comp.optionBindings ?? []) {
                 b.isSelected = false;
                 b.showFeedback = false;
                 b.highlightCorrect = false;
@@ -519,7 +519,7 @@ export class SharedOptionInitService {
             let lastSelectedId = -1;
             let hasSelection = false;
 
-            for (const [i, b] of (comp.optionBindings() ?? []).entries()) {
+            for (const [i, b] of (comp.optionBindings ?? []).entries()) {
               if (!b.option) continue;
 
               b.option.feedback = freshFeedback;
@@ -622,7 +622,7 @@ export class SharedOptionInitService {
       )
       .subscribe(() => {
         // Ensure bindings exist
-        if (!comp.optionBindings()?.length && comp.optionsToDisplay?.length) {
+        if (!comp.optionBindings?.length && comp.optionsToDisplay?.length) {
           comp.generateOptionBindings();
         }
 
@@ -639,7 +639,7 @@ export class SharedOptionInitService {
     if (comp.freezeOptionBindings() || comp.hasUserClicked()) return;
 
     // Full reset
-    comp.optionBindings.set([]);
+    comp.optionBindings = [];
     comp.selectedOption.set(null);
     comp.selectedOptionIndex.set(-1);
     comp.showFeedbackForOption = {};

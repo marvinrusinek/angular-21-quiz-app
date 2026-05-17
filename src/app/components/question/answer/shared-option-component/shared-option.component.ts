@@ -97,7 +97,7 @@ export class SharedOptionComponent
   readonly correctMessage = signal<string>('');
   readonly showFeedback = signal<boolean>(false);
   readonly shouldResetBackground = signal<boolean>(false);
-  readonly optionBindings = signal<OptionBindings[]>([]);
+  public optionBindings: OptionBindings[] = [];
   readonly selectedOptionIndex = signal<number | null>(null);
   readonly isNavigatingBackwards = signal<boolean>(false);
   readonly finalRenderReady$ = input<Observable<boolean> | null>(null);
@@ -226,7 +226,7 @@ export class SharedOptionComponent
         if (_lastQIdxForStampCleanup !== undefined && _lastQIdxForStampCleanup !== v) {
           this.timerExpiredForQuestion.set(false);
           this._timerExpiryHandled = false;
-          for (const b of this.optionBindings() ?? []) {
+          for (const b of this.optionBindings ?? []) {
             if (!b) continue;
             delete (b as any)._timerExpiredStamped;
             delete (b as any)._timerExpiredStampedForIndex;
@@ -313,14 +313,7 @@ export class SharedOptionComponent
     });
     effect(() => {
       const v = this.optionBindingsInput();
-      if (v !== undefined) this.optionBindings.set(v);
-    });
-    // Auto-show options when bindings are populated. Without this, paths
-    // that populate optionBindings without explicitly calling
-    // showOptions.set(true) (e.g. dynamic component creation) leave the
-    // template gated and options never render.
-    effect(() => {
-      if (this.optionBindings().length > 0) this.showOptions.set(true);
+      if (v !== undefined) this.optionBindings = v;
     });
     effect(() => {
       this.isNavigatingBackwards.set(this.isNavigatingBackwardsInput());
@@ -340,10 +333,10 @@ export class SharedOptionComponent
     // of trusting currentQuestionIndex, which can lag during click flow.
     effect(() => {
       const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
-      if (!this.optionBindings() || this.optionBindings().length === 0) return;
+      if (!this.optionBindings || this.optionBindings.length === 0) return;
 
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
-      const bindingTexts = this.optionBindings()
+      const bindingTexts = this.optionBindings
         .map((b: any) => nrm(b?.option?.text))
         .filter((t: string) => !!t);
       if (bindingTexts.length === 0) return;
@@ -355,7 +348,7 @@ export class SharedOptionComponent
       outer: for (const quiz of bundle) {
         for (const pq of (quiz?.questions ?? [])) {
           const pqOpts = pq?.options ?? [];
-          if (pqOpts.length !== this.optionBindings().length) continue;
+          if (pqOpts.length !== this.optionBindings.length) continue;
           const pqTexts = pqOpts.map((o: any) => nrm(o?.text));
           if (!pqTexts.every((t: string) => bindingTextSet.has(t))) continue;
           pristineCorrectTexts = new Set(
@@ -390,7 +383,7 @@ export class SharedOptionComponent
       // up the new disabled state via ngOnChanges.
       const correctTexts = pristineCorrectTexts;
       let mutated = false;
-      const next = this.optionBindings().map((b: any) => {
+      const next = this.optionBindings.map((b: any) => {
         const myText = nrm(b?.option?.text);
         const isCorrect = correctTexts.has(myText);
         const targetDisabled = !isCorrect;
@@ -406,7 +399,7 @@ export class SharedOptionComponent
         };
       });
       if (mutated) {
-        this.optionBindings.set(next);
+        this.optionBindings = next;
         this.cdRef.markForCheck();
       }
     });
@@ -437,7 +430,7 @@ export class SharedOptionComponent
 
         // Stamp bindings, scoped to this question index so navigating to
         // the next question does NOT inherit the disabled/highlight stamps.
-        for (const b of (this.optionBindings() ?? [])) {
+        for (const b of (this.optionBindings ?? [])) {
           if (!b) continue;
           const optText = ((b.option?.text as string) || '').trim().toLowerCase();
           const isCorrect = correctTexts.has(optText);
@@ -735,7 +728,7 @@ export class SharedOptionComponent
 
   initializeFeedbackBindings(): void {
     this.feedbackBindings = this.feedbackManager.initializeFeedbackBindings(
-      this.optionBindings(), this.buildFeedbackContext()
+      this.optionBindings, this.buildFeedbackContext()
     );
   }
 

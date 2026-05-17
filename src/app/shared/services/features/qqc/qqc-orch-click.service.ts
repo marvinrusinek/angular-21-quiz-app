@@ -140,7 +140,7 @@ export class QqcOrchClickService {
         if (isSingleAnswer && clickedIsCorrect) {
           const targets: any[][] = [];
           const soc: any = host.sharedOptionComponent?.();
-          if (soc?.optionBindings()?.length) targets.push(soc.optionBindings());
+          if (soc?.optionBindings?.length) targets.push(soc.optionBindings);
           const sigBindings: any[] = host.optionBindings?.() ?? [];
           if (sigBindings?.length) targets.push(sigBindings);
           for (const arr of targets) {

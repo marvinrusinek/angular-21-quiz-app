@@ -28,7 +28,7 @@ export class SharedOptionOrchestratorService {
     host.viewReady.set(true);
     host.setupRehydrateTriggers();
 
-    if (!host.optionBindings()?.length && host.optionsToDisplay?.length) {
+    if (!host.optionBindings?.length && host.optionsToDisplay?.length) {
       host.generateOptionBindings();
     }
   }
@@ -116,7 +116,7 @@ export class SharedOptionOrchestratorService {
         if (!Array.isArray(arr)) return [];
         return arr.map((o: any) => nrm(o?.text)).filter((t: string) => !!t);
       };
-      let candidateTexts: string[] = collectTexts(host.optionBindings()?.map((b: any) => b?.option));
+      let candidateTexts: string[] = collectTexts(host.optionBindings?.map((b: any) => b?.option));
       if (!candidateTexts.length) candidateTexts = collectTexts(host.optionsToDisplay);
       if (!candidateTexts.length) candidateTexts = collectTexts(currentQ?.options);
 
@@ -189,7 +189,7 @@ export class SharedOptionOrchestratorService {
       currentQuestion: host.currentQuestion(),
       type: host.type as 'single' | 'multiple',
       selectedOptions: host.selectedOptions,
-      optionBindings: host.optionBindings(),
+      optionBindings: host.optionBindings,
       timerExpiredForQuestion: host.timerExpiredForQuestion(),
       activeQuestionIndex: host.getActiveQuestionIndex(),
       showFeedbackForOption: host.showFeedbackForOption,
@@ -221,11 +221,11 @@ export class SharedOptionOrchestratorService {
 
   runRebuildShowFeedbackMapFromBindings(host: Host): void {
     const result = host.feedbackManager.rebuildShowFeedbackMapFromBindings(
-      host.optionBindings(), host.lastFeedbackOptionId, host.selectedOptionHistory
+      host.optionBindings, host.lastFeedbackOptionId, host.selectedOptionHistory
     );
     host.showFeedback.set(result.showFeedback);
     host.showFeedbackForOption = result.showFeedbackForOption;
-    for (const b of host.optionBindings() ?? []) {
+    for (const b of host.optionBindings ?? []) {
       b.showFeedbackForOption = host.showFeedbackForOption;
       if (host.showFeedback()) b.showFeedback = true;
     }
@@ -233,7 +233,7 @@ export class SharedOptionOrchestratorService {
   }
 
   runRegenerateFeedback(host: Host, idx: number): void {
-    const result = host.feedbackManager.regenerateFeedback(idx, host.optionsToDisplay, host.optionBindings());
+    const result = host.feedbackManager.regenerateFeedback(idx, host.optionsToDisplay, host.optionBindings);
     if (result) {
       host.feedbackConfigs = result.feedbackConfigs;
       host.cdRef.markForCheck();
@@ -243,7 +243,7 @@ export class SharedOptionOrchestratorService {
   // ===== Selection / visibility =====
   runUpdateSelections(host: Host, rawSelectedId: number | string): void {
     host.optionSelectionUiService.applySingleSelectClick(
-        host.optionBindings(),
+        host.optionBindings,
         rawSelectedId,
         host.selectedOptionHistory
     );
@@ -309,7 +309,7 @@ export class SharedOptionOrchestratorService {
   // ===== Rendering / explanation =====
   runMarkRenderReady(host: Host, _reason: string): void {
     const bindingsReady =
-      Array.isArray(host.optionBindings()) && host.optionBindings().length > 0;
+      Array.isArray(host.optionBindings) && host.optionBindings.length > 0;
     const optionsReady =
       Array.isArray(host.optionsToDisplay) && host.optionsToDisplay.length > 0;
 
@@ -325,7 +325,7 @@ export class SharedOptionOrchestratorService {
       activeQuestionIndex: host.getActiveQuestionIndex(),
       currentQuestion: host.currentQuestion(),
       quizId: host.quizId(),
-      optionBindings: host.optionBindings(),
+      optionBindings: host.optionBindings,
       optionsToDisplay: host.optionsToDisplay,
       isMultiMode: host.isMultiMode,
       getQuestionAtDisplayIndex: (idx: number) => host.getQuestionAtDisplayIndex(idx)
@@ -399,7 +399,7 @@ export class SharedOptionOrchestratorService {
   }
 
   runFindBindingByOptionId(host: Host, optionId: number): { b: OptionBindings; i: number } | null {
-    const opts = host.optionBindings() ?? [];
+    const opts = host.optionBindings ?? [];
     const i = opts.findIndex((x: OptionBindings, idx: number) => {
       const explicitId = x?.option?.optionId;
       const effectiveId = (explicitId != null && Number(explicitId) > -1)
@@ -411,7 +411,7 @@ export class SharedOptionOrchestratorService {
   }
 
   runCanShowOptions(host: Host): boolean {
-    const hasBindings = (host.optionBindings()?.length ?? 0) > 0;
+    const hasBindings = (host.optionBindings?.length ?? 0) > 0;
     if (!hasBindings) return false;
     return host.canDisplayOptions() && host.renderReady();
   }
@@ -421,9 +421,9 @@ export class SharedOptionOrchestratorService {
       !!host.form &&
       host.renderReady() &&
       host.showOptions() &&
-      Array.isArray(host.optionBindings()) &&
-      host.optionBindings().length > 0 &&
-      host.optionBindings().every((b: OptionBindings) => !!b.option)
+      Array.isArray(host.optionBindings) &&
+      host.optionBindings.length > 0 &&
+      host.optionBindings.every((b: OptionBindings) => !!b.option)
     );
   }
 
