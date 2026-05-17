@@ -85,10 +85,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly questionsList = this.quizService.questionsSig;
 
   currentQuestion$ = this.quizStateService.currentQuestion$;
-  routeSubscription!: Subscription;
   routerSubscription!: Subscription;
-  questionAndOptionsSubscription!: Subscription;
-  optionSelectedSubscription!: Subscription;
   indexSubscription!: Subscription;
   subscriptions: Subscription = new Subscription();
 

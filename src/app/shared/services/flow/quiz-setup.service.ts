@@ -799,11 +799,8 @@ subscribeToTimerExpiry(host: Host): void {
     try { this.dotStatusService.dotStatusCache.clear(); } catch {}
     try { this.dotStatusService.pendingDotStatusOverrides.clear(); } catch {}
     try { this.dotStatusService.activeDotClickStatus.clear(); } catch {}
-    host.routeSubscription?.unsubscribe();
     host.routerSubscription?.unsubscribe();
     host.indexSubscription?.unsubscribe();
-    host.questionAndOptionsSubscription?.unsubscribe();
-    host.optionSelectedSubscription?.unsubscribe();
     try { this.timerService.stopTimer(undefined, { force: true }); } catch {}
     try { this.nextButtonStateService.cleanupNextButtonStateStream(); } catch {}
     const tooltip = host.nextButtonTooltip?.();
