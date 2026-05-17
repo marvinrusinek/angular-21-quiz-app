@@ -93,8 +93,13 @@ export class SelectionPersistenceService {
         try {
           const opts = JSON.parse(sel);
           if (Array.isArray(opts) && opts.length > 0) {
+            // Exclude auto-revealed-only entries (autoreveal sets
+            // highlight + showIcon on the correct option even when the
+            // user didn't click it, which would otherwise get persisted
+            // as a "userClick" and pollute selectedOptionsMap on rehydrate).
             const userClicks = opts.filter(
-              (o: any) => o && o.highlight === true && o.showIcon === true
+              (o: any) => o && o.highlight === true && o.showIcon === true &&
+                !(o._autoRevealedCorrect === true && o.selected !== true)
             );
             if (userClicks.length > 0) {
               ctx.selectedOptionsMap.set(i, userClicks);

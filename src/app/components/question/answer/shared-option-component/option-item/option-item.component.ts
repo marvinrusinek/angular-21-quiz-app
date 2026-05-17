@@ -179,7 +179,7 @@ export class OptionItemComponent implements OnInit {
   private applyMultiAnswerDisableState(): void {
     try {
       if (!this.binding()?.option) return;
-      const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
 
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
       const liveQT =
@@ -215,7 +215,7 @@ export class OptionItemComponent implements OnInit {
    * Q1 doesn't disable/highlight Q2's options.
    */
   private isTimerExpiredForThisQuestion(): boolean {
-    const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
 
     // Signal-based check: reading expiredForQuestionIndexSig() inside a
     // template-bound method lets Angular auto-track the dependency and
@@ -260,7 +260,7 @@ export class OptionItemComponent implements OnInit {
 
     // Fallback: check authoritative question data from quiz service.
     // Binding options may lack the `correct` flag after regeneration.
-    const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
     const question = (this.quizService as any).questions?.[qIdx];
     if (question?.options && opt?.text) {
       const optText = (opt.text as string).trim().toLowerCase();
@@ -346,7 +346,7 @@ export class OptionItemComponent implements OnInit {
     if (this.isTimerStamped()) return true;
 
     let _type = this.type();
-    const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
 
     // RENDERING-LAYER PRISTINE GUARD: trust quizInitialState over the
     // [type] input binding. If pristine says this question has >1
@@ -413,7 +413,7 @@ export class OptionItemComponent implements OnInit {
     // While no correct option has been selected, every option stays clickable.
     if (this.binding()?.isSelected) return false;
 
-    const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
     // Read signal directly â€” OnPush auto-tracks selection mutations.
     const selectionsMapSig = this.selectedOptionService.selectedOptionsMapSig();
     const selections = selectionsMapSig.get(qIdx) ?? [];
@@ -460,7 +460,7 @@ export class OptionItemComponent implements OnInit {
     const stampedFor = (this.binding() as any)?._timerExpiredStampedForIndex;
     if (stampedFor == null) return true;  // legacy stamps with no scope
 
-    const qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
     return stampedFor === qIdx;
   }
 
@@ -558,7 +558,7 @@ export class OptionItemComponent implements OnInit {
       return '#43e756';
     }
     if (this.isOptionCorrect()) {
-      const _qIdxARBg = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const _qIdxARBg = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
       const perfectMapARBg =
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMapARBg?.get(_qIdxARBg) === true ||
@@ -575,7 +575,7 @@ export class OptionItemComponent implements OnInit {
       // and never-clicked single-answer bindings, which would otherwise
       // paint them gray after the user picks a 2nd incorrect option. The
       // user must remain free to keep trying with a clear visual state.
-      const _qIdxSA = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const _qIdxSA = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
       if (this.type() === 'single' && !this.binding()?.isSelected) {
         const nrmSA = (t: any) => String(t ?? '').trim().toLowerCase();
         const liveQTSA =
@@ -604,7 +604,7 @@ export class OptionItemComponent implements OnInit {
       // visuals stay in lockstep without depending on _multiAnswerPerfect
       // or b.disabled flags being set in sync.
       if (this.type() === 'multiple' && !this.binding()?.isSelected) {
-        const _qIdx = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+        const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
         const nrmBg = (t: any) => String(t ?? '').trim().toLowerCase();
         const liveQTBg =
           (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
@@ -640,7 +640,7 @@ export class OptionItemComponent implements OnInit {
   }
 
   private getSelectionsForCurrentBinding(): any[] {
-    let qIndex = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+    let qIndex = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
 
     // On page refresh, the input signal and quiz service may both
     // still be 0 (BehaviorSubject default) before the route resolver
@@ -665,7 +665,7 @@ export class OptionItemComponent implements OnInit {
 
   private matchesBindingSelection(sel: any): boolean {
     let qIndex =
-      this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
 
     // Same URL fallback as getSelectionsForCurrentBinding â€” on refresh
     // the input may still be 0 before the route resolves.
@@ -795,7 +795,7 @@ export class OptionItemComponent implements OnInit {
     // flag) AND cssClasses['correct-option'] (set by auto-reveal, kept by
     // {...b} spread but wiped by updateBindingSnapshots).
     if (this.isOptionCorrect()) {
-      const _qIdxAR = this.currentQuestionIndex() ?? this.quizService.currentQuestionIndex;
+      const _qIdxAR = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
       const perfectMapAR =
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMapAR?.get(_qIdxAR) === true) return true;
