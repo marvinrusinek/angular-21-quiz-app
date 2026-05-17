@@ -199,11 +199,15 @@ export class SocOptionUiService {
               }
             }
           }
-          option.highlight = (comp.optionsToDisplay.indexOf(option) === lastCorrectIdx);
+          const _v = (comp.optionsToDisplay.indexOf(option) === lastCorrectIdx);
+          if (_v) console.log('[option.highlight=true.preserve.multi.correct]', { text: option?.text, optionId: option?.optionId });
+          option.highlight = _v;
         } else {
+          console.log('[option.highlight=true.preserve.multi.incorrect]', { text: option?.text, optionId: option?.optionId });
           option.highlight = true;
         }
       } else {
+        console.log('[option.highlight=true.preserve.single]', { text: option?.text, optionId: option?.optionId });
         option.highlight = true;
       }
       option.showIcon = true;

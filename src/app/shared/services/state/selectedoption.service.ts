@@ -347,6 +347,13 @@ export class SelectedOptionService {
     // selectedOptionsMapSig (not the raw Map), so without this push,
     // sibling bindings still see the stale entry and stay disabled.
     this.selectedOptionsMapSig.set(new Map(this.selectedOptionsMap));
+
+    // Clear quizService._multiAnswerPerfect[idx] — when autoreveal fires
+    // on a question's first visit, this flag stays true forever and
+    // option-item.shouldHighlightOption() returns true for all correct
+    // options on revisit, painting them green via the correct-option class.
+    const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
+    perfectMap?.delete(idx);
   }
 
   // Method to get the current option selected state

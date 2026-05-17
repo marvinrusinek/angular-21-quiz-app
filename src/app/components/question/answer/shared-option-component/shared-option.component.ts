@@ -295,11 +295,20 @@ export class SharedOptionComponent
           if (!_isResolved) {
             queueMicrotask(() => {
               this._multiSelectByQuestion?.delete(v);
-              for (const b of this.optionBindings() ?? []) {
+              const current = this.optionBindings() ?? [];
+              for (const b of current) {
                 if (!b) continue;
                 delete (b as any)._timerExpiredStamped;
                 delete (b as any)._timerExpiredStampedForIndex;
                 delete (b as any)._autoRevealedCorrect;
+                // Also clear binding-level cssClasses that drive
+                // ngClass — without this the `correct-option` / `selected`
+                // classes persist via DOM reuse + OnPush staleness.
+                if (b.cssClasses) {
+                  delete b.cssClasses['correct-option'];
+                  delete b.cssClasses['incorrect-option'];
+                }
+                b.isSelected = false;
                 if (b.option) {
                   delete (b.option as any)._autoRevealedCorrect;
                   // Reset option-level state that persists on shared refs
@@ -311,6 +320,13 @@ export class SharedOptionComponent
                   (b.option as any).showIcon = false;
                 }
               }
+              // Replace EACH binding object with a fresh spread (not just
+              // the array reference) so OnPush option-items see their
+              // individual input ref change and re-render. Without this,
+              // in-place mutations are invisible to change detection and
+              // leftover inline styles + cssClasses persist on DOM-reused
+              // elements (mat-checkbox keeps mat-mdc-checkbox-checked, etc.).
+              this.optionBindings.set(current.map((b: any) => b ? { ...b } : b));
               this.cdRef.markForCheck();
             });
           }

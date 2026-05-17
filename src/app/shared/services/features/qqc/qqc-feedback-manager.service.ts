@@ -98,6 +98,7 @@ export class QqcFeedbackManagerService {
       for (const opt of currentQuestion.options) {
         if (!opt.correct) {
           opt.selected = false;
+          console.log('[option.highlight=true.qqc-feedback-manager]', { text: opt?.text, optionId: opt?.optionId });
           opt.highlight = true;
           opt.active = false;
         } else {

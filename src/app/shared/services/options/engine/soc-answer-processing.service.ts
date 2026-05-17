@@ -724,12 +724,12 @@ export class SocAnswerProcessingService {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
       this.nextButtonStateService.setNextButtonState(true);
       this.explanationTextService.fetBypassForQuestion.set(qIdx, true);
-      // Mark "fully resolved" so option-item stops gating on click-confirmed-
-      // correct. Score is NOT incremented (user didn't pick correctly).
-      if (!(this.quizService as any)._multiAnswerPerfect) {
-        (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
-      }
-      (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
+      // INTENTIONALLY do NOT set _multiAnswerPerfect — that flag is used as
+      // the navigation-clear gate ("preserve state on revisit"), so setting
+      // it on autoreveal-fired (user picked wrong) made Q2 retain its green
+      // correct-option highlight on 2nd visit. The autoreveal already sets
+      // cssClasses['correct-option']=true on bindings below, which is what
+      // shouldHighlightOption uses to paint green during this session.
 
       // Highlight the canonical correct option + disable everything else.
       const correctIdxsAR: number[] = [];
@@ -914,10 +914,10 @@ export class SocAnswerProcessingService {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
       this.nextButtonStateService.setNextButtonState(true);
       this.explanationTextService.fetBypassForQuestion.set(qIdx, true);
-      if (!(this.quizService as any)._multiAnswerPerfect) {
-        (this.quizService as any)._multiAnswerPerfect = new Map<number, boolean>();
-      }
-      (this.quizService as any)._multiAnswerPerfect.set(qIdx, true);
+      // INTENTIONALLY do NOT set _multiAnswerPerfect — see comment in
+      // sibling autoreveal block (~line 711). Used as the navigation-clear
+      // gate, so setting it on autoreveal-fired (user picked wrong) made
+      // Q2 retain green correct-option highlight on 2nd visit.
 
       // Unlock the explanation BEFORE setting new FET — without this,
       // a previous question's lockExplanation() would silently swallow
