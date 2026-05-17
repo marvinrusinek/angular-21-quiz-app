@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -257,19 +258,19 @@ export class QqcQlFetchService {
     }
 
     return new Promise((resolve, reject) => {
-      const subscription = this.quizService.getQuestionByIndex(index).subscribe({
+      // Use take(1) instead of a self-referencing `subscription` variable —
+      // when getQuestionByIndex emits synchronously (of(...) or seeded
+      // BehaviorSubject), the next callback fires DURING .subscribe() before
+      // `subscription` is initialized, causing a TDZ ReferenceError.
+      this.quizService.getQuestionByIndex(index).pipe(take(1)).subscribe({
         next: (question) => {
           if (question && question.questionText) {
-            subscription?.unsubscribe();
             resolve();
           } else {
             reject(new Error(`No valid question at index ${index}`));
           }
         },
-        error: (err: any) => {
-          subscription?.unsubscribe();
-          reject(err);
-        }
+        error: (err: any) => reject(err)
       });
     });
   }
