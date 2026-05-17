@@ -31,17 +31,20 @@ export class QqcSubscriptionWiringService {
    * Creates the page visibility subscription.
    * Extracted from setupVisibilitySubscription().
    */
-  createVisibilitySubscription(callbacks: {
+  createVisibilitySubscription(params: {
+    destroyRef: DestroyRef;
     onHidden: () => void;
     onVisible: () => void;
-  }): Subscription {
-    return this.sharedVisibilityService.pageVisibility$.subscribe((isHidden) => {
-      if (isHidden) {
-        callbacks.onHidden();
-      } else {
-        callbacks.onVisible();
-      }
-    });
+  }): void {
+    this.sharedVisibilityService.pageVisibility$
+      .pipe(takeUntilDestroyed(params.destroyRef))
+      .subscribe((isHidden) => {
+        if (isHidden) {
+          params.onHidden();
+        } else {
+          params.onVisible();
+        }
+      });
   }
 
   /**

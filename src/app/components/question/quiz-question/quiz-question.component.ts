@@ -119,7 +119,6 @@ export class QuizQuestionComponent extends BaseQuestion
   override showFeedbackForOption: { [optionId: number]: boolean } = {};
   resetFeedbackSubscription!: Subscription;
   resetStateSubscription!: Subscription;
-  sharedVisibilitySubscription!: Subscription;
   idxSub!: Subscription;
   isMultipleAnswer!: boolean;
   readonly isLoading = signal<boolean>(true);

@@ -217,7 +217,8 @@ export class QqcOrchLifecycleService {
         host.resetManager.clearSelection(host.correctAnswers, host.currentQuestion());
       }
 
-      host.sharedVisibilitySubscription = host.subscriptionWiring.createVisibilitySubscription({
+      host.subscriptionWiring.createVisibilitySubscription({
+        destroyRef: host.destroyRef,
         onHidden: () => host.handlePageVisibilityChange(true),
         onVisible: () => host.handlePageVisibilityChange(false)
       });
@@ -294,7 +295,6 @@ export class QqcOrchLifecycleService {
   runOnDestroy(host: Host): void {
     try { document.removeEventListener('visibilitychange', host.onVisibilityChange.bind(host)); } catch {}
     host.idxSub?.unsubscribe();
-    host.sharedVisibilitySubscription?.unsubscribe();
     host.resetFeedbackSubscription?.unsubscribe();
     host.resetStateSubscription?.unsubscribe();
     try { host.nextButtonStateService.cleanupNextButtonStateStream(); } catch {}
