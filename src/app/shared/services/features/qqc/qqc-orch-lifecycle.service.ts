@@ -46,9 +46,10 @@ export class QqcOrchLifecycleService {
       }
     });
 
-    host.shufflePreferenceSubscription = host.subscriptionWiring.createShufflePreferenceSubscription(
-      (shouldShuffle: boolean) => { host.shuffleOptions = shouldShuffle; }
-    );
+    host.subscriptionWiring.createShufflePreferenceSubscription({
+      destroyRef: host.destroyRef,
+      onShuffle: (shouldShuffle: boolean) => { host.shuffleOptions = shouldShuffle; }
+    });
 
     const navSubs = host.subscriptionWiring.createNavigationEventSubscriptions({
       onNavigationSuccess: () => host.resetUIForNewQuestion(),
@@ -296,7 +297,6 @@ export class QqcOrchLifecycleService {
     host.sharedVisibilitySubscription?.unsubscribe();
     host.resetFeedbackSubscription?.unsubscribe();
     host.resetStateSubscription?.unsubscribe();
-    host.shufflePreferenceSubscription?.unsubscribe();
     try { host.nextButtonStateService.cleanupNextButtonStateStream(); } catch {}
   }
 }

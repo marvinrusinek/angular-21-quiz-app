@@ -120,7 +120,6 @@ export class QuizQuestionComponent extends BaseQuestion
   resetFeedbackSubscription!: Subscription;
   resetStateSubscription!: Subscription;
   sharedVisibilitySubscription!: Subscription;
-  shufflePreferenceSubscription!: Subscription;
   idxSub!: Subscription;
   isMultipleAnswer!: boolean;
   readonly isLoading = signal<boolean>(true);

@@ -128,10 +128,13 @@ export class QqcSubscriptionWiringService {
    * Creates subscription for checkedShuffle$ preference stream.
    * Extracted from ngOnInit (lines 501â€“504).
    */
-  createShufflePreferenceSubscription(
-    onShuffle: (shouldShuffle: boolean) => void
-  ): Subscription {
-    return this.quizService.checkedShuffle$.subscribe(onShuffle);
+  createShufflePreferenceSubscription(params: {
+    destroyRef: DestroyRef;
+    onShuffle: (shouldShuffle: boolean) => void;
+  }): void {
+    this.quizService.checkedShuffle$
+      .pipe(takeUntilDestroyed(params.destroyRef))
+      .subscribe(params.onShuffle);
   }
 
   /**
