@@ -315,6 +315,13 @@ export class SharedOptionComponent
       const v = this.optionBindingsInput();
       if (v !== undefined) this.optionBindings.set(v);
     });
+    // Auto-show options when bindings are populated. Without this, paths
+    // that populate optionBindings without explicitly calling
+    // showOptions.set(true) (e.g. dynamic component creation) leave the
+    // template gated and options never render.
+    effect(() => {
+      if (this.optionBindings().length > 0) this.showOptions.set(true);
+    });
     effect(() => {
       this.isNavigatingBackwards.set(this.isNavigatingBackwardsInput());
     });
