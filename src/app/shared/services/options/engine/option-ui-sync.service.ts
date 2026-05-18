@@ -74,11 +74,11 @@ export class OptionUiSyncService {
     this.resetFeedbackAnchorIfQuestionChanged(currentIndex, ctx);
 
     const checked = 'checked' in event ? (event as MatCheckboxChange).checked : true;
-    // RESOLVE: ctx.optionBindings may be a signal (-clean) or plain array (-main)
+    // RESOLVE: ctx.optionBindings may be a signal (-clean) or plain array (-main).
+    // Use _cob locally; do NOT reassign ctx.optionBindings — that overwrote
+    // the signal property and triggered infinite error spam in StackBlitz.
     const _rawCob = ctx.optionBindings as any;
     const _cob: any[] = typeof _rawCob === 'function' ? (_rawCob() ?? []) : (_rawCob ?? []);
-    // Normalize back onto ctx so downstream code sees an array, not a signal
-    (ctx as any).optionBindings = _cob;
     const correctCountInBindings = _cob.filter((b: any) => isCorrectHelper(b.option)).length;
     // Canonical fallback: when binding flags are stale/missing, recover
     // the correct count from quizInitialState (pristine source). Use the
