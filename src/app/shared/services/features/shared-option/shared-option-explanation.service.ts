@@ -191,14 +191,13 @@ export class SharedOptionExplanationService {
     // RESOLVE: optionBindings may be a signal (-clean) or array (-main)
     const _rawOb1 = optionBindings as any;
     const _ob1: any[] = typeof _rawOb1 === 'function' ? (_rawOb1() ?? []) : (_rawOb1 ?? []);
-    optionBindings = _ob1;
-    const visualOptions = (Array.isArray(optionBindings) && optionBindings.length > 0)
-      ? optionBindings.map((b: OptionBindings) => b.option)
+    const visualOptions = (Array.isArray(_ob1) && _ob1.length > 0)
+      ? _ob1.map((b: OptionBindings) => b.option)
       : (optionsToDisplay ?? []);
 
     const selectedFromUi = visualOptions
       .map((opt: any, idx: number) => {
-        const bindingSelected = optionBindings?.[idx]?.isSelected === true;
+        const bindingSelected = _ob1?.[idx]?.isSelected === true;
         const optionSelected = opt?.selected === true || bindingSelected;
         return optionSelected
           ? ({
