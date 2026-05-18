@@ -61,6 +61,17 @@ export class OptionInteractionService {
     emitExplanation: (idx: number, skipGuard?: boolean) => void,
     updateOptionAndUI: (b: OptionBindings, i: number, ev: any, ctx?: any) => void
   ): void {
+    // RESOLVE: state.optionBindings may arrive as a signal function (-clean)
+    // or plain array (-main). Normalize to array on the state object so ALL
+    // downstream code (.entries, .findIndex, .map, .filter, .[idx]) works.
+    // Mutating state.optionBindings here is safe because `state` is a
+    // per-call context object, not the SOC itself.
+    const _rawOb = (state as any).optionBindings;
+    if (typeof _rawOb === 'function') {
+      (state as any).optionBindings = (_rawOb() ?? []);
+    } else if (!Array.isArray(_rawOb)) {
+      (state as any).optionBindings = [];
+    }
     // Always prefer the live quiz service index over the state snapshot.
     // On the first click after navigating Q1→Q2, state.currentQuestionIndex
     // can still be 0 (stale) while the user is physically on Q2, causing
