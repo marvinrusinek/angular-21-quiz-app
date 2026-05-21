@@ -1,7 +1,7 @@
 
 import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect,
-  ElementRef, input, OnDestroy, OnInit, output, Renderer2, signal, untracked, viewChild
+  ElementRef, inject, input, OnDestroy, OnInit, output, Renderer2, signal, untracked, viewChild
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -35,16 +35,30 @@ import { CqcOrchestratorService } from '../../../shared/services/features/quiz-c
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CodelabQuizContentComponent implements OnInit, OnDestroy {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly displayService = inject(QuizContentDisplayService);
+  public readonly explanationTextService = inject(ExplanationTextService);
+  private readonly orchestrator = inject(CqcOrchestratorService);
+  public readonly quizDataService = inject(QuizDataService);
+  private readonly quizNavigationService = inject(QuizNavigationService);
+  public readonly quizQuestionManagerService = inject(QuizQuestionManagerService);
+  public readonly quizService = inject(QuizService);
+  public readonly quizStateService = inject(QuizStateService);
+  public readonly selectedOptionService = inject(SelectedOptionService);
+  public readonly timerService = inject(TimerService);
+  public readonly activatedRoute = inject(ActivatedRoute);
+  public readonly cdRef = inject(ChangeDetectorRef);
+  public readonly destroyRef = inject(DestroyRef);
+  public readonly renderer = inject(Renderer2);
+
+  // ── viewChilds ──────────────────────────────────────────────────
   readonly quizQuestionComponent = viewChild(QuizQuestionComponent);
   readonly qText = viewChild<ElementRef<HTMLHeadingElement>>('qText');
 
+  // ── outputs ─────────────────────────────────────────────────────
   readonly isContentAvailableChange = output<boolean>();
 
-  private _combinedQuestionDataSig = signal<Observable<CombinedQuestionDataType> | null>(null);
-  readonly combinedQuestionData$ = this._combinedQuestionDataSig.asReadonly();
-  setCombinedQuestionData$(v: Observable<CombinedQuestionDataType> | null): void { this._combinedQuestionDataSig.set(v); }
-  readonly currentQuestionSig = signal<QuizQuestion | null>(null);
-  readonly currentQuestion$ = toObservable(this.currentQuestionSig);
+  // ── inputs ──────────────────────────────────────────────────────
   readonly questionToDisplay = input<string>('');
   readonly questionToDisplay$ = input<Observable<string | null> | null>(null);
   readonly explanationToDisplay = input<string | null>(null);
@@ -52,9 +66,6 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   readonly question$ = input<Observable<QuizQuestion | null> | null>(null);
   readonly questions = input<QuizQuestion[]>([]);
   readonly options = input<Option[]>([]);
-  private _quizIdSig = signal<string>('');
-  readonly quizId = this._quizIdSig.asReadonly();
-  setQuizId(v: string): void { this._quizIdSig.set(v); }
   readonly correctAnswersText = input<string>('');
   readonly questionText = input<string>('');
   readonly quizData = input<CombinedQuestionDataType | null>(null);
@@ -62,22 +73,21 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   readonly displayVariables = input<{ question: string; explanation: string } | null>(null);
   readonly localExplanationText = input<string>('');
   readonly showLocalExplanation = input<boolean>(false);
-
   readonly questionIndex = input<number>(0);
+
+  // ── remaining variables ─────────────────────────────────────────
+  private _combinedQuestionDataSig = signal<Observable<CombinedQuestionDataType> | null>(null);
+  readonly combinedQuestionData$ = this._combinedQuestionDataSig.asReadonly();
+  readonly currentQuestionSig = signal<QuizQuestion | null>(null);
+  readonly currentQuestion$ = toObservable(this.currentQuestionSig);
+  private _quizIdSig = signal<string>('');
+  readonly quizId = this._quizIdSig.asReadonly();
 
   currentQuestionIndexValue = 0;
   currentQuestionIndex$!: Observable<number>;
 
   // Aliased directly from the navigation service signal — no wrapper getter needed.
   readonly isNavigatingToPrevious = this.quizNavigationService.isNavigatingToPreviousSig;
-
-  get _lastQuestionTextByIndex(): Map<number, string> {
-    return this.displayService._lastQuestionTextByIndex;
-  }
-
-  get _fetDisplayedThisSession(): Set<number> {
-    return this.displayService._fetDisplayedThisSession;
-  }
 
   currentIndex = -1;
   // Signal source of truth + sync BS mirror so .asObservable() consumers
@@ -89,15 +99,8 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
 
   isExplanationTextDisplayed$: Observable<boolean>;
 
-  get _fetLocked(): boolean { return this.displayService._fetLockedSig(); }
-  set _fetLocked(v: boolean) { this.displayService._fetLockedSig.set(v); }
-  get _lockedForIndex(): number { return this.displayService._lockedForIndexSig(); }
-  set _lockedForIndex(v: number) { this.displayService._lockedForIndexSig.set(v); }
-
   formattedExplanation$!: Observable<FETPayload>;
   public activeFetText$!: Observable<string>;
-  get displayText$(): Observable<string> { return this.displayService.displayText$; }
-  set displayText$(v: Observable<string>) { this.displayService.displayText$ = v; }
 
   // Never written; cqc-orchestrator subscribes only to seed its
   // combineLatest pipeline. Constant observable keeps the API stable.
@@ -114,11 +117,6 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   // keep the heading stable across tab visibility flips and async restores —
   // no more fighting the DOM imperatively.
   readonly qTextHtmlSig = signal<string>('');
-
-  get shouldShowFet$(): Observable<boolean> { return this.displayService.shouldShowFet$; }
-  set shouldShowFet$(v: Observable<boolean>) { this.displayService.shouldShowFet$ = v; }
-  get fetToDisplay$(): Observable<string> { return this.displayService.fetToDisplay$; }
-  set fetToDisplay$(v: Observable<string>) { this.displayService.fetToDisplay$ = v; }
 
   // Signal source of truth + sync BS mirror. The TIMER-EXPIRY FAST PATH
   // in cqc-display-text and the displayText$ pipeline both read .getValue()
@@ -149,22 +147,7 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   lastQuestionIndexForReset = -1;
   explanationTexts: string[] = [];
 
-  constructor(
-    public quizService: QuizService,
-    public quizDataService: QuizDataService,
-    private quizNavigationService: QuizNavigationService,
-    public quizStateService: QuizStateService,
-    public explanationTextService: ExplanationTextService,
-    public quizQuestionManagerService: QuizQuestionManagerService,
-    public selectedOptionService: SelectedOptionService,
-    public timerService: TimerService,
-    public activatedRoute: ActivatedRoute,
-    public cdRef: ChangeDetectorRef,
-    public renderer: Renderer2,
-    private displayService: QuizContentDisplayService,
-    private orchestrator: CqcOrchestratorService,
-    public destroyRef: DestroyRef
-  ) {
+  constructor() {
     this.formattedExplanation$ = this.displayService.createFormattedExplanation$(this.currentIndex$);
     this.activeFetText$ = this.displayService.createActiveFetText$(this.currentIndex$);
 
@@ -207,16 +190,35 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  // Prime synchronously with the initial input value so runOnInit's
-  // downstream setup sees the correct currentIndex / FET state.
-  private primeQuestionIndex(): void {
-    this.orchestrator.runQuestionIndexSet(this, this.questionIndex());
-  }
-
   ngOnDestroy(): void {
     // FET watchdog cleanup is handled by orchestrator.runOnDestroy via fetGuard.
     this.orchestrator.runOnDestroy(this);
   }
+
+  setCombinedQuestionData$(v: Observable<CombinedQuestionDataType> | null): void { this._combinedQuestionDataSig.set(v); }
+
+  setQuizId(v: string): void { this._quizIdSig.set(v); }
+
+  get _lastQuestionTextByIndex(): Map<number, string> {
+    return this.displayService._lastQuestionTextByIndex;
+  }
+
+  get _fetDisplayedThisSession(): Set<number> {
+    return this.displayService._fetDisplayedThisSession;
+  }
+
+  get _fetLocked(): boolean { return this.displayService._fetLockedSig(); }
+  set _fetLocked(v: boolean) { this.displayService._fetLockedSig.set(v); }
+  get _lockedForIndex(): number { return this.displayService._lockedForIndexSig(); }
+  set _lockedForIndex(v: number) { this.displayService._lockedForIndexSig.set(v); }
+
+  get displayText$(): Observable<string> { return this.displayService.displayText$; }
+  set displayText$(v: Observable<string>) { this.displayService.displayText$ = v; }
+
+  get shouldShowFet$(): Observable<boolean> { return this.displayService.shouldShowFet$; }
+  set shouldShowFet$(v: Observable<boolean>) { this.displayService.shouldShowFet$ = v; }
+  get fetToDisplay$(): Observable<string> { return this.displayService.fetToDisplay$; }
+  set fetToDisplay$(v: Observable<string>) { this.displayService.fetToDisplay$ = v; }
 
   resetInitialState(): void {
     this.explanationTextService.setIsExplanationTextDisplayed(false);
@@ -276,10 +278,6 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
     this.initializeCombinedQuestionData();
   }
 
-  private async initializeQuestionData(): Promise<void> {
-    return this.orchestrator.runInitializeQuestionData(this);
-  }
-
   fetchQuestionsAndExplanationTexts(params: ParamMap): Observable<[QuizQuestion[], string[]]> {
     return this.orchestrator.runFetchQuestionsAndExplanationTexts(this, params);
   }
@@ -296,10 +294,6 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
 
   updateCorrectAnswersDisplay(question: QuizQuestion | null): Observable<void> {
     return this.orchestrator.runUpdateCorrectAnswersDisplay(this, question);
-  }
-
-  private initializeCombinedQuestionData(): void {
-    this.orchestrator.runInitializeCombinedQuestionData(this);
   }
 
   combineCurrentQuestionAndOptions(): Observable<{
@@ -335,6 +329,20 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
       this.activeFetText$,
       this.currentQuestion$
     );
+  }
+
+  // Prime synchronously with the initial input value so runOnInit's
+  // downstream setup sees the correct currentIndex / FET state.
+  private primeQuestionIndex(): void {
+    this.orchestrator.runQuestionIndexSet(this, this.questionIndex());
+  }
+
+  private async initializeQuestionData(): Promise<void> {
+    return this.orchestrator.runInitializeQuestionData(this);
+  }
+
+  private initializeCombinedQuestionData(): void {
+    this.orchestrator.runInitializeCombinedQuestionData(this);
   }
 
 }
