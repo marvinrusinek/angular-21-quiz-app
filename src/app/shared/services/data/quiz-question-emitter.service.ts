@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -14,19 +14,18 @@ import { QuizShuffleService } from '../flow/quiz-shuffle.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QuizQuestionEmitterService {
-  constructor(
-    private optionsService: QuizOptionsService,
-    private questionResolver: QuizQuestionResolverService,
-    private dataLoader: QuizDataLoaderService,
-    private quizShuffleService: QuizShuffleService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly dataLoader = inject(QuizDataLoaderService);
+  private readonly optionsService = inject(QuizOptionsService);
+  private readonly questionResolver = inject(QuizQuestionResolverService);
+  private readonly quizShuffleService = inject(QuizShuffleService);
 
   /**
    * Convert a value to a numeric ID, falling back to the given default.
    */
   toNumericId(value: unknown, fallback: number): number {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
-    
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
@@ -67,7 +66,7 @@ export class QuizQuestionEmitterService {
 
   /**
    * Prepare and normalize a question + options for emission.
-   * Returns the normalized question, options, and payload â€” or null if
+   * Returns the normalized question, options, and payload — or null if
    * the input is invalid.
    */
   prepareQuestionAndOptions(
