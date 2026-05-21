@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, computed, OnInit, signal
+  ChangeDetectionStrategy, Component, computed, inject, OnInit, signal
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -19,6 +19,10 @@ import { QuizService } from '../../../shared/services/data/quiz.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScoreComponent implements OnInit {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizService = inject(QuizService);
+
+  // ── remaining variables ─────────────────────────────────────────
   private readonly scoreDisplayStorageKey = 'scoreDisplayType';
 
   // Source signals derived directly from QuizService streams.
@@ -53,8 +57,6 @@ export class ScoreComponent implements OnInit {
     }
     return `${safeCorrect}/${safeTotal}`;
   });
-
-  constructor(private quizService: QuizService) {}
 
   ngOnInit(): void {
     this.restoreScoreDisplayPreference();
