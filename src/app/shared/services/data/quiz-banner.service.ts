@@ -34,23 +34,6 @@ export class QuizBannerService {
   private _lastBanner = '';
   private _pendingBannerTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ── Question-number badge ──────────────────────────────────────────
-  readonly badgeTextSig = signal<string>('');
-  readonly badgeText$ = toObservable(this.badgeTextSig);
-
-  updateBadgeText(questionIndex: number, totalQuestions: number): void {
-    if (!Number.isInteger(questionIndex) || questionIndex < 1 ||
-        !Number.isInteger(totalQuestions) || totalQuestions < 1 ||
-        questionIndex > totalQuestions) {
-      return;
-    }
-    const newBadgeText = `Question ${questionIndex} of ${totalQuestions}`;
-    if (this.badgeTextSig() === newBadgeText) return;
-
-    this.badgeTextSig.set(newBadgeText);
-    localStorage.setItem('savedQuestionIndex', JSON.stringify(questionIndex - 1));
-  }
-
   updateCorrectAnswersText(newText: string): void {
     const text = (newText ?? '').trim();
     if (this._lastBanner === text) return;
@@ -73,5 +56,22 @@ export class QuizBannerService {
       localStorage.removeItem('correctAnswersText');
       this.correctAnswersCountTextSig.set('');
     } catch { /* ignore */ }
+  }
+
+  // ── Question-number badge ──────────────────────────────────────────
+  readonly badgeTextSig = signal<string>('');
+  readonly badgeText$ = toObservable(this.badgeTextSig);
+
+  updateBadgeText(questionIndex: number, totalQuestions: number): void {
+    if (!Number.isInteger(questionIndex) || questionIndex < 1 ||
+        !Number.isInteger(totalQuestions) || totalQuestions < 1 ||
+        questionIndex > totalQuestions) {
+      return;
+    }
+    const newBadgeText = `Question ${questionIndex} of ${totalQuestions}`;
+    if (this.badgeTextSig() === newBadgeText) return;
+
+    this.badgeTextSig.set(newBadgeText);
+    localStorage.setItem('savedQuestionIndex', JSON.stringify(questionIndex - 1));
   }
 }
