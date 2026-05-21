@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect,
-  input, OnInit, signal
+  inject, input, OnInit, signal
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { take } from 'rxjs/operators';
@@ -29,11 +29,20 @@ import { TimerService } from '../../../shared/services/features/timer/timer.serv
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SummaryReportComponent implements OnInit {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+  private readonly timerService = inject(TimerService);
+  private readonly cdRef = inject(ChangeDetectorRef);
+
+  // ── inputs ──────────────────────────────────────────────────────
   // Signal input aliased to "quizId" so parent template binding stays the same.
   // Internal code may reassign the backing field, so we mirror via effect().
   readonly quizIdInput = input<string>('', { alias: 'quizId' });
-  quizId = '';
   readonly viewMode = input<'summary' | 'highscores' | 'all'>('all');
+
+  // ── remaining variables ─────────────────────────────────────────
+  quizId = '';
 
   readonly quizMetadata = signal<Partial<QuizMetadata>>({});
   readonly quizPercentage = computed(() => this.quizMetadata().percentage ?? 0);
@@ -46,12 +55,7 @@ export class SummaryReportComponent implements OnInit {
   readonly currentScore = signal<QuizScore | null>(null);  // current quiz attempt score
   readonly codelabUrl = 'https://www.codelab.fun';
 
-  constructor(
-    private quizService: QuizService,
-    private quizDataService: QuizDataService,
-    private timerService: TimerService,
-    private cdRef: ChangeDetectorRef
-  ) {
+  constructor() {
     let firstRun = true;
     effect(() => {
       const incoming = this.quizIdInput();
@@ -66,6 +70,15 @@ export class SummaryReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.initComponent();
+  }
+
+  calculateElapsedTime(): void {
+    const completionTime = this.quizMetadata().completionTime ?? 0;
+    this.completionTimeSig.set(completionTime);
+  }
+
+  getMilestoneLabel(quizId: string): string {
+    return this.quizMilestones[quizId] ?? quizId;
   }
 
   private initComponent(): void {
@@ -119,14 +132,5 @@ export class SummaryReportComponent implements OnInit {
     // Force change detection for OnPush when navigating back or tab switching
     this.cdRef.markForCheck();
     this.cdRef.detectChanges();
-  }
-
-  calculateElapsedTime(): void {
-    const completionTime = this.quizMetadata().completionTime ?? 0;
-    this.completionTimeSig.set(completionTime);
-  }
-
-  getMilestoneLabel(quizId: string): string {
-    return this.quizMilestones[quizId] ?? quizId;
   }
 }
