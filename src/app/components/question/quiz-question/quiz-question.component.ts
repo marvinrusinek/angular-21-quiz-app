@@ -51,6 +51,7 @@ import { FeedbackKey, FeedbackConfig } from '../../../shared/models/FeedbackConf
 })
 export class QuizQuestionComponent extends BaseQuestion
   implements OnInit, OnDestroy, AfterViewInit {
+  // ── injects ─────────────────────────────────────────────────────
   public readonly explanationTextService = inject(ExplanationTextService);
   public readonly nextButtonStateService = inject(NextButtonStateService);
   public readonly qqcFacade = inject(QuizQuestionFacadeService);

@@ -72,13 +72,13 @@ type AnimationState = 'animationStarted' | 'none';
 })
 export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
   // ── injects ─────────────────────────────────────────────────────
-  private readonly nextButtonStateService = inject(NextButtonStateService);
-  public readonly quizQuestionLoaderService = inject(QqcQuestionLoaderService);
-  private readonly quizDataService = inject(QuizDataService);
   private readonly dotStatusService = inject(QuizDotStatusService);
+  private readonly nextButtonStateService = inject(NextButtonStateService);
+  private readonly quizDataService = inject(QuizDataService);
   public readonly quizInitializationService = inject(QuizInitializationService);
   private readonly quizNavigationService = inject(QuizNavigationService);
   private readonly quizPersistence = inject(QuizPersistenceService);
+  public readonly quizQuestionLoaderService = inject(QqcQuestionLoaderService);
   private readonly quizResetService = inject(QuizResetService);
   private readonly quizRouteService = inject(QuizRouteService);
   public readonly quizService = inject(QuizService);
