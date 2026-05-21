@@ -13,19 +13,13 @@ import { QuizMetadata } from '../../../../shared/models/QuizMetadata.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SummaryIconsComponent {
+  // ── inputs ──────────────────────────────────────────────────────
   readonly quiz = input<Quiz | null>(null);
   readonly quizMetadata = input<Partial<QuizMetadata> | null>(null);
   readonly quizPercentage = input(0);
   readonly codelabUrl = input('');
 
-  // Custom URI encoding that preserves % and / for better readability
-  // in email and social media shares
-  private encodeShareText(text: string): string {
-    return encodeURIComponent(text)
-      .replace(/%25/g, '%')   // restore % signs
-      .replace(/%2F/g, '/');  // restore forward slashes
-  }
-
+  // ── remaining variables ─────────────────────────────────────────
   readonly mailtoHref = computed<string>(() => {
     const { percentage, milestone, codelabUrl } = this.getShareValues();
     const subject = 'Try to beat my quiz score!';
@@ -46,6 +40,14 @@ export class SummaryIconsComponent {
     return `https://twitter.com/intent/tweet?text=${this.encodeShareText(tweetText)}
       &hashtags=quiz&url=${encodeURIComponent(codelabUrl)}`;
   });
+
+  // Custom URI encoding that preserves % and / for better readability
+  // in email and social media shares
+  private encodeShareText(text: string): string {
+    return encodeURIComponent(text)
+      .replace(/%25/g, '%')   // restore % signs
+      .replace(/%2F/g, '/');  // restore forward slashes
+  }
 
   private getShareValues(): {
     percentage: number,
