@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -15,14 +15,14 @@ import { QuizDataService } from '../../../shared/services/data/quizdata.service'
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CodelabQuizHeaderComponent {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+
+  // ── remaining variables ─────────────────────────────────────────
   readonly currentQuiz = computed(
     () => this.quizDataService.quizzesSig().find(
       (quiz) => quiz.quizId === this.quizService.quizId
     ) ?? null
   );
-
-  constructor(
-    private quizService: QuizService,
-    private quizDataService: QuizDataService
-  ) {}
 }
