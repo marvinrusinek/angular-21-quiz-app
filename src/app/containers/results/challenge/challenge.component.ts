@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, OnInit, Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
@@ -16,6 +16,13 @@ import { TimerService } from '../../../shared/services/features/timer/timer.serv
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChallengeComponent implements OnInit {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+  private readonly timerService = inject(TimerService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+
+  // ── remaining variables ─────────────────────────────────────────
   readonly quizzes = this.quizDataService.quizzesSig;
   quizName = '';
   currentQuizId = '';
@@ -37,13 +44,6 @@ export class ChallengeComponent implements OnInit {
     )
   };
   codelabUrl = 'https://www.codelab.fun';
-
-  constructor(
-    private quizService: QuizService,
-    private quizDataService: QuizDataService,
-    private timerService: TimerService,
-    private activatedRoute: ActivatedRoute
-  ) {}
 
   ngOnInit(): void {
     // Get quizId from service (most reliable) or from route params
