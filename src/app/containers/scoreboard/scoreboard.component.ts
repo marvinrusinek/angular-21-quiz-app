@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, computed, DestroyRef, OnInit
+  ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -28,6 +28,13 @@ import { QuizService } from '../../shared/services/data/quiz.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScoreboardComponent implements OnInit {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizService = inject(QuizService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+
+  // ── remaining variables ─────────────────────────────────────────
   private readonly routeIsOneBased = true;
   questionNumber = 0;
 
@@ -113,13 +120,6 @@ export class ScoreboardComponent implements OnInit {
     const parts = text.split(' of ');
     return [parts[0] || '', parts[1] || ''];
   });
-
-  constructor(
-    private readonly quizService: QuizService,
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly router: Router,
-    private readonly destroyRef: DestroyRef
-  ) {}
 
   ngOnInit(): void {
     this.handleRouteParameters();
