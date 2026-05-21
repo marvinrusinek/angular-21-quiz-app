@@ -6,5 +6,6 @@ import { SharedOptionConfig } from '../shared/models/SharedOptionConfig.model';
   standalone: true
 })
 export class SharedOptionConfigDirective {
+  // ── inputs ──────────────────────────────────────────────────────
   readonly sharedOptionConfig = input.required<SharedOptionConfig>();
 }
