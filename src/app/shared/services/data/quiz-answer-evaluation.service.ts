@@ -1,4 +1,4 @@
-﻿import { Injectable, Injector } from '@angular/core';
+import { inject, Injectable, Injector } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -12,21 +12,12 @@ import { SelectedOptionService } from '../state/selectedoption.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QuizAnswerEvaluationService {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly optionsService = inject(QuizOptionsService);
+  private readonly injector = inject(Injector);
+
+  // ── remaining variables ─────────────────────────────────────────
   private _selectedOptionService: SelectedOptionService | null = null;
-
-  constructor(
-    private optionsService: QuizOptionsService,
-    private injector: Injector
-  ) {}
-
-  private get selectedOptionServiceLazy(): SelectedOptionService | null {
-    if (!this._selectedOptionService) {
-      try {
-        this._selectedOptionService = this.injector.get(SelectedOptionService);
-      } catch { /* ignore */ }
-    }
-    return this._selectedOptionService;
-  }
 
   /**
    * Resolves user answer IDs to full Option objects from the question's options.
@@ -121,12 +112,12 @@ export class QuizAnswerEvaluationService {
       return { isCorrect: false, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers, answerIds: [] };
     }
 
-    const correctnessArray = 
+    const correctnessArray =
       await this.optionsService.determineCorrectAnswer(currentQuestion, resolvedAnswers);
     const allSelectedAreCorrect = correctnessArray.every((v) => v === true);
-    const isCorrect = 
+    const isCorrect =
       allSelectedAreCorrect && correctnessArray.length === numberOfCorrectAnswers;
-    const answerIds = 
+    const answerIds =
       resolvedAnswers.map((a) => a.optionId).filter((id): id is number => id !== undefined);
 
     return { isCorrect, numberOfCorrectAnswers, multipleAnswer, resolvedAnswers, answerIds };
@@ -166,7 +157,7 @@ export class QuizAnswerEvaluationService {
             .filter((o: any) => o?.correct === true || String(o?.correct) === 'true')
             .map((o: any) => nrm(o?.text))
             .filter((t: string) => !!t);
-          
+
           break;
         }
         if (pristineCorrectTexts.length > 0) break;
@@ -232,5 +223,14 @@ export class QuizAnswerEvaluationService {
     }
 
     return true;
+  }
+
+  private get selectedOptionServiceLazy(): SelectedOptionService | null {
+    if (!this._selectedOptionService) {
+      try {
+        this._selectedOptionService = this.injector.get(SelectedOptionService);
+      } catch { /* ignore */ }
+    }
+    return this._selectedOptionService;
   }
 }
