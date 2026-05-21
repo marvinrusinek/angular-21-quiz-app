@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, effect,
-  input, OnInit, signal
+  inject, input, OnInit, signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
@@ -26,11 +26,22 @@ import { ExplanationTextService } from '../../../shared/services/features/explan
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AccordionComponent implements OnInit {
-  readonly questionsInput = input<QuizQuestion[]>([], { alias: 'questions' });
-  readonly questions = signal<QuizQuestion[]>([]);
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
+  private readonly timerService = inject(TimerService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
+  // ── inputs ──────────────────────────────────────────────────────
+  readonly questionsInput = input<QuizQuestion[]>([], { alias: 'questions' });
   readonly isShuffled = input(false);
   readonly accordionHeaderLabel = input('', { alias: "headerLabel" });
+
+  // ── remaining variables ─────────────────────────────────────────
+  readonly questions = signal<QuizQuestion[]>([]);
 
   results: Result = {
     userAnswers: [],
@@ -39,15 +50,7 @@ export class AccordionComponent implements OnInit {
 
   private hasRetried = false;
 
-  constructor(
-    private quizService: QuizService,
-    private quizDataService: QuizDataService,
-    private timerService: TimerService,
-    private selectedOptionService: SelectedOptionService,
-    private explanationTextService: ExplanationTextService,
-    private activatedRoute: ActivatedRoute,
-    private destroyRef: DestroyRef
-  ) {
+  constructor() {
     effect(() => {
       const incoming = this.questionsInput();
       if (Array.isArray(incoming) && incoming.length > 0) {
@@ -71,84 +74,6 @@ export class AccordionComponent implements OnInit {
     this.initializeResults(userAnswersData);
     this.loadInitialQuestionsFromService();
     this.normalizeUserAnswers();
-  }
-
-  // Recover selections from durable localStorage store. clearState/resetAll
-  // wipes rawSelectionsMap AND sessionStorage, but the durable
-  // 'quizAnswersForResults' key in localStorage survives. Falls back to the
-  // service's userAnswers if localStorage is empty.
-  private recoverUserAnswers(): any[] {
-    this.selectedOptionService.recoverAnswersForResults();
-
-    let storedAnswers: any[] = [];
-    try {
-      const stored = localStorage.getItem('userAnswers');
-      storedAnswers = stored ? JSON.parse(stored) : [];
-    } catch (error: any) {
-      // error handled silently
-    }
-
-    return storedAnswers.length > 0 ? storedAnswers : this.quizService.userAnswers;
-  }
-
-  private initializeResults(userAnswersData: any[]): void {
-    this.results = {
-      userAnswers: userAnswersData,
-      elapsedTimes: this.timerService.elapsedTimes
-    };
-  }
-
-  // For navigation-back scenarios — populate from service state synchronously
-  // so the accordion renders without waiting for the questions$ stream.
-  private loadInitialQuestionsFromService(): void {
-    const currentQuestions = this.quizService.questions;
-    if (currentQuestions && currentQuestions.length > 0) {
-      this.questions.set(currentQuestions);
-    }
-  }
-
-  // Fallback path when questions$ emits empty: resolve quizId from route or
-  // service, then fetch directly from QuizDataService (bypasses shuffling /
-  // state complexity).
-  private retryLoadQuestionsViaDataService(): void {
-    // Use a small timeout to let other initializations settle
-    setTimeout(() => {
-      const id = this.resolveQuizId();
-      if (!id) return;
-
-      this.quizDataService.getQuestionsForQuiz(id)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe((qs: QuizQuestion[]) => {
-          if (qs && qs.length > 0) {
-            this.questions.set(qs);
-          }
-        });
-    }, 100);
-  }
-
-  // Priority: URL params > service state. Syncs the service if the URL had
-  // a different id so downstream consumers see consistent state.
-  private resolveQuizId(): string | null {
-    let id = this.activatedRoute.snapshot.paramMap.get('quizId') ||
-      this.activatedRoute.parent?.snapshot.paramMap.get('quizId') ||
-      null;
-
-    if (!id) {
-      id = this.quizService.quizId;
-    } else if (this.quizService.quizId !== id) {
-      this.quizService.setQuizId(id);
-    }
-
-    return id;
-  }
-
-  // Coerce userAnswers entries into arrays so Angular's template can iterate
-  // them uniformly (raw values come back as either scalar or array).
-  private normalizeUserAnswers(): void {
-    if (!this.results?.userAnswers) return;
-    this.results.userAnswers = this.results.userAnswers.map((ans) =>
-      Array.isArray(ans) ? ans : (ans !== null && ans !== undefined ? [ans] : [])
-    );
   }
 
   checkIfAnswersAreCorrect(
@@ -253,11 +178,11 @@ export class AccordionComponent implements OnInit {
 
   // Check if we have any selections from the service for this question
   hasSelectionsFromService(questionIndex: number): boolean {
-    const rawSelections = 
+    const rawSelections =
       this.selectedOptionService.rawSelectionsMap.get(questionIndex);
     if (rawSelections && rawSelections.length > 0) return true;
-    
-    const selections = 
+
+    const selections =
       this.selectedOptionService.selectedOptionsMap.get(questionIndex);
     return !!selections && selections.length > 0;
   }
@@ -265,23 +190,100 @@ export class AccordionComponent implements OnInit {
   // Check if user selections match correct answers for a question (using service data)
   // Returns true if ALL correct answers are INCLUDED in the user's selections
   checkIfAnswersAreCorrectFromService(
-    question: QuizQuestion, 
+    question: QuizQuestion,
     questionIndex: number
   ): boolean {
     if (!question || !question.options) return false;
-    
+
     // Get correct option texts
     const correctTexts = question.options
       .filter(opt => opt.correct)
       .map(opt => (opt.text || '').trim().toLowerCase());
-    
+
     // Get selected option texts
     const selectedOpts = this.getSelectedOptionsForQuestion(questionIndex);
     const selectedTexts = selectedOpts
       .map(o => (o.text || '').trim().toLowerCase());
-    
+
     // Check if ALL correct answers are included in selections
     return correctTexts.every(ct => selectedTexts.includes(ct));
   }
 
+  // Recover selections from durable localStorage store. clearState/resetAll
+  // wipes rawSelectionsMap AND sessionStorage, but the durable
+  // 'quizAnswersForResults' key in localStorage survives. Falls back to the
+  // service's userAnswers if localStorage is empty.
+  private recoverUserAnswers(): any[] {
+    this.selectedOptionService.recoverAnswersForResults();
+
+    let storedAnswers: any[] = [];
+    try {
+      const stored = localStorage.getItem('userAnswers');
+      storedAnswers = stored ? JSON.parse(stored) : [];
+    } catch (error: any) {
+      // error handled silently
+    }
+
+    return storedAnswers.length > 0 ? storedAnswers : this.quizService.userAnswers;
+  }
+
+  private initializeResults(userAnswersData: any[]): void {
+    this.results = {
+      userAnswers: userAnswersData,
+      elapsedTimes: this.timerService.elapsedTimes
+    };
+  }
+
+  // For navigation-back scenarios — populate from service state synchronously
+  // so the accordion renders without waiting for the questions$ stream.
+  private loadInitialQuestionsFromService(): void {
+    const currentQuestions = this.quizService.questions;
+    if (currentQuestions && currentQuestions.length > 0) {
+      this.questions.set(currentQuestions);
+    }
+  }
+
+  // Fallback path when questions$ emits empty: resolve quizId from route or
+  // service, then fetch directly from QuizDataService (bypasses shuffling /
+  // state complexity).
+  private retryLoadQuestionsViaDataService(): void {
+    // Use a small timeout to let other initializations settle
+    setTimeout(() => {
+      const id = this.resolveQuizId();
+      if (!id) return;
+
+      this.quizDataService.getQuestionsForQuiz(id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((qs: QuizQuestion[]) => {
+          if (qs && qs.length > 0) {
+            this.questions.set(qs);
+          }
+        });
+    }, 100);
+  }
+
+  // Priority: URL params > service state. Syncs the service if the URL had
+  // a different id so downstream consumers see consistent state.
+  private resolveQuizId(): string | null {
+    let id = this.activatedRoute.snapshot.paramMap.get('quizId') ||
+      this.activatedRoute.parent?.snapshot.paramMap.get('quizId') ||
+      null;
+
+    if (!id) {
+      id = this.quizService.quizId;
+    } else if (this.quizService.quizId !== id) {
+      this.quizService.setQuizId(id);
+    }
+
+    return id;
+  }
+
+  // Coerce userAnswers entries into arrays so Angular's template can iterate
+  // them uniformly (raw values come back as either scalar or array).
+  private normalizeUserAnswers(): void {
+    if (!this.results?.userAnswers) return;
+    this.results.userAnswers = this.results.userAnswers.map((ans) =>
+      Array.isArray(ans) ? ans : (ans !== null && ans !== undefined ? [ans] : [])
+    );
+  }
 }
