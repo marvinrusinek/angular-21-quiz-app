@@ -1,5 +1,5 @@
 import {
-  Directive, effect, ElementRef, HostListener, input, OnInit, output, Renderer2
+  Directive, effect, ElementRef, HostListener, inject, input, OnInit, output, Renderer2
 } from '@angular/core';
 
 import { Option } from '../shared/models/Option.model';
@@ -12,21 +12,25 @@ import { SharedOptionConfig } from '../shared/models/SharedOptionConfig.model';
   standalone: true
 })
 export class HighlightOptionDirective implements OnInit {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly el = inject(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  // ── outputs ─────────────────────────────────────────────────────
   readonly resetBackground = output<boolean>();
   readonly optionClicked = output<Option>();
+
+  // ── inputs ──────────────────────────────────────────────────────
   readonly appHighlightInputTypeInput =
     input<'checkbox' | 'radio'>('radio',
       { alias: 'appHighlightInputType' });
-  appHighlightInputType: 'checkbox' | 'radio' = 'radio';
   readonly type =
     input<'single' | 'multiple'>('single');
   readonly appHighlightResetInput =
     input(false, { alias: 'appHighlightReset' });
-  appHighlightReset = false;
   readonly appResetBackground = input(false);
   readonly optionInput =
     input<Option | undefined>(undefined, { alias: 'option' });
-  option!: Option;
   readonly showFeedbackForOption =
     input<{ [key: number]: boolean; }>({});
   readonly highlightCorrectAfterIncorrect =
@@ -38,7 +42,6 @@ export class HighlightOptionDirective implements OnInit {
   readonly selectedOptionHistory = input<number[]>([]);
   readonly isSelectedInput =
     input(false, { alias: 'isSelected' });
-  isSelected = false;
   readonly isCorrect = input(false);
   readonly isAnswered = input(false);
   readonly showFeedback = input(false);
@@ -46,10 +49,13 @@ export class HighlightOptionDirective implements OnInit {
   readonly sharedOptionConfig =
     input.required<SharedOptionConfig>();
 
-  constructor(
-    private el: ElementRef,
-    private renderer: Renderer2
-  ) {
+  // ── remaining variables ─────────────────────────────────────────
+  appHighlightInputType: 'checkbox' | 'radio' = 'radio';
+  appHighlightReset = false;
+  option!: Option;
+  isSelected = false;
+
+  constructor() {
     // Mirror the signal input to the mutable backing field so legacy
     // code paths (syncDerivedInputs, updateHighlight) can read/write it.
     effect(() => {
@@ -92,20 +98,6 @@ export class HighlightOptionDirective implements OnInit {
     const optionBinding = this.optionBinding();
     if (optionBinding) {
       optionBinding.directiveInstance = this;
-    }
-  }
-
-  /** Derive individual inputs from sharedOptionConfig / optionBinding when not explicitly set. */
-  private syncDerivedInputs(): void {
-    const sharedOptionConfig = this.sharedOptionConfig();
-    if (sharedOptionConfig) {
-      this.appHighlightInputType = sharedOptionConfig.type === 'multiple' ? 'checkbox' : 'radio';
-      this.appHighlightReset = sharedOptionConfig.shouldResetBackground;
-    }
-    const optionBinding = this.optionBinding();
-    if (optionBinding) {
-      this.option = optionBinding.option;
-      this.isSelected = optionBinding.isSelected;
     }
   }
 
@@ -184,6 +176,20 @@ export class HighlightOptionDirective implements OnInit {
         // error handled silently
       }
     }, 0);
+  }
+
+  /** Derive individual inputs from sharedOptionConfig / optionBinding when not explicitly set. */
+  private syncDerivedInputs(): void {
+    const sharedOptionConfig = this.sharedOptionConfig();
+    if (sharedOptionConfig) {
+      this.appHighlightInputType = sharedOptionConfig.type === 'multiple' ? 'checkbox' : 'radio';
+      this.appHighlightReset = sharedOptionConfig.shouldResetBackground;
+    }
+    const optionBinding = this.optionBinding();
+    if (optionBinding) {
+      this.option = optionBinding.option;
+      this.isSelected = optionBinding.isSelected;
+    }
   }
 
   private updateHighlightFromConfig(): void {
