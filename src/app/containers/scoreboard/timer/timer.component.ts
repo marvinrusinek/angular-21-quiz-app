@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
@@ -19,6 +19,10 @@ enum TimerType {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TimerComponent {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly timerService = inject(TimerService);
+
+  // ── remaining variables ─────────────────────────────────────────
   readonly timerType = TimerType;
   readonly timePerQuestion = 30;
 
@@ -44,8 +48,6 @@ export class TimerComponent {
       ? Math.max(this.timePerQuestion - elapsed, 0)
       : elapsed;
   });
-
-  constructor(private timerService: TimerService) {}
 
   setTimerType(type: TimerType): void {
     if (this.currentTimerType() === type) return;
