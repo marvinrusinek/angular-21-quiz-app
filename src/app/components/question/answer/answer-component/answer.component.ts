@@ -1,10 +1,10 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef,
+  ChangeDetectionStrategy, Component, DestroyRef,
   effect, inject, input, model, OnInit, output, signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { Option } from '../../../../shared/models/Option.model';
 import { OptionBindings } from '../../../../shared/models/OptionBindings.model';
@@ -15,13 +15,8 @@ import { SharedOptionConfig } from '../../../../shared/models/SharedOptionConfig
 import { AnswerOptionsService } from '../../../../shared/services/features/answer/answer-options.service';
 import { AnswerSelectionService } from '../../../../shared/services/features/answer/answer-selection.service';
 import { AnswerBindingsService } from '../../../../shared/services/features/answer/answer-bindings.service';
-import { DynamicComponentService } from '../../../../shared/services/ui/dynamic-component.service';
-import { FeedbackService } from '../../../../shared/services/features/feedback/feedback.service';
-import { QuizService } from '../../../../shared/services/data/quiz.service';
 import { QqcQuestionLoaderService } from '../../../../shared/services/features/qqc/qqc-question-loader.service';
 import { QuizQuestionManagerService } from '../../../../shared/services/flow/quizquestionmgr.service';
-import { QuizStateService } from '../../../../shared/services/state/quizstate.service';
-import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
 import { SharedOptionComponent } from '../shared-option-component/shared-option.component';
 import { BaseQuestion } from '../../base/base-question';
 
@@ -73,15 +68,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
   override selectedOptionIndex = -1;
 
   constructor() {
-    super(
-      inject(FormBuilder),
-      inject(DynamicComponentService),
-      inject(FeedbackService),
-      inject(QuizService),
-      inject(QuizStateService),
-      inject(SelectedOptionService),
-      inject(ChangeDetectorRef)
-    );
+    super();
 
     // React to signal-input updates from the dynamic loader (replaces ngOnChanges)
     effect(() => {

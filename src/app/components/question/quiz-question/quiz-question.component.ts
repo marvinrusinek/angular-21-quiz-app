@@ -1,11 +1,11 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component,
+  AfterViewInit, ChangeDetectionStrategy, Component,
   computed, DestroyRef, effect, HostListener, inject, input, model, OnDestroy, OnInit,
   output, signal, viewChild, ViewContainerRef
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -18,15 +18,10 @@ import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { SelectedOption } from '../../../shared/models/SelectedOption.model';
 import { QuizQuestionEvent } from '../../../shared/models/QuizQuestionEvent.type';
 import { SharedOptionConfig } from '../../../shared/models/SharedOptionConfig.model';
-import { FeedbackService } from '../../../shared/services/features/feedback/feedback.service';
-import { QuizService } from '../../../shared/services/data/quiz.service';
-import { QuizStateService } from '../../../shared/services/state/quizstate.service';
 // QuizQuestionLoaderService consolidated into QqcQuestionLoaderService
 import { QuizQuestionManagerService } from '../../../shared/services/flow/quizquestionmgr.service';
-import { DynamicComponentService } from '../../../shared/services/ui/dynamic-component.service';
 import { ExplanationTextService } from '../../../shared/services/features/explanation/explanation-text.service';
 import { NextButtonStateService } from '../../../shared/services/state/next-button-state.service';
-import { SelectedOptionService } from '../../../shared/services/state/selectedoption.service';
 import { SelectionMessageService } from '../../../shared/services/features/selection-message/selection-message.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
 import { QqcQuestionLoaderService } from '../../../shared/services/features/qqc/qqc-question-loader.service';
@@ -190,15 +185,7 @@ export class QuizQuestionComponent extends BaseQuestion
   _suppressDisplayStateUntil = 0;
 
   constructor() {
-    super(
-      inject(FormBuilder),
-      inject(DynamicComponentService),
-      inject(FeedbackService),
-      inject(QuizService),
-      inject(QuizStateService),
-      inject(SelectedOptionService),
-      inject(ChangeDetectorRef)
-    );
+    super();
 
     effect(() => {
       const value = this.questionIndex();

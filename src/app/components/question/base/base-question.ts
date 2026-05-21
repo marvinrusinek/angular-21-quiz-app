@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Directive, input, model, OnDestroy,
+import { ChangeDetectorRef, Directive, inject, input, model, OnDestroy,
   OnInit, output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -26,41 +26,46 @@ export interface OptionClickEvent {
 export abstract class BaseQuestion<T extends OptionClickEvent =
   OptionClickEvent> implements OnInit, OnDestroy
 {
+  // ── injects ─────────────────────────────────────────────────────
+  public readonly dynamicComponentService = inject(DynamicComponentService);
+  public readonly feedbackService = inject(FeedbackService);
+  public readonly quizService = inject(QuizService);
+  public readonly quizStateService = inject(QuizStateService);
+  public readonly selectedOptionService = inject(SelectedOptionService);
+  public readonly cdRef = inject(ChangeDetectorRef);
+  public readonly fb = inject(FormBuilder);
+
+  // ── outputs ─────────────────────────────────────────────────────
   readonly optionClicked = output<T>();
   readonly questionChange = output<QuizQuestion>();
   readonly explanationToDisplayChange = output<any>();
   readonly correctMessageChange = output<string>();
 
+  // ── inputs ──────────────────────────────────────────────────────
   readonly quizQuestionComponentOnOptionClicked = input<(option: SelectedOption, index: number) => void>(undefined as unknown as (option: SelectedOption, index: number) => void);
+  readonly feedback = input<string>('');
+  readonly shouldResetBackground = input<boolean>(false);
+  readonly config = input<SharedOptionConfig>(undefined as unknown as SharedOptionConfig);
+
+  // ── models ──────────────────────────────────────────────────────
   readonly question = model<QuizQuestion | null>(null);
   readonly optionsToDisplay = model<Option[]>([]);
   readonly correctMessage = model<string>('');
-  readonly feedback = input<string>('');
   readonly showFeedback = model<boolean>(false);
-  readonly shouldResetBackground = input<boolean>(false);
   readonly type = model<'single' | 'multiple'>('single');
-  readonly config = input<SharedOptionConfig>(undefined as unknown as SharedOptionConfig);
+  readonly explanationToDisplay = model<string | null>(null);
+  readonly optionBindings = model<OptionBindings[]>([]);
+
+  // ── remaining variables ─────────────────────────────────────────
   sharedOptionConfig: SharedOptionConfig | null = null;
   currentQuestionSubscription!: Subscription;
-  readonly explanationToDisplay = model<string | null>(null);
   questionForm!: FormGroup;
   selectedOption: SelectedOption | null = null;
   selectedOptionId: number | null = null;
   selectedOptionIndex: number | null = null;
   showFeedbackForOption: { [optionId: number]: boolean } = {};
-  readonly optionBindings = model<OptionBindings[]>([]);
   optionsInitialized = false;
   containerInitialized = false;
-
-  protected constructor(
-    public fb: FormBuilder,
-    public dynamicComponentService: DynamicComponentService,
-    public feedbackService: FeedbackService,
-    public quizService: QuizService,
-    public quizStateService: QuizStateService,
-    public selectedOptionService: SelectedOptionService,
-    public cdRef: ChangeDetectorRef
-  ) {}
 
   async ngOnInit(): Promise<void> {
     this.initializeQuestionIfAvailable();
@@ -70,58 +75,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
 
   ngOnDestroy(): void {
     this.currentQuestionSubscription?.unsubscribe();
-  }
-
-  private updateSelectedOption(index: number): void {
-    this.selectedOptionIndex = index;
-    this.showFeedback.set(true);
-  }
-
-  protected initializeQuestion(): void {
-    try {
-      const qqc = (this as any).quizQuestionComponent ??
-        (this as any)._quizQuestionComponent;
-      qqc?._fetEarlyShown?.clear();
-    } catch (err: any) {
-    }
-
-    if (this.question() && Array.isArray(this.question()!.options) && this.question()!.options.length > 0) {
-      this.initializeOptions();
-      this.optionsInitialized = true;
-      this.questionChange.emit(this.question()!);
-    } else {
-      // question input is invalid or missing options
-    }
-  }
-
-  private initializeQuestionIfAvailable(): void {
-    if (this.question() && Array.isArray(this.question()!.options) &&
-      this.question()!.options.length > 0) {
-      this.setCurrentQuestion(this.question()!);
-      this.initializeQuestion();
-    }
-  }
-
-  protected initializeOptions(): void {
-    if (!this.question()?.options?.length) return;
-
-    // Only initialize form if not yet created
-    if (!this.questionForm) {
-      this.questionForm = new FormGroup({});
-      for (const option of this.question()!.options) {
-        const controlName = `option_${option.optionId}`;  // stable and unique
-        if (!this.questionForm.contains(controlName)) {
-          this.questionForm.addControl(controlName, new FormControl(false));
-        }
-      }
-    }
-
-    // Don't overwrite optionsToDisplay if it's already populated from @Input()
-    // The parent passes the correct shuffled options via [optionsToDisplay] binding.
-    // Overwriting with this.question().options could use unshuffled data from a different source.
-    if (!this.optionsToDisplay() || this.optionsToDisplay().length === 0) {
-      this.optionsToDisplay.set([...this.question()!.options]);
-    }
   }
 
   public async initializeSharedOptionConfig(options?: Option[]): Promise<void> {
@@ -178,40 +131,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
       idx: 0
     };
   }
-
-  protected subscribeToQuestionChanges(): void {
-    if (!this.quizStateService) return;
-
-    const currentQuestion$ = this.quizStateService.currentQuestion$;
-    if (!currentQuestion$) return;
-
-    // Subscribe to `currentQuestion$` with filtering to skip undefined values
-    this.currentQuestionSubscription = currentQuestion$
-      .pipe(
-        // Filter out undefined or option-less emissions
-        filter((quizQuestion): quizQuestion is QuizQuestion => {
-          // Guard against undefined values
-          if (!quizQuestion) return false;
-
-          // Guard against questions that don’t yet have options
-          const hasOptions = !!quizQuestion.options?.length;
-          return hasOptions;
-        })
-      )
-      .subscribe({
-        next: (quizQuestion: QuizQuestion) => {
-          this.question.set(quizQuestion);
-          this.initializeOptions();
-        },
-        error: () => { }
-      });
-  }
-
-  protected abstract loadDynamicComponent(
-    question: QuizQuestion,
-    options: Option[],
-    questionIndex: number
-  ): Promise<void>;
 
   public async onOptionClicked(event: {
     option: SelectedOption;
@@ -274,8 +193,94 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     this.cdRef.detectChanges();
   }
 
+  protected initializeQuestion(): void {
+    try {
+      const qqc = (this as any).quizQuestionComponent ??
+        (this as any)._quizQuestionComponent;
+      qqc?._fetEarlyShown?.clear();
+    } catch (err: any) {
+    }
+
+    if (this.question() && Array.isArray(this.question()!.options) && this.question()!.options.length > 0) {
+      this.initializeOptions();
+      this.optionsInitialized = true;
+      this.questionChange.emit(this.question()!);
+    } else {
+      // question input is invalid or missing options
+    }
+  }
+
+  protected initializeOptions(): void {
+    if (!this.question()?.options?.length) return;
+
+    // Only initialize form if not yet created
+    if (!this.questionForm) {
+      this.questionForm = new FormGroup({});
+      for (const option of this.question()!.options) {
+        const controlName = `option_${option.optionId}`;  // stable and unique
+        if (!this.questionForm.contains(controlName)) {
+          this.questionForm.addControl(controlName, new FormControl(false));
+        }
+      }
+    }
+
+    // Don't overwrite optionsToDisplay if it's already populated from @Input()
+    // The parent passes the correct shuffled options via [optionsToDisplay] binding.
+    // Overwriting with this.question().options could use unshuffled data from a different source.
+    if (!this.optionsToDisplay() || this.optionsToDisplay().length === 0) {
+      this.optionsToDisplay.set([...this.question()!.options]);
+    }
+  }
+
+  protected subscribeToQuestionChanges(): void {
+    if (!this.quizStateService) return;
+
+    const currentQuestion$ = this.quizStateService.currentQuestion$;
+    if (!currentQuestion$) return;
+
+    // Subscribe to `currentQuestion$` with filtering to skip undefined values
+    this.currentQuestionSubscription = currentQuestion$
+      .pipe(
+        // Filter out undefined or option-less emissions
+        filter((quizQuestion): quizQuestion is QuizQuestion => {
+          // Guard against undefined values
+          if (!quizQuestion) return false;
+
+          // Guard against questions that don’t yet have options
+          const hasOptions = !!quizQuestion.options?.length;
+          return hasOptions;
+        })
+      )
+      .subscribe({
+        next: (quizQuestion: QuizQuestion) => {
+          this.question.set(quizQuestion);
+          this.initializeOptions();
+        },
+        error: () => { }
+      });
+  }
+
+  protected abstract loadDynamicComponent(
+    question: QuizQuestion,
+    options: Option[],
+    questionIndex: number
+  ): Promise<void>;
+
   protected setCurrentQuestion(question: QuizQuestion): void {
     if (this.quizStateService) this.quizService.setCurrentQuestion(question);
+  }
+
+  private updateSelectedOption(index: number): void {
+    this.selectedOptionIndex = index;
+    this.showFeedback.set(true);
+  }
+
+  private initializeQuestionIfAvailable(): void {
+    if (this.question() && Array.isArray(this.question()!.options) &&
+      this.question()!.options.length > 0) {
+      this.setCurrentQuestion(this.question()!);
+      this.initializeQuestion();
+    }
   }
 
 }
