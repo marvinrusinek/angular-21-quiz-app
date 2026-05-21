@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1779149824947,
+  "timestamp": 1779401133629,
   "index": "/angular-20-quiz-app/index.html",
   "assetGroups": [
     {
@@ -11,10 +11,10 @@
         "ignoreVary": true
       },
       "urls": [
-        "/angular-20-quiz-app/chunk-5MZRUU5H.js",
-        "/angular-20-quiz-app/chunk-QYGRZYSE.js",
+        "/angular-20-quiz-app/chunk-4RPRTBCL.js",
+        "/angular-20-quiz-app/chunk-6SPBZ4HB.js",
         "/angular-20-quiz-app/index.html",
-        "/angular-20-quiz-app/main-BZKQXRPA.js",
+        "/angular-20-quiz-app/main-7PTNHGIW.js",
         "/angular-20-quiz-app/polyfills-UIC2AE2I.js",
         "/angular-20-quiz-app/styles-FTUEX7BF.css"
       ],
@@ -47,10 +47,10 @@
     "/angular-20-quiz-app/assets/images/codelab_logo.jpeg": "f9feb096c6d94292acf3b2f5f9ea7b4aee5dc2a3",
     "/angular-20-quiz-app/assets/images/email.svg": "61c7be21fc609e2e8ac98011c9d2c684f2bde615",
     "/angular-20-quiz-app/assets/images/twitter.svg": "5c46fc6c39e734a12337fbb8dc2430baab716042",
-    "/angular-20-quiz-app/chunk-5MZRUU5H.js": "99b51754d227fb9dd47b5083249e02f39a7be257",
-    "/angular-20-quiz-app/chunk-QYGRZYSE.js": "1beabd24648e8aada818a70ed224851e37a8e0d7",
-    "/angular-20-quiz-app/index.html": "a563f3df62c0642a4bf382464e1b8551116a5a89",
-    "/angular-20-quiz-app/main-BZKQXRPA.js": "7bcc4b82097a18dbf6bbed7653ee9dd9021248e4",
+    "/angular-20-quiz-app/chunk-4RPRTBCL.js": "fe12286e8b6ae4cf3efdd08999ed5a8280bac76c",
+    "/angular-20-quiz-app/chunk-6SPBZ4HB.js": "0d5a1b6a29bd67bad14c89f4897195745c8c36ce",
+    "/angular-20-quiz-app/index.html": "0d59ea13b458303425952b3561b37afc3ea2255b",
+    "/angular-20-quiz-app/main-7PTNHGIW.js": "5225748ef91011538b96d1db79004546d7c73dc8",
     "/angular-20-quiz-app/media/codelab_logo-67WJRSK2.jpeg": "f9feb096c6d94292acf3b2f5f9ea7b4aee5dc2a3",
     "/angular-20-quiz-app/polyfills-UIC2AE2I.js": "d95d77c85e3638ace2862592b9479ad4e8520cad",
     "/angular-20-quiz-app/styles-FTUEX7BF.css": "52f26650b6b0efabbc4713ec1a57583257b34ba6"
