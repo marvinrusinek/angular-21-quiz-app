@@ -1,4 +1,4 @@
-import { Injectable, WritableSignal } from '@angular/core';
+import { inject, Injectable, WritableSignal } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 import { Option } from '../../models/Option.model';
@@ -63,11 +63,10 @@ export interface QuizSessionState {
  */
 @Injectable({ providedIn: 'root' })
 export class QuizSessionManagerService {
-  constructor(
-    private optionsService: QuizOptionsService,
-    private questionResolver: QuizQuestionResolverService,
-    private scoringService: QuizScoringService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly optionsService = inject(QuizOptionsService);
+  private readonly questionResolver = inject(QuizQuestionResolverService);
+  private readonly scoringService = inject(QuizScoringService);
 
   /**
    * Handles a question change event: splices new options into the caller's
