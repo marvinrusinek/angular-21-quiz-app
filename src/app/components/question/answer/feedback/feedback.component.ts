@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, effect, input, signal
+  ChangeDetectionStrategy, Component, effect, inject, input, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,16 +18,20 @@ import { SelectedOptionService } from '../../../../shared/services/state/selecte
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FeedbackComponent {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly feedbackService = inject(FeedbackService);
+  private readonly quizService = inject(QuizService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
+
+  // ── inputs ──────────────────────────────────────────────────────
   readonly feedbackConfig = input<FeedbackProps | null | undefined>(undefined);
   readonly stylePreset = input<'default' | 'inline'>('default');
+
+  // ── remaining variables ─────────────────────────────────────────
   readonly feedbackMessageClass = signal('');
   readonly displayMessage = signal('');
 
-  constructor(
-    private feedbackService: FeedbackService,
-    private quizService: QuizService,
-    private selectedOptionService: SelectedOptionService
-  ) {
+  constructor() {
     // Re-runs whenever the feedbackConfig signal input changes (replaces
     // the prior ngOnInit + ngOnChanges pair). Truthy-only gate matches the
     // old `'feedbackConfig' in changes && !!currentValue` check; an
