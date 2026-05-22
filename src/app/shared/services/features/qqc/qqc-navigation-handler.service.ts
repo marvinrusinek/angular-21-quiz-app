@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -22,7 +22,15 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcNavigationHandlerService {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly quizService = inject(QuizService);
+  private readonly quizStateService = inject(QuizStateService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
+  private readonly statePersistence = inject(QqcStatePersistenceService);
+  private readonly timerService = inject(TimerService);
 
+  // ── remaining variables ─────────────────────────────────────────
   /** Tracks whether the page was hidden (for FET purge logic) */
   private _wasHidden = false;
 
@@ -31,15 +39,6 @@ export class QqcNavigationHandlerService {
 
   /** Elapsed timer value captured when the page was hidden */
   private _elapsedAtHide: number | null = null;
-
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private statePersistence: QqcStatePersistenceService,
-    private timerService: TimerService
-  ) {}
 
   // ═══════════════════════════════════════════════════════════════
   // VISIBILITY STATE PERSISTENCE
