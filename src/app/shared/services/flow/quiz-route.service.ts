@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -13,10 +13,11 @@ import { QuizService } from '../data/quiz.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QuizRouteService {
-  constructor(
-    private quizDataService: QuizDataService,
-    private quizService: QuizService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private quizDataService = inject(QuizDataService);
+  private quizService = inject(QuizService);
+
+  // ── public methods ──────────────────────────────────────────────
 
   // ═══════════════════════════════════════════════════════════════
   // PARSE NAVIGATION-END ROUTE PARAMS
