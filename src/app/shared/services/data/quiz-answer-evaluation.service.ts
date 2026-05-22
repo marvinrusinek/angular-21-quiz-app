@@ -13,12 +13,13 @@ import { SelectedOptionService } from '../state/selectedoption.service';
 @Injectable({ providedIn: 'root' })
 export class QuizAnswerEvaluationService {
   // ── injects ─────────────────────────────────────────────────────
-  private readonly optionsService = inject(QuizOptionsService);
   private readonly injector = inject(Injector);
+  private readonly optionsService = inject(QuizOptionsService);
 
-  // ── remaining variables ─────────────────────────────────────────
+  // ── properties ──────────────────────────────────────────────────
   private _selectedOptionService: SelectedOptionService | null = null;
 
+  // ── public methods ──────────────────────────────────────────────
   /**
    * Resolves user answer IDs to full Option objects from the question's options.
    * Returns the matched options array.
@@ -225,6 +226,7 @@ export class QuizAnswerEvaluationService {
     return true;
   }
 
+  // ── private methods ─────────────────────────────────────────────
   private get selectedOptionServiceLazy(): SelectedOptionService | null {
     if (!this._selectedOptionService) {
       try {
