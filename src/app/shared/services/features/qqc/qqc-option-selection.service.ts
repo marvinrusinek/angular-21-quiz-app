@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -18,16 +18,14 @@ import { TimerService } from '../timer/timer.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcOptionSelectionService {
-
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private feedbackService: FeedbackService,
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private selectionMessageService: SelectionMessageService,
-    private timerService: TimerService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly feedbackService = inject(FeedbackService);
+  private readonly quizService = inject(QuizService);
+  private readonly quizStateService = inject(QuizStateService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
+  private readonly selectionMessageService = inject(SelectionMessageService);
+  private readonly timerService = inject(TimerService);
 
   /**
    * Handles option add/remove based on checked state.
