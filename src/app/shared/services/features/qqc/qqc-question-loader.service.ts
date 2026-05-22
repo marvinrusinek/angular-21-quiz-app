@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -21,18 +21,17 @@ import { TimerService } from '../timer/timer.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcQuestionLoaderService {
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private nextButtonStateService: NextButtonStateService,
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private selectionMessageService: SelectionMessageService,
-    private fetch: QqcQlFetchService,
-    private optionBuild: QqcQlOptionBuildService,
-    private qql: QqcQlStreamService,
-    private timerService: TimerService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly fetch = inject(QqcQlFetchService);
+  private readonly nextButtonStateService = inject(NextButtonStateService);
+  private readonly optionBuild = inject(QqcQlOptionBuildService);
+  private readonly qql = inject(QqcQlStreamService);
+  private readonly quizService = inject(QuizService);
+  private readonly quizStateService = inject(QuizStateService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
+  private readonly selectionMessageService = inject(SelectionMessageService);
+  private readonly timerService = inject(TimerService);
 
   // ─── Pass-through: QqcQlStreamService ───────
 
