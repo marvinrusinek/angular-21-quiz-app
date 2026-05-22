@@ -3,17 +3,18 @@ import { MatCheckboxChange } from '@angular/material/checkbox';
 import { MatRadioChange } from '@angular/material/radio';
 
 import { QuestionType } from '../../../models/question-type.enum';
+
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
-import { SelectedOptionService } from '../../state/selectedoption.service';
-import { NextButtonStateService } from '../../state/next-button-state.service';
+import { QuizService } from '../../data/quiz.service';
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { SelectionMessageService } from '../../features/selection-message/selection-message.service';
-import { QuizService } from '../../data/quiz.service';
-import { OptionSelectionPolicyService } from '../policy/option-selection-policy.service';
+import { NextButtonStateService } from '../../state/next-button-state.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
 import { OptionLockPolicyService } from '../policy/option-lock-policy.service';
+import { OptionSelectionPolicyService } from '../policy/option-selection-policy.service';
 
 export interface OptionUiSyncContext {
   form: any;

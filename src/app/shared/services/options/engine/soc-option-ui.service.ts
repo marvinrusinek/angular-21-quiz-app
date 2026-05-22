@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
+
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { OptionLockService } from '../policy/option-lock.service';
 import { OptionSelectionPolicyService } from '../policy/option-selection-policy.service';

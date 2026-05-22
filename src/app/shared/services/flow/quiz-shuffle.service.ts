@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { ShuffleState } from '../../models/ShuffleState.model';
+
 import { Utils } from '../../utils/utils';
 
 export interface PrepareShuffleOpts {

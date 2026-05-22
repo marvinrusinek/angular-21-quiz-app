@@ -8,18 +8,18 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { correctAnswerAnim } from '../../../../../animations/animations';
-import { OptionBindings } from '../../../../../shared/models/OptionBindings.model';
 import { FeedbackProps } from '../../../../../shared/models/FeedbackProps.model';
+import { OptionBindings } from '../../../../../shared/models/OptionBindings.model';
 import { SharedOptionConfig } from '../../../../../shared/models/SharedOptionConfig.model';
 
+import { QuizService } from '../../../../../shared/services/data/quiz.service';
+import { TimerService } from '../../../../../shared/services/features/timer/timer.service';
+import { OptionService } from '../../../../../shared/services/options/view/option.service';
+import { SelectedOptionService } from '../../../../../shared/services/state/selectedoption.service';
+
+import { correctAnswerAnim } from '../../../../../animations/animations';
 import { HighlightOptionDirective } from '../../../../../directives/highlight-option.directive';
 import { SharedOptionConfigDirective } from '../../../../../directives/shared-option-config.directive';
-
-import { OptionService } from '../../../../../shared/services/options/view/option.service';
-import { QuizService } from '../../../../../shared/services/data/quiz.service';
-import { SelectedOptionService } from '../../../../../shared/services/state/selectedoption.service';
-import { TimerService } from '../../../../../shared/services/features/timer/timer.service';
 
 export type OptionUIEventKind = 'change' | 'interaction' | 'contentClick';
 

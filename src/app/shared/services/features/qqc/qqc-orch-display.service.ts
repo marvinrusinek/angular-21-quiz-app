@@ -3,8 +3,10 @@ import { take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { Utils } from '../../../utils/utils';
+
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
+
+import { Utils } from '../../../utils/utils';
 
 type Host = QuizQuestionComponent;
 

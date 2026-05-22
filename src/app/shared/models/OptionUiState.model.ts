@@ -1,7 +1,8 @@
 import { FormGroup } from '@angular/forms';
+
+import { FeedbackProps } from './FeedbackProps.model';
 import { Option } from './Option.model';
 import { OptionBindings } from './OptionBindings.model';
-import { FeedbackProps } from './FeedbackProps.model';
 
 export interface OptionUiState {
   form: FormGroup;

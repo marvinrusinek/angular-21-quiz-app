@@ -2,17 +2,19 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { filter, map, take, timeout } from 'rxjs/operators';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { QuestionType } from '../../../models/question-type.enum';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { NextButtonStateService } from '../../state/next-button-state.service';
+
 import { QuizService } from '../../data/quiz.service';
+import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { SoundService } from '../../ui/sound.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { TimerService } from '../timer/timer.service';
 
 /**

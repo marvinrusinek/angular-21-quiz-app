@@ -3,13 +3,14 @@
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
+
 import { QuizService } from '../data/quiz.service';
+import { NextButtonStateService } from '../state/next-button-state.service';
+import { QuizPersistenceService } from '../state/quiz-persistence.service';
+import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { QuizDotStatusService } from './quiz-dot-status.service';
-import { QuizPersistenceService } from '../state/quiz-persistence.service';
 import { QuizScoringService } from './quiz-scoring.service';
-import { QuizStateService } from '../state/quizstate.service';
-import { NextButtonStateService } from '../state/next-button-state.service';
 
 /**
  * Result of evaluating immediate correctness for an option click.

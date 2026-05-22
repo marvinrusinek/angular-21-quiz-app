@@ -1,6 +1,7 @@
 import { afterNextRender, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
+
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
 type Host = QuizQuestionComponent;

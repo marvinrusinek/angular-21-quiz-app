@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
 import { QuizMetadata } from '../../../shared/models/QuizMetadata.model';
+
 import { QuizService } from '../../../shared/services/data/quiz.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';

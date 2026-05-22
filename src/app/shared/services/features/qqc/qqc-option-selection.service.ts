@@ -1,14 +1,16 @@
 ﻿import { inject, Injectable } from '@angular/core';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionType } from '../../../models/question-type.enum';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
-import { FeedbackService } from '../feedback/feedback.service';
+
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { FeedbackService } from '../feedback/feedback.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { TimerService } from '../timer/timer.service';
 

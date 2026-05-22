@@ -1,14 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 
-import { Option } from '../../models/Option.model';
 import { QuestionType } from '../../models/question-type.enum';
+
+import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
+
 import { QuizService } from '../data/quiz.service';
-import { QuizShuffleService } from './quiz-shuffle.service';
+import { QuizPersistenceService } from '../state/quiz-persistence.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
-import { QuizPersistenceService } from '../state/quiz-persistence.service';
+import { QuizShuffleService } from './quiz-shuffle.service';
 
 /**
  * Manages dot status computation, selection evaluation, and question

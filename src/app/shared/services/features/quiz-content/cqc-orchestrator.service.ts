@@ -9,14 +9,17 @@ import {
   switchMap, take, tap, withLatestFrom
 } from 'rxjs/operators';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
 import { CombinedQuestionDataType } from '../../../models/CombinedQuestionDataType.model';
 import { Option } from '../../../models/Option.model';
-import { QuestionType } from '../../../models/question-type.enum';
 import { QuestionPayload } from '../../../models/QuestionPayload.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { CqcFetGuardService } from './cqc-fet-guard.service';
+
 import { CqcDisplayTextService } from './cqc-display-text.service';
+import { CqcFetGuardService } from './cqc-fet-guard.service';
 import { CqcQuestionNavService } from './cqc-question-nav.service';
+
 import type { CodelabQuizContentComponent } from '../../../../containers/quiz/quiz-content/codelab-quiz-content.component';
 
 type Host = CodelabQuizContentComponent;

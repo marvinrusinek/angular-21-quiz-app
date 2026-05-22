@@ -4,15 +4,17 @@ import {
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { take } from 'rxjs/operators';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { QuizMetadata } from '../../../shared/models/QuizMetadata.model';
 import { QuizScore } from '../../../shared/models/QuizScore.model';
-import { SummaryIconsComponent } from './summary-icons/summary-icons.component';
-import { SummaryStatsComponent } from './summary-stats/summary-stats.component';
-import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { QuizService } from '../../../shared/services/data/quiz.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
+
+import { SummaryIconsComponent } from './summary-icons/summary-icons.component';
+import { SummaryStatsComponent } from './summary-stats/summary-stats.component';
 
 @Component({
   selector: 'codelab-results-summary',

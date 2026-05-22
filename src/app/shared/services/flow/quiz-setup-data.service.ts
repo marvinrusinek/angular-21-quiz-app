@@ -4,19 +4,21 @@ import { Router } from '@angular/router';
 import { EMPTY, firstValueFrom, of } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 
-import { Quiz } from '../../models/Quiz.model';
-import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { Option } from '../../models/Option.model';
 import { QuestionPayload } from '../../models/QuestionPayload.model';
+import { Quiz } from '../../models/Quiz.model';
+import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizService } from '../data/quiz.service';
 import { QuizDataService } from '../data/quizdata.service';
+import { ExplanationTextService } from '../features/explanation/explanation-text.service';
+import { TimerService } from '../features/timer/timer.service';
+import { NextButtonStateService } from '../state/next-button-state.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
-import { NextButtonStateService } from '../state/next-button-state.service';
-import { TimerService } from '../features/timer/timer.service';
-import { ExplanationTextService } from '../features/explanation/explanation-text.service';
-import { QuizQuestionDataService } from './quiz-question-data.service';
 import { QuizContentLoaderService } from './quiz-content-loader.service';
+import { QuizQuestionDataService } from './quiz-question-data.service';
+
 import type { QuizComponent } from '../../../containers/quiz/quiz.component';
 
 type Host = QuizComponent;

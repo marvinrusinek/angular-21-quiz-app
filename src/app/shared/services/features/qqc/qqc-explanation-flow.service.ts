@@ -1,14 +1,16 @@
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionState } from '../../../models/QuestionState.model';
-import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
 import { QuestionType } from '../../../models/question-type.enum';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
+
+import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
+import { QuestionState } from '../../../models/QuestionState.model';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
+
 import { QuizService } from '../../data/quiz.service';
-import { QuizStateService } from '../../state/quizstate.service';
 import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
+import { QuizStateService } from '../../state/quizstate.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { QqcExplanationDisplayService } from './qqc-explanation-display.service';
 import { QqcExplanationManagerService } from './qqc-explanation-manager.service';
 

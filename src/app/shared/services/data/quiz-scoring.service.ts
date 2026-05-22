@@ -1,8 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
 
-import { getQuizData } from '../../quiz-data-cache';
 import { QuizScore } from '../../models/QuizScore.model';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+
+import { getQuizData } from '../../quiz-data-cache';
 
 @Injectable({ providedIn: 'root' })
 export class QuizScoringService {

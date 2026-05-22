@@ -1,17 +1,18 @@
 ﻿import { Injectable, inject } from '@angular/core';
 
+import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { FeedbackProps } from '../../../models/FeedbackProps.model';
-import { OptionClickHandlerService } from './option-click-handler.service';
-import { OptionService } from '../view/option.service';
+import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
+
 import { QuizService } from '../../data/quiz.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
-import { FeedbackService } from '../../features/feedback/feedback.service';
-import { OptionBindingFactoryService } from './option-binding-factory.service';
 import { ExplanationTextService } from '../../features/explanation/explanation-text.service';
+import { FeedbackService } from '../../features/feedback/feedback.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
+import { OptionService } from '../view/option.service';
+import { OptionBindingFactoryService } from './option-binding-factory.service';
+import { OptionClickHandlerService } from './option-click-handler.service';
 
 @Injectable({ providedIn: 'root' })
 export class SharedOptionBindingService {

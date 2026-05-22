@@ -12,12 +12,15 @@ import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPay
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 import { SelectedOption } from '../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../shared/models/SharedOptionConfig.model';
+
+import { AnswerBindingsService } from '../../../../shared/services/features/answer/answer-bindings.service';
 import { AnswerOptionsService } from '../../../../shared/services/features/answer/answer-options.service';
 import { AnswerSelectionService } from '../../../../shared/services/features/answer/answer-selection.service';
-import { AnswerBindingsService } from '../../../../shared/services/features/answer/answer-bindings.service';
 import { QqcQuestionLoaderService } from '../../../../shared/services/features/qqc/qqc-question-loader.service';
 import { QuizQuestionManagerService } from '../../../../shared/services/flow/quizquestionmgr.service';
+
 import { SharedOptionComponent } from '../shared-option-component/shared-option.component';
+
 import { BaseQuestion } from '../../base/base-question';
 
 @Component({

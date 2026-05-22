@@ -4,12 +4,13 @@ import { take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+
+import { QuizService } from '../../data/quiz.service';
+import { QqcStatePersistenceService } from '../../state/qqc-state-persistence.service';
 import { QuizStateService } from '../../state/quizstate.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { TimerService } from '../timer/timer.service';
-import { QqcStatePersistenceService } from '../../state/qqc-state-persistence.service';
-import { QuizService } from '../../data/quiz.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
 
 /**
  * Manages navigation-related logic for QuizQuestionComponent:

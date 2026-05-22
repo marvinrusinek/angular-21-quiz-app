@@ -2,18 +2,19 @@ import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
+
 import { QuizService } from '../../data/quiz.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QuizStateService } from '../../state/quizstate.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { SelectionMessageService } from '../selection-message/selection-message.service';
+import { TimerService } from '../timer/timer.service';
 import { QqcQlFetchService } from './qqc-ql-fetch.service';
 import { QqcQlOptionBuildService } from './qqc-ql-option-build.service';
 import { QqcQlStreamService } from './qqc-ql-stream.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
-import { SelectionMessageService } from '../selection-message/selection-message.service';
-import { TimerService } from '../timer/timer.service';
 
 /**
  * Manages question loading pipeline, quiz data fetching, and question initialization for QQC.

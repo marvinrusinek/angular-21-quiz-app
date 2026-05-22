@@ -2,10 +2,11 @@ import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
+import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { QuizDataLoaderService } from './quiz-data-loader.service';
 import { QuizOptionsService } from './quiz-options.service';
 import { QuizQuestionResolverService } from './quiz-question-resolver.service';
-import { QuizDataLoaderService } from './quiz-data-loader.service';
-import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 /**
  * Responsible for preparing and emitting question + options data to

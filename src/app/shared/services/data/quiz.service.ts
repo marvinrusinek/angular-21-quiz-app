@@ -2,8 +2,9 @@
 import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
-import { getQuizData } from '../../quiz-data-cache';
+
 import { QuizStatus } from '../../models/quiz-status.enum';
+
 import { FinalResult } from '../../models/Final-Result.model';
 import { Option } from '../../models/Option.model';
 import { QuestionPayload } from '../../models/QuestionPayload.model';
@@ -13,16 +14,19 @@ import { QuizScore } from '../../models/QuizScore.model';
 import { QuizSelectionParams } from '../../models/QuizSelectionParams.model';
 import { Resource } from '../../models/Resource.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
-import { QuizStateService } from '../state/quizstate.service';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { QuizStateService } from '../state/quizstate.service';
+import { QuizAnswerEvaluationService } from './quiz-answer-evaluation.service';
 import { QuizBannerService } from './quiz-banner.service';
 import { QuizDataLoaderService } from './quiz-data-loader.service';
-import { QuizQuestionResolverService } from './quiz-question-resolver.service';
 import { QuizOptionsService } from './quiz-options.service';
-import { QuizScoringService } from './quiz-scoring.service';
-import { QuizAnswerEvaluationService } from './quiz-answer-evaluation.service';
 import { QuizQuestionEmitterService } from './quiz-question-emitter.service';
+import { QuizQuestionResolverService } from './quiz-question-resolver.service';
+import { QuizScoringService } from './quiz-scoring.service';
 import { QuizSessionManagerService } from './quiz-session-manager.service';
+
+import { getQuizData } from '../../quiz-data-cache';
 
 @Injectable({ providedIn: 'root' })
 export class QuizService {

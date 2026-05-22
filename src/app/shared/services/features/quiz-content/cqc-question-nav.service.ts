@@ -5,7 +5,9 @@ import { debounceTime, tap } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+
 import { CqcFetGuardService } from './cqc-fet-guard.service';
+
 import type { CodelabQuizContentComponent } from '../../../../containers/quiz/quiz-content/codelab-quiz-content.component';
 
 type Host = CodelabQuizContentComponent;

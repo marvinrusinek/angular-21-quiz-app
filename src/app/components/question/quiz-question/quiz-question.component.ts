@@ -10,26 +10,29 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
+
+import { FeedbackKey, FeedbackConfig } from '../../../shared/models/FeedbackConfig.model';
 import { Option } from '../../../shared/models/Option.model';
 import { OptionBindings } from '../../../shared/models/OptionBindings.model';
 import { QuestionPayload } from '../../../shared/models/QuestionPayload.model';
 import { Quiz } from '../../../shared/models/Quiz.model';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
-import { SelectedOption } from '../../../shared/models/SelectedOption.model';
 import { QuizQuestionEvent } from '../../../shared/models/QuizQuestionEvent.type';
+import { SelectedOption } from '../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../shared/models/SharedOptionConfig.model';
-// QuizQuestionLoaderService consolidated into QqcQuestionLoaderService
-import { QuizQuestionManagerService } from '../../../shared/services/flow/quizquestionmgr.service';
+
 import { ExplanationTextService } from '../../../shared/services/features/explanation/explanation-text.service';
-import { NextButtonStateService } from '../../../shared/services/state/next-button-state.service';
-import { SelectionMessageService } from '../../../shared/services/features/selection-message/selection-message.service';
-import { TimerService } from '../../../shared/services/features/timer/timer.service';
 import { QqcQuestionLoaderService } from '../../../shared/services/features/qqc/qqc-question-loader.service';
 import { QuizQuestionFacadeService } from '../../../shared/services/features/qqc/quiz-question-facade.service';
+import { SelectionMessageService } from '../../../shared/services/features/selection-message/selection-message.service';
+import { TimerService } from '../../../shared/services/features/timer/timer.service';
 import { QuizShuffleService } from '../../../shared/services/flow/quiz-shuffle.service';
-import { BaseQuestion } from '../base/base-question';
+import { QuizQuestionManagerService } from '../../../shared/services/flow/quizquestionmgr.service';
+import { NextButtonStateService } from '../../../shared/services/state/next-button-state.service';
+
 import { SharedOptionComponent } from '../answer/shared-option-component/shared-option.component';
-import { FeedbackKey, FeedbackConfig } from '../../../shared/models/FeedbackConfig.model';
+
+import { BaseQuestion } from '../base/base-question';
 
 @Component({
   selector: 'codelab-quiz-question',

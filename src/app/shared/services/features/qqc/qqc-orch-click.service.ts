@@ -2,9 +2,11 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionType } from '../../../models/question-type.enum';
+
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
 type Host = QuizQuestionComponent;

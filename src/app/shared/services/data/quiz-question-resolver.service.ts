@@ -5,8 +5,10 @@ import {
 } from 'rxjs/operators';
 
 import { QuestionType } from '../../models/question-type.enum';
+
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 @Injectable({ providedIn: 'root' })

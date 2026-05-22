@@ -1,11 +1,13 @@
 import { inject, Injectable, WritableSignal } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 
+import { QuizStatus } from '../../models/quiz-status.enum';
+
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
-import { QuizStatus } from '../../models/quiz-status.enum';
 import { SelectedOption } from '../../models/SelectedOption.model';
+
 import { QuizOptionsService } from './quiz-options.service';
 import { QuizQuestionResolverService } from './quiz-question-resolver.service';
 import { QuizScoringService } from './quiz-scoring.service';

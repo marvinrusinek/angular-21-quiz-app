@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 
 import { QuestionType } from '../../models/question-type.enum';
+
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
-import { OptionIdResolverService } from './option-id-resolver.service';
+
 import { QuizService } from '../data/quiz.service';
+import { OptionIdResolverService } from './option-id-resolver.service';
 
 export interface ResolutionStatus {
   resolved: boolean;

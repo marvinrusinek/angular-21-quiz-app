@@ -1,18 +1,20 @@
 ﻿import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
-import { Option } from '../../../models/Option.model';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionType } from '../../../models/question-type.enum';
-import { SelectedOption } from '../../../models/SelectedOption.model';
-import { OptionBindings } from '../../../models/OptionBindings.model';
+
+import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
+import { Option } from '../../../models/Option.model';
+import { OptionBindings } from '../../../models/OptionBindings.model';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { SelectedOption } from '../../../models/SelectedOption.model';
+
+import { QuizService } from '../../data/quiz.service';
+import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { FeedbackService } from '../feedback/feedback.service';
-import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
-import { QuizService } from '../../data/quiz.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 
 /**

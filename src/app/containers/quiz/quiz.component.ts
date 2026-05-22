@@ -20,32 +20,34 @@ import { Observable, Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 
-import { QuestionPayload } from '../../shared/models/QuestionPayload.model';
 import { Option } from '../../shared/models/Option.model';
+import { QuestionPayload } from '../../shared/models/QuestionPayload.model';
 import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizQuestion } from '../../shared/models/QuizQuestion.model';
 import { QuizQuestionEvent } from '../../shared/models/QuizQuestionEvent.type';
 import { SelectedOption } from '../../shared/models/SelectedOption.model';
+
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { QuizDataService } from '../../shared/services/data/quizdata.service';
-import { QuizInitializationService } from '../../shared/services/flow/quiz-initialization.service';
-import { QuizNavigationService } from '../../shared/services/flow/quiz-navigation.service';
-import { QuizStateService } from '../../shared/services/state/quizstate.service';
 import { QqcQuestionLoaderService } from '../../shared/services/features/qqc/qqc-question-loader.service';
-import { NextButtonStateService } from '../../shared/services/state/next-button-state.service';
-import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
 import { SelectionMessageService } from '../../shared/services/features/selection-message/selection-message.service';
 import { QuizDotStatusService } from '../../shared/services/flow/quiz-dot-status.service';
+import { QuizInitializationService } from '../../shared/services/flow/quiz-initialization.service';
+import { QuizNavigationService } from '../../shared/services/flow/quiz-navigation.service';
 import { QuizResetService } from '../../shared/services/flow/quiz-reset.service';
 import { QuizRouteService } from '../../shared/services/flow/quiz-route.service';
-import { QuizPersistenceService } from '../../shared/services/state/quiz-persistence.service';
 import { QuizSetupService } from '../../shared/services/flow/quiz-setup.service';
-import { QuizQuestionComponent } from '../../components/question/quiz-question/quiz-question.component';
+import { NextButtonStateService } from '../../shared/services/state/next-button-state.service';
+import { QuizPersistenceService } from '../../shared/services/state/quiz-persistence.service';
+import { QuizStateService } from '../../shared/services/state/quizstate.service';
+import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
+
 import { SharedOptionComponent } from '../../components/question/answer/shared-option-component/shared-option.component';
+import { QuizQuestionComponent } from '../../components/question/quiz-question/quiz-question.component';
+import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
+import { ScoreboardComponent } from '../scoreboard/scoreboard.component';
 import { CodelabQuizContentComponent } from './quiz-content/codelab-quiz-content.component';
 import { CodelabQuizHeaderComponent } from './quiz-header/quiz-header.component';
-import { ScoreboardComponent } from '../scoreboard/scoreboard.component';
-import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
 
 import { ChangeRouteAnimation } from '../../animations/animations';
 

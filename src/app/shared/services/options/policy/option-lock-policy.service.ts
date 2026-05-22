@@ -1,7 +1,9 @@
 import { Injectable, Injector, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
+
 import { OptionBindings } from '../../../models/OptionBindings.model';
+
 import { QuizService } from '../../data/quiz.service';
 
 export interface LockIncorrectResult {

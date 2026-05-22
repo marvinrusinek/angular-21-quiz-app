@@ -2,15 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 
 import { SelectedOption } from '../../models/SelectedOption.model';
-import { SelectedOptionService } from './selectedoption.service';
+
 import { QuizService } from '../data/quiz.service';
+import { AnswerEvaluationService } from './answer-evaluation.service';
 import { NextButtonStateService } from './next-button-state.service';
+import { OptionFeedbackStateService } from './option-feedback-state.service';
 import { OptionIdResolverService } from './option-id-resolver.service';
 import { OptionLockStateService } from './option-lock-state.service';
-import { OptionFeedbackStateService } from './option-feedback-state.service';
-import { AnswerEvaluationService } from './answer-evaluation.service';
-import { SelectionPersistenceService } from './selection-persistence.service';
+import { SelectedOptionService } from './selectedoption.service';
 import { SelectionCrudService } from './selection-crud.service';
+import { SelectionPersistenceService } from './selection-persistence.service';
 
 describe('SelectedOptionService', () => {
   let service: SelectedOptionService;

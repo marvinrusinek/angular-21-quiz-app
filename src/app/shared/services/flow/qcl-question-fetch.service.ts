@@ -2,21 +2,23 @@
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take } from 'rxjs/operators';
 
-import { Option } from '../../models/Option.model';
-import { Quiz } from '../../models/Quiz.model';
-import { QuestionPayload } from '../../models/QuestionPayload.model';
 import { QuestionType } from '../../models/question-type.enum';
+
+import { Option } from '../../models/Option.model';
+import { QuestionPayload } from '../../models/QuestionPayload.model';
+import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizService } from '../data/quiz.service';
 import { QuizDataService } from '../data/quizdata.service';
-import { QuizStateService } from '../state/quizstate.service';
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
-import { SelectedOptionService } from '../state/selectedoption.service';
-import { SelectionMessageService } from '../features/selection-message/selection-message.service';
-import { QuizQuestionDataService } from './quiz-question-data.service';
 import { QqcQuestionLoaderService } from '../features/qqc/qqc-question-loader.service';
+import { SelectionMessageService } from '../features/selection-message/selection-message.service';
+import { QuizStateService } from '../state/quizstate.service';
+import { SelectedOptionService } from '../state/selectedoption.service';
 import { FetchQuestionResult, RouteChangeQuestionResult, RouteQuestionResult } 
   from './quiz-content-loader.service';
+import { QuizQuestionDataService } from './quiz-question-data.service';
 
 /**
  * Handles question fetching, loading, and API data retrieval.

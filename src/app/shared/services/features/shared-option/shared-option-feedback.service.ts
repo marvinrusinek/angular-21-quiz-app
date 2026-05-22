@@ -1,16 +1,19 @@
 ﻿import { Injectable, inject } from '@angular/core';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
+import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionType } from '../../../models/question-type.enum';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { FeedbackService } from '../feedback/feedback.service';
-import { SelectedOptionService } from '../../state/selectedoption.service';
+
 import { QuizService } from '../../data/quiz.service';
 import { OptionClickHandlerService } from '../../options/engine/option-click-handler.service';
 import { OptionService } from '../../options/view/option.service';
+import { SelectedOptionService } from '../../state/selectedoption.service';
+import { FeedbackService } from '../feedback/feedback.service';
+
 import { isValidOption } from '../../../utils/option-utils';
 
 /**

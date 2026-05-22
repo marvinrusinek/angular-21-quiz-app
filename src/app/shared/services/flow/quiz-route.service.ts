@@ -4,8 +4,9 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import { Quiz } from '../../models/Quiz.model';
-import { QuizDataService } from '../data/quizdata.service';
+
 import { QuizService } from '../data/quiz.service';
+import { QuizDataService } from '../data/quizdata.service';
 
 /**
  * Handles route parameter parsing and route-based quiz data resolution.

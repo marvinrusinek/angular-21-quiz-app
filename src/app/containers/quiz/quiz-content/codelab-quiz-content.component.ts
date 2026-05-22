@@ -1,4 +1,3 @@
-
 import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect,
   ElementRef, inject, input, OnDestroy, OnInit, output, Renderer2, signal, untracked, viewChild
@@ -12,19 +11,21 @@ import { CombinedQuestionDataType } from
   '../../../shared/models/CombinedQuestionDataType.model';
 import { Option } from '../../../shared/models/Option.model';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
+
 import { QuizService } from '../../../shared/services/data/quiz.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
+import { ExplanationTextService, FETPayload } from
+      '../../../shared/services/features/explanation/explanation-text.service';
+import { CqcOrchestratorService } from '../../../shared/services/features/quiz-content/cqc-orchestrator.service';
+import { QuizContentDisplayService } from '../../../shared/services/features/quiz-content/quiz-content-display.service';
+import { TimerService } from '../../../shared/services/features/timer/timer.service';
 import { QuizNavigationService } from '../../../shared/services/flow/quiz-navigation.service';
 import { QuizQuestionManagerService } from '../../../shared/services/flow/quizquestionmgr.service';
 import { QuizStateService } from '../../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../../shared/services/state/selectedoption.service';
-import { ExplanationTextService, FETPayload } from
-      '../../../shared/services/features/explanation/explanation-text.service';
+
 import { QuizQuestionComponent } from
   '../../../components/question/quiz-question/quiz-question.component';
-import { TimerService } from '../../../shared/services/features/timer/timer.service';
-import { QuizContentDisplayService } from '../../../shared/services/features/quiz-content/quiz-content-display.service';
-import { CqcOrchestratorService } from '../../../shared/services/features/quiz-content/cqc-orchestrator.service';
 
 @Component({
   selector: 'codelab-quiz-content',

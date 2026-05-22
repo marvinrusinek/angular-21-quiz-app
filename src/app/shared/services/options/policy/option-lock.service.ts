@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
+
 import { SelectedOptionService } from '../../state/selectedoption.service';
 
 @Injectable({ providedIn: 'root' })

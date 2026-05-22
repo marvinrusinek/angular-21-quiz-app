@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
+
 import type { CodelabQuizContentComponent } from '../../../../containers/quiz/quiz-content/codelab-quiz-content.component';
 
 type Host = CodelabQuizContentComponent;

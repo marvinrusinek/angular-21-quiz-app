@@ -1,5 +1,6 @@
-import { Option } from './Option.model';
 import { QuestionType } from './question-type.enum';
+
+import { Option } from './Option.model';
 
 export interface QuizQuestion {
   questionText: string;

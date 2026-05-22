@@ -5,12 +5,14 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, from, Observable, of } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 
-import { getQuizData, getQuizResources } from '../../quiz-data-cache';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { QuizResource } from '../../models/QuizResource.model';
 import { Resource } from '../../models/Resource.model';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+
+import { getQuizData, getQuizResources } from '../../quiz-data-cache';
 import { Utils } from '../../utils/utils';
 
 @Injectable({ providedIn: 'root' })

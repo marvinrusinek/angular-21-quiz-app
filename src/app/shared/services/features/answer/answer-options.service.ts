@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 
-import { Option } from '../../../../shared/models/Option.model';
 import { QuestionType } from '../../../../shared/models/question-type.enum';
+
+import { Option } from '../../../../shared/models/Option.model';
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 
 @Injectable({ providedIn: 'root' })

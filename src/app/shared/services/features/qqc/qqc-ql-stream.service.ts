@@ -5,18 +5,20 @@ import { firstValueFrom, forkJoin, lastValueFrom, of } from 'rxjs';
 import { catchError, filter, take, timeout } from 'rxjs/operators';
 
 import { QuestionType } from '../../../models/question-type.enum';
+
 import { Option } from '../../../models/Option.model';
 import { QAPayload } from '../../../models/QAPayload.model';
 import { QuestionPayload } from '../../../models/QuestionPayload.model';
 import { Quiz } from '../../../models/Quiz.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
+
 import { QuizService } from '../../data/quiz.service';
 import { QuizDataService } from '../../data/quizdata.service';
 import { QuizStateService } from '../../state/quizstate.service';
-import { ResetBackgroundService } from '../../ui/reset-background.service';
 import { ResetStateService } from '../../state/reset-state.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+import { ResetBackgroundService } from '../../ui/reset-background.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { TimerService } from '../timer/timer.service';
 

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
 import { SelectedOption } from '../../models/SelectedOption.model';
+
 import { OptionIdResolverService } from './option-id-resolver.service';
 
 /**

@@ -3,13 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizService } from '../data/quiz.service';
-import { QuizStateService } from '../state/quizstate.service';
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
+import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
+import { SessionSnapshotResult } from './quiz-content-loader.service';
 import { QuizQuestionDataService } from './quiz-question-data.service';
 import { QuizScoringService } from './quiz-scoring.service';
-import { SessionSnapshotResult } from './quiz-content-loader.service';
 
 /**
  * Handles session restore, hydration, and selection persistence.

@@ -2,8 +2,9 @@ import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
+
 import { QuizService } from '../../data/quiz.service';
 
 /**

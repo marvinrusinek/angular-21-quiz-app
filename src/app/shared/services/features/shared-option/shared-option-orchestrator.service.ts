@@ -4,7 +4,9 @@ import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
+
 import { FeedbackContext } from './shared-option-feedback.service';
+
 import type { SharedOptionComponent } from '../../../../components/question/answer/shared-option-component/shared-option.component';
 
 type Host = SharedOptionComponent;

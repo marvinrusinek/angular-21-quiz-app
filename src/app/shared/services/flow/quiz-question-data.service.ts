@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { Option } from '../../models/Option.model';
 import { QuestionType } from '../../models/question-type.enum';
+
+import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizService } from '../data/quiz.service';
 import { QuizDataService } from '../data/quizdata.service';
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';

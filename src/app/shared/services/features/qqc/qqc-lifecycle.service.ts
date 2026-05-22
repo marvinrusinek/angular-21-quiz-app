@@ -7,8 +7,8 @@ import {
 } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionPayload } from '../../../models/QuestionPayload.model';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 /**
  * Manages lifecycle-related orchestration for QuizQuestionComponent:

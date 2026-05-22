@@ -1,10 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 
+import { QuestionType } from '../../../../shared/models/question-type.enum';
+
 import { Option } from '../../../../shared/models/Option.model';
 import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPayload.model';
-import { QuestionType } from '../../../../shared/models/question-type.enum';
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 import { SelectedOption } from '../../../../shared/models/SelectedOption.model';
+
 import { QuizService } from '../../../../shared/services/data/quiz.service';
 import { QuizStateService } from '../../../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';

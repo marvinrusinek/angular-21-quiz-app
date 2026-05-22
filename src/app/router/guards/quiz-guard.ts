@@ -4,8 +4,9 @@ import {
 } from '@angular/router';
 
 import { Quiz } from '../../shared/models/Quiz.model';
-import { QuizDataService } from '../../shared/services/data/quizdata.service';
+
 import { QuizService } from '../../shared/services/data/quiz.service';
+import { QuizDataService } from '../../shared/services/data/quizdata.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuizGuard implements CanActivate {

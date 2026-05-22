@@ -1,5 +1,6 @@
-import { QuizGuard } from './quiz-guard';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+
+import { QuizGuard } from './quiz-guard';
 
 describe('QuizGuard', () => {
   let guard: QuizGuard;

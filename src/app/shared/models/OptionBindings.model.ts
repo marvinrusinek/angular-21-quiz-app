@@ -2,6 +2,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MatRadioButton } from '@angular/material/radio';
 
 import { Option } from './Option.model';
+
 import { HighlightOptionDirective } from '../../../app/directives/highlight-option.directive';
 
 export interface OptionBindings {

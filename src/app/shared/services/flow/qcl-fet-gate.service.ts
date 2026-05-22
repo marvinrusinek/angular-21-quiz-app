@@ -2,9 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { QuizQuestion } from '../../models/QuizQuestion.model';
+
 import { QuizService } from '../data/quiz.service';
-import { QuizStateService } from '../state/quizstate.service';
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
+import { QuizStateService } from '../state/quizstate.service';
 import { QuestionStateResult } from './quiz-content-loader.service';
 
 /**

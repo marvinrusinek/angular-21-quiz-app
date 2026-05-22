@@ -3,23 +3,26 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit,
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { SlideLeftToRightAnimation } from '../../animations/animations';
-import { AnimationState } from '../../shared/models/AnimationState.type';
-import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizRoutes } from '../../shared/models/quiz-routes.enum';
 import { QuizStatus } from '../../shared/models/quiz-status.enum';
+
+import { AnimationState } from '../../shared/models/AnimationState.type';
+import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizSelectionParams } from '../../shared/models/QuizSelectionParams.model';
 import { QuizTileStyles } from '../../shared/models/QuizTileStyles.model';
+
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { QuizDataService } from '../../shared/services/data/quizdata.service';
-import { ScrollDownIndicatorComponent } from '../../components/scroll-down-indicator/scroll-down-indicator.component';
+
 import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
+import { ScrollDownIndicatorComponent } from '../../components/scroll-down-indicator/scroll-down-indicator.component';
+
+import { SlideLeftToRightAnimation } from '../../animations/animations';
 
 @Component({
   selector: 'codelab-quiz-selection',

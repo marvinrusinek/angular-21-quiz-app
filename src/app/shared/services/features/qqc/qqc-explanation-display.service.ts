@@ -2,16 +2,17 @@
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
-import { Option } from '../../../models/Option.model';
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { Option } from '../../../models/Option.model';
 import { QuestionState } from '../../../models/QuestionState.model';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
+
 import { QuizService } from '../../data/quiz.service';
 import { QuizDataService } from '../../data/quizdata.service';
+import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { QqcExplanationManagerService } from './qqc-explanation-manager.service';
 
 /**

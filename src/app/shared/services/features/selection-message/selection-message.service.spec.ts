@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { SelectionMessageService } from './selection-message.service';
+
+import { QuestionType } from '../../../models/question-type.enum';
+
 import { QuizService } from '../../../services/data/quiz.service';
 import { SelectedOptionService } from '../../../services/state/selectedoption.service';
-import { QuestionType } from '../../../models/question-type.enum';
+import { SelectionMessageService } from './selection-message.service';
 
 describe('SelectionMessageService', () => {
   let service: SelectionMessageService;

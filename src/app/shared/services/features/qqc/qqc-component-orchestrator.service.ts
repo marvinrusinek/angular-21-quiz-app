@@ -3,14 +3,16 @@ import { inject, Injectable } from '@angular/core';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
-import { QqcOrchLifecycleService } from './qqc-orch-lifecycle.service';
+
 import { QqcOrchClickService } from './qqc-orch-click.service';
-import { QqcOrchQuestionLoadService } from './qqc-orch-question-load.service';
-import { QqcOrchTimerService } from './qqc-orch-timer.service';
-import { QqcOrchExplanationService } from './qqc-orch-explanation.service';
-import { QqcOrchSelectionService } from './qqc-orch-selection.service';
-import { QqcOrchResetService } from './qqc-orch-reset.service';
 import { QqcOrchDisplayService } from './qqc-orch-display.service';
+import { QqcOrchExplanationService } from './qqc-orch-explanation.service';
+import { QqcOrchLifecycleService } from './qqc-orch-lifecycle.service';
+import { QqcOrchQuestionLoadService } from './qqc-orch-question-load.service';
+import { QqcOrchResetService } from './qqc-orch-reset.service';
+import { QqcOrchSelectionService } from './qqc-orch-selection.service';
+import { QqcOrchTimerService } from './qqc-orch-timer.service';
+
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
 type Host = QuizQuestionComponent;

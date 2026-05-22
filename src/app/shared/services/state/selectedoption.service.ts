@@ -4,9 +4,12 @@ import { Observable, Subject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
 
 import { QuestionType } from '../../models/question-type.enum';
+
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
+
+import { QuizService } from '../data/quiz.service';
 import { AnswerEvaluationService } from './answer-evaluation.service';
 import { NextButtonStateService } from './next-button-state.service';
 import { OptionFeedbackStateService } from './option-feedback-state.service';
@@ -14,7 +17,6 @@ import { OptionIdResolverService } from './option-id-resolver.service';
 import { OptionLockStateService } from './option-lock-state.service';
 import { SelectionCrudService } from './selection-crud.service';
 import { SelectionPersistenceService } from './selection-persistence.service';
-import { QuizService } from '../data/quiz.service';
 
 @Injectable({ providedIn: 'root' })
 export class SelectedOptionService {

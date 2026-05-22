@@ -7,11 +7,13 @@ import {
 } from 'rxjs/operators';
 
 import { QuestionType } from '../../models/question-type.enum';
+
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
-import { QuizService } from './quiz.service';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { QuizService } from './quiz.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuizDataService {

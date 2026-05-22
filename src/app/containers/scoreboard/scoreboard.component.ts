@@ -15,9 +15,10 @@ import {
   switchMap
 } from 'rxjs/operators';
 
+import { QuizService } from '../../shared/services/data/quiz.service';
+
 import { ScoreComponent } from './score/score.component';
 import { TimerComponent } from './timer/timer.component';
-import { QuizService } from '../../shared/services/data/quiz.service';
 
 @Component({
   selector: 'codelab-scoreboard',

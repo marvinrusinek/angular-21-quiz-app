@@ -11,33 +11,36 @@ import { Observable } from 'rxjs';
 
 import { FeedbackProps } from '../../../../shared/models/FeedbackProps.model';
 import { Option } from '../../../../shared/models/Option.model';
-import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPayload.model';
 import { OptionBindings } from '../../../../shared/models/OptionBindings.model';
+import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPayload.model';
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 import { SelectedOption } from '../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../shared/models/SharedOptionConfig.model';
-import { FeedbackComponent } from '../feedback/feedback.component';
+
 import { QuizService } from '../../../../shared/services/data/quiz.service';
-import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
-import { SoundService } from '../../../../shared/services/ui/sound.service';
-import { SharedOptionConfigDirective } from '../../../../directives/shared-option-config.directive';
-import { correctAnswerAnim } from '../../../../animations/animations';
-import { OptionItemComponent } from './option-item/option-item.component';
-import type { OptionUIEvent } from './option-item/option-item.component';
-import { OptionService } from '../../../../shared/services/options/view/option.service';
-import { SharedOptionStateAdapterService, SharedOptionUiState } from '../../../../shared/services/state/shared-option-state-adapter.service';
-import { OptionUiContextBuilderService } from '../../../../shared/services/options/engine/option-ui-context-builder.service';
-import { OptionUiSyncContext } from '../../../../shared/services/options/engine/option-ui-sync.service';
-import { OptionLockService } from '../../../../shared/services/options/policy/option-lock.service';
-import { OptionSelectionUiService } from '../../../../shared/services/options/engine/option-selection-ui.service';
 import { SharedOptionExplanationService } from '../../../../shared/services/features/shared-option/shared-option-explanation.service';
-import { OptionClickHandlerService } from '../../../../shared/services/options/engine/option-click-handler.service';
 import { SharedOptionFeedbackService, FeedbackContext } from '../../../../shared/services/features/shared-option/shared-option-feedback.service';
-import { SharedOptionInitService } from '../../../../shared/services/options/engine/shared-option-init.service';
-import { SharedOptionBindingService } from '../../../../shared/services/options/engine/shared-option-binding.service';
-import { SharedOptionClickService } from '../../../../shared/services/options/engine/shared-option-click.service';
 import { SharedOptionOrchestratorService } from '../../../../shared/services/features/shared-option/shared-option-orchestrator.service';
 import { TimerService } from '../../../../shared/services/features/timer/timer.service';
+import { OptionClickHandlerService } from '../../../../shared/services/options/engine/option-click-handler.service';
+import { OptionSelectionUiService } from '../../../../shared/services/options/engine/option-selection-ui.service';
+import { OptionUiContextBuilderService } from '../../../../shared/services/options/engine/option-ui-context-builder.service';
+import { OptionUiSyncContext } from '../../../../shared/services/options/engine/option-ui-sync.service';
+import { SharedOptionBindingService } from '../../../../shared/services/options/engine/shared-option-binding.service';
+import { SharedOptionClickService } from '../../../../shared/services/options/engine/shared-option-click.service';
+import { SharedOptionInitService } from '../../../../shared/services/options/engine/shared-option-init.service';
+import { OptionLockService } from '../../../../shared/services/options/policy/option-lock.service';
+import { OptionService } from '../../../../shared/services/options/view/option.service';
+import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
+import { SharedOptionStateAdapterService, SharedOptionUiState } from '../../../../shared/services/state/shared-option-state-adapter.service';
+import { SoundService } from '../../../../shared/services/ui/sound.service';
+
+import { FeedbackComponent } from '../feedback/feedback.component';
+import { OptionItemComponent } from './option-item/option-item.component';
+import type { OptionUIEvent } from './option-item/option-item.component';
+
+import { correctAnswerAnim } from '../../../../animations/animations';
+import { SharedOptionConfigDirective } from '../../../../directives/shared-option-config.directive';
 
 @Component({
   selector: 'app-shared-option',

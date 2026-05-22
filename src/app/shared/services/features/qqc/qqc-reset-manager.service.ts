@@ -3,9 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { ExplanationTextService } from '../explanation/explanation-text.service';
+
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { TimerService } from '../timer/timer.service';
 
 /**

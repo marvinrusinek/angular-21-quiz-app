@@ -1,17 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 
+import { QuestionType } from '../../../models/question-type.enum';
+
+import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { SelectedOption } from '../../../models/SelectedOption.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionType } from '../../../models/question-type.enum';
-import { FeedbackProps } from '../../../models/FeedbackProps.model';
+import { SelectedOption } from '../../../models/SelectedOption.model';
 
 import { QuizService } from '../../data/quiz.service';
+import { SelectionMessageService } from '../../features/selection-message/selection-message.service';
+import { TimerService } from '../../features/timer/timer.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { TimerService } from '../../features/timer/timer.service';
-import { SelectionMessageService } from '../../features/selection-message/selection-message.service';
 
 export interface OptionInteractionState {
   optionBindings: OptionBindings[];

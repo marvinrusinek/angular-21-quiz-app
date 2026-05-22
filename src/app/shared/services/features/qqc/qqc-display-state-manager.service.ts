@@ -3,8 +3,8 @@ import { FormControl, FormGroup } from '@angular/forms';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuestionPayload } from '../../../models/QuestionPayload.model';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 /**
  * Manages option display preparation and render-readiness logic for QQC.

@@ -4,9 +4,11 @@ import { ActivatedRoute } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { QuestionType } from '../../../models/question-type.enum';
+
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
+
 import { QuizService } from '../../data/quiz.service';
 import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
 

@@ -1,7 +1,9 @@
-import { QuizShuffleService } from './quiz-shuffle.service';
-import { QuizQuestion } from '../../models/QuizQuestion.model';
-import { Option } from '../../models/Option.model';
 import { QuestionType } from '../../models/question-type.enum';
+
+import { Option } from '../../models/Option.model';
+import { QuizQuestion } from '../../models/QuizQuestion.model';
+
+import { QuizShuffleService } from './quiz-shuffle.service';
 
 describe('QuizShuffleService', () => {
   let service: QuizShuffleService;

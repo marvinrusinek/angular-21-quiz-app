@@ -11,7 +11,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { take } from 'rxjs/operators';
 
+import { QuizStatus } from '../../shared/models/quiz-status.enum';
+
 import { FinalResult, ScoreAnalysisItem } from '../../shared/models/Final-Result.model';
+import { Quiz } from '../../shared/models/Quiz.model';
+import { QuizQuestion } from '../../shared/models/QuizQuestion.model';
+
+import { QuizService } from '../../shared/services/data/quiz.service';
+import { QuizDataService } from '../../shared/services/data/quizdata.service';
+import { QuizDotStatusService } from '../../shared/services/flow/quiz-dot-status.service';
+import { QuizStateService } from '../../shared/services/state/quizstate.service';
+import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
+import { ThemeService } from '../../shared/services/ui/theme.service';
+
 import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
 import { AccordionComponent } from './accordion/accordion.component';
 import { ChallengeComponent } from './challenge/challenge.component';
@@ -20,15 +32,6 @@ import { StatisticsComponent } from './statistics/statistics.component';
 import { SummaryReportComponent } from './summary-report/summary-report.component';
 
 import { getQuizData } from '../../shared/quiz-data-cache';
-import { Quiz } from '../../shared/models/Quiz.model';
-import { QuizQuestion } from '../../shared/models/QuizQuestion.model';
-import { QuizStatus } from '../../shared/models/quiz-status.enum';
-import { QuizService } from '../../shared/services/data/quiz.service';
-import { QuizDataService } from '../../shared/services/data/quizdata.service';
-import { QuizDotStatusService } from '../../shared/services/flow/quiz-dot-status.service';
-import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
-import { QuizStateService } from '../../shared/services/state/quizstate.service';
-import { ThemeService } from '../../shared/services/ui/theme.service';
 
 @Component({
   selector: 'codelab-quiz-results',
