@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, ParamMap, Params, Router } from '@angular/router';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
@@ -27,21 +27,22 @@ type Host = QuizComponent;
  */
 @Injectable({ providedIn: 'root' })
 export class QuizSetupRouteService {
-  constructor(
-    private router: Router,
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private nextButtonStateService: NextButtonStateService,
-    private timerService: TimerService,
-    private selectionMessageService: SelectionMessageService,
-    private dotStatusService: QuizDotStatusService,
-    private quizContentLoaderService: QuizContentLoaderService,
-    private quizResetService: QuizResetService,
-    private quizRouteService: QuizRouteService,
-    private quizNavigationService: QuizNavigationService,
-    private quizPersistence: QuizPersistenceService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private dotStatusService = inject(QuizDotStatusService);
+  private nextButtonStateService = inject(NextButtonStateService);
+  private quizContentLoaderService = inject(QuizContentLoaderService);
+  private quizNavigationService = inject(QuizNavigationService);
+  private quizPersistence = inject(QuizPersistenceService);
+  private quizResetService = inject(QuizResetService);
+  private quizRouteService = inject(QuizRouteService);
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
+  private router = inject(Router);
+  private selectedOptionService = inject(SelectedOptionService);
+  private selectionMessageService = inject(SelectionMessageService);
+  private timerService = inject(TimerService);
+
+  // ── public methods ──────────────────────────────────────────────
 
   // â”€â”€ Route events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   subscribeToRouteEvents(
