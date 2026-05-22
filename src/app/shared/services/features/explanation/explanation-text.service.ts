@@ -1,4 +1,4 @@
-import { Injectable, WritableSignal } from '@angular/core';
+import { inject, Injectable, WritableSignal } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
@@ -17,13 +17,13 @@ export { FETPayload } from './explanation-display-state.service';
  */
 @Injectable({ providedIn: 'root' })
 export class ExplanationTextService {
-  constructor(
-    private formatter: ExplanationFormatterService,
-    private displayState: ExplanationDisplayStateService,
-    private quizService: QuizService,
-    private selectedOptionService: SelectedOptionService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly displayState = inject(ExplanationDisplayStateService);
+  private readonly formatter = inject(ExplanationFormatterService);
+  private readonly quizService = inject(QuizService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
 
+  // ── remaining variables ─────────────────────────────────────────
   /**
    * Map of question display indices that have been confirmed correct
    * by SOC pristine verification. When set, ALL FET gates are bypassed
