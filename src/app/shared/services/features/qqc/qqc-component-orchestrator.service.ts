@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -21,16 +21,15 @@ type Host = QuizQuestionComponent;
  */
 @Injectable({ providedIn: 'root' })
 export class QqcComponentOrchestratorService {
-  constructor(
-    private orchLifecycle: QqcOrchLifecycleService,
-    private orchClick: QqcOrchClickService,
-    private orchQuestionLoad: QqcOrchQuestionLoadService,
-    private orchTimer: QqcOrchTimerService,
-    private orchExplanation: QqcOrchExplanationService,
-    private orchSelection: QqcOrchSelectionService,
-    private orchReset: QqcOrchResetService,
-    private orchDisplay: QqcOrchDisplayService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly orchClick = inject(QqcOrchClickService);
+  private readonly orchDisplay = inject(QqcOrchDisplayService);
+  private readonly orchExplanation = inject(QqcOrchExplanationService);
+  private readonly orchLifecycle = inject(QqcOrchLifecycleService);
+  private readonly orchQuestionLoad = inject(QqcOrchQuestionLoadService);
+  private readonly orchReset = inject(QqcOrchResetService);
+  private readonly orchSelection = inject(QqcOrchSelectionService);
+  private readonly orchTimer = inject(QqcOrchTimerService);
 
   // ─── Lifecycle ───
 
