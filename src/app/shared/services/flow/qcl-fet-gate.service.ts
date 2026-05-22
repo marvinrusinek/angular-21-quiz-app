@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -14,11 +14,9 @@ import { QuestionStateResult } from './quiz-content-loader.service';
 @Injectable({ providedIn: 'root' })
 export class QclFetGateService {
 
-  constructor(
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private explanationTextService: ExplanationTextService
-  ) {}
+  private explanationTextService = inject(ExplanationTextService);
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
 
   lockAndPurgeFet(adjustedIndex: number): void {
     const ets = this.explanationTextService;
