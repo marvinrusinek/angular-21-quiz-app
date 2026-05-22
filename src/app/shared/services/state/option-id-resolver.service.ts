@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
@@ -6,13 +6,17 @@ import { QuizService } from '../data/quiz.service';
 
 @Injectable({ providedIn: 'root' })
 export class OptionIdResolverService {
+  // ── injects ─────────────────────────────────────────────────────
+  private quizService = inject(QuizService);
+
+  // ── properties ──────────────────────────────────────────────────
   /**
    * Snapshot of options per question, used as fallback when
    * quizService.questions is not yet populated.
    */
   private optionSnapshotByQuestion = new Map<number, Option[]>();
 
-  constructor(private quizService: QuizService) {}
+  // ── public methods ──────────────────────────────────────────────
 
   // ── Public API ──────────────────────────────────────────────
 
