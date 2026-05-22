@@ -1,4 +1,4 @@
-import { Injectable, Injector, signal } from '@angular/core';
+import { inject, Injectable, Injector, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -12,6 +12,10 @@ import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
 
 @Injectable({ providedIn: 'root' })
 export class ExplanationFormatterService {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly injector = inject(Injector);
+
   formattedExplanations: Record<number, FormattedExplanation> = {};
   readonly formattedExplanationSig = signal<string>('');
   formattedExplanation$ = toObservable(this.formattedExplanationSig);
@@ -28,11 +32,6 @@ export class ExplanationFormatterService {
   public fetByIndex = new Map<number, string>();
   // Track which FET indices have been locked to prevent regeneration with wrong options
   public lockedFetIndices = new Set<number>();
-
-  constructor(
-    private injector: Injector,
-    private activatedRoute: ActivatedRoute
-  ) {}
 
   // Synchronous lookup by question index
   public getFormattedSync(qIdx: number): string | undefined {
