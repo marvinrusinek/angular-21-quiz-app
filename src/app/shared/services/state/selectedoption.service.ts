@@ -1,4 +1,4 @@
-﻿import { Injectable, signal } from '@angular/core';
+﻿import { Injectable, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -18,6 +18,17 @@ import { QuizService } from '../data/quiz.service';
 
 @Injectable({ providedIn: 'root' })
 export class SelectedOptionService {
+  // ── injects ─────────────────────────────────────────────────────
+  private answerEval = inject(AnswerEvaluationService);
+  private feedbackState = inject(OptionFeedbackStateService);
+  private idResolver = inject(OptionIdResolverService);
+  private lockState = inject(OptionLockStateService);
+  private nextButtonStateService = inject(NextButtonStateService);
+  private persistence = inject(SelectionPersistenceService);
+  private quizService = inject(QuizService);
+  private selectionCrud = inject(SelectionCrudService);
+
+  // ── properties ──────────────────────────────────────────────────
   selectedOption: SelectedOption[] = [];
   selectedOptionsMap = new Map<number, SelectedOption[]>();
   /** The option from the most recent click (set by setSelectedOption). */
@@ -109,16 +120,8 @@ export class SelectedOptionService {
     this.isNextButtonEnabledSig.set(value);
   }
 
-  constructor(
-    private quizService: QuizService,
-    private nextButtonStateService: NextButtonStateService,
-    private idResolver: OptionIdResolverService,
-    private lockState: OptionLockStateService,
-    private feedbackState: OptionFeedbackStateService,
-    private answerEval: AnswerEvaluationService,
-    private persistence: SelectionPersistenceService,
-    private selectionCrud: SelectionCrudService
-  ) {
+  // ── constructor / lifecycle ─────────────────────────────────────
+  constructor() {
     this.loadState();
     const index$ = this.quizService?.currentQuestionIndex$;
     if (index$) {
@@ -133,6 +136,7 @@ export class SelectedOptionService {
     });
   }
 
+  // ── public methods ──────────────────────────────────────────────
   isSelectedOption(option: Option): boolean {
     return (
       this.selectedOption?.some((sel) => sel.optionId === option.optionId) ??
