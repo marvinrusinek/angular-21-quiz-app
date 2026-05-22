@@ -1,4 +1,4 @@
-﻿import { DestroyRef, Injectable } from '@angular/core';
+﻿import { DestroyRef, inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
@@ -19,13 +19,12 @@ import { SharedVisibilityService } from '../../ui/shared-visibility.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcSubscriptionWiringService {
-  constructor(
-    private quizService: QuizService,
-    private quizNavigationService: QuizNavigationService,
-    private sharedVisibilityService: SharedVisibilityService,
-    private resetStateService: ResetStateService,
-    private router: Router
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly quizNavigationService = inject(QuizNavigationService);
+  private readonly quizService = inject(QuizService);
+  private readonly resetStateService = inject(ResetStateService);
+  private readonly sharedVisibilityService = inject(SharedVisibilityService);
+  private readonly router = inject(Router);
 
   /**
    * Creates the page visibility subscription.
