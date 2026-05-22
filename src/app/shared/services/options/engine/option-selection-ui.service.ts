@@ -4,6 +4,8 @@ import { OptionBindings } from '../../../models/OptionBindings.model';
 
 @Injectable({ providedIn: 'root' })
 export class OptionSelectionUiService {
+  // ── public methods ──────────────────────────────────────────────
+
   // Push the newly‐clicked option into history, then synchronize every binding's
   // visual state (selected, highlight, icon, feedback) in one synchronous pass.
   applySingleSelectClick(
