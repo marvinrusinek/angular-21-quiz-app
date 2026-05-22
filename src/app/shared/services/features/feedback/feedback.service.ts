@@ -1,4 +1,4 @@
-﻿import { Injectable, Inject, forwardRef, Injector } from '@angular/core';
+﻿import { forwardRef, inject, Injectable, Injector } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -10,12 +10,15 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
-  constructor(
-    private selectedOptionService: SelectedOptionService,
-    @Inject(forwardRef(() => ExplanationTextService))
-    private explanationTextService: ExplanationTextService,
-    private injector: Injector
-  ) { }
+  // ── injects ─────────────────────────────────────────────────────
+  // ExplanationTextService is forwardRef'd to preserve the circular-DI
+  // workaround the original constructor used (FeedbackService is consumed
+  // by Quiz/FET/explanation pipelines that can resolve in either order).
+  private readonly explanationTextService = inject<ExplanationTextService>(
+    forwardRef(() => ExplanationTextService) as any
+  );
+  private readonly injector = inject(Injector);
+  private readonly selectedOptionService = inject(SelectedOptionService);
 
   public generateFeedbackForOptions(
     _correctOptions: Option[],
