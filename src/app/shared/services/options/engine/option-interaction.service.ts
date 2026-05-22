@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -41,13 +41,14 @@ export interface OptionInteractionState {
   providedIn: 'root'
 })
 export class OptionInteractionService {
-  constructor(
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private timerService: TimerService,
-    private selectionMessageService: SelectionMessageService
-  ) { }
+  // ── injects ─────────────────────────────────────────────────────
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
+  private selectedOptionService = inject(SelectedOptionService);
+  private selectionMessageService = inject(SelectionMessageService);
+  private timerService = inject(TimerService);
+
+  // ── public methods ──────────────────────────────────────────────
 
   /**
    * Main handler for option content clicks
