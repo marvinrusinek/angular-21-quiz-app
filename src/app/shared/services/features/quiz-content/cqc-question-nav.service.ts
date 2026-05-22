@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
@@ -23,7 +23,8 @@ type Host = CodelabQuizContentComponent;
  */
 @Injectable({ providedIn: 'root' })
 export class CqcQuestionNavService {
-  constructor(private fetGuard: CqcFetGuardService) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly fetGuard = inject(CqcFetGuardService);
 
   /**
    * Unconditionally stamp the question text for idx into qText. Used by
