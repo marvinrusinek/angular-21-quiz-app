@@ -1,4 +1,4 @@
-﻿import { DestroyRef, Injectable } from '@angular/core';
+﻿import { DestroyRef, inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -25,15 +25,13 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  */
 @Injectable({ providedIn: 'root' })
 export class QqcInitializerService {
-
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private questionLoader: QqcQuestionLoaderService,
-    private quizService: QuizService,
-    private quizDataService: QuizDataService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly questionLoader = inject(QqcQuestionLoaderService);
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+  private readonly quizStateService = inject(QuizStateService);
+  private readonly selectedOptionService = inject(SelectedOptionService);
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // QUIZ DATA LOADING
