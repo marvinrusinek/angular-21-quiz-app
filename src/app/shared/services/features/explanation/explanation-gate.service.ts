@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, merge, Observable, ReplaySubject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
 
@@ -14,6 +14,9 @@ import { ExplanationFormatterService } from './explanation-formatter.service';
  */
 @Injectable({ providedIn: 'root' })
 export class ExplanationGateService {
+  // ── injects ─────────────────────────────────────────────────────
+  private readonly formatter = inject(ExplanationFormatterService);
+
   // Per-index BehaviorSubject mirrors of the latest explanation text.
   public readonly _byIndex = new Map<number, BehaviorSubject<string | null>>();
   // Per-index BehaviorSubject gates ("should this index render now").
@@ -22,8 +25,6 @@ export class ExplanationGateService {
   public readonly _gatesByIndex = new Map<number, BehaviorSubject<boolean>>();
   // Per-index ReplaySubject text streams (preferred over _byIndex).
   private readonly _textMap = new Map<number, { text$: ReplaySubject<string> }>();
-
-  constructor(private formatter: ExplanationFormatterService) {}
 
   // Coalesced gate write — only emits when the value actually changes.
   setGate(index: number, show: boolean): void {
