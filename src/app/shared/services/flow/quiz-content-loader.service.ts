@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -84,16 +84,16 @@ export interface RouteChangeQuestionResult {
  */
 @Injectable({ providedIn: 'root' })
 export class QuizContentLoaderService {
-  constructor(
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private explanationTextService: ExplanationTextService,
-    private selectedOptionService: SelectedOptionService,
-    private fetGate: QclFetGateService,
-    private questionFetch: QclQuestionFetchService,
-    private sessionRestore: QclSessionRestoreService,
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private explanationTextService = inject(ExplanationTextService);
+  private fetGate = inject(QclFetGateService);
+  private questionFetch = inject(QclQuestionFetchService);
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
+  private selectedOptionService = inject(SelectedOptionService);
+  private sessionRestore = inject(QclSessionRestoreService);
 
+  // ── public methods ──────────────────────────────────────────────
   // ─── FET Gate (delegated) ───
 
   lockAndPurgeFet(adjustedIndex: number): void {
