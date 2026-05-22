@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { SelectedOption } from '../../models/SelectedOption.model';
 import { OptionIdResolverService } from './option-id-resolver.service';
@@ -13,9 +13,13 @@ import { OptionIdResolverService } from './option-id-resolver.service';
  */
 @Injectable({ providedIn: 'root' })
 export class OptionFeedbackStateService {
+  // ── injects ─────────────────────────────────────────────────────
+  private idResolver = inject(OptionIdResolverService);
+
+  // ── properties ──────────────────────────────────────────────────
   private feedbackByQuestion = new Map<number, Record<string, boolean>>();
 
-  constructor(private idResolver: OptionIdResolverService) {}
+  // ── public methods ──────────────────────────────────────────────
 
   // ── Read ────────────────────────────────────────────────────
 
@@ -68,6 +72,33 @@ export class OptionFeedbackStateService {
     return feedbackMap;
   }
 
+  // ── Republish ───────────────────────────────────────────────
+
+  republishFeedbackForQuestion(
+    questionIndex: number,
+    selections: SelectedOption[],
+    _currentQuestionIndex: number | null | undefined,
+    isMultiAnswer: boolean
+  ): void {
+    if (!Array.isArray(selections) || selections.length === 0) {
+      this.feedbackByQuestion.delete(questionIndex);
+      return;
+    }
+
+    let feedback = this.feedbackByQuestion.get(questionIndex);
+    if (!feedback || Object.keys(feedback).length === 0) {
+      feedback = this.buildFeedbackMap(questionIndex, selections, isMultiAnswer);
+      this.feedbackByQuestion.set(questionIndex, feedback);
+    }
+  }
+
+  // ── Bulk clear ──────────────────────────────────────────────
+
+  clearAll(): void {
+    this.feedbackByQuestion.clear();
+  }
+
+  // ── private methods ─────────────────────────────────────────────
   private collectFeedbackKeys(
     questionIndex: number,
     selection: SelectedOption
@@ -121,31 +152,5 @@ export class OptionFeedbackStateService {
     }
 
     return Array.from(keys);
-  }
-
-  // ── Republish ───────────────────────────────────────────────
-
-  republishFeedbackForQuestion(
-    questionIndex: number,
-    selections: SelectedOption[],
-    _currentQuestionIndex: number | null | undefined,
-    isMultiAnswer: boolean
-  ): void {
-    if (!Array.isArray(selections) || selections.length === 0) {
-      this.feedbackByQuestion.delete(questionIndex);
-      return;
-    }
-
-    let feedback = this.feedbackByQuestion.get(questionIndex);
-    if (!feedback || Object.keys(feedback).length === 0) {
-      feedback = this.buildFeedbackMap(questionIndex, selections, isMultiAnswer);
-      this.feedbackByQuestion.set(questionIndex, feedback);
-    }
-  }
-
-  // ── Bulk clear ──────────────────────────────────────────────
-
-  clearAll(): void {
-    this.feedbackByQuestion.clear();
   }
 }
