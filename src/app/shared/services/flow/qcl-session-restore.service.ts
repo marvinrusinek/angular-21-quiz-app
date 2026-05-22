@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -18,14 +18,12 @@ import { SessionSnapshotResult } from './quiz-content-loader.service';
 @Injectable({ providedIn: 'root' })
 export class QclSessionRestoreService {
 
-  constructor(
-    private quizService: QuizService,
-    private quizStateService: QuizStateService,
-    private explanationTextService: ExplanationTextService,
-    private selectedOptionService: SelectedOptionService,
-    private quizQuestionDataService: QuizQuestionDataService,
-    private quizScoringService: QuizScoringService
-  ) {}
+  private explanationTextService = inject(ExplanationTextService);
+  private quizQuestionDataService = inject(QuizQuestionDataService);
+  private quizScoringService = inject(QuizScoringService);
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
+  private selectedOptionService = inject(SelectedOptionService);
 
   syncQuestionSnapshot(params: {
     hydratedQuestions: QuizQuestion[];
