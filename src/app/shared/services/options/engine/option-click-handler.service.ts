@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -67,10 +67,11 @@ export interface DisabledStateContext {
 
 @Injectable({ providedIn: 'root' })
 export class OptionClickHandlerService {
-  constructor(
-    private quizService: QuizService,
-    private selectedOptionService: SelectedOptionService
-  ) {}
+  // ── injects ─────────────────────────────────────────────────────
+  private quizService = inject(QuizService);
+  private selectedOptionService = inject(SelectedOptionService);
+
+  // ── public methods ──────────────────────────────────────────────
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Correct Indices Resolution
