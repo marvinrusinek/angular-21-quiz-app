@@ -4,6 +4,7 @@ import { OptionBindings } from '../../../models/OptionBindings.model';
 
 @Injectable({ providedIn: 'root' })
 export class OptionSelectionPolicyService {
+  // ── public methods ──────────────────────────────────────────────
   enforceSingleSelection(params: {
     optionBindings: OptionBindings[];
     selectedBinding: OptionBindings;
