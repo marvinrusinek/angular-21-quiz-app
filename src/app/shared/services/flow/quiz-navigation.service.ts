@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ActivatedRouteSnapshot, Router } from '@angular/router';
 import { firstValueFrom, Observable, of, Subject } from 'rxjs';
@@ -20,6 +20,26 @@ import { TimerService } from '../features/timer/timer.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuizNavigationService {
+  // ── injects ─────────────────────────────────────────────────────
+  private activatedRoute = inject(ActivatedRoute);
+  private explanationTextService = inject(ExplanationTextService);
+  private nextButtonStateService = inject(NextButtonStateService);
+  private optionLockState = inject(OptionLockStateService);
+  private quizDataService = inject(QuizDataService);
+  private quizQuestionLoaderService = inject(QqcQuestionLoaderService);
+  private quizQuestionManagerService = inject(QuizQuestionManagerService);
+  private quizService = inject(QuizService);
+  private quizStateService = inject(QuizStateService);
+  private router = inject(Router);
+  private selectedOptionService = inject(SelectedOptionService);
+  private timerService = inject(TimerService);
+
+  // ── signals ─────────────────────────────────────────────────────
+  /** Signal-first source of truth for backward-navigation state */
+  readonly isNavigatingToPreviousSig = signal<boolean>(false);
+  private readonly isNavigatingToPrevious$ = toObservable(this.isNavigatingToPreviousSig);
+
+  // ── properties ──────────────────────────────────────────────────
   private quizId = '';
 
   isNavigating = false;
@@ -37,9 +57,6 @@ export class QuizNavigationService {
   }>();
   public navigationToQuestion$ =
     this.navigationToQuestionSubject.asObservable();
-  /** Signal-first source of truth for backward-navigation state */
-  readonly isNavigatingToPreviousSig = signal<boolean>(false);
-  private readonly isNavigatingToPrevious$ = toObservable(this.isNavigatingToPreviousSig);
 
   private explanationResetSubject = new Subject<void>();
   explanationReset$ = this.explanationResetSubject.asObservable();
@@ -50,20 +67,7 @@ export class QuizNavigationService {
   private renderResetSubject = new Subject<void>();
   renderReset$ = this.renderResetSubject.asObservable();
 
-  constructor(
-    private explanationTextService: ExplanationTextService,
-    private nextButtonStateService: NextButtonStateService,
-    private optionLockState: OptionLockStateService,
-    private quizQuestionLoaderService: QqcQuestionLoaderService,
-    private quizQuestionManagerService: QuizQuestionManagerService,
-    private quizService: QuizService,
-    private quizDataService: QuizDataService,
-    private quizStateService: QuizStateService,
-    private selectedOptionService: SelectedOptionService,
-    private timerService: TimerService,
-    private activatedRoute: ActivatedRoute,
-    private router: Router
-  ) { }
+  // ── public methods ──────────────────────────────────────────────
 
   public async advanceToNextQuestion(): Promise<boolean> {
     if (this.isNavigating) return false;
