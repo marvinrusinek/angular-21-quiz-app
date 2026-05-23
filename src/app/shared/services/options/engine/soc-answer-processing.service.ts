@@ -197,8 +197,6 @@ export class SocAnswerProcessingService {
       opts: optsForMsg
     });
     this.selectionMessageService.pushMessage(selMsg, qIdx);
-    queueMicrotask(() => this.selectionMessageService.pushMessage(selMsg, qIdx));
-    setTimeout(() => this.selectionMessageService.pushMessage(selMsg, qIdx), 0);
 
     // CHECK: all correct options selected?
     // PRISTINE-AUTHORITATIVE: count how many selected options' texts
