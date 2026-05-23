@@ -6,6 +6,8 @@ import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../models/SharedOptionConfig.model';
 
+import { SK_SEL_Q } from '../../../constants/session-keys';
+
 import { ExplanationTextService } from '../../features/explanation/explanation-text.service';
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { OptionBindingFactoryService } from './option-binding-factory.service';
@@ -509,7 +511,7 @@ export class SharedOptionBindingService {
       // Fall back only if sel_Q* is empty (single-answer wrong-only clicks).
       let saved: any[] = [];
       try {
-        const raw = sessionStorage.getItem('sel_Q' + qIndex);
+        const raw = sessionStorage.getItem(SK_SEL_Q + qIndex);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -783,7 +785,7 @@ export class SharedOptionBindingService {
       // until the correct answer is clicked).
       let saved: any[] = [];
       try {
-        const raw = sessionStorage.getItem('sel_Q' + qIndex);
+        const raw = sessionStorage.getItem(SK_SEL_Q + qIndex);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {

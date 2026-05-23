@@ -13,6 +13,8 @@ import { take } from 'rxjs/operators';
 
 import { QuizStatus } from '../../shared/models/quiz-status.enum';
 
+import { SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../shared/constants/session-keys';
+
 import { FinalResult, ScoreAnalysisItem } from '../../shared/models/Final-Result.model';
 import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizQuestion } from '../../shared/models/QuizQuestion.model';
@@ -227,11 +229,11 @@ export class ResultsComponent implements OnInit {
     // Nuclear: wipe ALL quiz-related sessionStorage and localStorage
     try {
       for (let i = 0; i < 100; i++) {
-        sessionStorage.removeItem('sel_Q' + i);
-        sessionStorage.removeItem('dot_confirmed_' + i);
+        sessionStorage.removeItem(SK_SEL_Q + i);
+        sessionStorage.removeItem(SK_DOT_CONFIRMED + i);
       }
       sessionStorage.removeItem('rawSelectionsMap');
-      sessionStorage.removeItem('selectedOptionsMap');
+      sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       sessionStorage.removeItem('selectionHistory');
       sessionStorage.removeItem('finalResult');
       sessionStorage.removeItem('resultsActiveSection');
@@ -247,9 +249,9 @@ export class ResultsComponent implements OnInit {
         localStorage.removeItem(key);
       }
       localStorage.removeItem('questionCorrectness');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('userAnswers');
-      localStorage.removeItem('shuffledQuestions');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
     } catch {}
 
     // Reset to light mode when leaving results

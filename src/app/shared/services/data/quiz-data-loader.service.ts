@@ -10,6 +10,8 @@ import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { QuizResource } from '../../models/QuizResource.model';
 import { Resource } from '../../models/Resource.model';
 
+import { SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 import { getQuizData, getQuizResources } from '../../quiz-data-cache';
@@ -48,12 +50,12 @@ export class QuizDataLoaderService {
   public shuffledQuestions: QuizQuestion[] = (() => {
     try {
       if (!localStorage.getItem('_shuffleCacheV2')) {
-        localStorage.removeItem('shuffledQuestions');
+        localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
         localStorage.removeItem('shuffledQuestionsQuizId');
         localStorage.setItem('_shuffleCacheV2', '1');
         return [];
       }
-      const stored = localStorage.getItem('shuffledQuestions');
+      const stored = localStorage.getItem(SK_SHUFFLED_QUESTIONS);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -184,7 +186,7 @@ export class QuizDataLoaderService {
     if (this.shouldShuffle() && (!this.shuffledQuestions || this.shuffledQuestions.length === 0)) {
       try {
         const persistedQuizId = localStorage.getItem('shuffledQuestionsQuizId');
-        const persisted = localStorage.getItem('shuffledQuestions');
+        const persisted = localStorage.getItem(SK_SHUFFLED_QUESTIONS);
         if (persistedQuizId === quizId && persisted) {
           const parsed = JSON.parse(persisted);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -208,7 +210,7 @@ export class QuizDataLoaderService {
         setInternalQuestions([]);
         this.questionsQuizId = null;
         try {
-          localStorage.removeItem('shuffledQuestions');
+          localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
           localStorage.removeItem('shuffledQuestionsQuizId');
         } catch { }
       } else {
@@ -224,7 +226,7 @@ export class QuizDataLoaderService {
           setInternalQuestions([]);
           this.questionsQuizId = null;
           try {
-            localStorage.removeItem('shuffledQuestions');
+            localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
             localStorage.removeItem('shuffledQuestionsQuizId');
           } catch { }
         }
@@ -286,7 +288,7 @@ export class QuizDataLoaderService {
 
           this.shuffledQuestions = shuffled;
           try {
-            localStorage.setItem('shuffledQuestions', JSON.stringify(shuffled));
+            localStorage.setItem(SK_SHUFFLED_QUESTIONS, JSON.stringify(shuffled));
             localStorage.setItem('shuffledQuestionsQuizId', quizId);
           } catch { }
 
@@ -322,7 +324,7 @@ export class QuizDataLoaderService {
     this.shuffleEnabledSig.set(isChecked);
     try {
       localStorage.setItem('checkedShuffle', String(isChecked));
-      localStorage.removeItem('shuffledQuestions');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
       localStorage.removeItem('shuffledQuestionsQuizId');
     } catch { }
 

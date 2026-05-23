@@ -5,6 +5,8 @@ import { FormattedExplanation } from '../../../models/FormattedExplanation.model
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
+import { SK_SEL_Q } from '../../../constants/session-keys';
+
 import { ExplanationDisplayStateService, FETPayload } from './explanation-display-state.service';
 import { ExplanationFormatterService } from './explanation-formatter.service';
 import { QuizService } from '../../data/quiz.service';
@@ -107,7 +109,7 @@ export class ExplanationTextService {
       // sessionStorage sel_Q{idx}
       try {
         const raw = typeof sessionStorage !== 'undefined'
-          ? sessionStorage.getItem('sel_Q' + idx) : null;
+          ? sessionStorage.getItem(SK_SEL_Q + idx) : null;
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {

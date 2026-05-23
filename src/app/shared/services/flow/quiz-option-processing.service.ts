@@ -11,6 +11,8 @@ import { QuizScoringService } from './quiz-scoring.service';
 import { QuizService } from '../data/quiz.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
+import { SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_IS_ANSWERED } from '../../constants/session-keys';
+
 import { norm } from '../../utils/text-norm';
 
 /**
@@ -305,11 +307,11 @@ export class QuizOptionProcessingService {
       this.dotStatusService.pendingDotStatusOverrides.set(idx, 'correct');
       this.dotStatusService.dotStatusCache.set(idx, 'correct');
       this.selectedOptionService.clickConfirmedDotStatus.set(idx, 'correct');
-      try { sessionStorage.setItem('dot_confirmed_' + idx, 'correct'); } catch {}
+      try { sessionStorage.setItem(SK_DOT_CONFIRMED + idx, 'correct'); } catch {}
       this.quizService.scoreDirectly(idx, true, false);
     } else {
       this.selectedOptionService.clickConfirmedDotStatus.set(idx, 'wrong');
-      try { sessionStorage.setItem('dot_confirmed_' + idx, 'wrong'); } catch {}
+      try { sessionStorage.setItem(SK_DOT_CONFIRMED + idx, 'wrong'); } catch {}
     }
 
     return {
@@ -578,22 +580,22 @@ export class QuizOptionProcessingService {
       const currentIndices = this.selectedOptionService.getSelectedOptionIndices(idx);
       sessionStorage.setItem(`quiz_selection_${idx}`, JSON.stringify(currentIndices));
       if (isQuestionComplete) {
-        sessionStorage.setItem('isAnswered', 'true');
-        sessionStorage.setItem(`displayMode_${idx}`, 'explanation');
+        sessionStorage.setItem(SK_IS_ANSWERED, 'true');
+        sessionStorage.setItem(SK_DISPLAY_MODE + idx, 'explanation');
       }
     } catch (err: any) { }
 
     // Ensure sessionStorage has a dot_confirmed_ entry
     try {
-      if (sessionStorage.getItem('dot_confirmed_' + idx) === null) {
+      if (sessionStorage.getItem(SK_DOT_CONFIRMED + idx) === null) {
         const finalDotStatus = this.dotStatusService.pendingDotStatusOverrides.get(idx)
           ?? this.dotStatusService.activeDotClickStatus.get(idx)
           ?? this.dotStatusService.dotStatusCache.get(idx);
         if (finalDotStatus === 'correct' || finalDotStatus === 'wrong') {
-          sessionStorage.setItem('dot_confirmed_' + idx, finalDotStatus);
+          sessionStorage.setItem(SK_DOT_CONFIRMED + idx, finalDotStatus);
         } else {
           const clickedCorrect = params.option?.correct === true || String(params.option?.correct) === 'true';
-          sessionStorage.setItem('dot_confirmed_' + idx, clickedCorrect ? 'correct' : 'wrong');
+          sessionStorage.setItem(SK_DOT_CONFIRMED + idx, clickedCorrect ? 'correct' : 'wrong');
         }
       }
     } catch {}

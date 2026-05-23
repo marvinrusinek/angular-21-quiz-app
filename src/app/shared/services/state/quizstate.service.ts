@@ -3,6 +3,8 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, distinctUntilChanged, filter } from 'rxjs/operators';
 
+import { SK_DOT_CONFIRMED, SK_SEL_Q } from '../../constants/session-keys';
+
 import { Option } from '../../models/Option.model';
 import { QuestionState } from '../../models/QuestionState.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -505,7 +507,7 @@ export class QuizStateService {
         this._hasUserInteracted.has(currentUrlIdx);
       if (!hasEvidence) {
         try {
-          const selRaw = sessionStorage.getItem('sel_Q' + currentUrlIdx);
+          const selRaw = sessionStorage.getItem(SK_SEL_Q + currentUrlIdx);
           if (selRaw) {
             const parsed = JSON.parse(selRaw);
             if (Array.isArray(parsed) && parsed.length > 0) hasEvidence = true;
@@ -514,7 +516,7 @@ export class QuizStateService {
       }
       if (!hasEvidence) {
         try {
-          const dot = sessionStorage.getItem('dot_confirmed_' + currentUrlIdx);
+          const dot = sessionStorage.getItem(SK_DOT_CONFIRMED + currentUrlIdx);
           if (dot === 'correct' || dot === 'wrong') hasEvidence = true;
         } catch { /* ignore */ }
       }

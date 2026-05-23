@@ -9,6 +9,8 @@ import { QuestionPayload } from '../../models/QuestionPayload.model';
 import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
+import { SK_DOT_CONFIRMED } from '../../constants/session-keys';
+
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
 import { QclFetGateService } from './qcl-fet-gate.service';
 import { QclQuestionFetchService } from './qcl-question-fetch.service';
@@ -344,7 +346,7 @@ export class QuizContentLoaderService {
       } catch { }
       this.selectedOptionService.clickConfirmedDotStatus.set(leavingIdx, leavingStatus);
       try { 
-        sessionStorage.setItem('dot_confirmed_' + leavingIdx, leavingStatus);
+        sessionStorage.setItem(SK_DOT_CONFIRMED + leavingIdx, leavingStatus);
       } catch { }
     }
   }

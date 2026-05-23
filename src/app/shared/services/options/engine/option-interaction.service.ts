@@ -8,6 +8,8 @@ import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 
+import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT } from '../../../constants/session-keys';
+
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -463,11 +465,11 @@ export class OptionInteractionService {
     // auto-highlights the 2nd correct answer the user never selected.
     try {
       if (!isMultipleMode) {
-        sessionStorage.setItem('dot_confirmed_' + qIdx, dotStatusEarly);
+        sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, dotStatusEarly);
       } else if (allCorrectFound) {
-        sessionStorage.setItem('dot_confirmed_' + qIdx, 'correct');
+        sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, 'correct');
       } else if (!clickedIsCorrectEarly) {
-        sessionStorage.setItem('dot_confirmed_' + qIdx, 'wrong');
+        sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, 'wrong');
       }
       // For multi-answer partial correct: don't persist to sessionStorage.
       // The in-memory map handles live rendering; refresh should NOT see
@@ -643,7 +645,7 @@ export class OptionInteractionService {
       // ── UNSHUFFLED: original gate ──
       if (allCorrectFound && !isMultipleMode && !pristineIsMultiAnswer) {
         this.quizService._multiAnswerPerfect.set(qIdx, true);
-        try { sessionStorage.setItem('multi_perfect_' + qIdx, 'true'); } catch {}
+        try { sessionStorage.setItem(SK_MULTI_PERFECT + qIdx, 'true'); } catch {}
         this.quizService.scoreDirectly(qIdx, true, isMultipleMode);
         scoreFired = true;
       }

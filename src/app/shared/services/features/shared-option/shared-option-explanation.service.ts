@@ -1,5 +1,7 @@
 ﻿import { Injectable, inject } from '@angular/core';
 
+import { SK_SEL_Q } from '../../../constants/session-keys';
+
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -273,7 +275,7 @@ export class SharedOptionExplanationService {
       }
       try {
         const idx = resolvedIndex;
-        const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('sel_Q' + idx) : null;
+        const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SK_SEL_Q + idx) : null;
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {

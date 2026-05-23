@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 
+import { SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../../shared/constants/session-keys';
+
 import { ExplanationTextService } from '../../../shared/services/features/explanation/explanation-text.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { QuizDotStatusService } from '../../../shared/services/flow/quiz-dot-status.service';
@@ -167,19 +169,19 @@ export class ReturnComponent implements OnInit {
 
   private clearQuestionSessionStorage(): void {
     for (let i = 0; i < 100; i++) {
-      sessionStorage.removeItem('dot_confirmed_' + i);
-      sessionStorage.removeItem('sel_Q' + i);
+      sessionStorage.removeItem(SK_DOT_CONFIRMED + i);
+      sessionStorage.removeItem(SK_SEL_Q + i);
       sessionStorage.removeItem('quiz_selection_' + i);
-      sessionStorage.removeItem('displayMode_' + i);
+      sessionStorage.removeItem(SK_DISPLAY_MODE + i);
       sessionStorage.removeItem('feedbackText_' + i);
     }
   }
 
   private clearGlobalSessionStorage(): void {
-    sessionStorage.removeItem('selectedOptionsMap');
+    sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
     sessionStorage.removeItem('rawSelectionsMap');
     sessionStorage.removeItem('selectionHistory');
-    sessionStorage.removeItem('isAnswered');
+    sessionStorage.removeItem(SK_IS_ANSWERED);
     sessionStorage.removeItem('answeredQuestionIndices');
   }
 

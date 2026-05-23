@@ -26,6 +26,8 @@ import { QuizSessionManagerService } from './quiz-session-manager.service';
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 import { QuizStateService } from '../state/quizstate.service';
 
+import { SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+
 import { getQuizData } from '../../quiz-data-cache';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
@@ -158,12 +160,12 @@ export class QuizService {
     try {
       // One-time purge of stale cache with corrupted correct flags
       if (!localStorage.getItem('_shuffleCacheV2')) {
-        localStorage.removeItem('shuffledQuestions');
+        localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
         localStorage.removeItem('shuffledQuestionsQuizId');
         localStorage.setItem('_shuffleCacheV2', '1');
         return [];
       }
-      const stored = localStorage.getItem('shuffledQuestions');
+      const stored = localStorage.getItem(SK_SHUFFLED_QUESTIONS);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -700,7 +702,7 @@ export class QuizService {
       localStorage.setItem('checkedShuffle', String(isChecked));
 
       // Clear stale shuffledQuestions from localStorage to prevent mismatch
-      localStorage.removeItem('shuffledQuestions');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
       localStorage.removeItem('shuffledQuestionsQuizId');
     } catch { }
 

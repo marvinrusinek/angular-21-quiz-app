@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
+import { SK_SEL_Q } from '../../../constants/session-keys';
+
 import { Option } from '../../../models/Option.model';
 
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
@@ -236,7 +238,7 @@ export class CqcFetGuardService {
           } catch { /* ignore */ }
 
           try {
-            const raw = sessionStorage.getItem('sel_Q' + activeIdx);
+            const raw = sessionStorage.getItem(SK_SEL_Q + activeIdx);
             if (raw) {
               const parsed = JSON.parse(raw);
               if (Array.isArray(parsed)) {
@@ -371,7 +373,7 @@ export class CqcFetGuardService {
             let storedSelections: any[] = [];
             try {
               if (qIdx >= 0) {
-                const raw = sessionStorage.getItem('sel_Q' + qIdx);
+                const raw = sessionStorage.getItem(SK_SEL_Q + qIdx);
                 if (raw) {
                   const parsed = JSON.parse(raw);
                   if (Array.isArray(parsed)) storedSelections = parsed;
@@ -482,7 +484,7 @@ export class CqcFetGuardService {
               }
             } catch { /* ignore */ }
             try {
-              const stored_ll = sessionStorage.getItem('sel_Q' + idx_ll);
+              const stored_ll = sessionStorage.getItem(SK_SEL_Q + idx_ll);
               if (stored_ll) {
                 for (const o of JSON.parse(stored_ll)) {
                   if (o?.selected !== true) continue;
@@ -540,7 +542,7 @@ export class CqcFetGuardService {
             }
           } catch { }
           try {
-            const _stored = sessionStorage.getItem('sel_Q' + _idx);
+            const _stored = sessionStorage.getItem(SK_SEL_Q + _idx);
             if (_stored) {
               for (const _o of JSON.parse(_stored)) {
                 if (_o?.selected !== true) continue;
@@ -755,7 +757,7 @@ export class CqcFetGuardService {
 
       let storedSelections: any[] = [];
       try {
-        const raw = sessionStorage.getItem('sel_Q' + idx);
+        const raw = sessionStorage.getItem(SK_SEL_Q + idx);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) storedSelections = parsed;

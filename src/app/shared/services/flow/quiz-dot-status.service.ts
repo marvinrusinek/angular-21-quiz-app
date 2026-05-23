@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
+import { SK_DOT_CONFIRMED } from '../../constants/session-keys';
+
 import { QuestionType } from '../../models/question-type.enum';
 
 import { Option } from '../../models/Option.model';
@@ -606,7 +608,7 @@ export class QuizDotStatusService {
 
       // Last resort: check sessionStorage directly
       try {
-        const sessionVal = sessionStorage.getItem('dot_confirmed_' + index);
+        const sessionVal = sessionStorage.getItem(SK_DOT_CONFIRMED + index);
         if (sessionVal === 'correct' || sessionVal === 'wrong') {
           dotStatusCache.set(index, sessionVal);
           this.persistence.setPersistedDotStatus(quizId, index, sessionVal);
@@ -797,7 +799,7 @@ export class QuizDotStatusService {
       return finalConfirmed;
     }
     try {
-      const sessionVal = sessionStorage.getItem('dot_confirmed_' + index);
+      const sessionVal = sessionStorage.getItem(SK_DOT_CONFIRMED + index);
       if (sessionVal === 'correct' || sessionVal === 'wrong') {
         dotStatusCache.set(index, sessionVal);
         return sessionVal;
@@ -875,7 +877,7 @@ export class QuizDotStatusService {
     const confirmed = this.selectedOptionService.clickConfirmedDotStatus.get(index);
     const ssStored = (() => {
       try {
-        return sessionStorage.getItem('dot_confirmed_' + index);
+        return sessionStorage.getItem(SK_DOT_CONFIRMED + index);
       } catch {
         return null;
       }

@@ -1,5 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 
+import { SK_DOT_CONFIRMED } from '../../../constants/session-keys';
+
 import { FeedbackConfig } from '../../../models/FeedbackConfig.model';
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -68,7 +70,7 @@ export class QqcResetManagerService {
     const scoredCorrect = !!questionCorrectnessMap?.get?.(i0);
     let dotConfirmed = false;
     try {
-      const dotStored = sessionStorage.getItem('dot_confirmed_' + i0);
+      const dotStored = sessionStorage.getItem(SK_DOT_CONFIRMED + i0);
       dotConfirmed = dotStored === 'correct' || dotStored === 'wrong';
     } catch { /* ignore */ }
     const hasSelections =

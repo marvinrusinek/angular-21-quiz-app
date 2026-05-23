@@ -26,6 +26,8 @@ import { SharedVisibilityService } from '../ui/shared-visibility.service';
 import { TimerService } from '../features/timer/timer.service';
 
 import type { QuizComponent } from '../../../containers/quiz/quiz.component';
+import { SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+
 import { norm } from '../../utils/text-norm';
 
 type Host = QuizComponent;
@@ -401,7 +403,7 @@ export class QuizSetupService {
         this.selectedOptionService.lastClickedCorrectByQuestion.delete(destIndex);
         this.selectedOptionService.clickConfirmedDotStatus.delete(destIndex);
         this.quizPersistence.clearPersistedDotStatus(host.quizId(), destIndex);
-        try { sessionStorage.removeItem('dot_confirmed_' + destIndex); } catch {}
+        try { sessionStorage.removeItem(SK_DOT_CONFIRMED + destIndex); } catch {}
       }
     }
     if (direction === 'next') {
@@ -437,7 +439,7 @@ export class QuizSetupService {
 
     try {
       for (let i = 0; i < totalQs; i++) {
-        sessionStorage.removeItem('sel_Q' + i);
+        sessionStorage.removeItem(SK_SEL_Q + i);
       }
       sessionStorage.removeItem('answeredQuestionIndices');
       sessionStorage.removeItem('quizProgress');
@@ -697,10 +699,10 @@ subscribeToTimerExpiry(host: Host): void {
       try {
         for (let i = 0; i < 100; i++) {
           sessionStorage.removeItem('quiz_selection_' + i);
-          sessionStorage.removeItem('displayMode_' + i);
+          sessionStorage.removeItem(SK_DISPLAY_MODE + i);
           sessionStorage.removeItem('feedbackText_' + i);
         }
-        sessionStorage.removeItem('selectedOptionsMap');
+        sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
         sessionStorage.removeItem('rawSelectionsMap');
         sessionStorage.removeItem('answeredQuestionIndices');
         sessionStorage.removeItem('quizProgress');

@@ -8,6 +8,8 @@ import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 
+import { SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_MULTI_PERFECT, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+
 import { QuizOptionsService } from './quiz-options.service';
 import { QuizQuestionResolverService } from './quiz-question-resolver.service';
 import { QuizScoringService } from './quiz-scoring.service';
@@ -76,7 +78,7 @@ export class QuizSessionManagerService {
       const keysToRemove: string[] = [];
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
-        if (key?.startsWith('sel_Q') || key?.startsWith('displayMode_') || key?.startsWith('multi_perfect_') || key?.startsWith('dot_confirmed_')) {
+        if (key?.startsWith(SK_SEL_Q) || key?.startsWith(SK_DISPLAY_MODE) || key?.startsWith(SK_MULTI_PERFECT) || key?.startsWith(SK_DOT_CONFIRMED)) {
           keysToRemove.push(key);
         }
       }
@@ -216,7 +218,7 @@ export class QuizSessionManagerService {
 
     state.shuffledQuestions = sanitizedQuestions;
     try {
-      localStorage.setItem('shuffledQuestions', JSON.stringify(state.shuffledQuestions));
+      localStorage.setItem(SK_SHUFFLED_QUESTIONS, JSON.stringify(state.shuffledQuestions));
       localStorage.setItem('shuffledQuestionsQuizId', String(state.quizId ?? ''));
     } catch (err) {    }
     state.questions = sanitizedQuestions;
@@ -313,7 +315,7 @@ export class QuizSessionManagerService {
       localStorage.removeItem('currentQuestionIndex');
       localStorage.removeItem('savedQuestionIndex');
       localStorage.removeItem('userAnswers');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('answeredMap');
       localStorage.removeItem('currentQuestionType');
 
@@ -335,7 +337,7 @@ export class QuizSessionManagerService {
     state.currentQuestionIndexSubject.next(0);
 
     try {
-      localStorage.removeItem('shuffledQuestions');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
       localStorage.removeItem('shuffledQuestionsQuizId');
       localStorage.removeItem('selectedOptions');
     } catch { }
@@ -381,8 +383,8 @@ export class QuizSessionManagerService {
     try {
       localStorage.removeItem('userAnswers');
       localStorage.removeItem('questionCorrectness');
-      localStorage.removeItem('shuffledQuestions');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('highScore');
     } catch { /* ignore */ }
 

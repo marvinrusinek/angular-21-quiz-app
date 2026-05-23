@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
+import { SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
 import { NextButtonStateService } from '../state/next-button-state.service';
 import { OptionLockStateService } from '../state/option-lock-state.service';
@@ -100,7 +102,7 @@ export class QuizResetService {
     try {
       localStorage.setItem('correctAnswersCount', '0');
       localStorage.removeItem('questionCorrectness');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('userAnswers');
     } catch { }
 
@@ -170,7 +172,7 @@ export class QuizResetService {
       this.quizPersistence.clearAllPersistedDotStatus(quizId);
       localStorage.removeItem('quiz_progress_default');
       localStorage.removeItem('questionCorrectness');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('userAnswers');
       sessionStorage.removeItem('quizProgress');
       sessionStorage.removeItem('quizProgressQuizId');
@@ -212,9 +214,9 @@ export class QuizResetService {
     this.selectedOptionService.clearAllSelectionsForQuiz(routeQuizId);
 
     try {
-      localStorage.removeItem('shuffledQuestions');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
       localStorage.removeItem('userAnswers');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem('quiz_progress_default');
       localStorage.setItem('savedQuestionIndex', '0');

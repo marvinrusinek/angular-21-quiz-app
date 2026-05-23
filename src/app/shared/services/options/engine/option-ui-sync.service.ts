@@ -8,6 +8,8 @@ import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
+import { SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_MULTI_PERFECT } from '../../../constants/session-keys';
+
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
 import { OptionLockPolicyService } from '../policy/option-lock-policy.service';
@@ -749,7 +751,7 @@ export class OptionUiSyncService {
         // policy correctly stamps b.disabled=true but the UI still
         // returns false from isDisabled() in multi-answer mode.
         this.quizService._multiAnswerPerfect.set(questionIndex, true);
-        try { sessionStorage.setItem('multi_perfect_' + questionIndex, 'true'); } catch {}
+        try { sessionStorage.setItem(SK_MULTI_PERFECT + questionIndex, 'true'); } catch {}
         // Force FET readiness even if already scored correct (to be safe)
         this.selectedOptionService.setAnswered(true, true);
         // Persist FET-ready state to sessionStorage. quiz-option-processing's
@@ -758,8 +760,8 @@ export class OptionUiSyncService {
         // non-contiguous correct indices). Writing here is a safety net so
         // FET actually renders when all correct answers are selected.
         try {
-          sessionStorage.setItem('isAnswered', 'true');
-          sessionStorage.setItem(`displayMode_${questionIndex}`, 'explanation');
+          sessionStorage.setItem(SK_IS_ANSWERED, 'true');
+          sessionStorage.setItem(SK_DISPLAY_MODE + questionIndex, 'explanation');
         } catch { /* ignore */ }
         this.nextButtonStateService.setNextButtonState(true);
         // Emit FET â€” the shared-option-click path handles this when

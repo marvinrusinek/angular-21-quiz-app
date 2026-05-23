@@ -5,6 +5,8 @@ import { QuestionType } from '../../../models/question-type.enum';
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
 
+import { SK_MULTI_PERFECT, SK_SEL_Q } from '../../../constants/session-keys';
+
 import { ExplanationTextService } from '../../features/explanation/explanation-text.service';
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
@@ -103,7 +105,7 @@ export class SocAnswerProcessingService {
     // isDisabled() sees it when Angular re-renders the option items.
     if (clickState.remaining === 0) {
       this.quizService._multiAnswerPerfect.set(qIdx, true);
-      try { sessionStorage.setItem('multi_perfect_' + qIdx, 'true'); } catch {}
+      try { sessionStorage.setItem(SK_MULTI_PERFECT + qIdx, 'true'); } catch {}
     }
 
     const bindingUpdates = this.clickHandler.computeMultiAnswerBindingUpdates(
@@ -235,7 +237,7 @@ export class SocAnswerProcessingService {
       this.quizService.scoreDirectly(qIdx, true, true);
 
       this.quizService._multiAnswerPerfect.set(qIdx, true);
-      try { sessionStorage.setItem('multi_perfect_' + qIdx, 'true'); } catch {}
+      try { sessionStorage.setItem(SK_MULTI_PERFECT + qIdx, 'true'); } catch {}
 
       (this.explanationTextService as any)._fetLocked = false;
       this.explanationTextService.unlockExplanation();
@@ -486,7 +488,7 @@ export class SocAnswerProcessingService {
       this.quizService.scoreDirectly(qIdx, true, false);
       this.nextButtonStateService.setNextButtonState(true);
       this.quizService._multiAnswerPerfect.set(qIdx, true);
-      try { sessionStorage.setItem('multi_perfect_' + qIdx, 'true'); } catch {}
+      try { sessionStorage.setItem(SK_MULTI_PERFECT + qIdx, 'true'); } catch {}
 
       (this.explanationTextService as any)._fetLocked = false;
       this.explanationTextService.unlockExplanation();
@@ -606,7 +608,7 @@ export class SocAnswerProcessingService {
           }
         }
         if (toSave.length > 0) {
-          sessionStorage.setItem('sel_Q' + qIdx, JSON.stringify(toSave));
+          sessionStorage.setItem(SK_SEL_Q + qIdx, JSON.stringify(toSave));
           this.selectedOptionService.addToSelectionHistory(qIdx, toSave as any[]);
         }
       } catch (e) { console.error('processSingleAnswerClick selection-persist failed:', e); }

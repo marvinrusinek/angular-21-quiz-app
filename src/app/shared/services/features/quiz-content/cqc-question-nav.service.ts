@@ -3,6 +3,8 @@ import { ParamMap } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
 
+import { SK_SEL_Q } from '../../../constants/session-keys';
+
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
@@ -106,7 +108,7 @@ export class CqcQuestionNavService {
         host.quizService.selectedOptionsMap?.delete(idx);
       } catch { /* ignore */ }
       try {
-        sessionStorage.removeItem(`sel_Q${idx}`);
+        sessionStorage.removeItem(SK_SEL_Q + idx);
       } catch { /* ignore */ }
       try {
         host.explanationTextService.fetByIndex?.delete(idx);
@@ -314,7 +316,7 @@ export class CqcQuestionNavService {
               host.selectedOptionService.selectedOptionsMap?.delete(zeroBasedIndex);
             } catch { /* ignore */ }
             try {
-              sessionStorage.removeItem(`sel_Q${zeroBasedIndex}`);
+              sessionStorage.removeItem(SK_SEL_Q + zeroBasedIndex);
             } catch { /* ignore */ }
             try {
               host.explanationTextService.fetByIndex?.delete(zeroBasedIndex);
@@ -329,7 +331,7 @@ export class CqcQuestionNavService {
           try {
             let storedSelections: any[] = [];
             try {
-              const raw = sessionStorage.getItem('sel_Q' + zeroBasedIndex);
+              const raw = sessionStorage.getItem(SK_SEL_Q + zeroBasedIndex);
               if (raw) {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) storedSelections = parsed;

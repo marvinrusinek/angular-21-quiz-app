@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
+import { SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+
 import { QuizStatus } from '../../models/quiz-status.enum';
 
 import { QuizDataService } from '../data/quizdata.service';
@@ -150,14 +152,14 @@ export class QuizPersistenceService {
     // Clear sessionStorage entries before clearing the map
     for (const [key] of this.selectedOptionService.clickConfirmedDotStatus) {
       try {
-        sessionStorage.removeItem('dot_confirmed_' + key);
+        sessionStorage.removeItem(SK_DOT_CONFIRMED + key);
       } catch {}
     }
     // Also sweep any orphaned session keys (up to totalQuestions)
     const total = totalQuestions || 20;
     for (let i = 0; i < total; i++) {
       try {
-        sessionStorage.removeItem('dot_confirmed_' + i);
+        sessionStorage.removeItem(SK_DOT_CONFIRMED + i);
       } catch {}
     }
     this.selectedOptionService.clickConfirmedDotStatus.clear();
@@ -172,13 +174,13 @@ export class QuizPersistenceService {
       localStorage.setItem('savedQuestionIndex', '0');
       localStorage.setItem('correctAnswersCount', '0');
       localStorage.removeItem('questionCorrectness');
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('userAnswers');
 
-      sessionStorage.removeItem('selectedOptionsMap');
+      sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       sessionStorage.removeItem('rawSelectionsMap');
       sessionStorage.removeItem('selectionHistory');
-      sessionStorage.removeItem('isAnswered');
+      sessionStorage.removeItem(SK_IS_ANSWERED);
       sessionStorage.removeItem('finalResult');
       sessionStorage.removeItem('elapsedTimes');
       sessionStorage.removeItem('completionTime');
@@ -198,10 +200,10 @@ export class QuizPersistenceService {
 
       // Per-question session entries from the previous quiz
       for (let i = 0; i < 100; i++) {
-        sessionStorage.removeItem('sel_Q' + i);
-        sessionStorage.removeItem('dot_confirmed_' + i);
+        sessionStorage.removeItem(SK_SEL_Q + i);
+        sessionStorage.removeItem(SK_DOT_CONFIRMED + i);
         sessionStorage.removeItem('quiz_selection_' + i);
-        sessionStorage.removeItem('displayMode_' + i);
+        sessionStorage.removeItem(SK_DISPLAY_MODE + i);
         sessionStorage.removeItem('feedbackText_' + i);
       }
 

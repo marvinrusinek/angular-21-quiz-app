@@ -2,6 +2,8 @@
 
 import { QuestionType } from '../../../models/question-type.enum';
 
+import { SK_DOT_CONFIRMED } from '../../../constants/session-keys';
+
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
@@ -186,7 +188,7 @@ export class QqcOptionClickOrchestratorService {
     this.selectedOptionService.lastClickedCorrectByQuestion.set(questionIndex, clickedIsCorrect);
     this.selectedOptionService.clickConfirmedDotStatus.set(questionIndex, dotStatus);
     try {
-      sessionStorage.setItem('dot_confirmed_' + questionIndex, dotStatus);
+      sessionStorage.setItem(SK_DOT_CONFIRMED + questionIndex, dotStatus);
     } catch {}
 
     return clickedIsCorrect;

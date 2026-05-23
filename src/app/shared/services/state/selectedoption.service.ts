@@ -9,6 +9,8 @@ import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 
+import { SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+
 import { AnswerEvaluationService } from './answer-evaluation.service';
 import { NextButtonStateService } from './next-button-state.service';
 import { OptionFeedbackStateService } from './option-feedback-state.service';
@@ -278,7 +280,7 @@ export class SelectedOptionService {
 
     // 1. Durable sessionStorage FIRST â€” the cleanest source of truth.
     try {
-      const storedStr = sessionStorage.getItem('sel_Q' + questionIndex);
+      const storedStr = sessionStorage.getItem(SK_SEL_Q + questionIndex);
       if (storedStr) {
         const parsed = JSON.parse(storedStr);
         if (Array.isArray(parsed)) {
@@ -673,7 +675,7 @@ export class SelectedOptionService {
     const current = this.isAnsweredSig();
     if (force || current !== isAnswered) {
       this.isAnsweredSig.set(isAnswered);
-      sessionStorage.setItem('isAnswered', JSON.stringify(isAnswered));
+      sessionStorage.setItem(SK_IS_ANSWERED, JSON.stringify(isAnswered));
     }
   }
 
@@ -712,7 +714,7 @@ export class SelectedOptionService {
       const keysToRemove: string[] = [];
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
-        if (key?.startsWith('sel_Q') || key?.startsWith('displayMode_')) {
+        if (key?.startsWith(SK_SEL_Q) || key?.startsWith(SK_DISPLAY_MODE)) {
           keysToRemove.push(key);
         }
       }
@@ -942,7 +944,7 @@ export class SelectedOptionService {
     this.clearAnswersForResults();
 
     try {
-      localStorage.removeItem('selectedOptionsMap');
+      localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('userAnswers');
       localStorage.removeItem('savedQuestionIndex');
       localStorage.removeItem('currentQuestionIndex');

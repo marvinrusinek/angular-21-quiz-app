@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 
 import { QuestionType } from '../../../../shared/models/question-type.enum';
 
+import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT } from '../../../../shared/constants/session-keys';
+
 import { Option } from '../../../../shared/models/Option.model';
 import { OptionClickedPayload } from '../../../../shared/models/OptionClickedPayload.model';
 import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
@@ -144,7 +146,7 @@ export class AnswerSelectionService {
         // highlight). scoreDirectly only writes questionCorrectness; the
         // perfect flag must be set explicitly.
         this.quizService._multiAnswerPerfect.set(activeQuestionIndex, true);
-        try { sessionStorage.setItem('multi_perfect_' + activeQuestionIndex, 'true'); } catch {}
+        try { sessionStorage.setItem(SK_MULTI_PERFECT + activeQuestionIndex, 'true'); } catch {}
         this.quizStateService.setAnswerSelected(true);
         return;
       }
@@ -175,7 +177,7 @@ export class AnswerSelectionService {
     );
 
     try {
-      sessionStorage.setItem('dot_confirmed_' + activeQuestionIndex, dotStatus);
+      sessionStorage.setItem(SK_DOT_CONFIRMED + activeQuestionIndex, dotStatus);
     } catch {}
   }
 }

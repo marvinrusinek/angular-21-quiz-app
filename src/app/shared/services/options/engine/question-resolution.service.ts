@@ -1,5 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 
+import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT, SK_SEL_Q } from '../../../constants/session-keys';
+
 import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 
@@ -41,7 +43,7 @@ export class QuestionResolutionService {
       dot = this.selectedOptionService.clickConfirmedDotStatus?.get?.(qIdx) as 'correct' | 'wrong' | undefined;
       if (!dot) {
         try {
-          const stored = sessionStorage.getItem('dot_confirmed_' + qIdx);
+          const stored = sessionStorage.getItem(SK_DOT_CONFIRMED + qIdx);
           if (stored === 'correct' || stored === 'wrong') dot = stored;
         } catch { /* ignore */ }
       }
@@ -50,7 +52,7 @@ export class QuestionResolutionService {
     // Signal 2: multi-answer perfect flag
     let multiPerfect = this.quizService._multiAnswerPerfect.get(qIdx) === true;
     if (!multiPerfect) {
-      try { multiPerfect = sessionStorage.getItem('multi_perfect_' + qIdx) === 'true'; } catch { /* ignore */ }
+      try { multiPerfect = sessionStorage.getItem(SK_MULTI_PERFECT + qIdx) === 'true'; } catch { /* ignore */ }
     }
 
     // Signal 3: scoring map
@@ -97,7 +99,7 @@ export class QuestionResolutionService {
     if (includeSelections) {
       let sel: any[] = [];
       try {
-        const raw = sessionStorage.getItem('sel_Q' + qIdx);
+        const raw = sessionStorage.getItem(SK_SEL_Q + qIdx);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) sel = parsed;

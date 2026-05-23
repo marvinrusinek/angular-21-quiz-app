@@ -19,6 +19,8 @@ import { QuizService } from '../data/quiz.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { TimerService } from '../features/timer/timer.service';
+import { SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+
 import { norm } from '../../utils/text-norm';
 
 @Injectable({ providedIn: 'root' })
@@ -322,9 +324,9 @@ export class QuizNavigationService {
           localStorage.setItem('savedQuestionIndex', '0');
           localStorage.setItem('correctAnswersCount', '0');
           localStorage.removeItem('questionCorrectness');
-          localStorage.removeItem('selectedOptionsMap');
+          localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
           localStorage.removeItem('userAnswers');
-          sessionStorage.removeItem('selectedOptionsMap');
+          sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
         } catch { }
       }
 

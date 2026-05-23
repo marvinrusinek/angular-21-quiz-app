@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 
+import { SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+
 import { SelectedOption } from '../../models/SelectedOption.model';
 
 /**
@@ -29,7 +31,7 @@ export class SelectionPersistenceService {
         ctx.rawSelectionsMap = new Map(Object.entries(parsed).map(([k, v]) => [Number(k), v as any]));
       }
 
-      const selected = sessionStorage.getItem('selectedOptionsMap');
+      const selected = sessionStorage.getItem(SK_SELECTED_OPTIONS_MAP);
       if (selected) {
         const parsed = JSON.parse(selected);
         const entries: Array<[number, SelectedOption[]]> = [];
@@ -65,7 +67,7 @@ export class SelectionPersistenceService {
       let isPageRefresh = navEntries.length > 0 && navEntries[0].type === 'reload';
       if (!isPageRefresh && navEntries.length === 0) {
         for (let i = 0; i < 100; i++) {
-          if (sessionStorage.getItem('sel_Q' + i)) {
+          if (sessionStorage.getItem(SK_SEL_Q + i)) {
             isPageRefresh = true;
             break;
           }
@@ -83,13 +85,13 @@ export class SelectionPersistenceService {
 
   private restoreFromRefresh(ctx: SelectionStateContext): void {
     for (let i = 0; i < 100; i++) {
-      const val = sessionStorage.getItem('dot_confirmed_' + i);
+      const val = sessionStorage.getItem(SK_DOT_CONFIRMED + i);
       if (val === 'correct' || val === 'wrong') {
         ctx.clickConfirmedDotStatus.set(i, val);
       }
     }
     for (let i = 0; i < 100; i++) {
-      const sel = sessionStorage.getItem('sel_Q' + i);
+      const sel = sessionStorage.getItem(SK_SEL_Q + i);
       if (sel) {
         try {
           const opts = JSON.parse(sel);
@@ -106,11 +108,11 @@ export class SelectionPersistenceService {
               ctx.selectedOptionsMap.set(i, userClicks);
               ctx._selectionHistory.set(i, userClicks.map((o: any) => ({ ...o })));
               if (userClicks.length !== opts.length) {
-                sessionStorage.setItem('sel_Q' + i, JSON.stringify(userClicks));
+                sessionStorage.setItem(SK_SEL_Q + i, JSON.stringify(userClicks));
               }
             } else {
               ctx.selectedOptionsMap.delete(i);
-              sessionStorage.removeItem('sel_Q' + i);
+              sessionStorage.removeItem(SK_SEL_Q + i);
             }
           }
         } catch { /* ignore */ }
@@ -124,11 +126,11 @@ export class SelectionPersistenceService {
 
   private clearStaleSessionData(ctx: SelectionStateContext): void {
     for (let i = 0; i < 100; i++) {
-      sessionStorage.removeItem('dot_confirmed_' + i);
-      sessionStorage.removeItem('sel_Q' + i);
+      sessionStorage.removeItem(SK_DOT_CONFIRMED + i);
+      sessionStorage.removeItem(SK_SEL_Q + i);
     }
     sessionStorage.removeItem('rawSelectionsMap');
-    sessionStorage.removeItem('selectedOptionsMap');
+    sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
     sessionStorage.removeItem('selectionHistory');
     ctx._refreshBackup.clear();
     ctx.selectedOptionsMap.clear();
@@ -143,7 +145,7 @@ export class SelectionPersistenceService {
       sessionStorage.setItem('rawSelectionsMap', JSON.stringify(rawObj));
 
       const selectedObj = Object.fromEntries(ctx.selectedOptionsMap);
-      sessionStorage.setItem('selectedOptionsMap', JSON.stringify(selectedObj));
+      sessionStorage.setItem(SK_SELECTED_OPTIONS_MAP, JSON.stringify(selectedObj));
 
       if (ctx._selectionHistory.size > 0) {
         const historyObj = Object.fromEntries(ctx._selectionHistory);
@@ -166,7 +168,7 @@ export class SelectionPersistenceService {
 
     let fromPrior: any[] = [];
     try {
-      const priorRaw = sessionStorage.getItem('sel_Q' + idx);
+      const priorRaw = sessionStorage.getItem(SK_SEL_Q + idx);
       if (priorRaw) {
         const parsed = JSON.parse(priorRaw);
         if (Array.isArray(parsed)) fromPrior = parsed;
@@ -204,9 +206,9 @@ export class SelectionPersistenceService {
 
     const normalized = Array.from(merged.values());
     if (normalized.length > 0) {
-      sessionStorage.setItem('sel_Q' + idx, JSON.stringify(normalized));
+      sessionStorage.setItem(SK_SEL_Q + idx, JSON.stringify(normalized));
     } else {
-      sessionStorage.removeItem('sel_Q' + idx);
+      sessionStorage.removeItem(SK_SEL_Q + idx);
     }
   }
 
@@ -255,13 +257,13 @@ export class SelectionPersistenceService {
 
   clearSessionKeys(): void {
     sessionStorage.removeItem('rawSelectionsMap');
-    sessionStorage.removeItem('selectedOptionsMap');
+    sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
     sessionStorage.removeItem('selectionHistory');
     sessionStorage.removeItem('answeredMap');
     sessionStorage.removeItem('currentQuestionIndex');
   }
 
   clearPerQuestionSessionKey(questionIndex: number): void {
-    sessionStorage.removeItem('sel_Q' + questionIndex);
+    sessionStorage.removeItem(SK_SEL_Q + questionIndex);
   }
 }
