@@ -163,6 +163,7 @@ export class OptionItemComponent implements OnInit {
     effect(() => {
       this.selectedOptionService.selectedOptionsMapSig();
       this.applyMultiAnswerDisableState();
+      this.cdRef.markForCheck();
       this.cdRef.detectChanges();
     });
   }
@@ -173,6 +174,7 @@ export class OptionItemComponent implements OnInit {
       .subscribe(() => {
         this._directTimerExpired = true;
         this._directTimerExpiredForIndex = this.timerService.expiredForQuestionIndexSig();
+        this.cdRef.markForCheck();
         this.cdRef.detectChanges();
       });
   }
