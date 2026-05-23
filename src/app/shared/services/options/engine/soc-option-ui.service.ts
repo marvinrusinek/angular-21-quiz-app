@@ -108,7 +108,6 @@ export class SocOptionUiService {
     }
 
     comp.showFeedback.set(true);
-    comp.updateHighlighting();
     comp.emitExplanation(comp.resolvedQuestionIndex ?? 0);
     comp.cdRef.markForCheck();
     comp.isNavigatingBackwards.set(false);

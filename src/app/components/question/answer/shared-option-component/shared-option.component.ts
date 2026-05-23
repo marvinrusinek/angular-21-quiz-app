@@ -691,10 +691,6 @@ export class SharedOptionComponent
     this.clickService.updateOptionAndUI(this, optionBinding, index, event, existingCtx);
   }
 
-  updateHighlighting(): void {
-    // Moved to OptionItemComponent
-  }
-
   public resolveInteractionType(): 'single' | 'multiple' {
     return this.isMultiMode ? 'multiple' : 'single';
   }

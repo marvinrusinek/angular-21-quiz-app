@@ -94,7 +94,6 @@ export class SharedOptionBindingService {
       comp.cdRef.detectChanges();
     });
 
-    comp.updateHighlighting();
   }
 
   setOptionBindingsIfChanged(comp: any, newOptions: Option[]): void {
@@ -422,7 +421,6 @@ export class SharedOptionBindingService {
 
     comp.rebuildShowFeedbackMapFromBindings();
     comp.updateSelections(-1);
-    comp.updateHighlighting();
 
     // Re-apply persisted refresh state AFTER the id-based rebuild above.
     // `processOptionBindings` only knows how to light options whose
@@ -743,7 +741,6 @@ export class SharedOptionBindingService {
       }
 
       if (comp.rebuildShowFeedbackMapFromBindings) comp.rebuildShowFeedbackMapFromBindings();
-      if (comp.updateHighlighting) comp.updateHighlighting();
       comp.cdRef?.markForCheck?.();
     } catch (e) {
       console.error('rehydrateUiFromState failed:', e);

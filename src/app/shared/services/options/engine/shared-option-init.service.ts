@@ -128,7 +128,6 @@ export interface SharedOptionComponentLike {
   keyOf(o: Option, i: number): string;
   setOptionBindingsIfChanged(newOptions: Option[]): void;
   rebuildShowFeedbackMapFromBindings(): void;
-  updateHighlighting(): void;
 }
 
 @Injectable({ providedIn: 'root' })
