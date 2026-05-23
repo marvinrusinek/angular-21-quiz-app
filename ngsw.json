@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1779550607086,
+  "timestamp": 1779550863463,
   "index": "/angular-20-quiz-app/index.html",
   "assetGroups": [
     {
@@ -26,10 +26,10 @@
         "/angular-20-quiz-app/chunk-OSSLZU7D.js",
         "/angular-20-quiz-app/chunk-PPWC2HNX.js",
         "/angular-20-quiz-app/chunk-T4UBVYR3.js",
-        "/angular-20-quiz-app/chunk-UFO7ZZKH.js",
-        "/angular-20-quiz-app/chunk-UZQIHPZJ.js",
+        "/angular-20-quiz-app/chunk-UZMF6Z32.js",
+        "/angular-20-quiz-app/chunk-Z2R46CYA.js",
         "/angular-20-quiz-app/index.html",
-        "/angular-20-quiz-app/main-RVB46YGM.js",
+        "/angular-20-quiz-app/main-D5SH32JC.js",
         "/angular-20-quiz-app/polyfills-UIC2AE2I.js",
         "/angular-20-quiz-app/styles-FTUEX7BF.css"
       ],
@@ -77,10 +77,10 @@
     "/angular-20-quiz-app/chunk-OSSLZU7D.js": "a7f4c3e2acdbbf9453874fb29ca1bbffe5db208b",
     "/angular-20-quiz-app/chunk-PPWC2HNX.js": "246931fa22bcff8928a45fdd9072382d729e62fa",
     "/angular-20-quiz-app/chunk-T4UBVYR3.js": "1e12878af1a9b10526f5f210673371cef5a3d176",
-    "/angular-20-quiz-app/chunk-UFO7ZZKH.js": "116214ce1631bcc37757af603cb05275ebc18ebc",
-    "/angular-20-quiz-app/chunk-UZQIHPZJ.js": "efbf3fa2bdbea8afac898eba01a858205db7ce73",
-    "/angular-20-quiz-app/index.html": "1f5ef78957bef92ef6503d1820488446441dcb0d",
-    "/angular-20-quiz-app/main-RVB46YGM.js": "7534da3392f38e86b4ae12e17e9af7b647655f3e",
+    "/angular-20-quiz-app/chunk-UZMF6Z32.js": "0828727a67d3e4321cd8df940a40750511072ccf",
+    "/angular-20-quiz-app/chunk-Z2R46CYA.js": "3a365cc3b7174f96acb57f23b4d8e48165f5ab03",
+    "/angular-20-quiz-app/index.html": "427aa124f755f574e70d9955a56023237364f9f2",
+    "/angular-20-quiz-app/main-D5SH32JC.js": "0bca333bf65663495dfb27891b23eb7d75a9dd90",
     "/angular-20-quiz-app/media/codelab_logo-67WJRSK2.jpeg": "f9feb096c6d94292acf3b2f5f9ea7b4aee5dc2a3",
     "/angular-20-quiz-app/polyfills-UIC2AE2I.js": "d95d77c85e3638ace2862592b9479ad4e8520cad",
     "/angular-20-quiz-app/styles-FTUEX7BF.css": "52f26650b6b0efabbc4713ec1a57583257b34ba6"
