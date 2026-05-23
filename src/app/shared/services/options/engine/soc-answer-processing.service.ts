@@ -350,27 +350,6 @@ export class SocAnswerProcessingService {
         comp.cdRef.detectChanges();
       });
 
-      // DOM fallback — guarantees the visual lock regardless of CD timing.
-      const stamp = () => {
-        try {
-          const correctSet = new Set(effectiveCorrectIndices);
-          const items = document.querySelectorAll('app-option-item');
-          for (const [idx, el] of Array.from(items).entries()) {
-            if (correctSet.has(idx)) continue;
-            const row = el.querySelector('.option-row') as HTMLElement | null;
-            if (row) {
-              row.style.pointerEvents = 'none';
-              row.style.backgroundColor = '#a0a0a0';
-              row.style.opacity = '0.7';
-            }
-            const input = el.querySelector('input') as HTMLInputElement | null;
-            if (input) input.disabled = true;
-          }
-        } catch { /* DOM not ready */ }
-      };
-      stamp();
-      setTimeout(stamp, 0);
-      setTimeout(stamp, 50);
     }
 
     // INCORRECT CLICK + ALL-INCORRECT-EXHAUSTED auto-reveal for multi-answer.

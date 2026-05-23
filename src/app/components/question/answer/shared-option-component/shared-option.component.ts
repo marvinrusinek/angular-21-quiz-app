@@ -290,15 +290,6 @@ export class SharedOptionComponent
           try {
             this.form?.get('selectedOptionId')?.setValue(null, { emitEvent: false });
           } catch { /* ignore */ }
-          try {
-            for (const el of Array.from(document.querySelectorAll('.option-row'))) {
-              const html = el as HTMLElement;
-              html.style.pointerEvents = '';
-              el.classList.remove('correct-option');
-              el.classList.remove('incorrect-option');
-            }
-          } catch { /* ignore — non-browser env */ }
-
           // Narrow microtask scrub — ONLY on actual Q→Q transition (inside
           // this if-block), not on every effect re-fire. Without this gate,
           // the click pipeline's signal writes re-trigger the effect and
