@@ -11,8 +11,11 @@ import { FeedbackService } from '../../features/feedback/feedback.service';
 import { OptionBindingFactoryService } from './option-binding-factory.service';
 import { OptionClickHandlerService } from './option-click-handler.service';
 import { OptionService } from '../view/option.service';
+import { QuestionResolutionService } from './question-resolution.service';
 import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+
+import { norm } from '../../../utils/text-norm';
 
 @Injectable({ providedIn: 'root' })
 export class SharedOptionBindingService {
@@ -22,6 +25,7 @@ export class SharedOptionBindingService {
   private feedbackService = inject(FeedbackService);
   private optionBindingFactory = inject(OptionBindingFactoryService);
   private optionService = inject(OptionService);
+  private questionResolution = inject(QuestionResolutionService);
   private quizService = inject(QuizService);
   private selectedOptionService = inject(SelectedOptionService);
 
@@ -250,47 +254,17 @@ export class SharedOptionBindingService {
         ?? 0;
       const isCorrectOpt = (o: any): boolean =>
         o?.correct === true || o?.correct === 1 || String(o?.correct) === 'true';
-      const dotStatus = this.selectedOptionService.clickConfirmedDotStatus?.get?.(qIdx);
       const current = comp.optionBindings?.();
 
-      // Stronger "fully resolved correct" gate so partial multi-answer
-      // doesn't trip the revisit override — dot=correct can fire on the
-      // first correct click of a multi-answer question (still partial).
-      const _quizSvcAny = (comp as any)?.quizService;
-      const _scoreMap: Map<number, boolean> | undefined = _quizSvcAny?.questionCorrectness;
-      const _scoredCorrect = _scoreMap?.get?.(qIdx) === true;
-      const _perfectMap: Map<number, boolean> | undefined = _quizSvcAny?._multiAnswerPerfect;
-      const _multiPerfect = _perfectMap?.get?.(qIdx) === true;
-      // Count canonical correct options for THIS question (prefer pristine).
-      let _correctCount = 0;
-      try {
-        const _norm = (t: any) => String(t ?? '').trim().toLowerCase();
-        const _liveQText = _norm(_quizSvcAny?.questions?.[qIdx]?.questionText);
-        const _bundle: any[] = _quizSvcAny?.quizInitialState ?? [];
-        outer: for (const _quiz of _bundle) {
-          for (const _pq of (_quiz?.questions ?? [])) {
-            if (_liveQText && _norm(_pq?.questionText) === _liveQText) {
-              _correctCount = (_pq?.options ?? []).filter(
-                (o: any) => o?.correct === true || String(o?.correct) === 'true'
-              ).length;
-              if (_correctCount > 0) break outer;
-            }
-          }
-        }
-      } catch { /* ignore */ }
-      const _isCanonMulti = _correctCount > 1;
-      const _fullyResolvedCorrect =
-        _scoredCorrect ||
-        _multiPerfect ||
-        // For single-answer, dot=correct alone is sufficient.
-        (!_isCanonMulti && dotStatus === 'correct');
+      const _res = this.questionResolution.resolve(qIdx, { includeSelections: false });
+      const dotStatus = _res.dot;
 
       // Decide override mode:
       //   'correct' → paint correct opts green, others grey
       //   'wrong'   → clear all marks
       //   ''        → leave bindings alone (mid-interaction, e.g. partial multi-answer)
       let overrideMode: '' | 'correct' | 'wrong' = '';
-      if (_fullyResolvedCorrect) overrideMode = 'correct';
+      if (_res.fullyResolvedCorrect) overrideMode = 'correct';
       else if (dotStatus === 'wrong') overrideMode = 'wrong';
       // Partial multi-answer (isCanonMulti && dot=correct && !multiPerfect): no override
 
@@ -612,45 +586,9 @@ export class SharedOptionBindingService {
       //   • imperfect/none → every option resets clean
       const isCorrectOpt = (o: any): boolean =>
         o?.correct === true || o?.correct === 1 || String(o?.correct) === 'true';
-      const dotStatus = this.selectedOptionService.clickConfirmedDotStatus?.get?.(qIndex);
-      // dot=correct alone is NOT enough — for multi-answer, the very first
-      // correct click already sets dot=correct while the question is still
-      // partial. Require either:
-      //   • scoring-map confirms fully correct, OR
-      //   • _multiAnswerPerfect flag set (only when all correct picked), OR
-      //   • single-answer + dot=correct
-      const _quizSvcRH = (comp as any)?.quizService;
-      const _scoreMap: Map<number, boolean> | undefined = _quizSvcRH?.questionCorrectness;
-      const _scoredCorrect = _scoreMap?.get?.(qIndex) === true;
-      const _perfectMap: Map<number, boolean> | undefined = _quizSvcRH?._multiAnswerPerfect;
-      let _multiPerfect = _perfectMap?.get?.(qIndex) === true;
-      if (!_multiPerfect) {
-        try { _multiPerfect = sessionStorage.getItem('multi_perfect_' + qIndex) === 'true'; } catch {}
-      }
-      // Count canonical correct options for THIS question.
-      let _correctCount = 0;
-      try {
-        const _nrm = (t: any) => String(t ?? '').trim().toLowerCase();
-        const _liveQText = _nrm(_quizSvcRH?.questions?.[qIndex]?.questionText);
-        const _bundle: any[] = _quizSvcRH?.quizInitialState ?? [];
-        outerRH: for (const _qz of _bundle) {
-          for (const _pq of (_qz?.questions ?? [])) {
-            if (_liveQText && _nrm(_pq?.questionText) === _liveQText) {
-              _correctCount = (_pq?.options ?? []).filter(
-                (o: any) => o?.correct === true || String(o?.correct) === 'true'
-              ).length;
-              if (_correctCount > 0) break outerRH;
-            }
-          }
-        }
-      } catch { /* ignore */ }
-      const _isCanonMulti = _correctCount > 1;
-      // For multi-answer, `_scoredCorrect` alone can be true for partial
-      // selections in some flows. Require `_multiPerfect` for multi-answer.
-      const wasPerfect =
-        (_scoredCorrect && (!_isCanonMulti || _multiPerfect)) ||
-        _multiPerfect ||
-        (!_isCanonMulti && dotStatus === 'correct');
+
+      const _res = this.questionResolution.resolve(qIndex, { includeSelections: false });
+      const wasPerfect = _res.fullyResolvedCorrect;
 
       // Restored optionsToDisplay loop
       if (comp.optionsToDisplay?.length) {

@@ -13,9 +13,12 @@ import { OptionBindings } from '../../../../../shared/models/OptionBindings.mode
 import { SharedOptionConfig } from '../../../../../shared/models/SharedOptionConfig.model';
 
 import { OptionService } from '../../../../../shared/services/options/view/option.service';
+import { QuestionResolutionService } from '../../../../../shared/services/options/engine/question-resolution.service';
 import { QuizService } from '../../../../../shared/services/data/quiz.service';
 import { SelectedOptionService } from '../../../../../shared/services/state/selectedoption.service';
 import { TimerService } from '../../../../../shared/services/features/timer/timer.service';
+
+import { norm } from '../../../../../shared/utils/text-norm';
 
 import { correctAnswerAnim } from '../../../../../animations/animations';
 import { HighlightOptionDirective } from '../../../../../directives/highlight-option.directive';
@@ -52,6 +55,7 @@ export interface OptionUIEvent {
 export class OptionItemComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
   private readonly optionService = inject(OptionService);
+  private readonly questionResolution = inject(QuestionResolutionService);
   private readonly quizService = inject(QuizService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly timerService = inject(TimerService);
@@ -207,165 +211,19 @@ export class OptionItemComponent implements OnInit {
     // Previous-revisit override (highest priority): when the user revisits a
     // FULLY-resolved question, paint correct options green and incorrect ones
     // dark gray. Otherwise (imperfect/none) leave alone.
-    //
-    // "Fully resolved" is computed directly by comparing the persisted
-    // selections against the question's canonical correct options — this
-    // works uniformly for single- and multi-answer questions, and survives
-    // resets that wipe clickConfirmedDotStatus / _multiAnswerPerfect.
     try {
-      // Read the live index from QuizService — the input lags behind by a
-      // microtask on Previous nav, which made Q2 read Q3's index (stale).
       const _svcIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
         ?? (this.quizService as any)?.currentQuestionIndex;
       const _inputIdx = this.currentQuestionIndex();
       const _qIdxRev = (typeof _svcIdx === 'number' && _svcIdx >= 0)
         ? _svcIdx
         : _inputIdx;
+
+      const res = this.questionResolution.resolve(_qIdxRev, { includeWrongDetection: true });
+      const { fullyResolvedCorrect, fullyResolvedWrong, correctOpts } = res;
       const _opt: any = this.binding()?.option;
-      const _isCorrect = _opt?.correct === true || _opt?.correct === 1 || String(_opt?.correct) === 'true';
-
-      // Signal 1: in-memory + sessionStorage dot status (set on click).
-      let _dot: string | undefined =
-        this.selectedOptionService.clickConfirmedDotStatus?.get?.(_qIdxRev);
-      if (!_dot) {
-        try {
-          const stored = sessionStorage.getItem('dot_confirmed_' + _qIdxRev);
-          if (stored === 'correct' || stored === 'wrong') _dot = stored;
-        } catch { /* ignore */ }
-      }
-
-      // Signal 2: multi-answer perfect flag (in-memory + sessionStorage fallback).
-      const isMulti = this.type() === 'multiple';
-      const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-      let multiPerfectFlag = perfectMap?.get(_qIdxRev) === true;
-      if (!multiPerfectFlag) {
-        try { multiPerfectFlag = sessionStorage.getItem('multi_perfect_' + _qIdxRev) === 'true'; } catch {}
-      }
-
-      // Signal 3: pure comparison — canonical correct options vs persisted selections.
-      const norm = (t: any) => String(t ?? '').trim().toLowerCase();
-      const optsForQ: any[] =
-        (this.quizService as any)?.questions?.[_qIdxRev]?.options
-        ?? (this.quizService as any)?.shuffledQuestions?.[_qIdxRev]?.options
-        ?? [];
-      // Use pristine quizInitialState as the source of truth for correctness.
-      // Live questions[] correct flags can be mutated/cleared during gameplay.
-      let correctOpts: any[] = [];
-      try {
-        const liveQText = norm(
-          (this.quizService as any)?.questions?.[_qIdxRev]?.questionText
-            ?? optsForQ?.[0]?.questionText
-        );
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-        outer: for (const quiz of bundle) {
-          for (const pq of (quiz?.questions ?? [])) {
-            if (liveQText && norm(pq?.questionText) === liveQText) {
-              correctOpts = (pq?.options ?? []).filter(
-                (o: any) => o?.correct === true || String(o?.correct) === 'true'
-              );
-              if (correctOpts.length > 0) break outer;
-            }
-          }
-        }
-      } catch { /* ignore */ }
-      // Fallback to live options if pristine lookup didn't yield anything.
-      if (correctOpts.length === 0) {
-        correctOpts = optsForQ.filter(
-          (o: any) => o?.correct === true || String(o?.correct) === 'true'
-        );
-      }
-      let sel: any[] = [];
-      try {
-        const raw = sessionStorage.getItem('sel_Q' + _qIdxRev);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) sel = parsed;
-        }
-      } catch { /* ignore */ }
-      if (sel.length === 0) {
-        sel = this.selectedOptionService.getSelectedOptionsForQuestion?.(_qIdxRev) ?? [];
-      }
-      // A previously-clicked option may be persisted with selected:false but
-      // showIcon:true / highlight:true (multi-answer: only the latest click
-      // carries selected:true, prior correct clicks get selected:false). Treat
-      // all such entries as "picked" for revisit-perfect detection.
-      const liveSel = sel.filter((s: any) =>
-        s?.selected === true || s?.showIcon === true || s?.highlight === true
-      );
-      const wasPicked = (canon: any): boolean => {
-        const cid = canon?.optionId;
-        const ctxt = norm(canon?.text);
-        return liveSel.some((s: any) =>
-          (cid != null && s?.optionId === cid) ||
-          (!!ctxt && norm(s?.text) === ctxt)
-        );
-      };
-      const isCanonCorrect = (sItem: any): boolean => {
-        const sid = sItem?.optionId;
-        const stxt = norm(sItem?.text);
-        return correctOpts.some((c: any) =>
-          (sid != null && c?.optionId === sid) ||
-          (!!stxt && norm(c?.text) === stxt)
-        );
-      };
-      let computedPerfect = false;
-      let computedImperfect = false;
-      if (correctOpts.length > 0 && liveSel.length > 0) {
-        const allCovered = correctOpts.every(wasPicked);
-        const noExtras = liveSel.every(isCanonCorrect);
-        if (allCovered && noExtras) computedPerfect = true;
-        else computedImperfect = true;
-      }
-
-      // Signal 4: scoring map — `questionCorrectness.get(idx) === true` is
-      // the most durable record of a perfectly-scored question. Survives
-      // navigation, in-memory map clears, and works uniformly for single &
-      // multi-answer.
-      const scoreCorrectMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
-      const scoredCorrect = scoreCorrectMap?.get?.(_qIdxRev) === true;
-
-      // True multi-answer = pristine question has more than one correct
-      // option. Trust canonical correctOpts rather than the `type()` input,
-      // which can be mis-derived when binding-level correct flags are wiped.
-      const isCanonMulti = correctOpts.length > 1;
-
-      // Combine signals: fullyResolvedCorrect if ANY of:
-      //   • questionCorrectness map says correct       (most durable signal)
-      //   • selections perfectly match canonical correct (works post-clear)
-      //   • single-answer + dot=correct                 (works for Q1 etc.)
-      //   • multi-answer + multiPerfectFlag             (set at full-answer time)
-      // For multi-answer questions, NEVER fall back to dot=correct alone —
-      // a partial multi-answer (1 of N picked) also sets dot=correct, and
-      // would falsely trip the override. Require either the perfect flag
-      // or the explicit selections-match check.
-      // For multi-answer, `scoredCorrect` alone is unreliable — the scoring
-      // map can be set to true for partial multi-answer in some flows. Gate
-      // it behind `multiPerfectFlag || computedPerfect` for multi-answer.
-      const fullyResolvedCorrect =
-        (scoredCorrect && (!isCanonMulti || multiPerfectFlag || computedPerfect)) ||
-        computedPerfect ||
-        (!isCanonMulti && _dot === 'correct') ||
-        (isCanonMulti && multiPerfectFlag);
-      // Imperfect: clear all marks. Triggers when:
-      //   • Selections vs canonical match yielded a mismatch (extras/missing), OR
-      //   • Explicit wrong dot, OR
-      //   • Multi-answer with dot=correct but NO multiPerfectFlag (partial),
-      //     even if persisted selections were lost/empty.
-      // For multi-answer, ignore `scoredCorrect` when judging "wrong" —
-      // partial multi-answer can have scoredCorrect=true but should still
-      // render empty on revisit. Single-answer keeps the prior guard so a
-      // single-answer scored question never gets cleared.
-      const fullyResolvedWrong =
-        (!scoredCorrect || isCanonMulti) &&
-        (computedImperfect ||
-          _dot === 'wrong' ||
-          (isCanonMulti && _dot === 'correct' && !multiPerfectFlag));
 
       if (fullyResolvedCorrect) {
-        // Use the canonical (pristine) correctness rather than trusting
-        // binding().option.correct, which can be mutated/cleared during
-        // gameplay (e.g. Q2 of DI quiz loses correct flags on the live
-        // binding after a re-render).
         const optId = _opt?.optionId;
         const optText = norm(_opt?.text);
         const isCanonCorrectHere = correctOpts.some((c: any) =>
@@ -393,9 +251,6 @@ export class OptionItemComponent implements OnInit {
           'disabled-option': true
         };
       } else if (fullyResolvedWrong && !this._userHasClicked) {
-        // Gate by !_userHasClicked so this only suppresses revisits and
-        // unpicked-correct auto-reveals — never overrides the just-clicked
-        // option's own green feedback on a forward partial multi-answer.
         return {
           ...classes,
           'selected': false,
@@ -407,16 +262,6 @@ export class OptionItemComponent implements OnInit {
         };
       }
     } catch { /* ignore */ }
-    // TEMP DIAGNOSTIC — final-stage class assignment. Logs whenever
-    // `correct-option: true` is present in the returned class map,
-    // showing exactly which branch put it there.
-    const _DBG_QIDX = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-    const _DBG_TEXT = this.binding()?.option?.text;
-    const _DBG_LOG_IF_CORRECT = (branch: string, extra?: any) => {
-      if (classes['correct-option'] === true) {
-      }
-    };
-    _DBG_LOG_IF_CORRECT('spread-from-binding.cssClasses');
 
     // If the timer-expiry handler pre-stamped CSS classes on this binding
     // FOR THIS question, return them directly — do NOT let downstream
@@ -443,7 +288,6 @@ export class OptionItemComponent implements OnInit {
     if (shouldHighlight) {
       if (isCorrect) {
         classes['correct-option'] = true;
-        _DBG_LOG_IF_CORRECT('shouldHighlight+isCorrect', { isSelected: this.binding()?.isSelected, optHighlight: this.binding()?.option?.highlight, wasSelected: (this as any)._wasSelected, autoRev: (this.binding() as any)?._autoRevealedCorrect, optAutoRev: (this.binding()?.option as any)?._autoRevealedCorrect });
         classes['incorrect-option'] = false;
       } else {
         classes['incorrect-option'] = true;
@@ -466,139 +310,31 @@ export class OptionItemComponent implements OnInit {
   }
 
   isDisabled(): boolean {
-    const _DBG_TEXT = this.binding()?.option?.text;
-    const _DBG_LOG = (path: string, extra?: any) => {
-    };
-
     // Previous-revisit override: on a FULLY-resolved correct question, every
-    // INCORRECT option must render disabled so the SCSS rule
-    // (.option-row.mat-mdc-radio-disabled:not(.correct-option):not(.incorrect-option))
-    // paints it dark gray. The correct (selected) option stays interactive=false-
-    // safe via its 'correct-option' class which already pointer-events:none.
+    // INCORRECT option must render disabled (dark gray).
     try {
-      // Prefer the option-item's input index — it always reflects the
-      // currently-rendered question for this template instance. Service
-      // index can lag during a Previous-nav transition.
       const _inputIdx = this.currentQuestionIndex();
       const _svcIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
         ?? (this.quizService as any)?.currentQuestionIndex;
       const _qIdxRev = (typeof _inputIdx === 'number' && _inputIdx >= 0)
         ? _inputIdx
         : (typeof _svcIdx === 'number' && _svcIdx >= 0 ? _svcIdx : 0);
-      const _opt: any = this.binding()?.option;
-      const _isCorrect = _opt?.correct === true || _opt?.correct === 1 || String(_opt?.correct) === 'true';
 
-      let _dot: string | undefined =
-        this.selectedOptionService.clickConfirmedDotStatus?.get?.(_qIdxRev);
-      if (!_dot) {
-        try {
-          const stored = sessionStorage.getItem('dot_confirmed_' + _qIdxRev);
-          if (stored === 'correct' || stored === 'wrong') _dot = stored;
-        } catch { /* ignore */ }
-      }
-
-      const isMulti = this.type() === 'multiple';
-      const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-      let multiPerfectFlag = perfectMap?.get(_qIdxRev) === true;
-      if (!multiPerfectFlag) {
-        try { multiPerfectFlag = sessionStorage.getItem('multi_perfect_' + _qIdxRev) === 'true'; } catch {}
-      }
-
-      const norm = (t: any) => String(t ?? '').trim().toLowerCase();
-      const optsForQ: any[] =
-        (this.quizService as any)?.questions?.[_qIdxRev]?.options
-        ?? (this.quizService as any)?.shuffledQuestions?.[_qIdxRev]?.options
-        ?? [];
-      // Use pristine quizInitialState as the source of truth for correctness.
-      // Live questions[] correct flags can be mutated/cleared during gameplay.
-      let correctOpts: any[] = [];
-      try {
-        const liveQText = norm(
-          (this.quizService as any)?.questions?.[_qIdxRev]?.questionText
-            ?? optsForQ?.[0]?.questionText
-        );
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-        outer: for (const quiz of bundle) {
-          for (const pq of (quiz?.questions ?? [])) {
-            if (liveQText && norm(pq?.questionText) === liveQText) {
-              correctOpts = (pq?.options ?? []).filter(
-                (o: any) => o?.correct === true || String(o?.correct) === 'true'
-              );
-              if (correctOpts.length > 0) break outer;
-            }
-          }
-        }
-      } catch { /* ignore */ }
-      // Fallback to live options if pristine lookup didn't yield anything.
-      if (correctOpts.length === 0) {
-        correctOpts = optsForQ.filter(
-          (o: any) => o?.correct === true || String(o?.correct) === 'true'
-        );
-      }
-      let sel: any[] = [];
-      try {
-        const raw = sessionStorage.getItem('sel_Q' + _qIdxRev);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) sel = parsed;
-        }
-      } catch { /* ignore */ }
-      if (sel.length === 0) {
-        sel = this.selectedOptionService.getSelectedOptionsForQuestion?.(_qIdxRev) ?? [];
-      }
-      // A previously-clicked option may be persisted with selected:false but
-      // showIcon:true / highlight:true (multi-answer: only the latest click
-      // carries selected:true, prior correct clicks get selected:false). Treat
-      // all such entries as "picked" for revisit-perfect detection.
-      const liveSel = sel.filter((s: any) =>
-        s?.selected === true || s?.showIcon === true || s?.highlight === true
-      );
-      const wasPicked = (canon: any): boolean => {
-        const cid = canon?.optionId;
-        const ctxt = norm(canon?.text);
-        return liveSel.some((s: any) =>
-          (cid != null && s?.optionId === cid) ||
-          (!!ctxt && norm(s?.text) === ctxt)
-        );
-      };
-      const isCanonCorrect = (sItem: any): boolean => {
-        const sid = sItem?.optionId;
-        const stxt = norm(sItem?.text);
-        return correctOpts.some((c: any) =>
-          (sid != null && c?.optionId === sid) ||
-          (!!stxt && norm(c?.text) === stxt)
-        );
-      };
-      let computedPerfect = false;
-      if (correctOpts.length > 0 && liveSel.length > 0) {
-        const allCovered = correctOpts.every(wasPicked);
-        const noExtras = liveSel.every(isCanonCorrect);
-        if (allCovered && noExtras) computedPerfect = true;
-      }
-
-      const scoreCorrectMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
-      const scoredCorrect = scoreCorrectMap?.get?.(_qIdxRev) === true;
-      const isCanonMulti = correctOpts.length > 1;
-      const fullyResolvedCorrect =
-        (scoredCorrect && (!isCanonMulti || multiPerfectFlag || computedPerfect)) ||
-        computedPerfect ||
-        (!isCanonMulti && _dot === 'correct') ||
-        (isCanonMulti && multiPerfectFlag);
-      if (fullyResolvedCorrect) {
-        // Use canonical correctness rather than trusting the live binding's
-        // option.correct flag (which can be wiped during gameplay).
+      const res = this.questionResolution.resolve(_qIdxRev);
+      if (res.fullyResolvedCorrect) {
+        const _opt: any = this.binding()?.option;
         const optId = _opt?.optionId;
         const optText = norm(_opt?.text);
-        const isCanonCorrectHere = correctOpts.some((c: any) =>
+        const isCanonCorrectHere = res.correctOpts.some((c: any) =>
           (optId != null && c?.optionId === optId) ||
           (!!optText && norm(c?.text) === optText)
         );
-        if (!isCanonCorrectHere) return true;  // greys out incorrect options
+        if (!isCanonCorrectHere) return true;
       }
     } catch { /* ignore */ }
 
     // Timer-expiry handler stamped all bindings as disabled
-    if (this.isTimerStamped()) { _DBG_LOG('isTimerStamped'); return true; }
+    if (this.isTimerStamped()) { return true; }
 
     let _type = this.type();
     const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
@@ -625,7 +361,7 @@ export class OptionItemComponent implements OnInit {
     // component dirty whenever selections mutate (no need for manual
     // markForCheck or input-ref-change tricks).
     if (_type === 'multiple') {
-      if (this.isTimerExpiredForThisQuestion()) { _DBG_LOG('multi.timerExpired'); return true; }
+      if (this.isTimerExpiredForThisQuestion()) { return true; }
 
       const nrm = (t: any) => String(t ?? '').trim().toLowerCase();
       const liveQT = nrm(
@@ -648,7 +384,6 @@ export class OptionItemComponent implements OnInit {
         if (allPristineCorrectSelected) {
           const myText = nrm(this.binding()?.option?.text);
           const r = !selectedTexts.has(myText);
-          if (r) _DBG_LOG('multi.allCorrectSelected.notMine', { myText, selectedTexts: [...selectedTexts], pristineCorrectTexts: [...pristineCorrectTexts] });
           return r;
         }
       }
@@ -658,7 +393,6 @@ export class OptionItemComponent implements OnInit {
       const perfectMap =
         (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
       if (perfectMap?.get(_qIdx) === true && this.binding()?.disabled === true) {
-        _DBG_LOG('multi.perfectMap+bindingDisabled');
         return true;
       }
       return false;
@@ -702,7 +436,6 @@ export class OptionItemComponent implements OnInit {
       }
       return correctTextsSA.has(nrmSA(s?.text));
     });
-    if (hasCorrectSelection) _DBG_LOG('single.hasCorrectSelection', { selections: selections.map((s: any) => ({ text: s?.text, correct: s?.correct })), correctTextsSA: [...correctTextsSA] });
     return hasCorrectSelection;
   }
 
@@ -771,82 +504,17 @@ export class OptionItemComponent implements OnInit {
   }
 
   getOptionBackgroundColor(): string | null {
-    // Imperfect-revisit / partial-multi guard: for multi-answer questions
-    // that are NOT fully resolved, only paint THIS option green if the user
-    // actually picked it (live click or persisted in sel_Q*). Otherwise
-    // suppress green so the auto-reveal of unpicked correct options can't
-    // paint them on partial-correct multi-answer states.
+    // Imperfect-revisit / partial-multi guard: suppress green for unpicked
+    // correct options on partial multi-answer states.
     try {
-      // Skip the guard if the user is actively interacting with THIS option
-      // (just clicked it) — preserve the click feedback.
       if (!this._userHasClicked && !this.binding()?.isSelected) {
         const _svcIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
           ?? (this.quizService as any)?.currentQuestionIndex;
         const _inputIdx = this.currentQuestionIndex();
         const _qIdxRev = (typeof _svcIdx === 'number' && _svcIdx >= 0) ? _svcIdx : _inputIdx;
 
-        const norm = (t: any) => String(t ?? '').trim().toLowerCase();
-        let correctOpts: any[] = [];
-        try {
-          const liveQText = norm(
-            (this.quizService as any)?.questions?.[_qIdxRev]?.questionText
-          );
-          const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-          outer: for (const quiz of bundle) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (liveQText && norm(pq?.questionText) === liveQText) {
-                correctOpts = (pq?.options ?? []).filter(
-                  (o: any) => o?.correct === true || String(o?.correct) === 'true'
-                );
-                if (correctOpts.length > 0) break outer;
-              }
-            }
-          }
-        } catch { /* ignore */ }
-
-        let sel: any[] = [];
-        try {
-          const raw = sessionStorage.getItem('sel_Q' + _qIdxRev);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) sel = parsed;
-          }
-        } catch { /* ignore */ }
-        if (sel.length === 0) {
-          sel = this.selectedOptionService.getSelectedOptionsForQuestion?.(_qIdxRev) ?? [];
-        }
-        const liveSel = sel.filter((s: any) =>
-          s?.selected === true || s?.showIcon === true || s?.highlight === true
-        );
-        const wasPicked = (canon: any): boolean => {
-          const cid = canon?.optionId;
-          const ctxt = norm(canon?.text);
-          return liveSel.some((s: any) =>
-            (cid != null && s?.optionId === cid) ||
-            (!!ctxt && norm(s?.text) === ctxt)
-          );
-        };
-        const isCanonCorrect = (sItem: any): boolean => {
-          const sid = sItem?.optionId;
-          const stxt = norm(sItem?.text);
-          return correctOpts.some((c: any) =>
-            (sid != null && c?.optionId === sid) ||
-            (!!stxt && norm(c?.text) === stxt)
-          );
-        };
-        let computedPerfect = false;
-        if (correctOpts.length > 0 && liveSel.length > 0) {
-          const allCovered = correctOpts.every(wasPicked);
-          const noExtras = liveSel.every(isCanonCorrect);
-          if (allCovered && noExtras) computedPerfect = true;
-        }
-        const scoreCorrectMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
-        const scoredCorrect = scoreCorrectMap?.get?.(_qIdxRev) === true;
-        const perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-        const multiPerfectFlag = perfectMap?.get(_qIdxRev) === true;
-        const fullyResolved = scoredCorrect || computedPerfect || multiPerfectFlag;
-        // Imperfect (or unanswered): suppress inline green for this unpicked option
-        if (!fullyResolved && correctOpts.length > 1) {
+        const res = this.questionResolution.resolve(_qIdxRev, { includeDot: false });
+        if (!res.fullyResolvedCorrect && res.isCanonMulti) {
           return null;
         }
       }

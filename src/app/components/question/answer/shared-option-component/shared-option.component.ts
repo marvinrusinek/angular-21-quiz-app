@@ -23,6 +23,7 @@ import { OptionSelectionUiService } from '../../../../shared/services/options/en
 import { OptionService } from '../../../../shared/services/options/view/option.service';
 import { OptionUiContextBuilderService } from '../../../../shared/services/options/engine/option-ui-context-builder.service';
 import { OptionUiSyncContext } from '../../../../shared/services/options/engine/option-ui-sync.service';
+import { QuestionResolutionService } from '../../../../shared/services/options/engine/question-resolution.service';
 import { QuizService } from '../../../../shared/services/data/quiz.service';
 import { SelectedOptionService } from '../../../../shared/services/state/selectedoption.service';
 import { SharedOptionBindingService } from '../../../../shared/services/options/engine/shared-option-binding.service';
@@ -77,6 +78,7 @@ export class SharedOptionComponent
   public readonly optionService = inject(OptionService);
   private readonly optionUiContextBuilder = inject(OptionUiContextBuilderService);
   private readonly orchestrator = inject(SharedOptionOrchestratorService);
+  private readonly questionResolution = inject(QuestionResolutionService);
   public readonly quizService = inject(QuizService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly sharedOptionStateAdapterService = inject(SharedOptionStateAdapterService);
@@ -301,49 +303,13 @@ export class SharedOptionComponent
           // this if-block), not on every effect re-fire. Without this gate,
           // the click pipeline's signal writes re-trigger the effect and
           // the scrub wipes the just-clicked option.selected back to false.
-          const _perfectMap = (this.quizService as any)?._multiAnswerPerfect as Map<number, boolean> | undefined;
-          // Also treat a click-confirmed CORRECT dot status as "resolved" so
-          // single-answer-correct questions retain their highlight on
-          // revisit (Previous). Multi-answer needs more: dot=correct can fire
-          // on the first correct click of a multi-answer question (which is
-          // still partial), and we MUST scrub _autoRevealedCorrect there.
+          const _res = this.questionResolution.resolve(v, { includeSelections: false });
           const _confirmedCorrect = this.selectedOptionService.clickConfirmedDotStatus?.get(v) === 'correct';
-          // Determine if THIS question is canonically multi-answer.
-          let _isCanonMulti = false;
-          try {
-            const _norm = (t: any) => String(t ?? '').trim().toLowerCase();
-            const _liveQText = _norm(
-              (this.quizService as any)?.questions?.[v]?.questionText
-            );
-            const _bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-            outer: for (const _quiz of _bundle) {
-              for (const _pq of (_quiz?.questions ?? [])) {
-                if (_liveQText && _norm(_pq?.questionText) === _liveQText) {
-                  const _correctCount = (_pq?.options ?? []).filter(
-                    (o: any) => o?.correct === true || String(o?.correct) === 'true'
-                  ).length;
-                  _isCanonMulti = _correctCount > 1;
-                  break outer;
-                }
-              }
-            }
-          } catch { /* ignore */ }
-          // Also check the questionCorrectness scoring map — most durable
-          // signal of full correct resolution, works for both single & multi.
-          const _scoreMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
-          const _scoredCorrect = _scoreMap?.get?.(v) === true;
-          // For multi-answer, `_scoredCorrect` alone can be true for partial
-          // selections in some flows. Require `_multiPerfect` for multi-answer.
-          let _multiPerfect = _perfectMap?.get(v) === true;
-          if (!_multiPerfect) {
-            try { _multiPerfect = sessionStorage.getItem('multi_perfect_' + v) === 'true'; } catch {}
-          }
           const _isResolved =
-            (_scoredCorrect && (!_isCanonMulti || _multiPerfect)) ||
+            (_res.scoredCorrect && (!_res.isCanonMulti || _res.multiPerfect)) ||
             this.selectedOptionService.isQuestionLocked?.(v) === true ||
-            _multiPerfect ||
-            // Single-answer: dot=correct alone is sufficient
-            (!_isCanonMulti && _confirmedCorrect);
+            _res.multiPerfect ||
+            (!_res.isCanonMulti && _confirmedCorrect);
           if (!_isResolved) {
             queueMicrotask(() => {
               this._multiSelectByQuestion?.delete(v);
