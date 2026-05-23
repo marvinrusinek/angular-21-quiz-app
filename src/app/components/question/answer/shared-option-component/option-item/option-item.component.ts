@@ -24,6 +24,11 @@ import { correctAnswerAnim } from '../../../../../animations/animations';
 import { HighlightOptionDirective } from '../../../../../directives/highlight-option.directive';
 import { SharedOptionConfigDirective } from '../../../../../directives/shared-option-config.directive';
 
+// Option background colors — matches SCSS variables in _variables.scss
+const CORRECT_COLOR = '#43e756';
+const INCORRECT_COLOR = '#ff0000';
+const DISABLED_COLOR = '#a0a0a0';
+
 export type OptionUIEventKind = 'change' | 'interaction' | 'contentClick';
 
 export interface OptionUIEvent {
@@ -241,14 +246,25 @@ export class OptionItemComponent implements OnInit {
             'disabled-option': false
           };
         }
+        // Previously-clicked incorrect options should show red, not gray.
+        // Without 'incorrect-option', .mat-mdc-radio-disabled applies
+        // gray !important which overrides the inline red background.
+        let wasClickedIncorrect = this._wasSelected
+          || this._userHasClicked
+          || !!this.binding()?.option?.showIcon
+          || !!this.binding()?.option?.highlight;
+        if (!wasClickedIncorrect && optText) {
+          const histEntries = this.selectedOptionService._selectionHistory.get(_qIdxRev) ?? [];
+          wasClickedIncorrect = histEntries.some((s: any) => norm(s?.text) === optText);
+        }
         return {
           ...classes,
           'selected': false,
           'selected-option': false,
           'correct-option': false,
-          'incorrect-option': false,
+          'incorrect-option': wasClickedIncorrect,
           'highlighted': false,
-          'disabled-option': true
+          'disabled-option': !wasClickedIncorrect
         };
       } else if (fullyResolvedWrong && !this._userHasClicked) {
         return {
@@ -518,7 +534,7 @@ export class OptionItemComponent implements OnInit {
     // suppressing the green highlight that auto-reveal set.
     if ((this.binding() as any)?._autoRevealedCorrect === true ||
         (this.binding()?.option as any)?._autoRevealedCorrect === true) {
-      return '#43e756';
+      return CORRECT_COLOR;
     }
 
     // Imperfect-revisit / partial-multi guard: suppress green for unpicked
@@ -539,18 +555,18 @@ export class OptionItemComponent implements OnInit {
 
     // Timer-expiry handler stamped this binding — use stamped classes for color
     if (this.isTimerStamped()) {
-      if (this.isStampedCorrect()) return '#43e756';
+      if (this.isStampedCorrect()) return CORRECT_COLOR;
       const wasSelected = this.binding()?.isSelected || this._wasSelected;
-      return wasSelected && !this.isStampedCorrect() ? '#ff0000' : null;
+      return wasSelected && !this.isStampedCorrect() ? INCORRECT_COLOR : null;
     }
     if (this.isTimerExpiredForThisQuestion()) {
-      if (this.shouldShowCorrectOnTimeout()) return '#43e756';
+      if (this.shouldShowCorrectOnTimeout()) return CORRECT_COLOR;
       // Keep the user's wrong selection red on timer expiry.
       const wasSelected = this.binding()?.isSelected
         || !!this.binding()?.option?.highlight
         || this._wasSelected
         || this.isSelectedForCurrentQuestion();
-      return wasSelected && !this.isOptionCorrect() ? '#ff0000' : null;
+      return wasSelected && !this.isOptionCorrect() ? INCORRECT_COLOR : null;
     }
 
     if (this.isOptionCorrect()) {
@@ -559,7 +575,7 @@ export class OptionItemComponent implements OnInit {
         this.quizService._multiAnswerPerfect;
       if (perfectMapARBg?.get(_qIdxARBg) === true ||
           this.binding()?.cssClasses?.['correct-option'] === true) {
-        return '#43e756';
+        return CORRECT_COLOR;
       }
     }
 
@@ -589,13 +605,33 @@ export class OptionItemComponent implements OnInit {
         }
       }
 
+      // Single-answer: previously-clicked incorrect options should show
+      // red (not gray) once the correct answer has been found. Check
+      // binding flags first, then fall back to _selectionHistory
+      // (accumulative — unlike selectedOptionsMapSig which only keeps
+      // the latest pick for single-answer questions).
+      if (this.type() === 'single' && !this.binding()?.isSelected && !this.isOptionCorrect()) {
+        const b = this.binding();
+        const wasClickedByFlags = b?.option?.showIcon || b?.option?.highlight || b?.highlightIncorrect;
+        if (wasClickedByFlags) {
+          return INCORRECT_COLOR;
+        }
+        // Fallback: check accumulative selection history
+        const _qIdxHist = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+        const selHistory = this.selectedOptionService._selectionHistory.get(_qIdxHist) ?? [];
+        const optText = norm(b?.option?.text);
+        if (optText && selHistory.some((s: any) => norm(s?.text) === optText)) {
+          return INCORRECT_COLOR;
+        }
+      }
+
       // Dark gray for disabled unselected options (e.g. remaining
       // incorrect after all correct answers selected in multi-answer).
       // Gate on isDisabled() (authoritative) instead of the raw
       // binding.disabled flag — the flag can linger as true from a
       // prior question's timer-expiry stamping while isDisabled()
       // correctly returns false, producing a gray-but-enabled option.
-      if (this.isDisabled() && !this.binding()?.isSelected) return '#a0a0a0';
+      if (this.isDisabled() && !this.binding()?.isSelected) return DISABLED_COLOR;
 
       // Multi-answer data-driven gray: when the user has selected every
       // pristine-correct option for this question, every unselected
@@ -620,21 +656,21 @@ export class OptionItemComponent implements OnInit {
             [...pristineCorrectTextsBg].every(t => selectedTextsBg.has(t));
           const myTextBg = norm(this.binding()?.option?.text);
           if (allPristineCorrectSelectedBg && !selectedTextsBg.has(myTextBg)) {
-            return '#a0a0a0';
+            return DISABLED_COLOR;
           }
         }
         // Legacy flag fallback
         const perfectMap =
           this.quizService._multiAnswerPerfect;
         if (perfectMap?.get(_qIdx) === true && !this.isOptionCorrect()) {
-          return '#a0a0a0';
+          return DISABLED_COLOR;
         }
       }
       return null;
     }
 
     // Green if correct, red if incorrect
-    const result = this.isOptionCorrect() ? '#43e756' : '#ff0000';
+    const result = this.isOptionCorrect() ? CORRECT_COLOR : INCORRECT_COLOR;
     return result;
   }
 
