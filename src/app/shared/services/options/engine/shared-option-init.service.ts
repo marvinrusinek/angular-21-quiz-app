@@ -184,7 +184,7 @@ export class SharedOptionInitService {
         html.style.pointerEvents = '';
         el.classList.remove('correct-option');
       }
-    } catch { /* ignore â€” non-browser env */ }
+    } catch { /* ignore — non-browser env */ }
     comp.selectedOptions.clear();
     comp.selectedOptionMap.clear();
     comp._multiSelectByQuestion.clear();

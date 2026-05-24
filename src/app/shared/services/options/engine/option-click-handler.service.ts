@@ -461,7 +461,7 @@ export class OptionClickHandlerService {
           return correctTextsSA.has(norm(s?.text));
         });
         if (!anyCorrectSelected && correctTextsSA.size <= 1) return false;
-      } catch { /* ignore â€” fall through to legacy lock checks */ }
+      } catch { /* ignore — fall through to legacy lock checks */ }
     }
 
     const disabledSet = disabledOptionsPerQuestion.get(qIndex);
