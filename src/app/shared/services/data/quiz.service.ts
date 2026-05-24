@@ -533,13 +533,13 @@ export class QuizService {
         const _question = this.questions?.[safeIndex];
         const _correctTexts = new Set(
           (_question?.options ?? [])
-            .filter((o: any) => o?.correct === true || String(o?.correct) === 'true')
-            .map((o: any) => norm(o?.text))
+            .filter((o: Option) => o?.correct === true || String(o?.correct) === 'true')
+            .map((o: Option) => norm(o?.text))
             .filter((t: string) => !!t)
         );
         const _selectedTexts = new Set(
           _selections
-            .map((s: any) => norm(s?.text))
+            .map((s: SelectedOption) => norm(s?.text))
             .filter((t: string) => !!t)
         );
         const _userAnsweredCorrectly =

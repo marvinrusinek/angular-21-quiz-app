@@ -119,7 +119,7 @@ export class SharedOptionOrchestratorService {
         if (!Array.isArray(arr)) return [];
         return arr.map((o: any) => norm(o?.text)).filter((t: string) => !!t);
       };
-      let candidateTexts: string[] = collectTexts(host.optionBindings()?.map((b: any) => b?.option));
+      let candidateTexts: string[] = collectTexts(host.optionBindings()?.map((b: OptionBindings) => b?.option));
       if (!candidateTexts.length) candidateTexts = collectTexts(host.optionsToDisplay);
       if (!candidateTexts.length) candidateTexts = collectTexts(currentQ?.options);
 

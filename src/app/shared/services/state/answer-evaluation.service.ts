@@ -9,6 +9,7 @@ import { SelectedOption } from '../../models/SelectedOption.model';
 import { OptionIdResolverService } from './option-id-resolver.service';
 import { QuizService } from '../data/quiz.service';
 
+import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 
 export interface ResolutionStatus {
@@ -35,10 +36,7 @@ export class AnswerEvaluationService {
     if (!question || !Array.isArray(question.options)) return false;
     if (!selected || selected.length === 0) return false;
 
-    const totalCorrect = question.options.filter((o: any) => {
-      const c = o.correct;
-      return c === true || String(c) === 'true' || c === 1 || c === '1';
-    }).length;
+    const totalCorrect = question.options.filter((o: Option) => isOptionCorrect(o)).length;
     if (totalCorrect === 0) return false;
 
     const selectedCorrectCount = selected.filter(sel => {
@@ -230,7 +228,7 @@ export class AnswerEvaluationService {
     if (!Array.isArray(q.options)) return false;
 
     const correctAnswersCount = (q.options ?? []).filter(
-      (o: any) => o.correct === true || String(o.correct) === 'true'
+      (o: Option) => o.correct === true || String(o.correct) === 'true'
     ).length;
     return correctAnswersCount > 1;
   }
@@ -273,10 +271,7 @@ export class AnswerEvaluationService {
       const selected = getSelectedOptionsForQuestion(qIndex) ?? [];
       if (selected.length === 0) return false;
 
-      const correctOptions = question.options.filter((o: any) => {
-        const c = o.correct;
-        return c === true || String(c) === 'true' || c === 1 || c === '1';
-      });
+      const correctOptions = question.options.filter((o: Option) => isOptionCorrect(o));
       const correctIds = new Set(correctOptions.map((o) => String(o.optionId)));
 
       const selectedIds = new Set(

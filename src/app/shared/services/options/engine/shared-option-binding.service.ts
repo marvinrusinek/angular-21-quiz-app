@@ -36,14 +36,14 @@ export class SharedOptionBindingService {
 
   synchronizeOptionBindings(comp: any): void {
     if (!Array.isArray(comp.optionsToDisplay) || comp.optionsToDisplay.length === 0) {
-      const hasSelection = comp.optionBindings()?.some((opt: any) => opt.isSelected);
+      const hasSelection = comp.optionBindings()?.some((opt: OptionBindings) => opt.isSelected);
       if (!hasSelection && !comp.freezeOptionBindings()) comp.optionBindings.set([]);
       return;
     }
 
     if (comp.freezeOptionBindings() || comp.hasUserClicked()) return;
 
-    const bindings = comp.optionsToDisplay.map((option: any, idx: number) => {
+    const bindings = comp.optionsToDisplay.map((option: Option, idx: number) => {
       const isCorrect = option.correct ?? false;
       return {
         option: {
@@ -102,15 +102,15 @@ export class SharedOptionBindingService {
   setOptionBindingsIfChanged(comp: any, newOptions: Option[]): void {
     if (!newOptions?.length) return;
 
-    const incomingIds = newOptions.map((o: any) => o.optionId).join(',');
-    const existingIds = comp.optionBindings()?.map((b: any) => b.option.optionId).join(',');
+    const incomingIds = newOptions.map((o: Option) => o.optionId).join(',');
+    const existingIds = comp.optionBindings()?.map((b: OptionBindings) => b.option.optionId).join(',');
 
     if (incomingIds !== existingIds || !comp.optionBindings()?.length) {
       // On refresh (no user click), force isSelected=false so the checkbox
       // [checked] binding doesn't flash. rehydrateUiFromState will set the
       // authoritative selection state from saved data afterward.
       const trustOptionSelected = !!comp.hasUserClicked();
-      comp.optionBindings.set(newOptions.map((option: any, idx: number) => ({
+      comp.optionBindings.set(newOptions.map((option: Option, idx: number) => ({
         option: { ...option, highlight: false, showIcon: false },
         index: idx,
         isSelected: trustOptionSelected && !!option.selected,
@@ -182,17 +182,17 @@ export class SharedOptionBindingService {
     if (this.quizService.isShuffleEnabled() && this.quizService.shuffledQuestions?.length > 0) {
       const correctQ = this.quizService.shuffledQuestions[currentIndex];
       if (correctQ?.options?.length > 0) {
-        const correctTexts = new Set(correctQ.options.map((o: any) => norm(o?.text)));
-        const currentTexts = new Set((comp.optionsToDisplay ?? []).map((o: any) => norm(o?.text)));
+        const correctTexts = new Set(correctQ.options.map((o: Option) => norm(o?.text)));
+        const currentTexts = new Set((comp.optionsToDisplay ?? []).map((o: Option) => norm(o?.text)));
         const match = correctTexts.size === currentTexts.size && [...correctTexts].every((t: string) => currentTexts.has(t));
         if (!match && comp.optionsToDisplay?.length > 0) {
-          comp.optionsToDisplay = correctQ.options.map((o: any) => ({ ...o }));
+          comp.optionsToDisplay = correctQ.options.map((o: Option) => ({ ...o }));
         }
       }
     }
 
     const localOpts = Array.isArray(comp.optionsToDisplay)
-      ? comp.optionsToDisplay.map((o: any) => structuredClone(o)) : [];
+      ? comp.optionsToDisplay.map((o: Option) => structuredClone(o)) : [];
 
     const correctTexts = new Set<string>();
     const correctIds = new Set<number>();
@@ -206,7 +206,7 @@ export class SharedOptionBindingService {
       }
     }
 
-    comp.optionsToDisplay = localOpts.map((opt: any, i: number) => {
+    comp.optionsToDisplay = localOpts.map((opt: Option, i: number) => {
       const oIdNum = Number(opt.optionId);
       const oId = !isNaN(oIdNum) ? oIdNum : (currentIndex + 1) * 100 + (i + 1);
       const oText = norm(opt.text);
@@ -234,9 +234,9 @@ export class SharedOptionBindingService {
       highlightCorrectAfterIncorrect: comp.highlightCorrectAfterIncorrect(),
       shouldResetBackground: comp.shouldResetBackground(),
       ariaLabelPrefix: 'Option',
-      onChange: (opt: any, idx: number) => comp.handleOptionClick(opt, idx),
+      onChange: (opt: Option, idx: number) => comp.handleOptionClick(opt, idx),
       isSelected: () => false,
-      isDisabled: (opt: any, idx: number) => comp.computeDisabledState(opt, idx)
+      isDisabled: (opt: Option, idx: number) => comp.computeDisabledState(opt, idx)
     }));
 
     comp.rehydrateUiFromState('generateOptionBindings');
@@ -272,7 +272,7 @@ export class SharedOptionBindingService {
         // Build a NEW array of NEW binding refs with NEW option refs so that
         // OnPush option-items re-render with the corrected visuals. Mutating
         // in place leaves Angular blind to the change.
-        const refreshed = current.map((b: any) => {
+        const refreshed = current.map((b: OptionBindings) => {
           if (!b) return b;
           const isCorrect = isCorrectOpt(b.option);
           const correctRevisit = overrideMode === 'correct';
@@ -327,11 +327,11 @@ export class SharedOptionBindingService {
     if (this.quizService.isShuffleEnabled() && this.quizService.shuffledQuestions?.length > 0) {
       const correctQ = this.quizService.shuffledQuestions[pIdx];
       if (correctQ?.options?.length > 0 && comp.optionsToDisplay?.length > 0) {
-        const correctTexts = new Set(correctQ.options.map((o: any) => norm(o?.text)));
-        const currentTexts = new Set((comp.optionsToDisplay).map((o: any) => norm(o?.text)));
+        const correctTexts = new Set(correctQ.options.map((o: Option) => norm(o?.text)));
+        const currentTexts = new Set((comp.optionsToDisplay).map((o: Option) => norm(o?.text)));
         const match = correctTexts.size === currentTexts.size && [...correctTexts].every((t: string) => currentTexts.has(t));
         if (!match) {
-          comp.optionsToDisplay = correctQ.options.map((o: any) => ({ ...o }));
+          comp.optionsToDisplay = correctQ.options.map((o: Option) => ({ ...o }));
         }
       }
     }
@@ -381,7 +381,7 @@ export class SharedOptionBindingService {
       }
     }
 
-    comp.optionBindings.set(options.map((opt: any, idx: number) => {
+    comp.optionBindings.set(options.map((opt: Option, idx: number) => {
       const oIdNum = Number(opt.optionId);
       const effectiveId = (!isNaN(oIdNum) && oIdNum > -1) ? oIdNum : idx;
 
@@ -452,9 +452,9 @@ export class SharedOptionBindingService {
     const storedSelections =
       this.selectedOptionService.getSelectedOptionsForQuestion(currentIndex) ?? [];
 
-    comp.optionsToDisplay = comp.optionsToDisplay.map((opt: any, i: number) => {
+    comp.optionsToDisplay = comp.optionsToDisplay.map((opt: Option, i: number) => {
       const match = storedSelections.find(
-        (s: any) =>
+        (s: SelectedOption) =>
           Number(s.optionId) === Number(opt.optionId) &&
           Number(s.questionIndex) === Number(currentIndex)
       );
@@ -538,7 +538,7 @@ export class SharedOptionBindingService {
         // text, we MUST match by text — ID/index fallbacks can map the
         // saved entry to the wrong binding when options shuffle.
         if (sText && comp.optionBindings()?.length) {
-          pos = comp.optionBindings().findIndex((b: any) => {
+          pos = comp.optionBindings().findIndex((b: OptionBindings) => {
             const bText = norm(b?.option?.text);
             return bText && bText === sText;
           });
@@ -549,7 +549,7 @@ export class SharedOptionBindingService {
           const sId = (s as any).optionId;
           const sIdIsReal = sId != null && sId !== -1 && String(sId) !== '-1';
           if (sIdIsReal && comp.optionBindings()?.length) {
-            pos = comp.optionBindings().findIndex((b: any) => {
+            pos = comp.optionBindings().findIndex((b: OptionBindings) => {
               const bId = b?.option?.optionId;
               const bIdIsReal = bId != null && bId !== -1 && String(bId) !== '-1';
               return bIdIsReal && String(sId) === String(bId);
@@ -739,7 +739,7 @@ export class SharedOptionBindingService {
       }
 
       if (comp.optionBindings()?.length) {
-        comp.optionBindings.set(comp.optionBindings().map((b: any) => ({ ...b, option: { ...b.option } })));
+        comp.optionBindings.set(comp.optionBindings().map((b: OptionBindings) => ({ ...b, option: { ...b.option } })));
       }
 
       if (comp.rebuildShowFeedbackMapFromBindings) comp.rebuildShowFeedbackMapFromBindings();
