@@ -63,13 +63,13 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
   // ── remaining variables ─────────────────────────────────────────
   readonly renderReady = signal(false);
-  private optionBindingsSource: Option[] = [];
+  private readonly optionBindingsSource = signal<Option[]>([]);
   override showFeedbackForOption: { [optionId: number]: boolean } = {};
   override selectedOption: SelectedOption | null = null;
   selectedOptions: SelectedOption[] = [];
-  incomingOptions: Option[] = [];
+  readonly incomingOptions = signal<Option[]>([]);
   override sharedOptionConfig!: SharedOptionConfig;
-  hasComponentLoaded = false;
+  readonly hasComponentLoaded = signal(false);
   override selectedOptionIndex = -1;
 
   constructor() {
@@ -102,18 +102,18 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           this.cdRef.markForCheck();
           return;
         }
-        this.optionBindingsSource = next.map((o: Option) => ({
+        this.optionBindingsSource.set(next.map((o: Option) => ({
           ...o,
           selected: false,
           highlight: false,
           showIcon: false,
           feedback: undefined
-        }));
-        this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource));
+        })));
+        this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource()));
         this.renderReady.set(true);
         this.syncOptionsWithSelections();
       } else {
-        this.optionBindingsSource = [];
+        this.optionBindingsSource.set([]);
         this.optionBindings.set([]);
       }
     });
@@ -140,8 +140,8 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
         this.type.set(correctCount > 1 ? 'multiple' : 'single');
 
-        if (!this.hasComponentLoaded) {
-          this.hasComponentLoaded = true;
+        if (!this.hasComponentLoaded()) {
+          this.hasComponentLoaded.set(true);
           this.syncOptionsWithSelections();
           this.quizQuestionComponentLoaded.emit();
         }
@@ -173,16 +173,16 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           this.question.set({ ...liveQ });
         }
 
-        this.incomingOptions = this.answerOptionsService.normalizeOptions(
+        this.incomingOptions.set(this.answerOptionsService.normalizeOptions(
           structuredClone(opts)
-        );
+        ));
 
         //  Clear prior icons and bindings (clean slate)
         this.optionBindings.set([]);
         this.renderReady.set(false);
 
         // Apply options synchronously (removed Promise.resolve to fix StackBlitz timing)
-        this.applyIncomingOptions(this.incomingOptions, {
+        this.applyIncomingOptions(this.incomingOptions(), {
           resetSelection: false
         });
       });
@@ -314,8 +314,8 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
     this.type.set(correctCount > 1 ? 'multiple' : 'single');
 
     this.optionsToDisplay.set(nextOptions);
-    this.optionBindingsSource =
-      nextOptions.map((option) => ({ ...option }));
+    this.optionBindingsSource.set(
+      nextOptions.map((option) => ({ ...option })));
 
     if (this.sharedOptionConfig) {
       this.sharedOptionConfig = {
@@ -325,7 +325,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       };
     }
 
-    this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource));
+    this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource()));
     this.renderReady.set(true);
     this.syncOptionsWithSelections();
   }
