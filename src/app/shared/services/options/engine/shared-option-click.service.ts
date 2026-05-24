@@ -390,7 +390,7 @@ export class SharedOptionClickService {
       })));
     }
 
-    comp.cdRef.markForCheck();
+    comp.cdRef.detectChanges();
   }
 
   // ── Option UI (delegated) ──────────────────────────────────────
@@ -488,6 +488,6 @@ export class SharedOptionClickService {
     }
 
     this.updateBindingSnapshots(comp);
-    comp.cdRef.markForCheck();
+    comp.cdRef.detectChanges();
   }
 }

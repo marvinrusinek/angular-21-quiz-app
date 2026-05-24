@@ -321,11 +321,11 @@ export class SocAnswerProcessingService {
     const savedFeedback = comp._feedbackDisplay;
     queueMicrotask(() => {
       comp._feedbackDisplay = savedFeedback;
-      comp.cdRef.markForCheck();
+      comp.cdRef.detectChanges();
     });
 
     comp.showFeedback.set(true);
-    comp.cdRef.markForCheck();
+    comp.cdRef.detectChanges();
 
     // Multi-answer: when all correct options are selected, also
     // re-spread bindings AND fall back to a DOM stamp. The Angular
@@ -348,7 +348,7 @@ export class SocAnswerProcessingService {
             } : b.option
           };
         }));
-        comp.cdRef.markForCheck();
+        comp.cdRef.detectChanges();
       });
 
     }
@@ -616,8 +616,7 @@ export class SocAnswerProcessingService {
         }
       } catch (e) { console.error('processSingleAnswerClick selection-persist failed:', e); }
 
-      comp.cdRef?.markForCheck?.();
-      comp.cdRef?.markForCheck?.();
+      comp.cdRef?.detectChanges?.();
       return;
     }
 
@@ -834,8 +833,7 @@ export class SocAnswerProcessingService {
         try { comp.emitExplanation?.(qIdx, true); } catch { /* ignore */ }
       }, 0);
 
-      comp.cdRef?.markForCheck?.();
-      comp.cdRef?.markForCheck?.();
+      comp.cdRef?.detectChanges?.();
     } catch (e) { console.error('auto-reveal failed:', e); }
   }
 
