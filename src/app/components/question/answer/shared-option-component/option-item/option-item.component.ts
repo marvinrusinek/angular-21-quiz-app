@@ -522,6 +522,19 @@ export class OptionItemComponent implements OnInit {
       return CORRECT_COLOR;
     }
 
+    // Previous-revisit: on a fully-resolved correct question, correct
+    // options must be green and incorrect must be dark gray.
+    try {
+      const _qIdxFR = this.resolveQuestionIndex();
+      const resFR = this.questionResolution.resolve(_qIdxFR, { includeDot: false });
+      if (resFR.fullyResolvedCorrect) {
+        const isCanonCorrect = this.questionResolution.isOptionCanonCorrect(
+          this.binding()?.option, resFR.correctOpts
+        );
+        return isCanonCorrect ? CORRECT_COLOR : DISABLED_COLOR;
+      }
+    } catch (e) { console.error('getOptionBackgroundColor fullyResolved check failed:', e); }
+
     // Imperfect-revisit / partial-multi guard: suppress green for unpicked
     // correct options on partial multi-answer states.
     try {
@@ -977,11 +990,14 @@ export class OptionItemComponent implements OnInit {
     return selections.some((s: SelectedOption) => this.matchesBindingSelection(s));
   }
 
-  /** Resolve the active question index, preferring the service value. */
+  /** Resolve the active question index, preferring the component input
+   *  (set from the URL-authoritative parent) over the service value which
+   *  can lag or reset to 0 during re-initialization. */
   private resolveQuestionIndex(): number {
+    const inputIdx = this.currentQuestionIndex();
+    if (typeof inputIdx === 'number' && inputIdx >= 0) return inputIdx;
     const svcIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
       ?? (this.quizService as any)?.currentQuestionIndex;
-    const inputIdx = this.currentQuestionIndex();
-    return (typeof svcIdx === 'number' && svcIdx >= 0) ? svcIdx : inputIdx;
+    return (typeof svcIdx === 'number' && svcIdx >= 0) ? svcIdx : 0;
   }
 }
