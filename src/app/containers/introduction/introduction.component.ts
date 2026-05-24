@@ -346,6 +346,8 @@ export class IntroductionComponent implements OnInit {
   private persistQuizId(quizId: string): void {
     try {
       localStorage.setItem('quizId', quizId);
-    } catch (storageError) { }
+    } catch (storageError) {
+      console.error('Failed to persist quizId to localStorage:', storageError);
+    }
   }
 }

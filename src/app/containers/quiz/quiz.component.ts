@@ -56,6 +56,8 @@ import { ChangeRouteAnimation } from '../../animations/animations';
 import { isOptionCorrect } from '../../shared/utils/is-option-correct';
 import { norm } from '../../shared/utils/text-norm';
 
+const INFO_ICON_COLOR = '#1e90ff';
+
 type AnimationState = 'animationStarted' | 'none';
 
 @Component({
@@ -326,7 +328,9 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.quizService.setCurrentQuestionIndex(idx);
     try {
       localStorage.setItem(SK_SAVED_QUESTION_INDEX, JSON.stringify(idx));
-    } catch {}
+    } catch (e) {
+      console.error('Failed to persist question index to localStorage:', e);
+    }
   }
 
   public normalizeQuestionIndex(rawIndex: number | undefined): number {
@@ -443,7 +447,9 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
         'answeredQuestionIndices',
         JSON.stringify([...this.answeredQuestionIndices])
       );
-    } catch {}
+    } catch (e) {
+      console.error('Failed to persist quiz progress to sessionStorage:', e);
+    }
     this.cdRef.detectChanges();
   }
 
@@ -558,7 +564,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     el.style.cssText =
       'position:fixed;bottom:20px;left:0;right:0;margin:0 auto;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.95);box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;justify-content:center;align-items:center;cursor:pointer;animation:scrollBounce 2s infinite;';
     el.innerHTML =
-      '<i class="material-icons" style="font-size:32px;color:#1e90ff;">keyboard_arrow_down</i>';
+      `<i class="material-icons" style="font-size:32px;color:${INFO_ICON_COLOR};">keyboard_arrow_down</i>`;
     el.addEventListener('click', () => this.scrollToBottom());
     document.body.appendChild(el);
     this.scrollIndicatorEl = el;

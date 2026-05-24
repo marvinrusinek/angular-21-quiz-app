@@ -195,7 +195,9 @@ export class QuizDataLoaderService {
             this.questionsQuizId = quizId;
           }
         }
-      } catch { }
+      } catch (e) {
+        console.error('Failed to load shuffled questions from localStorage:', e);
+      }
     }
 
     // Return existing shuffledQuestions if available
@@ -213,7 +215,9 @@ export class QuizDataLoaderService {
         try {
           localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
           localStorage.removeItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID);
-        } catch { }
+        } catch (e) {
+          console.error('Failed to clear bad shuffled questions from localStorage:', e);
+        }
       } else {
         const isSameQuiz = quizId && this.questionsQuizId === quizId;
 

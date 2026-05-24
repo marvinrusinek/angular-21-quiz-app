@@ -24,6 +24,8 @@ import { TimerService } from '../timer/timer.service';
 
 import { delay } from '../../../utils/delay';
 
+const H3_I18N_SELECTOR = 'h3[i18n]';
+
 /**
  * Manages reactive streams, DOM freeze/thaw, and legacy question-loading pipeline.
  * Absorbed from QuizQuestionLoaderService into the QQC sub-service layer.
@@ -871,7 +873,7 @@ export class QqcQlStreamService {
 
     const EXTENSION_MS = 40;
     this._renderFreezeUntil = performance.now() + durationMs + EXTENSION_MS;
-    const el = document.querySelector('h3[i18n]');
+    const el = document.querySelector(H3_I18N_SELECTOR);
     if (el) (el as HTMLElement).style.opacity = '0';
 
     if (this._freezeTimer != null) clearTimeout(this._freezeTimer);
@@ -891,7 +893,7 @@ export class QqcQlStreamService {
     if (now < this._renderFreezeUntil) {
       const delay = this._renderFreezeUntil - now;
       this._isVisualFrozen = true;
-      const el = document.querySelector('h3[i18n]');
+      const el = document.querySelector(H3_I18N_SELECTOR);
       if (el) (el as HTMLElement).style.opacity = '0';
 
       if (this._freezeTimer != null) clearTimeout(this._freezeTimer);
@@ -901,7 +903,7 @@ export class QqcQlStreamService {
         this._quietUntil = performance.now() + QUIET_WINDOW_MS;
 
         requestAnimationFrame(() => {
-          const el2 = document.querySelector('h3[i18n]');
+          const el2 = document.querySelector(H3_I18N_SELECTOR);
           if (el2) (el2 as HTMLElement).style.visibility = 'visible';
         });
       }, delay + 12);
@@ -914,7 +916,7 @@ export class QqcQlStreamService {
     this._quietUntil = now + QUIET_WINDOW_MS;
 
     requestAnimationFrame(() => {
-      const el = document.querySelector('h3[i18n]');
+      const el = document.querySelector(H3_I18N_SELECTOR);
       if (el) (el as HTMLElement).style.opacity = '1';
     });
   }
