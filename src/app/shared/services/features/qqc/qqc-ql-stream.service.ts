@@ -107,7 +107,7 @@ export class QqcQlStreamService {
   public _renderFreezeUntil = 0;
   public _frozen = false;
   public _isVisualFrozen = false;
-  private _freezeTimer: any = null;
+  private _freezeTimer: ReturnType<typeof setTimeout> | null = null;
   public _quietUntil = 0;
   public _quietZoneUntil = 0;
   private _navBarrier = false;
@@ -116,7 +116,7 @@ export class QqcQlStreamService {
   public quietZoneUntil$ = toObservable(this.quietZoneUntilSig);
 
   constructor() {
-    (this.explanationTextService as any)._loaderRef = this;
+    this.explanationTextService._loaderRef = this;
   }
 
   public async loadQuestionContents(questionIndex: number): Promise<void> {
@@ -872,7 +872,7 @@ export class QqcQlStreamService {
     const el = document.querySelector('h3[i18n]');
     if (el) (el as HTMLElement).style.opacity = '0';
 
-    clearTimeout(this._freezeTimer);
+    if (this._freezeTimer != null) clearTimeout(this._freezeTimer);
     this._freezeTimer = setTimeout(
       () => {
         this.unfreezeQuestionStream();
@@ -892,7 +892,7 @@ export class QqcQlStreamService {
       const el = document.querySelector('h3[i18n]');
       if (el) (el as HTMLElement).style.opacity = '0';
 
-      clearTimeout(this._freezeTimer);
+      if (this._freezeTimer != null) clearTimeout(this._freezeTimer);
       this._freezeTimer = setTimeout(() => {
         this._isVisualFrozen = false;
         this._frozen = false;

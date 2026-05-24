@@ -304,19 +304,19 @@ export class OptionInteractionService {
     // keys strictly on displayIndex — so entries without it silently fail
     // to restore on refresh. Resolve by matching optionId/text against the
     // current bindings or optionsToDisplay to stamp the correct position.
-    futureSelection = futureSelection.map((s: any) => {
+    futureSelection = futureSelection.map((s: SelectedOption) => {
       const hasIdx =
         s?.displayIndex != null && Number.isFinite(Number(s.displayIndex));
       if (hasIdx) return s;
       const sId = s?.optionId;
       const sText = norm(s?.text);
-      let pos = state.optionBindings.findIndex((b: any) => {
+      let pos = state.optionBindings.findIndex((b: OptionBindings) => {
         const bId = b?.option?.optionId;
         if (sId != null && sId !== -1 && bId != null && bId !== -1 && String(sId) === String(bId)) return true;
         return !!sText && norm(b?.option?.text) === sText;
       });
       if (pos === -1) {
-        pos = state.optionsToDisplay.findIndex((o: any) => {
+        pos = state.optionsToDisplay.findIndex((o: Option) => {
           if (sId != null && sId !== -1 && o?.optionId != null && o.optionId !== -1 && String(sId) === String(o.optionId)) return true;
           return !!sText && norm(o?.text) === sText;
         });
@@ -429,12 +429,12 @@ export class OptionInteractionService {
           const sId = (s as any)?.optionId;
           let pos = -1;
           if (sText) {
-            pos = state.optionBindings.findIndex((b: any) =>
+            pos = state.optionBindings.findIndex((b: OptionBindings) =>
               norm(b?.option?.text) === sText
             );
           }
           if (pos === -1 && sId != null && sId !== -1) {
-            pos = state.optionBindings.findIndex((b: any) =>
+            pos = state.optionBindings.findIndex((b: OptionBindings) =>
               b?.option?.optionId != null && String(b.option.optionId) === String(sId)
             );
           }

@@ -28,6 +28,9 @@ export class ExplanationTextService {
   private readonly quizService = inject(QuizService);
   private readonly selectedOptionService = inject(SelectedOptionService);
 
+  // ── optional back-reference ─────────────────────────────────────
+  _loaderRef?: any;
+
   // ── remaining variables ─────────────────────────────────────────
   /**
    * Map of question display indices that have been confirmed correct

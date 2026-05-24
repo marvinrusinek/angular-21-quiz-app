@@ -4,6 +4,7 @@ import { QuestionType } from '../../../models/question-type.enum';
 
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
+import { OptionBindings } from '../../../models/OptionBindings.model';
 
 import { SK_MULTI_PERFECT, SK_SEL_Q } from '../../../constants/session-keys';
 
@@ -141,7 +142,7 @@ export class SocAnswerProcessingService {
       }
     } catch (e) { console.error('processMultiAnswerClick suppressDisable-guard failed:', e); }
 
-    comp.optionBindings.set(comp.optionBindings().map((ob: any, bi: number) => {
+    comp.optionBindings.set(comp.optionBindings().map((ob: OptionBindings, bi: number) => {
       let disabledFinal = bindingUpdates[bi].disabled;
       // Only allow `disabled` for clicked-incorrect options before the
       // question is fully answered. Everything else stays enabled so the
@@ -164,7 +165,7 @@ export class SocAnswerProcessingService {
     const feedbackText = this.clickHandler.generateMultiAnswerFeedbackText(clickState);
 
     const correctMessage = this.feedbackService.setCorrectMessage(
-      (comp.optionsToDisplay ?? []).filter((o: any) => o && typeof o === 'object'),
+      (comp.optionsToDisplay ?? []).filter((o: Option) => o && typeof o === 'object'),
       comp.currentQuestion()!
     );
     // Build selectedOption.correct from effectiveCorrectIndices (which is
@@ -188,7 +189,7 @@ export class SocAnswerProcessingService {
       } as FeedbackProps
     };
 
-    const optsForMsg: Option[] = comp.optionBindings().map((ob: any, bi: number) => ({
+    const optsForMsg: Option[] = comp.optionBindings().map((ob: OptionBindings, bi: number) => ({
       ...ob.option,
       correct: new Set(effectiveCorrectIndices).has(bi),
       selected: durableSet.has(bi),
@@ -335,7 +336,7 @@ export class SocAnswerProcessingService {
     if (allCorrectInDurable) {
       queueMicrotask(() => {
         const correctSet = new Set(effectiveCorrectIndices);
-        comp.optionBindings.set((comp.optionBindings() ?? []).map((b: any, bi: number) => {
+        comp.optionBindings.set((comp.optionBindings() ?? []).map((b: OptionBindings, bi: number) => {
           const isCorrectIdx = correctSet.has(bi);
           return {
             ...b,
