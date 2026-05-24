@@ -106,6 +106,7 @@ export class QqcOrchExplanationService {
   }
 
   async runUpdateExplanationDisplay(host: Host, shouldDisplay: boolean): Promise<void> {
+    if (host._isDestroyed) return;
     host.showExplanationChange.emit(shouldDisplay);
     host.displayExplanation.set(shouldDisplay);
     if (shouldDisplay) {
@@ -132,6 +133,7 @@ export class QqcOrchExplanationService {
   }
 
   async runFetchAndSetExplanationText(host: Host, questionIndex: number): Promise<void> {
+    if (host._isDestroyed) return;
     host.resetExplanation();
 
     const ensureLoaded = async () => {
@@ -156,7 +158,7 @@ export class QqcOrchExplanationService {
       isAnyOptionSelected: (idx: number) => host.isAnyOptionSelected(idx)
     });
 
-    if (result.success) {
+    if (result.success && !host._isDestroyed) {
       host.currentQuestionIndex.set(questionIndex);
       host.explanationToDisplay.set(result.explanationToDisplay);
       host.explanationTextService.updateFormattedExplanation(host.explanationToDisplay() ?? '');
@@ -200,7 +202,7 @@ export class QqcOrchExplanationService {
       getFormattedExplanation: (q: QuizQuestion, idx: number) =>
         host.explanationManager.getFormattedExplanation(q, idx)
     });
-    if (result.shouldUpdate) {
+    if (result.shouldUpdate && !host._isDestroyed) {
       host.explanationToDisplay.set(result.explanationText);
       host.emitExplanationChange(host.explanationToDisplay() ?? '', true);
       host.isAnswerSelectedChange.emit(true);
@@ -224,6 +226,7 @@ export class QqcOrchExplanationService {
   }
 
   runApplyExplanationTextInZone(host: Host, text: string): void {
+    if (host._isDestroyed) return;
     host.explanationToDisplay.set(text);
     host.explanationToDisplayChange.emit(text);
     host.cdRef.markForCheck();

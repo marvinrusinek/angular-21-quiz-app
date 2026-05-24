@@ -145,7 +145,7 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly renderReady = signal(false);
   readonly questionFresh = signal<boolean>(true);
   readonly timedOut = signal<boolean>(false);
-  private _isDestroyed = false;
+  _isDestroyed = false;
 
   readonly displayState = computed(() => ({
     mode: this.displayMode(),
@@ -299,6 +299,7 @@ export class QuizQuestionComponent extends BaseQuestion
     mode: 'question' | 'explanation';
     answered: boolean;
   }): void {
+    if (this._isDestroyed) return;
     this.displayMode.set(state.mode);
     this.isAnswered.set(state.answered);
 
@@ -352,7 +353,8 @@ export class QuizQuestionComponent extends BaseQuestion
   public async generateFeedbackText(question: QuizQuestion): Promise<string> {
     if (!this.optionsToDisplay()?.length) this.populateOptionsToDisplay();
     this.feedbackText.set(this.feedbackManager.generateFeedbackText(question, this.optionsToDisplay()));
-    this.feedbackTextChange.emit(this.feedbackText()); return this.feedbackText();
+    if (!this._isDestroyed) this.feedbackTextChange.emit(this.feedbackText());
+    return this.feedbackText();
   }
 
   async initializeQuiz(): Promise<void> {
@@ -457,14 +459,17 @@ export class QuizQuestionComponent extends BaseQuestion
   }
 
   resetExplanation(force = false): void {
+    if (this._isDestroyed) return;
     this.componentOrchestrator.runResetExplanation(this, force);
   }
 
   async prepareAndSetExplanationText(questionIndex: number): Promise<string> {
+    if (this._isDestroyed) return '';
     return this.componentOrchestrator.runPrepareAndSetExplanationText(this, questionIndex);
   }
 
   public async fetchAndSetExplanationText(questionIndex: number): Promise<void> {
+    if (this._isDestroyed) return;
     return this.componentOrchestrator.runFetchAndSetExplanationText(this, questionIndex);
   }
 
