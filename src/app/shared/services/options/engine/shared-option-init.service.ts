@@ -2,8 +2,7 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup } from '@angular/forms';
 import {
-  animationFrameScheduler, BehaviorSubject, combineLatest, Observable, of,
-  Subscription
+  animationFrameScheduler, BehaviorSubject, combineLatest, Observable, of
 } from 'rxjs';
 import { distinctUntilChanged, filter, observeOn } from 'rxjs/operators';
 
@@ -99,8 +98,6 @@ export interface SharedOptionComponentLike {
   timeoutCorrectOptionKeys: Set<string>;
   lastFeedbackQuestionIndex: number;
   correctClicksPerQuestion: Map<number, Set<number>>;
-  selectionSub: Subscription;
-  finalRenderReadySub?: Subscription;
   destroyRef: import('@angular/core').DestroyRef;
 
   // --- Subjects ---
@@ -410,9 +407,11 @@ export class SharedOptionInitService {
   setupSubscriptions(comp: SharedOptionComponentLike): void {
     const finalReady$ = comp.finalRenderReady$();
     if (finalReady$) {
-      comp.finalRenderReadySub = finalReady$.subscribe((ready: boolean) => {
-        comp.finalRenderReady = ready;
-      });
+      finalReady$
+        .pipe(takeUntilDestroyed(comp.destroyRef))
+        .subscribe((ready: boolean) => {
+          comp.finalRenderReady = ready;
+        });
     }
 
     // Regenerate feedback when quizService index changes
@@ -587,12 +586,13 @@ export class SharedOptionInitService {
    * Corresponds to SharedOptionComponent.subscribeToSelectionChanges().
    */
   subscribeToSelectionChanges(comp: SharedOptionComponentLike): void {
-    comp.selectionSub = this.selectedOptionService.selectedOption$
+    this.selectedOptionService.selectedOption$
       .pipe(
         distinctUntilChanged(
           (prev, curr) => JSON.stringify(prev) === JSON.stringify(curr)
         ),
-        observeOn(animationFrameScheduler)
+        observeOn(animationFrameScheduler),
+        takeUntilDestroyed(comp.destroyRef)
       )
       .subscribe((incoming) => {
         const selList: SelectedOption[] = Array.isArray(incoming)

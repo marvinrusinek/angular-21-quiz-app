@@ -37,9 +37,8 @@ export class SharedOptionOrchestratorService {
     }
   }
 
-  runOnDestroy(host: Host): void {
-    host.selectionSub?.unsubscribe();
-    host.finalRenderReadySub?.unsubscribe();
+  runOnDestroy(_host: Host): void {
+    // Subscriptions cleaned up via takeUntilDestroyed(destroyRef)
   }
 
   // ===== Index helpers =====

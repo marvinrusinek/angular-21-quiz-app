@@ -64,7 +64,7 @@ export class QuizQuestionComponent extends BaseQuestion
   public readonly selectionMessageService = inject(SelectionMessageService);
   public readonly timerService = inject(TimerService);
   public readonly activatedRoute = inject(ActivatedRoute);
-  public readonly destroyRef = inject(DestroyRef);
+  public override readonly destroyRef = inject(DestroyRef);
   public readonly router = inject(Router);
 
   // ── viewChilds ──────────────────────────────────────────────────
@@ -234,9 +234,8 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runAfterViewInit(this);
   }
 
-  override ngOnDestroy(): void {
+  ngOnDestroy(): void {
     this._abortController?.abort();
-    super.ngOnDestroy();
     this.componentOrchestrator.runOnDestroy(this);
   }
 

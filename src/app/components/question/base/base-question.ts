@@ -1,7 +1,7 @@
-import { ChangeDetectorRef, Directive, inject, input, model, OnDestroy,
+import { ChangeDetectorRef, DestroyRef, Directive, inject, input, model,
   OnInit, output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
-import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { Option } from '../../../shared/models/Option.model';
@@ -25,16 +25,17 @@ export interface OptionClickEvent {
 
 @Directive()
 export abstract class BaseQuestion<T extends OptionClickEvent =
-  OptionClickEvent> implements OnInit, OnDestroy
+  OptionClickEvent> implements OnInit
 {
   // ── injects ─────────────────────────────────────────────────────
+  public readonly cdRef = inject(ChangeDetectorRef);
+  protected readonly destroyRef = inject(DestroyRef);
   public readonly dynamicComponentService = inject(DynamicComponentService);
+  public readonly fb = inject(FormBuilder);
   public readonly feedbackService = inject(FeedbackService);
   public readonly quizService = inject(QuizService);
   public readonly quizStateService = inject(QuizStateService);
   public readonly selectedOptionService = inject(SelectedOptionService);
-  public readonly cdRef = inject(ChangeDetectorRef);
-  public readonly fb = inject(FormBuilder);
 
   // ── outputs ─────────────────────────────────────────────────────
   readonly optionClicked = output<T>();
@@ -59,7 +60,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
 
   // ── remaining variables ─────────────────────────────────────────
   sharedOptionConfig: SharedOptionConfig | null = null;
-  currentQuestionSubscription!: Subscription;
   questionForm!: FormGroup;
   selectedOption: SelectedOption | null = null;
   selectedOptionId: number | null = null;
@@ -72,10 +72,6 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     this.initializeQuestionIfAvailable();
     await this.initializeSharedOptionConfig();
     this.subscribeToQuestionChanges();
-  }
-
-  ngOnDestroy(): void {
-    this.currentQuestionSubscription?.unsubscribe();
   }
 
   public async initializeSharedOptionConfig(options?: Option[]): Promise<void> {
@@ -240,7 +236,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     if (!currentQuestion$) return;
 
     // Subscribe to `currentQuestion$` with filtering to skip undefined values
-    this.currentQuestionSubscription = currentQuestion$
+    currentQuestion$
       .pipe(
         // Filter out undefined or option-less emissions
         filter((quizQuestion): quizQuestion is QuizQuestion => {
@@ -250,7 +246,8 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
           // Guard against questions that don’t yet have options
           const hasOptions = !!quizQuestion.options?.length;
           return hasOptions;
-        })
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
         next: (quizQuestion: QuizQuestion) => {

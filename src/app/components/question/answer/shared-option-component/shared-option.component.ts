@@ -209,8 +209,6 @@ export class SharedOptionComponent
   // the Host type (SharedOptionComponent) sees them; values default to falsy
   // until the orchestrator writes on init.
   readonly viewReady = signal<boolean>(false);
-  selectionSub?: import('rxjs').Subscription;
-  finalRenderReadySub?: import('rxjs').Subscription;
   lastProcessedQuestionIndex = -1;
   readonly optionBindingsInitialized = signal<boolean>(false);
 

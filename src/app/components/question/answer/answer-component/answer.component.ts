@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef,
+  ChangeDetectionStrategy, Component,
   effect, inject, input, model, OnInit, output, signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -41,7 +41,6 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
   private readonly answerSelectionService = inject(AnswerSelectionService);
   protected readonly quizQuestionLoaderService = inject(QqcQuestionLoaderService);
   protected readonly quizQuestionManagerService = inject(QuizQuestionManagerService);
-  private readonly destroyRef = inject(DestroyRef);
 
   // ── outputs ─────────────────────────────────────────────────────
   readonly componentLoaded = output<any>();
