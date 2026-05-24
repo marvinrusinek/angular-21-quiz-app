@@ -13,7 +13,7 @@ import { take } from 'rxjs/operators';
 
 import { QuizStatus } from '../../shared/models/quiz-status.enum';
 
-import { SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../shared/constants/session-keys';
+import { SK_COMPLETED_QUIZ_IDS, SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS, SK_STARTED_QUIZ_IDS, SK_USER_ANSWERS } from '../../shared/constants/session-keys';
 
 import { FinalResult, ScoreAnalysisItem } from '../../shared/models/Final-Result.model';
 import { Quiz } from '../../shared/models/Quiz.model';
@@ -186,17 +186,17 @@ export class ResultsComponent implements OnInit {
     if (quizId) {
       try {
         if (isPerfect) {
-          const existing = JSON.parse(sessionStorage.getItem('completedQuizIds') || '[]');
+          const existing = JSON.parse(sessionStorage.getItem(SK_COMPLETED_QUIZ_IDS) || '[]');
           if (!existing.includes(quizId)) {
             existing.push(quizId);
           }
-          sessionStorage.setItem('completedQuizIds', JSON.stringify(existing));
+          sessionStorage.setItem(SK_COMPLETED_QUIZ_IDS, JSON.stringify(existing));
         } else {
-          const existing = JSON.parse(sessionStorage.getItem('startedQuizIds') || '[]');
+          const existing = JSON.parse(sessionStorage.getItem(SK_STARTED_QUIZ_IDS) || '[]');
           if (!existing.includes(quizId)) {
             existing.push(quizId);
           }
-          sessionStorage.setItem('startedQuizIds', JSON.stringify(existing));
+          sessionStorage.setItem(SK_STARTED_QUIZ_IDS, JSON.stringify(existing));
         }
       } catch {}
     }
@@ -252,7 +252,7 @@ export class ResultsComponent implements OnInit {
       }
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
     } catch {}
 

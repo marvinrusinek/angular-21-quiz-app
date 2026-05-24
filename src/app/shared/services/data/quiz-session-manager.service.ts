@@ -8,7 +8,7 @@ import { Quiz } from '../../models/Quiz.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 
-import { SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_MULTI_PERFECT, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+import { SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_MULTI_PERFECT, SK_SAVED_QUESTION_INDEX, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS, SK_SHUFFLED_QUESTIONS_QUIZ_ID, SK_USER_ANSWERS } from '../../constants/session-keys';
 
 import { QuizOptionsService } from './quiz-options.service';
 import { QuizQuestionResolverService } from './quiz-question-resolver.service';
@@ -221,7 +221,7 @@ export class QuizSessionManagerService {
     state.shuffledQuestions = sanitizedQuestions;
     try {
       localStorage.setItem(SK_SHUFFLED_QUESTIONS, JSON.stringify(state.shuffledQuestions));
-      localStorage.setItem('shuffledQuestionsQuizId', String(state.quizId ?? ''));
+      localStorage.setItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID, String(state.quizId ?? ''));
     } catch (err) {
       console.error('QuizSessionManagerService.applySessionQuestions shuffled questions persist failed:', err);
     }
@@ -317,8 +317,8 @@ export class QuizSessionManagerService {
     // Remove any stored resume/index/session leftovers
     try {
       localStorage.removeItem('currentQuestionIndex');
-      localStorage.removeItem('savedQuestionIndex');
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_SAVED_QUESTION_INDEX);
+      localStorage.removeItem(SK_USER_ANSWERS);
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('answeredMap');
       localStorage.removeItem('currentQuestionType');
@@ -342,7 +342,7 @@ export class QuizSessionManagerService {
 
     try {
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
-      localStorage.removeItem('shuffledQuestionsQuizId');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID);
       localStorage.removeItem('selectedOptions');
     } catch { }
 
@@ -361,7 +361,7 @@ export class QuizSessionManagerService {
     state.questionPayloadSig.set(null);
     this.scoringService.correctAnswersCountSig.set(0);
     state.userAnswers = [];
-    try { localStorage.removeItem('userAnswers'); } catch { }
+    try { localStorage.removeItem(SK_USER_ANSWERS); } catch { }
     state.badgeTextSig.set('');
     state.resetScore();
     quizResetSource.next();
@@ -385,7 +385,7 @@ export class QuizSessionManagerService {
     state.quizCompleted = false;
 
     try {
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);

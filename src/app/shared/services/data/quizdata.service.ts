@@ -6,6 +6,8 @@ import {
   catchError, distinctUntilChanged, filter, map, switchMap, take, tap
 } from 'rxjs/operators';
 
+import { SK_COMPLETED_QUIZ_IDS, SK_STARTED_QUIZ_IDS } from '../../constants/session-keys';
+
 import { QuestionType } from '../../models/question-type.enum';
 
 import { Option } from '../../models/Option.model';
@@ -69,13 +71,13 @@ export class QuizDataService {
         }
         // Also restore quiz statuses from sessionStorage
         try {
-          const completedIds: string[] = JSON.parse(sessionStorage.getItem('completedQuizIds') || '[]');
+          const completedIds: string[] = JSON.parse(sessionStorage.getItem(SK_COMPLETED_QUIZ_IDS) || '[]');
           for (const id of completedIds) {
             if (!existingStatuses.has(id)) existingStatuses.set(id, 'completed');
           }
 
           const startedIds: string[] = 
-            JSON.parse(sessionStorage.getItem('startedQuizIds') || '[]');
+            JSON.parse(sessionStorage.getItem(SK_STARTED_QUIZ_IDS) || '[]');
           
           for (const id of startedIds) {
             if (!existingStatuses.has(id)) existingStatuses.set(id, 'started');

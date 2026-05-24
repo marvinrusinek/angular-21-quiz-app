@@ -7,7 +7,7 @@
 }
 
 <mat-accordion multi="true" #accordion="matAccordion">
-  @for (question of questions(); track $index; let i = $index) {
+  @for (question of questions(); track question.questionText; let i = $index) {
     <mat-expansion-panel #panel class="quiz-summary-question" hideToggle="true">
       <mat-expansion-panel-header>
         <mat-panel-description>
@@ -36,7 +36,7 @@
               <!-- Try to get selections from SelectedOptionService first -->
             @if (hasSelectionsFromService(i)) {
             @let selectedOpts = getSelectedOptionsForQuestion(i);
-            @for (opt of selectedOpts; track $index; let isLast = $last) {
+            @for (opt of selectedOpts; track opt.visualIndex; let isLast = $last) {
             Option {{ opt.visualIndex }}: {{ opt.text }}@if (!isLast) {, }
             }
 
@@ -52,7 +52,7 @@
 
             {{ formatOptionList(userIndices) }} &mdash;
 
-            @for (item of userIndices; track $index; let isLast = $last) {
+            @for (item of userIndices; track item; let isLast = $last) {
             @if (item > 0 && item <= question.options.length) { {{ question.options[item - 1].text }} } @else { (Invalid
               Option) } @if (!isLast) { <span>, </span> }
               }
@@ -83,7 +83,7 @@
 
             <!-- Append text for clarity -->
             &mdash;
-            @for (item of correctIndices; track $index; let isLast = $last) {<span>{{ question.options[item - 1].text
+            @for (item of correctIndices; track item; let isLast = $last) {<span>{{ question.options[item - 1].text
               }}</span>@if (!isLast) {, }}
           </li>
 

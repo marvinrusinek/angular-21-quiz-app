@@ -83,7 +83,7 @@
                   <!-- Row 2: Pagination Dots (center) + Progress (right) -->
                   <section class="footer-row-2">
                     <div class="paging-dots">
-                      @for (q of questionsList(); track $index) {
+                      @for (q of questionsList(); track q.questionText) {
                         <div class="dot" [ngClass]="getDotClass($index)" [class.disabled]="!isDotClickable($index)"
                           (click)="navigateToDot($index)" [attr.aria-label]="'Go to question ' + ($index + 1)">
                         </div>

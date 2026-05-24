@@ -9,7 +9,7 @@ import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 
-import { SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+import { SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SAVED_QUESTION_INDEX, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 import { shallowArrayEqual } from '../../utils/shallow-equal';
 
 import { AnswerEvaluationService } from './answer-evaluation.service';
@@ -947,8 +947,8 @@ export class SelectedOptionService {
 
     try {
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-      localStorage.removeItem('userAnswers');
-      localStorage.removeItem('savedQuestionIndex');
+      localStorage.removeItem(SK_USER_ANSWERS);
+      localStorage.removeItem(SK_SAVED_QUESTION_INDEX);
       localStorage.removeItem('currentQuestionIndex');
       localStorage.removeItem(`quizState_${quizId}`);
       localStorage.removeItem(`selectedOptions_${quizId}`);

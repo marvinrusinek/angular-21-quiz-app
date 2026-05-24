@@ -19,6 +19,8 @@ import { Observable, Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 
+import { SK_SAVED_QUESTION_INDEX } from '../../shared/constants/session-keys';
+
 import { Option } from '../../shared/models/Option.model';
 import { QuestionPayload } from '../../shared/models/QuestionPayload.model';
 import { Quiz } from '../../shared/models/Quiz.model';
@@ -323,7 +325,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.currentQuestionIndex.set(idx);
     this.quizService.setCurrentQuestionIndex(idx);
     try {
-      localStorage.setItem('savedQuestionIndex', JSON.stringify(idx));
+      localStorage.setItem(SK_SAVED_QUESTION_INDEX, JSON.stringify(idx));
     } catch {}
   }
 

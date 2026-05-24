@@ -26,7 +26,7 @@ import { QuizSessionManagerService } from './quiz-session-manager.service';
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 import { QuizStateService } from '../state/quizstate.service';
 
-import { SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+import { SK_SHUFFLED_QUESTIONS, SK_SHUFFLED_QUESTIONS_QUIZ_ID, SK_USER_ANSWERS } from '../../constants/session-keys';
 
 import { getQuizData } from '../../quiz-data-cache';
 import { isOptionCorrect } from '../../utils/is-option-correct';
@@ -100,7 +100,7 @@ export class QuizService {
   questions$: Observable<QuizQuestion[]> = toObservable(this.questionsSig);
 
   private questionsQuizId: string | null = (() => {
-    try { return localStorage.getItem('shuffledQuestionsQuizId'); }
+    try { return localStorage.getItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID); }
     catch (e) {
       console.error('QuizService.questionsQuizId localStorage read failed:', e);
       return null;
@@ -167,7 +167,7 @@ export class QuizService {
       // One-time purge of stale cache with corrupted correct flags
       if (!localStorage.getItem('_shuffleCacheV2')) {
         localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
-        localStorage.removeItem('shuffledQuestionsQuizId');
+        localStorage.removeItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID);
         localStorage.setItem('_shuffleCacheV2', '1');
         return [];
       }
@@ -188,7 +188,7 @@ export class QuizService {
   }
 
   userAnswers: any[] = (() => {
-    try { return JSON.parse(localStorage.getItem('userAnswers') ?? '[]'); }
+    try { return JSON.parse(localStorage.getItem(SK_USER_ANSWERS) ?? '[]'); }
     catch (e) {
       console.error('QuizService.userAnswers localStorage parse failed:', e);
       return [];
@@ -720,7 +720,7 @@ export class QuizService {
 
       // Clear stale shuffledQuestions from localStorage to prevent mismatch
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
-      localStorage.removeItem('shuffledQuestionsQuizId');
+      localStorage.removeItem(SK_SHUFFLED_QUESTIONS_QUIZ_ID);
     } catch { }
 
     // Clear shuffle state on toggle to ensure fresh shuffle
@@ -871,7 +871,7 @@ export class QuizService {
   updateUserAnswer(questionIndex: number, answerIds: number[]): void {
     this.userAnswers[questionIndex] = answerIds;
     try {
-      localStorage.setItem('userAnswers', JSON.stringify(this.userAnswers));
+      localStorage.setItem(SK_USER_ANSWERS, JSON.stringify(this.userAnswers));
     } catch (err) {
       console.error('QuizService.updateUserAnswer localStorage write failed:', err);
     }

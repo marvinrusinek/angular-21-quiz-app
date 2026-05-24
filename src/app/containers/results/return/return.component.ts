@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 
-import { SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../../shared/constants/session-keys';
+import { SK_COMPLETED_QUIZ_IDS, SK_CORRECT_ANSWERS_COUNT, SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_STARTED_QUIZ_IDS } from '../../../shared/constants/session-keys';
 
 import { ExplanationTextService } from '../../../shared/services/features/explanation/explanation-text.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
@@ -73,17 +73,17 @@ export class ReturnComponent implements OnInit {
     if (id) {
       try {
         if (isPerfect) {
-          const existing = JSON.parse(sessionStorage.getItem('completedQuizIds') || '[]');
+          const existing = JSON.parse(sessionStorage.getItem(SK_COMPLETED_QUIZ_IDS) || '[]');
           if (!existing.includes(id)) {
             existing.push(id);
           }
-          sessionStorage.setItem('completedQuizIds', JSON.stringify(existing));
+          sessionStorage.setItem(SK_COMPLETED_QUIZ_IDS, JSON.stringify(existing));
         } else {
-          const existing = JSON.parse(sessionStorage.getItem('startedQuizIds') || '[]');
+          const existing = JSON.parse(sessionStorage.getItem(SK_STARTED_QUIZ_IDS) || '[]');
           if (!existing.includes(id)) {
             existing.push(id);
           }
-          sessionStorage.setItem('startedQuizIds', JSON.stringify(existing));
+          sessionStorage.setItem(SK_STARTED_QUIZ_IDS, JSON.stringify(existing));
         }
       } catch {}
     }
@@ -120,7 +120,7 @@ export class ReturnComponent implements OnInit {
   private resetScoreAndResults(): void {
     // Reset score FIRST before anything else
     this.quizService.resetScore();
-    localStorage.removeItem('correctAnswersCount');
+    localStorage.removeItem(SK_CORRECT_ANSWERS_COUNT);
     localStorage.removeItem('questionCorrectness');
 
     // Clear “results snapshot”

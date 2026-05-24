@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 
-import { SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS } from '../../constants/session-keys';
+import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS, SK_USER_ANSWERS } from '../../constants/session-keys';
 
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
 import { NextButtonStateService } from '../state/next-button-state.service';
@@ -100,13 +100,13 @@ export class QuizResetService {
     this.selectedOptionService.selectedOptionsMap?.clear();
 
     try {
-      localStorage.setItem('correctAnswersCount', '0');
+      localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, '0');
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
     } catch { }
 
-    localStorage.removeItem('savedQuestionIndex');
+    localStorage.removeItem(SK_SAVED_QUESTION_INDEX);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -173,7 +173,7 @@ export class QuizResetService {
       localStorage.removeItem('quiz_progress_default');
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
       sessionStorage.removeItem('quizProgress');
       sessionStorage.removeItem('quizProgressQuizId');
       sessionStorage.removeItem('answeredQuestionIndices');
@@ -215,11 +215,11 @@ export class QuizResetService {
 
     try {
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem('quiz_progress_default');
-      localStorage.setItem('savedQuestionIndex', '0');
+      localStorage.setItem(SK_SAVED_QUESTION_INDEX, '0');
       sessionStorage.clear();
     } catch { }
   }

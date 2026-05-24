@@ -1,5 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
+import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX } from '../../constants/session-keys';
+
 import { QuizScore } from '../../models/QuizScore.model';
 
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
@@ -227,7 +229,7 @@ export class QuizScoringService {
       if (trueCount > 0) {
         this.correctCountSig.set(trueCount);
         this.correctAnswersCountSig.set(trueCount);
-        localStorage.setItem('correctAnswersCount', String(trueCount));
+        localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, String(trueCount));
         if (quizId) localStorage.setItem(this.scoreQuizIdStorageKey, quizId);
         return;
       }
@@ -235,7 +237,7 @@ export class QuizScoringService {
 
     this.correctCountSig.set(safeValue);
     this.correctAnswersCountSig.set(safeValue);
-    localStorage.setItem('correctAnswersCount', String(safeValue));
+    localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, String(safeValue));
     if (quizId) {
       localStorage.setItem(this.scoreQuizIdStorageKey, quizId);
     }
@@ -259,7 +261,7 @@ export class QuizScoringService {
     const safeValue = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
     this.correctCountSig.set(safeValue);
     this.correctAnswersCountSig.set(safeValue);
-    localStorage.setItem('correctAnswersCount', String(safeValue));
+    localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, String(safeValue));
     if (quizId) localStorage.setItem(this.scoreQuizIdStorageKey, quizId);
   }
 
@@ -297,7 +299,7 @@ export class QuizScoringService {
       // right before the refresh.
       if (!quizId || quizId.length === 0) return;
 
-      const savedIndexRaw = localStorage.getItem('savedQuestionIndex');
+      const savedIndexRaw = localStorage.getItem(SK_SAVED_QUESTION_INDEX);
       const savedIndex = Number(savedIndexRaw);
       const hasInProgressIndex = Number.isFinite(savedIndex) && Math.trunc(savedIndex) >= 0;
       const scoreQuizId = localStorage.getItem(this.scoreQuizIdStorageKey) ?? '';
@@ -306,7 +308,7 @@ export class QuizScoringService {
       // Compute what we HAVE stored for this quiz. If there's real data,
       // this is an in-progress session and we must restore it on refresh,
       // even if the user was on Q1 (savedIndex === 0).
-      const storedRaw = localStorage.getItem('correctAnswersCount');
+      const storedRaw = localStorage.getItem(SK_CORRECT_ANSWERS_COUNT);
       const storedCount = Number(storedRaw);
       const safeStored = Number.isFinite(storedCount)
         ? Math.max(0, Math.trunc(storedCount)) : 0;
@@ -323,7 +325,7 @@ export class QuizScoringService {
         this.correctAnswersCountSig.set(0);
         this.questionCorrectness.clear();
         this.saveQuestionCorrectness();
-        localStorage.setItem('correctAnswersCount', '0');
+        localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, '0');
         localStorage.setItem(this.scoreQuizIdStorageKey, quizId);
         return;
       }
@@ -331,7 +333,7 @@ export class QuizScoringService {
       const restored = Math.max(safeStored, mapTrueCount);
       this.correctCountSig.set(restored);
       this.correctAnswersCountSig.set(restored);
-      localStorage.setItem('correctAnswersCount', String(restored));
+      localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, String(restored));
     } catch (err) {
       console.error('QuizScoringService.restoreScoreFromPersistence score restore failed:', err);
     }

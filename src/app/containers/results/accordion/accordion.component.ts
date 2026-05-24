@@ -8,6 +8,8 @@ import { CommonModule } from '@angular/common';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 
+import { SK_USER_ANSWERS } from '../../../shared/constants/session-keys';
+
 import { Option } from '../../../shared/models/Option.model';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { Result } from '../../../shared/models/Result.model';
@@ -221,7 +223,7 @@ export class AccordionComponent implements OnInit {
 
     let storedAnswers: any[] = [];
     try {
-      const stored = localStorage.getItem('userAnswers');
+      const stored = localStorage.getItem(SK_USER_ANSWERS);
       storedAnswers = stored ? JSON.parse(stored) : [];
     } catch (error: any) {
       // error handled silently

@@ -2,6 +2,8 @@
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take } from 'rxjs/operators';
 
+import { SK_SAVED_QUESTION_INDEX } from '../../constants/session-keys';
+
 import { QuestionType } from '../../models/question-type.enum';
 
 import { Option } from '../../models/Option.model';
@@ -258,7 +260,7 @@ export class QclQuestionFetchService {
       const hasUserAnswersForQuestion =
         Array.isArray(this.quizService.userAnswers?.[questionIndex]) &&
         this.quizService.userAnswers[questionIndex].length > 0;
-      const savedIndexRaw = localStorage.getItem('savedQuestionIndex');
+      const savedIndexRaw = localStorage.getItem(SK_SAVED_QUESTION_INDEX);
       const isFreshStartAtQ1 =
         questionIndex === 0 &&
         this.quizService.questionCorrectness.size === 0 &&

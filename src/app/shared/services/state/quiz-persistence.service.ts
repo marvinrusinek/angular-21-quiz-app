@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 
-import { SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+import { SK_COMPLETED_QUIZ_IDS, SK_CORRECT_ANSWERS_COUNT, SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SAVED_QUESTION_INDEX, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 
 import { QuizStatus } from '../../models/quiz-status.enum';
 
@@ -171,11 +171,11 @@ export class QuizPersistenceService {
   // sessionStorage cleanup that was previously inlined in onStartQuiz.
   clearAllForFreshStart(quizId: string): void {
     try {
-      localStorage.setItem('savedQuestionIndex', '0');
-      localStorage.setItem('correctAnswersCount', '0');
+      localStorage.setItem(SK_SAVED_QUESTION_INDEX, '0');
+      localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, '0');
       localStorage.removeItem('questionCorrectness');
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-      localStorage.removeItem('userAnswers');
+      localStorage.removeItem(SK_USER_ANSWERS);
 
       sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       sessionStorage.removeItem('rawSelectionsMap');
@@ -187,15 +187,15 @@ export class QuizPersistenceService {
 
       // Drop this quiz from the completed list (we're restarting it)
       try {
-        const ids: string[] = JSON.parse(sessionStorage.getItem('completedQuizIds') || '[]');
+        const ids: string[] = JSON.parse(sessionStorage.getItem(SK_COMPLETED_QUIZ_IDS) || '[]');
         const filtered = ids.filter(id => id !== quizId);
         if (filtered.length > 0) {
-          sessionStorage.setItem('completedQuizIds', JSON.stringify(filtered));
+          sessionStorage.setItem(SK_COMPLETED_QUIZ_IDS, JSON.stringify(filtered));
         } else {
-          sessionStorage.removeItem('completedQuizIds');
+          sessionStorage.removeItem(SK_COMPLETED_QUIZ_IDS);
         }
       } catch {
-        sessionStorage.removeItem('completedQuizIds');
+        sessionStorage.removeItem(SK_COMPLETED_QUIZ_IDS);
       }
 
       // Per-question session entries from the previous quiz

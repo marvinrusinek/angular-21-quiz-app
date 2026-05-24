@@ -19,7 +19,7 @@ import { QuizService } from '../data/quiz.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { TimerService } from '../features/timer/timer.service';
-import { SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
+import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
@@ -333,11 +333,11 @@ export class QuizNavigationService {
         this.selectedOptionService.clearAllSelectionsForQuiz(effectiveQuizId);
 
         try {
-          localStorage.setItem('savedQuestionIndex', '0');
-          localStorage.setItem('correctAnswersCount', '0');
+          localStorage.setItem(SK_SAVED_QUESTION_INDEX, '0');
+          localStorage.setItem(SK_CORRECT_ANSWERS_COUNT, '0');
           localStorage.removeItem('questionCorrectness');
           localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
-          localStorage.removeItem('userAnswers');
+          localStorage.removeItem(SK_USER_ANSWERS);
           sessionStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
         } catch { }
       }

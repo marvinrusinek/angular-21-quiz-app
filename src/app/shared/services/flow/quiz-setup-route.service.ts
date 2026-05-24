@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, ParamMap, Params, Router } from '@angular/router';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 
+import { SK_SAVED_QUESTION_INDEX } from '../../constants/session-keys';
+
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
@@ -252,7 +254,7 @@ export class QuizSetupRouteService {
       }
 
       if (!result.hasValidSelections) this.timerService.restartForQuestion(index);
-      localStorage.setItem('savedQuestionIndex', index.toString());
+      localStorage.setItem(SK_SAVED_QUESTION_INDEX, index.toString());
     } catch (error: any) {
       console.error('QuizSetupRouteService.subscribeToRouteParams param map change handling failed:', error);
     }
