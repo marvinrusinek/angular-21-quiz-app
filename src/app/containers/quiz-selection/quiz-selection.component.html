@@ -49,12 +49,12 @@
       @for (quiz of quizzes(); track quiz?.quizId) {
         <button
           mat-menu-item
-          [routerLink]="isCompleted(quiz) ? ['/results/', quiz?.quizId] : ['/intro/', quiz?.quizId]"
+          [routerLink]="getQuizRoute(quiz)"
           class="milestone-menu-item"
         >
           <div class="milestone-content">
             @if (isCompleted(quiz)) {
-              <span class="milestone-text" style="text-decoration: line-through; opacity: 0.7;">
+              <span class="milestone-text completed-text">
                 {{ quiz?.milestone || 'Milestone not found' }}
               </span>
               <mat-icon class="completed-check">done</mat-icon>

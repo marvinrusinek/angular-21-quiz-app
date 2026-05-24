@@ -200,6 +200,11 @@ export class QuizSelectionComponent implements OnInit {
       || this.completedQuizIds().has(quiz?.quizId);
   }
 
+  public getQuizRoute(quiz: any): string[] {
+    const prefix = this.isCompleted(quiz) ? '/results/' : '/intro/';
+    return [prefix, quiz?.quizId];
+  }
+
   private initializeQuizSelection(): void {
     this.restoreSessionAccessState();
     this.selectionParams.set(this.quizService.returnQuizSelectionParams());

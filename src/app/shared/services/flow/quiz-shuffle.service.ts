@@ -42,7 +42,7 @@ export class QuizShuffleService {
         this.normalizeOptionOrders(quizId, questions);
         return;
       }
-      // Persisted shuffle length mismatch â€” regenerating
+      // Persisted shuffle length mismatch — regenerating
       this.shuffleByQuizId.delete(quizId);
       localStorage.removeItem(`shuffleState:${quizId}`);
     }
@@ -79,7 +79,7 @@ export class QuizShuffleService {
 
   public alignAnswersWithOptions(
     rawAnswers: Option[] | undefined,
-    options: Option[] = [],
+    options: Option[] = []
   ): Option[] {
     const normalizedOptions = Array.isArray(options) ? options : [];
     if (normalizedOptions.length === 0) return [];
@@ -94,12 +94,8 @@ export class QuizShuffleService {
       return aligned
         .filter((option) => {
           const id = this.toNum(option.optionId);
-          if (id == null) {
-            return true;
-          }
-          if (seen.has(id)) {
-            return false;
-          }
+          if (id == null) return true;
+          if (seen.has(id)) return false;
           seen.add(id);
           return true;
         })
@@ -164,7 +160,7 @@ export class QuizShuffleService {
       return questions.map((question, index) => {
         const normalizedOptions = this.cloneAndNormalizeOptions(
           question.options ?? [],
-          index,  // use loop index as question index
+          index  // use loop index as question index
         );
         return {
           ...question,
@@ -313,7 +309,7 @@ export class QuizShuffleService {
       };
       localStorage.setItem(`shuffleState:${quizId}`, JSON.stringify(serializedState));
     } catch (err: any) {
-      // persist failed â€” non-critical
+      // persist failed — non-critical
     }
   }
 
