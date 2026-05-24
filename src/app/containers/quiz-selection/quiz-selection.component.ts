@@ -76,7 +76,7 @@ export class QuizSelectionComponent implements OnInit {
       return 'ALL quizzes accessed! You are an Angular master!';
     }
 
-    return `You've accessed ${accessedCount} ${this.accessedQuizLabel()}. Keep going!`;
+    return `You accessed ${accessedCount} ${this.accessedQuizLabel()}. Keep going!`;
   });
 
   private animationStateSignal = signal<AnimationState>('none');
