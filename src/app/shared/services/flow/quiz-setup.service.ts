@@ -271,7 +271,7 @@ export class QuizSetupService {
       const qIndex = selections?.[0]?.questionIndex ?? host.currentQuestionIndex();
       if (selections && selections.length > 0) host.markQuestionAnswered(qIndex);
       host.updateDotStatus(qIndex);
-      host.cdRef.detectChanges();
+      host.cdRef.markForCheck();
     });
 
     this.quizService.currentQuestion$.subscribe({
@@ -364,7 +364,7 @@ export class QuizSetupService {
       this.quizPersistence.setPersistedDotStatus(host.quizId(), idx, dotStatus);
     }
 
-    host.cdRef.detectChanges();
+    host.cdRef.markForCheck();
     host._processingOptionClick = false;
 
     setTimeout(() => {
@@ -378,7 +378,7 @@ export class QuizSetupService {
       if (delayedDotStatus === 'correct' || delayedDotStatus === 'wrong') {
         this.quizPersistence.setPersistedDotStatus(host.quizId(), idx, delayedDotStatus);
       }
-      host.cdRef.detectChanges();
+      host.cdRef.markForCheck();
     }, 150);
   }
 
@@ -458,7 +458,7 @@ export class QuizSetupService {
         host.currentQuestionIndex.set(0);
         this.quizResetService.applyPostRestartState(host.totalQuestions(), () => {
           host.sharedOptionComponent?.()?.generateOptionBindings();
-          host.cdRef.detectChanges();
+          host.cdRef.markForCheck();
         });
 
         const question = this.quizService.questions?.[0]
@@ -513,7 +513,7 @@ subscribeToTimerExpiry(host: Host): void {
       currentQuestionIndex: host.currentQuestionIndex(), currentQuestion: host.currentQuestion(),
     });
     host.explanationToDisplay.set(explanationHtml);
-    host.cdRef.detectChanges();
+    host.cdRef.markForCheck();
   }
 
   onExplanationChanged(host: Host, explanation: string | any, index?: number): void {
@@ -784,7 +784,7 @@ subscribeToTimerExpiry(host: Host): void {
         this.selectedOptionService.setAnswered(true, true);
         this.selectedOptionService.setNextButtonEnabled(true);
         this.nextButtonStateService.forceEnable(60000);
-        host.cdRef.detectChanges();
+        host.cdRef.markForCheck();
       }, 100);
     }
 
@@ -792,7 +792,7 @@ subscribeToTimerExpiry(host: Host): void {
       setTimeout(() => {
         host.answeredQuestionIndices.clear();
         host.progressSig.set(0);
-        host.cdRef.detectChanges();
+        host.cdRef.markForCheck();
       }, 150);
     }
   }

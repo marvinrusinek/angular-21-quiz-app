@@ -52,7 +52,7 @@ export class QuizSetupDataService {
       host.questionsArray.set([...questions]);
       host.totalQuestions.set(questions.length);
       host.isQuizDataLoaded.set(true);
-      host.cdRef.detectChanges();
+      host.cdRef.markForCheck();
     } catch (error: any) {
       // question loading failed
     }
@@ -73,13 +73,13 @@ export class QuizSetupDataService {
       explanation: initialQuestion.explanation
     };
     host.combinedQuestionData.set(payload);
-    host.cdRef.detectChanges();
+    host.cdRef.markForCheck();
 
     Promise.resolve().then(() => {
       const current = host.combinedQuestionData();
       if (!current || current.options?.length === 0) {
         host.combinedQuestionData.set(payload);
-        host.cdRef.detectChanges();
+        host.cdRef.markForCheck();
       }
     });
   }
@@ -325,7 +325,7 @@ export class QuizSetupDataService {
         host.question.set(payload.question);
         host.currentQuestion.set(payload.question);
         host.optionsToDisplaySig.set([...payload.options]);
-        host.cdRef.detectChanges();
+        host.cdRef.markForCheck();
       });
     host.subscriptions.add(sub);
   }
@@ -353,7 +353,7 @@ export class QuizSetupDataService {
     });
     if (!result.handled) return;
     host.explanationToDisplay.set(result.explanationText);
-    if (result.showExplanation) host.cdRef.detectChanges();
+    if (result.showExplanation) host.cdRef.markForCheck();
   }
 
   selectedAnswer(host: Host, optionIndex: number): void {

@@ -145,6 +145,7 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly renderReady = signal(false);
   readonly questionFresh = signal<boolean>(true);
   readonly timedOut = signal<boolean>(false);
+  private _isDestroyed = false;
 
   readonly displayState = computed(() => ({
     mode: this.displayMode(),
@@ -235,6 +236,7 @@ export class QuizQuestionComponent extends BaseQuestion
   }
 
   ngOnDestroy(): void {
+    this._isDestroyed = true;
     this._abortController?.abort();
     this.componentOrchestrator.runOnDestroy(this);
   }
@@ -304,6 +306,7 @@ export class QuizQuestionComponent extends BaseQuestion
   }
 
   emitExplanationChange(text: string, show: boolean): void {
+    if (this._isDestroyed) return;
     this.explanationToDisplayChange.emit(text);
     this.showExplanationChange.emit(show);
   }

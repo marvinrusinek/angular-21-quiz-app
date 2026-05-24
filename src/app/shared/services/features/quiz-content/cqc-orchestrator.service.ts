@@ -244,8 +244,6 @@ export class CqcOrchestratorService {
           : host.quizService.questions?.[idx];
 
         q = q ?? null;
-        console.warn('[FET-TIMER] expired$ FIRED idx=' + idx, 'hasExplanation=' + !!q?.explanation, 'hasQText=' + !!host.qText?.()?.nativeElement);
-
         if (q?.explanation) {
           const visualOpts = host.quizQuestionComponent?.()?.optionsToDisplay ?? q.options;
           host.explanationTextService.storeFormattedExplanation(idx, q.explanation, q, visualOpts);

@@ -416,9 +416,10 @@ export class SharedOptionInitService {
 
     // Regenerate feedback when quizService index changes
     // Combine index + latest @Input options to avoid race conditions
+    const optionsToDisplay$ = comp.optionsToDisplay$ ?? of([] as Option[]);
     combineLatest([
       this.quizService.currentQuestionIndex$.pipe(distinctUntilChanged()),
-      comp.optionsToDisplay$
+      optionsToDisplay$
     ])
       .pipe(takeUntilDestroyed(comp.destroyRef))
       .subscribe(([idx, opts]: [number, Option[]]) => {

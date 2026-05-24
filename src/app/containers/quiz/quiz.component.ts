@@ -355,7 +355,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     this.optionsToDisplaySig.set([]);
     this.quizQuestionComponent()?.resetFeedback?.();
     this.quizQuestionComponent()?.resetState?.();
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
   public get shouldShowResultsButton(): boolean {
@@ -450,7 +450,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     } catch (e) {
       console.error('Failed to persist quiz progress to sessionStorage:', e);
     }
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
   /**
@@ -509,7 +509,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.dotStatusService.dotStatusCache.set(index, status);
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
   getDotClass(index: number): string {
