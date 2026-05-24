@@ -104,6 +104,7 @@
                 (click)="$event.stopPropagation()"
                 [ngClass]="getLinkClass(quiz)"
                 [matTooltip]="getTooltip(quiz)"
+                [attr.aria-label]="getTooltip(quiz)"
                 [routerLink]="getLinkRouterLink(quiz)"
               >
                 <mat-icon>{{ getIconClass(quiz) }}</mat-icon>

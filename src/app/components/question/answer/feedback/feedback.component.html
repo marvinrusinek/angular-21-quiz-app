@@ -2,9 +2,9 @@
   @if (feedbackConfig()?.showFeedback) {
     <div class="feedback-message" [ngClass]="feedbackMessageClass()">
       @if (feedbackConfig()?.selectedOption?.correct) {
-        <mat-icon class="material-icons"> sentiment_very_satisfied </mat-icon>
+        <mat-icon class="material-icons" aria-label="Correct answer" i18n-aria-label> sentiment_very_satisfied </mat-icon>
       } @else {
-        <mat-icon class="material-icons wrong-icon">
+        <mat-icon class="material-icons wrong-icon" aria-label="Wrong answer" i18n-aria-label>
           sentiment_very_dissatisfied
         </mat-icon>
       }
