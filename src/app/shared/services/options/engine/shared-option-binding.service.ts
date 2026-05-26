@@ -173,7 +173,6 @@ export class SharedOptionBindingService {
   }
 
   generateOptionBindings(comp: any): void {
-    console.log('[CLICK-DIAG-4] generateOptionBindings called, hasUserClicked:', comp.hasUserClicked(), 'bindingsLen:', comp.optionBindings()?.length, 'qIdx:', comp.getActiveQuestionIndex?.());
     if (comp.hasUserClicked() && comp.optionBindings()?.length > 0) return;
 
     const currentIndex = comp.getActiveQuestionIndex() ?? 0;
@@ -265,8 +264,17 @@ export class SharedOptionBindingService {
       //   'wrong'   → clear all marks
       //   ''        → leave bindings alone (mid-interaction, e.g. partial multi-answer)
       let overrideMode: '' | 'correct' | 'wrong' = '';
-      if (_res.fullyResolvedCorrect) overrideMode = 'correct';
-      else if (dotStatus === 'wrong') overrideMode = 'wrong';
+      // GUARD: only apply revisit-override when the user has actually clicked
+      // this question in the CURRENT session. Without this, stale sessionStorage
+      // entries (dot/multiPerfect) from a previous shuffle order pre-paint
+      // a fresh-visit question — the option appears already highlighted, so
+      // clicking it is a visual no-op and the click never reaches interaction.
+      const _hasClickedThis =
+        !!comp.quizStateService?.hasClickedInSession?.(qIdx);
+      if (_hasClickedThis) {
+        if (_res.fullyResolvedCorrect) overrideMode = 'correct';
+        else if (dotStatus === 'wrong') overrideMode = 'wrong';
+      }
       // Partial multi-answer (isCanonMulti && dot=correct && !multiPerfect): no override
 
       if (Array.isArray(current) && current.length > 0 && overrideMode !== '') {

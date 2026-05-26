@@ -602,7 +602,6 @@ export class OptionInteractionService {
     state.lastClickedOptionId = index;
     state.hasUserClicked = true;
     state.disableRenderTrigger++;
-    console.log('[CLICK-DIAG-1] option-interaction index:', index, 'optionId:', binding?.option?.optionId, 'text:', binding?.option?.text);
 
     // CALL UPDATE with THE AUTHORITATIVE CONTEXT (state)
     (updateOptionAndUI as any)(binding, index, mockEvent, state);
