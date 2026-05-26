@@ -73,6 +73,12 @@ export class CqcDisplayTextService {
               host._lastDisplayedText = text;
               host.renderer.setProperty(el, 'innerHTML', text);
               (host as any)._fetLockedForIndex = currentIdx;
+              const _expectedFet = text;
+              setTimeout(() => {
+                const nowHtml = (el.innerHTML ?? '').trim();
+                const matches = nowHtml === _expectedFet.trim();
+                console.log('[FET-DIAG-F] 250ms after FAST-PATH write: DOM matches FET?', matches, 'DOM len:', nowHtml.length, 'first80:', nowHtml.substring(0, 80));
+              }, 250);
               return;
             }
           } else if (lowerText.includes('correct because')) {
