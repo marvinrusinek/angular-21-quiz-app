@@ -478,8 +478,6 @@ export class SharedOptionInitService {
             comp.hasUserClicked.set(false);
             comp.optionBindingsInitialized.set(false);
 
-            console.log('[INIT-DIAG] question change idx:', idx, 'bindingsAlign:', bindingsAlignWithOpts, 'hasPersisted:', hasPersistedForIdx, 'bindingIds:', bindingIds, 'optsIds:', optsIds);
-
             if (!bindingsAlignWithOpts && !hasPersistedForIdx) {
               this.resetStateForNewQuestion(comp);
 

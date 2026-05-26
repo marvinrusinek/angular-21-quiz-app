@@ -789,7 +789,6 @@ export class ExplanationDisplayStateService {
     this.isExplanationTextDisplayedSig.set(true);
 
     // At this point, FET is computed and "ready" for this question
-    console.log('[EMIT-DIAG] text$.next fired for index:', index, 'length:', validatedText?.length);
     try {
       this.getOrCreate(index).text$.next(validatedText);
       this._byIndex.get(index)?.next(validatedText);

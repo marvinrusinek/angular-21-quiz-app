@@ -173,10 +173,7 @@ export class SharedOptionBindingService {
   }
 
   generateOptionBindings(comp: any): void {
-    if (comp.hasUserClicked() && comp.optionBindings()?.length > 0) {
-      console.log('[BIND-DIAG] generateOptionBindings SKIPPED (hasUserClicked + bindings exist)');
-      return;
-    }
+    if (comp.hasUserClicked() && comp.optionBindings()?.length > 0) return;
 
     const currentIndex = comp.getActiveQuestionIndex() ?? 0;
 
@@ -269,7 +266,6 @@ export class SharedOptionBindingService {
       let overrideMode: '' | 'correct' | 'wrong' = '';
       if (_res.fullyResolvedCorrect) overrideMode = 'correct';
       else if (dotStatus === 'wrong') overrideMode = 'wrong';
-      console.log('[BIND-DIAG] revisit-override qIdx:', qIdx, 'overrideMode:', overrideMode, 'fullyResolvedCorrect:', _res.fullyResolvedCorrect, 'dot:', dotStatus, 'multiPerfect:', _res.multiPerfect, 'scoredCorrect:', _res.scoredCorrect, 'isCanonMulti:', _res.isCanonMulti);
       // Partial multi-answer (isCanonMulti && dot=correct && !multiPerfect): no override
 
       if (Array.isArray(current) && current.length > 0 && overrideMode !== '') {
@@ -507,7 +503,6 @@ export class SharedOptionBindingService {
       comp.cdRef?.markForCheck?.();
 
       const qIndex = comp.resolveCurrentQuestionIndex();
-      console.log('[REHYDRATE-DIAG] qIndex:', qIndex, 'hasUserClicked:', comp.hasUserClicked(), 'bindingsLen:', comp.optionBindings()?.length);
       // Read from durable sel_Q* sessionStorage FIRST â€” the cleanest source.
       // getSelectedOptionsForQuestion merges from _refreshBackup +
       // selectedOptionsMap + sel_Q*, and the in-memory maps can be
