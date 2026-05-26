@@ -495,6 +495,7 @@ export class SocAnswerProcessingService {
       }
     } catch (e) { console.error('processSingleAnswerClick pristine-correct check failed:', e); }
 
+    console.log('[CLICK-DIAG-3] processSingleAnswerClick reached, pristineSingleCorrect:', pristineSingleCorrect, 'index:', index, 'qIdx:', qIdx, 'displayIdx:', displayIdx, 'isShuffled:', isShuffled);
     if (pristineSingleCorrect) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
 

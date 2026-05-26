@@ -193,6 +193,7 @@ export class SharedOptionClickService {
     comp.lastClickedOptionId = state.lastClickedOptionId;
     comp.lastClickTimestamp = state.lastClickTimestamp;
     comp.hasUserClicked.set(state.hasUserClicked);
+    console.log('[CLICK-DIAG-2] click.service state pushed, hasUserClicked:', state.hasUserClicked, 'lastClickedOptionId:', state.lastClickedOptionId, 'bindings[clicked].isSelected:', state.optionBindings?.[state.lastClickedOptionId]?.isSelected);
     comp.freezeOptionBindings.set(state.freezeOptionBindings);
     comp.showFeedback.set(state.showFeedback);
     comp.showFeedbackForOption = state.showFeedbackForOption;

@@ -173,6 +173,7 @@ export class SharedOptionBindingService {
   }
 
   generateOptionBindings(comp: any): void {
+    console.log('[CLICK-DIAG-4] generateOptionBindings called, hasUserClicked:', comp.hasUserClicked(), 'bindingsLen:', comp.optionBindings()?.length, 'qIdx:', comp.getActiveQuestionIndex?.());
     if (comp.hasUserClicked() && comp.optionBindings()?.length > 0) return;
 
     const currentIndex = comp.getActiveQuestionIndex() ?? 0;
