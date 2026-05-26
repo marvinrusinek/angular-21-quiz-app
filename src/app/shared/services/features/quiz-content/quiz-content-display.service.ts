@@ -314,8 +314,10 @@ export class QuizContentDisplayService {
               }
             }
             if (!pCorrect.every(t => selNow2.has(t))) {
+              // Do NOT delete _multiAnswerPerfect — SOC set it after
+              // verifying all correct answers were clicked. The selection
+              // data visible here may lag behind in shuffled mode.
               oisBypassAllowed = false;
-              this.quizService._multiAnswerPerfect.delete(safeIdx);
             }
           }
         } catch { /* ignore */ }
@@ -374,13 +376,23 @@ export class QuizContentDisplayService {
       } catch { /* ignore */ }
     }
 
+    // SOC-CONFIRMED BYPASS: when SOC has explicitly set fetBypassForQuestion
+    // or _multiAnswerPerfect, trust it unconditionally — SOC verified all
+    // correct answers at click time. Skip all downstream gates.
+    const _socConfirmed =
+      this.explanationTextService.fetBypassForQuestion?.get(safeIdx) === true
+      || this.quizService._multiAnswerPerfect.get(safeIdx) === true;
+    if (_socConfirmed && hasInteracted) {
+      shouldShowExplanation = true;
+    }
+
     // FINAL HARD GUARD: authoritative check via hasClickedInSession.
     // This Set only grows on real user clicks or refresh-of-answered, so it's
     // immune to sessionStorage contamination affecting other flags. If the user
-    // hasn't clicked this idx in this session and it wasn't just timed out, 
+    // hasn't clicked this idx in this session and it wasn't just timed out,
     // force question text.
     const hasClickedThisIdx = this.quizStateService.hasClickedInSession?.(safeIdx) ?? false;
-    if (shouldShowExplanation && !isTimedOut && !hasClickedThisIdx) {
+    if (shouldShowExplanation && !isTimedOut && !hasClickedThisIdx && !_socConfirmed) {
       shouldShowExplanation = false;
     }
 
@@ -389,7 +401,7 @@ export class QuizContentDisplayService {
     // upstream flag flipped shouldShowExplanation to true. This closes
     // every path that can set the flag erroneously (isResolved,
     // _multiAnswerPerfect, explanation-mode override, etc.).
-    if (shouldShowExplanation && !isTimedOut) {
+    if (shouldShowExplanation && !isTimedOut && !_socConfirmed) {
       try {
         const qs: any = this.quizService;
         const isShuffled = qs?.isShuffleEnabled?.()
@@ -470,9 +482,9 @@ export class QuizContentDisplayService {
             } catch { /* ignore */ }
             if (!scoringOverrideGate) {
               shouldShowExplanation = false;
-              // Also clear any falsely-set perfect flag so downstream
-              // OIS-bypass can't re-trigger on the next emission.
-              this.quizService._multiAnswerPerfect.delete(safeIdx);
+              // Do NOT delete _multiAnswerPerfect — SOC set it after
+              // verifying all correct answers were clicked. Selection
+              // data visible in this pipeline may lag in shuffled mode.
             }
           }
         }
@@ -499,7 +511,7 @@ export class QuizContentDisplayService {
       // The reactive stream (fetText) may not have the formatted text yet due to
       // timing (e.g. resetExplanationState cleared _byIndex subjects), but the
       // formattedExplanations cache or fetByIndex may still have it.
-      const cachedFet = (this.explanationTextService.formattedExplanations[safeIdx]?.explanation ?? '').trim()
+      let cachedFet = (this.explanationTextService.formattedExplanations[safeIdx]?.explanation ?? '').trim()
         || ((this.explanationTextService as any).fetByIndex?.get(safeIdx) ?? '').trim();
       if (cachedFet && cachedFet.toLowerCase().includes('correct because')) {
         return cachedFet;

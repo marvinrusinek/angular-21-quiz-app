@@ -473,6 +473,13 @@ export class SharedOptionInitService {
               hasPersistedForIdx = persisted.length > 0;
             } catch { /* ignore */ }
 
+            // Always reset interaction flags on question change so that
+            // generateOptionBindings doesn't early-return with stale bindings.
+            comp.hasUserClicked.set(false);
+            comp.optionBindingsInitialized.set(false);
+
+            console.log('[INIT-DIAG] question change idx:', idx, 'bindingsAlign:', bindingsAlignWithOpts, 'hasPersisted:', hasPersistedForIdx, 'bindingIds:', bindingIds, 'optsIds:', optsIds);
+
             if (!bindingsAlignWithOpts && !hasPersistedForIdx) {
               this.resetStateForNewQuestion(comp);
 

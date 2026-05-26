@@ -172,9 +172,29 @@ export class QuizNavigationService {
       // perfectly-answered question we WANT the flag preserved so revisit
       // re-renders the green/gray highlight; only buggy stale flags need
       // wiping, and those won't have questionCorrectness set.
-      const _scoredDest = this.quizService.questionCorrectness?.get?.(index) === true;
+      // In shuffled mode, questionCorrectness is keyed by ORIGINAL index
+      // (set by scoreDirectly), so map display→original before checking.
+      const _isScoredAt = (idx: number): boolean => {
+        if (this.quizService.questionCorrectness?.get?.(idx) === true) return true;
+        try {
+          const qs: any = this.quizService;
+          const isShuf = qs?.isShuffleEnabled?.() && qs?.shuffledQuestions?.length > 0;
+          if (isShuf) {
+            let eqId = qs?.quizId || '';
+            if (!eqId) { try { eqId = localStorage.getItem('lastQuizId') || ''; } catch {} }
+            if (eqId) {
+              const origIdx = qs?.scoringService?.quizShuffleService?.toOriginalIndex?.(eqId, idx);
+              if (typeof origIdx === 'number' && origIdx >= 0) {
+                return this.quizService.questionCorrectness?.get?.(origIdx) === true;
+              }
+            }
+          }
+        } catch { /* ignore */ }
+        return false;
+      };
+      const _scoredDest = _isScoredAt(index);
       if (!_scoredDest) this.quizService._multiAnswerPerfect.delete(index);
-      if (sourceIdx >= 0 && sourceIdx !== index && this.quizService.questionCorrectness?.get?.(sourceIdx) !== true) {
+      if (sourceIdx >= 0 && sourceIdx !== index && !_isScoredAt(sourceIdx)) {
         this.quizService._multiAnswerPerfect.delete(sourceIdx);
       }
 

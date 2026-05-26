@@ -243,13 +243,6 @@ export class SocAnswerProcessingService {
 
       this.quizService.scoreDirectly(qIdx, true, true);
 
-      // Also mirror questionCorrectness at the display index so the
-      // navigation service (which checks by display index) can find it
-      // and won't wrongly wipe _multiAnswerPerfect on Next click.
-      if (isShuffled && displayIdx !== qIdx) {
-        this.quizService.questionCorrectness?.set(displayIdx, true);
-      }
-
       this.quizService._multiAnswerPerfect.set(displayIdx, true);
       try { sessionStorage.setItem(SK_MULTI_PERFECT + displayIdx, 'true'); } catch {}
 
@@ -304,12 +297,18 @@ export class SocAnswerProcessingService {
         this.explanationTextService._activeIndex = displayIdx;
         (this.explanationTextService as any).latestExplanation = formattedFET;
         (this.explanationTextService as any).latestExplanationIndex = displayIdx;
+        const qForStore = comp.currentQuestion()
+          ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
+          ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
+        this.explanationTextService.storeFormattedExplanation(
+          displayIdx, formattedFET, qForStore, qForStore?.options ?? [], true
+        );
         this.explanationTextService.setExplanationText(formattedFET, {
           force: true,
           context: `question:${displayIdx}`,
           index: displayIdx
         });
-        this.explanationTextService.emitFormatted(displayIdx, formattedFET);
+        this.explanationTextService.emitFormatted(displayIdx, formattedFET, { bypassGuard: true });
         this.explanationTextService.setShouldDisplayExplanation(true, {
           context: `question:${displayIdx}`,
           force: true
@@ -320,7 +319,6 @@ export class SocAnswerProcessingService {
         } as any);
         this.explanationTextService.lockExplanation();
         this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
-
       }
 
       // Also try the component path as backup
@@ -370,7 +368,7 @@ export class SocAnswerProcessingService {
     // Mirrors the single-answer block in processSingleAnswerClick (~line 642).
     // Fires only when every incorrect option has been clicked — disables
     // remaining incorrects and auto-highlights any unclicked correct options.
-    this.triggerAllIncorrectsExhaustedAutoReveal(comp, index, qIdx);
+    this.triggerAllIncorrectsExhaustedAutoReveal(comp, index, qIdx, displayIdx);
   }
 
   /**
@@ -396,8 +394,8 @@ export class SocAnswerProcessingService {
     // incorrects after all correct answers are selected.
     try {
       const liveQText = comp.currentQuestion()?.questionText
-        ?? (this.quizService as any)?.questions?.[qIdx]?.questionText
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText;
+        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText
+        ?? (this.quizService as any)?.questions?.[qIdx]?.questionText;
       const pristineCorrectTexts =
         this.quizService.getPristineCorrectTextsForQuestion(liveQText);
       const pristineCorrectCount = pristineCorrectTexts.size;
@@ -475,10 +473,10 @@ export class SocAnswerProcessingService {
       } else if (clickedText) {
         const candidates = isShuffled
           ? [
-              (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText,
-              (this.quizService as any)?.shuffledQuestions?.[qIdx]?.questionText,
+              comp.currentQuestion()?.questionText,
+              (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText,
+              (this.quizService as any)?.shuffledQuestions?.[displayIdx]?.questionText,
               (this.quizService as any)?.questions?.[qIdx]?.questionText,
-              comp.currentQuestion()?.questionText
             ]
           : [
               (this.quizService as any)?.questions?.[qIdx]?.questionText,
@@ -500,24 +498,28 @@ export class SocAnswerProcessingService {
     if (pristineSingleCorrect) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
 
-      // Score and emit FET for single-answer correct click
-      this.explanationTextService.fetBypassForQuestion.set(qIdx, true);
+      // Score and emit FET for single-answer correct click.
+      // Use displayIdx for all display-pipeline keys (FET bypass,
+      // multiPerfect, sessionStorage, latestExplanationIndex) because
+      // CQC/navigation read by display index. Keep qIdx for
+      // scoreDirectly — scoring handles shuffle mapping internally.
+      this.explanationTextService.fetBypassForQuestion.set(displayIdx, true);
       this.quizService.scoreDirectly(qIdx, true, false);
       this.nextButtonStateService.setNextButtonState(true);
-      this.quizService._multiAnswerPerfect.set(qIdx, true);
-      try { sessionStorage.setItem(SK_MULTI_PERFECT + qIdx, 'true'); } catch {}
+      this.quizService._multiAnswerPerfect.set(displayIdx, true);
+      try { sessionStorage.setItem(SK_MULTI_PERFECT + displayIdx, 'true'); } catch {}
 
       (this.explanationTextService as any)._fetLocked = false;
       this.explanationTextService.unlockExplanation();
       comp.showExplanationChange.emit(true);
       const singleFetQuestion = comp.currentQuestion()
-        ?? comp.getQuestionAtDisplayIndex?.(qIdx)
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx];
+        ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
+        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
 
       // Synchronous FET write
       try {
         const singleFetCtxSync = {
-          resolvedIndex: qIdx,
+          resolvedIndex: displayIdx,
           question: singleFetQuestion,
           currentQuestion: comp.currentQuestion(),
           quizId: comp.quizId?.() ?? comp.quizId ?? '',
@@ -528,21 +530,26 @@ export class SocAnswerProcessingService {
         const fetText = this.sharedOptionExplanationService.resolveExplanationText(singleFetCtxSync as any)?.trim()
           || singleFetQuestion?.explanation || '';
         if (fetText) {
-          this.explanationTextService._activeIndex = qIdx;
+          this.explanationTextService._activeIndex = displayIdx;
           (this.explanationTextService as any).latestExplanation = fetText;
-          (this.explanationTextService as any).latestExplanationIndex = qIdx;
+          (this.explanationTextService as any).latestExplanationIndex = displayIdx;
+          // Populate per-index cache so resolveDisplayText finds the FET
+          // even if the reactive stream doesn't deliver it in time.
+          this.explanationTextService.storeFormattedExplanation(
+            displayIdx, fetText, singleFetQuestion, singleFetQuestion?.options ?? [], true
+          );
           this.explanationTextService.setExplanationText(fetText, {
             force: true,
-            context: `question:${qIdx}`,
-            index: qIdx
+            context: `question:${displayIdx}`,
+            index: displayIdx
           });
-          this.explanationTextService.emitFormatted(qIdx, fetText);
+          this.explanationTextService.emitFormatted(displayIdx, fetText, { bypassGuard: true });
           this.explanationTextService.setShouldDisplayExplanation(true, {
-            context: `question:${qIdx}`,
+            context: `question:${displayIdx}`,
             force: true
           } as any);
           this.explanationTextService.setIsExplanationTextDisplayed(true, {
-            context: `question:${qIdx}`,
+            context: `question:${displayIdx}`,
             force: true
           } as any);
           this.explanationTextService.lockExplanation();
@@ -551,7 +558,7 @@ export class SocAnswerProcessingService {
       } catch (e) { console.error('processSingleAnswerClick FET-sync write failed:', e); }
 
       const singleFetCtx = {
-        resolvedIndex: qIdx,
+        resolvedIndex: displayIdx,
         question: singleFetQuestion,
         currentQuestion: comp.currentQuestion(),
         quizId: comp.quizId?.() ?? comp.quizId ?? '',
@@ -564,7 +571,7 @@ export class SocAnswerProcessingService {
           this.sharedOptionExplanationService.emitExplanation(singleFetCtx as any, true);
         } catch (e) {
           console.error('SocAnswerProcessingService.processSingleAnswerClick FET-backup emission failed:', e);
-          comp.emitExplanation(qIdx, true);
+          comp.emitExplanation(displayIdx, true);
         }
       }, 0);
 
@@ -639,7 +646,7 @@ export class SocAnswerProcessingService {
     // When every incorrect option has been clicked, auto-highlight canonical
     // correct option(s) and emit FET. Delegates to the shared helper that
     // processMultiAnswerClick also uses.
-    this.triggerAllIncorrectsExhaustedAutoReveal(comp, index, qIdx);
+    this.triggerAllIncorrectsExhaustedAutoReveal(comp, index, qIdx, displayIdx);
   }
 
   /**
@@ -652,7 +659,7 @@ export class SocAnswerProcessingService {
    * Called from both processSingleAnswerClick (incorrect-click tail) and
    * processMultiAnswerClick to share a single auto-reveal implementation.
    */
-  private triggerAllIncorrectsExhaustedAutoReveal(comp: any, index: number, qIdx: number): void {
+  private triggerAllIncorrectsExhaustedAutoReveal(comp: any, index: number, qIdx: number, displayIdx: number): void {
     try {
       const liveQAR: any = comp.currentQuestion()
         ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
@@ -716,7 +723,7 @@ export class SocAnswerProcessingService {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
       this.nextButtonStateService.setNextButtonState(true);
       this.selectionMessageService.forceNextButtonMessage(qIdx);
-      this.explanationTextService.fetBypassForQuestion.set(qIdx, true);
+      this.explanationTextService.fetBypassForQuestion.set(displayIdx, true);
       // INTENTIONALLY do NOT set _multiAnswerPerfect — see comment in
       // sibling autoreveal block (~line 711). Used as the navigation-clear
       // gate, so setting it on autoreveal-fired (user picked wrong) made
@@ -759,10 +766,10 @@ export class SocAnswerProcessingService {
       // effects that can overwrite the bindings before the microtask
       // runs — wiping _autoRevealedCorrect and the green highlight.
       const fetQuestionAR = comp.currentQuestion()
-        ?? comp.getQuestionAtDisplayIndex?.(qIdx)
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx];
+        ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
+        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
       const fetCtxAR = {
-        resolvedIndex: qIdx,
+        resolvedIndex: displayIdx,
         question: fetQuestionAR,
         currentQuestion: comp.currentQuestion(),
         quizId: comp.quizId?.() ?? comp.quizId ?? '',
@@ -793,21 +800,24 @@ export class SocAnswerProcessingService {
         } catch (e) { console.error('triggerAllIncorrectsExhausted FET formatting failed:', e); }
       }
       if (fetTextAR) {
-        this.explanationTextService._activeIndex = qIdx;
+        this.explanationTextService._activeIndex = displayIdx;
         (this.explanationTextService as any).latestExplanation = fetTextAR;
-        (this.explanationTextService as any).latestExplanationIndex = qIdx;
+        (this.explanationTextService as any).latestExplanationIndex = displayIdx;
+        this.explanationTextService.storeFormattedExplanation(
+          displayIdx, fetTextAR, fetQuestionAR, fetQuestionAR?.options ?? [], true
+        );
         this.explanationTextService.setExplanationText(fetTextAR, {
           force: true,
-          context: `question:${qIdx}`,
-          index: qIdx
+          context: `question:${displayIdx}`,
+          index: displayIdx
         });
-        this.explanationTextService.emitFormatted(qIdx, fetTextAR);
+        this.explanationTextService.emitFormatted(displayIdx, fetTextAR, { bypassGuard: true });
         this.explanationTextService.setShouldDisplayExplanation(true, {
-          context: `question:${qIdx}`,
+          context: `question:${displayIdx}`,
           force: true
         } as any);
         this.explanationTextService.setIsExplanationTextDisplayed(true, {
-          context: `question:${qIdx}`,
+          context: `question:${displayIdx}`,
           force: true
         } as any);
         this.explanationTextService.lockExplanation();

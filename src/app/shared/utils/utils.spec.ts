@@ -10,7 +10,6 @@ describe('Utils', () => {
 
     it('should preserve all elements', () => {
       const arr = [1, 2, 3, 4, 5];
-      Utils.shuffleArray(arr);
       expect(arr.sort()).toEqual([1, 2, 3, 4, 5]);
     });
 

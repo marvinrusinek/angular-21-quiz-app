@@ -62,12 +62,34 @@ export class CqcFetGuardService {
                             safeText.includes('correct answers are options');
           if (!safeIsFet) {
             if (urlQ?.questionText) {
-              const correctCount = (urlQ?.options ?? []).filter(
-                (o: any) => isOptionCorrect(o)
-              ).length;
-              if (correctCount > 1 && (urlQ.options?.length ?? 0) > 0) {
-                const suffix = correctCount === 1 ? 'answer is' : 'answers are';
-                safe = `${urlQ.questionText} <span class="correct-count">(${correctCount} ${suffix} correct)</span>`;
+              // Use pristine quizInitialState for correct count — live
+              // options can be mutated by option-lock-policy.
+              let correctCount = 0;
+              let totalOpts = (urlQ?.options ?? []).length;
+              const _qTextUrl = norm(urlQ.questionText);
+              try {
+                for (const _quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
+                  for (const _pq of (_quiz?.questions ?? [])) {
+                    if (norm(_pq?.questionText) !== _qTextUrl) continue;
+                    correctCount = (_pq?.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
+                    totalOpts = (_pq?.options ?? []).length;
+                    break;
+                  }
+                  if (correctCount > 0) break;
+                }
+              } catch { /* ignore */ }
+              if (correctCount === 0) {
+                correctCount = (urlQ?.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
+              }
+              if (correctCount > 1 && totalOpts > 0) {
+                try {
+                  const banner = host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
+                    correctCount, totalOpts
+                  );
+                  safe = `${urlQ.questionText} <span class="correct-count">${banner}</span>`;
+                } catch {
+                  safe = `${urlQ.questionText} <span class="correct-count">(${correctCount} answers are correct)</span>`;
+                }
               } else {
                 safe = urlQ.questionText;
               }
@@ -115,6 +137,32 @@ export class CqcFetGuardService {
         const _safeNorm = safe.trim();
         const _isJustQuestionText = _qNorm.length > 0 && _safeNorm.startsWith(_qNorm) && !_safeNorm.toLowerCase().includes('correct because');
         if (!_isJustQuestionText) {
+          host.qTextHtmlSig?.set(safe);
+          host._lastDisplayedText = safe;
+          const el = host.qText?.()?.nativeElement;
+          if (el) host.renderer.setProperty(el, 'innerHTML', safe);
+          return;
+        }
+      }
+
+      // SOC-CONFIRMED FET BYPASS: when SOC has explicitly confirmed this
+      // question correct (fetBypassForQuestion or _multiAnswerPerfect),
+      // skip ALL downstream gates and write FET directly. This prevents
+      // the many selection-checking gates from blocking legitimate FET
+      // due to timing/index issues in shuffled mode.
+      const _safeIsFetEarly = (safe ?? '').toLowerCase().includes('correct because');
+      if (_safeIsFetEarly) {
+        const _expIdx = host.explanationTextService?.latestExplanationIndex ?? -1;
+        const _checkIdx = _liveIdx >= 0 ? _liveIdx : (_expIdx >= 0 ? _expIdx : -1);
+        const _fetBypassEarly = _checkIdx >= 0 && (
+          host.explanationTextService?.fetBypassForQuestion?.get(_checkIdx) === true
+          || host.quizService?._multiAnswerPerfect?.get(_checkIdx) === true
+          || (_expIdx >= 0 && _expIdx !== _checkIdx && (
+            host.explanationTextService?.fetBypassForQuestion?.get(_expIdx) === true
+            || host.quizService?._multiAnswerPerfect?.get(_expIdx) === true
+          ))
+        );
+        if (_fetBypassEarly) {
           host.qTextHtmlSig?.set(safe);
           host._lastDisplayedText = safe;
           const el = host.qText?.()?.nativeElement;
@@ -289,7 +337,8 @@ export class CqcFetGuardService {
           // Without this carve-out, the NUCLEAR GATE below rewrites the FET
           // back to question text and the auto-revealed FET never appears.
           const fetBypassActive =
-            host.explanationTextService?.fetBypassForQuestion?.get(activeIdx) === true;
+            host.explanationTextService?.fetBypassForQuestion?.get(activeIdx) === true
+            || host.quizService?._multiAnswerPerfect?.get(activeIdx) === true;
 
           if (!isMulti) {
             if (!this.isScoredCorrectAtDisplay(host, activeIdx) && !fetBypassActive) {
@@ -614,13 +663,13 @@ export class CqcFetGuardService {
         }
       } catch { /* ignore */ }
 
-      // BANNER PRESERVATION
+      // BANNER PRESERVATION — use URL-first index (same as URL-AUTHORITATIVE GUARD)
       try {
         const qsBnr: any = host.quizService;
-        const bnrIdx: number = host.currentIndex ?? (
+        let bnrIdx: number = _liveIdx >= 0 ? _liveIdx : (host.currentIndex ?? (
           Number.isFinite(qsBnr?.currentQuestionIndex)
             ? qsBnr.currentQuestionIndex : (qsBnr?.getCurrentQuestionIndex?.() ?? 0)
-        );
+        ));
         const expectedWithBanner = this.buildQuestionDisplayHTML(host, bnrIdx);
         if (expectedWithBanner && expectedWithBanner.includes('correct-count')) {
           const normBnr = (t: any) => String(t ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -630,7 +679,9 @@ export class CqcFetGuardService {
             ? qsBnr?.shuffledQuestions?.[bnrIdx]
             : qsBnr?.questions?.[bnrIdx];
           const rawQTextBnr = normBnr(qObjBnr?.questionText ?? '');
-          if (rawQTextBnr && safeNormBnr === rawQTextBnr) {
+          // Add banner if safe is plain question text (exact match or starts with it without existing banner)
+          const safeHasBanner = safe.includes('correct-count');
+          if (rawQTextBnr && !safeHasBanner && safeNormBnr.startsWith(rawQTextBnr)) {
             safe = expectedWithBanner;
           }
         }
@@ -742,6 +793,13 @@ export class CqcFetGuardService {
       // restamp computes the question text instead of the FET and overwrites
       // the heading on tab return.
       if (this.dotStatusService.timerExpiredUnanswered?.has(idx)) return true;
+      // SOC-set bypass flags are definitive interaction evidence — SOC only
+      // sets them after verifying user-clicked selections satisfy the
+      // question. Without this, a click→FET race in shuffled mode can leave
+      // hasClickedInSession unset at the moment displayText$ emits the FET,
+      // causing gates here to block the FET write.
+      if (host.explanationTextService?.fetBypassForQuestion?.get(idx) === true) return true;
+      if (host.quizService?._multiAnswerPerfect?.get(idx) === true) return true;
       return !!host.quizStateService.hasClickedInSession?.(idx);
     } catch {
       return false;

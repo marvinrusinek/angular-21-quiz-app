@@ -56,9 +56,27 @@ export class QuestionResolutionService {
       try { multiPerfect = sessionStorage.getItem(SK_MULTI_PERFECT + qIdx) === 'true'; } catch { /* ignore */ }
     }
 
-    // Signal 3: scoring map
+    // Signal 3: scoring map (must use original index in shuffled mode)
     const scoreMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
-    const scoredCorrect = scoreMap?.get?.(qIdx) === true;
+    let scoredCorrect = false;
+    if (scoreMap) {
+      const qs: any = this.quizService;
+      const isShuf = qs?.isShuffleEnabled?.() && qs?.shuffledQuestions?.length > 0;
+      if (isShuf) {
+        let effectiveQuizId = qs?.quizId || '';
+        if (!effectiveQuizId) {
+          try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch { /* ignore */ }
+        }
+        if (effectiveQuizId) {
+          const origIdx = qs?.scoringService?.quizShuffleService?.toOriginalIndex?.(effectiveQuizId, qIdx);
+          if (typeof origIdx === 'number' && origIdx >= 0) {
+            scoredCorrect = scoreMap.get(origIdx) === true;
+          }
+        }
+      } else {
+        scoredCorrect = scoreMap.get(qIdx) === true;
+      }
+    }
 
     // Signal 4: pristine correct options from quizInitialState
     const optsForQ: any[] =

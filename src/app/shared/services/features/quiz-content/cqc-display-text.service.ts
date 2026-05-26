@@ -31,7 +31,6 @@ export class CqcDisplayTextService {
       .pipe(takeUntilDestroyed(host.destroyRef))
       .subscribe({
         next: (text: string) => {
-
           let finalText = text;
           const lowerText = (text ?? '').toLowerCase();
           // Read currentIdx from the input signal — host.currentIndex is a
@@ -51,10 +50,20 @@ export class CqcDisplayTextService {
           const isTimedOutForIdx = host.timedOutIdxSubject?.getValue?.() === currentIdx && currentIdx >= 0;
 
           // FAST-PATH FET BYPASS: if SOC has confirmed this question correct
-          // via fetBypassForQuestion AND the incoming text contains FET,
-          // write it directly — skip all downstream gates that can block it.
-          if (!isQuestionText && lowerText.includes('correct because')
-              && host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true) {
+          // via fetBypassForQuestion or _multiAnswerPerfect AND the incoming
+          // text contains FET, write it directly — skip all downstream gates.
+          // Also accept latestExplanationIndex match to handle shuffled mode
+          // where the shared-option's display index can differ from CQC's.
+          // Check at currentIdx first; also check at latestExplanationIndex
+          // in case host.questionIndex() is stale (lags a microtask behind SOC).
+          const _latestExpIdx = host.explanationTextService?.latestExplanationIndex ?? -1;
+          const _fetBypass = host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true
+            || host.quizService?._multiAnswerPerfect?.get(currentIdx) === true
+            || (_latestExpIdx >= 0 && (
+                host.explanationTextService?.fetBypassForQuestion?.get(_latestExpIdx) === true
+                || host.quizService?._multiAnswerPerfect?.get(_latestExpIdx) === true
+            ));
+          if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             const el = host.qText?.()?.nativeElement;
             if (el) {
               host.qTextHtmlSig?.set(text);
@@ -167,8 +176,17 @@ export class CqcDisplayTextService {
               return;
             }
 
-            // UNIVERSAL QUESTION-FIRST GUARD (skip when timed out)
-            if (!hasRealInteraction && !isTimedOutForIdx) {
+            // UNIVERSAL QUESTION-FIRST GUARD (skip when timed out or FET confirmed)
+            const _incomingIsFet = lowerText.includes('correct because');
+            const _fetConfirmed = _incomingIsFet && (
+              host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true
+              || host.quizService?._multiAnswerPerfect?.get(currentIdx) === true
+              || (_latestExpIdx >= 0 && (
+                  host.explanationTextService?.fetBypassForQuestion?.get(_latestExpIdx) === true
+                  || host.quizService?._multiAnswerPerfect?.get(_latestExpIdx) === true
+              ))
+            );
+            if (!hasRealInteraction && !isTimedOutForIdx && !_fetConfirmed) {
               try {
                 const forcedQText = this.fetGuard.buildQuestionDisplayHTML(host, currentIdx);
                 if (forcedQText) {
@@ -189,7 +207,7 @@ export class CqcDisplayTextService {
             }
 
             // FET-OVER-QUESTION-TEXT GUARD
-            if (hasRealInteraction && isQuestionText && isResolvedForGuard) {
+            if (hasRealInteraction && isQuestionText && (isResolvedForGuard || _fetBypass)) {
               const fetCached =
                 (host.explanationTextService.formattedExplanations[currentIdx]?.explanation ?? '').trim()
                 || ((host.explanationTextService as any).fetByIndex?.get(currentIdx) ?? '').trim();
@@ -249,7 +267,7 @@ export class CqcDisplayTextService {
               const isMultiQ = host.quizService.multipleAnswer || rawCorrectCountBlock > 1;
 
               if (isFetText && isMultiQ) {
-                if (!this.fetGuard.isScoredCorrectAtDisplay(host, currentIdx) && !fetBypassActive) {
+                if (!this.fetGuard.isScoredCorrectAtDisplay(host, currentIdx) && !fetBypassActive && !_fetConfirmed) {
                   const qText = this.fetGuard.buildQuestionDisplayHTML(host, currentIdx);
                   if (qText) {
                     this.fetGuard.writeQText(host, qText);
@@ -259,7 +277,7 @@ export class CqcDisplayTextService {
               }
 
               if (isFetText && !isMultiQ) {
-                if (!this.fetGuard.isScoredCorrectAtDisplay(host, currentIdx) && !fetBypassActive) {
+                if (!this.fetGuard.isScoredCorrectAtDisplay(host, currentIdx) && !fetBypassActive && !_fetConfirmed) {
                   const qText = this.fetGuard.buildQuestionDisplayHTML(host, currentIdx);
                   if (qText) {
                     this.fetGuard.writeQText(host, qText);

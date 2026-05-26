@@ -361,6 +361,7 @@ export class SharedOptionOrchestratorService {
 
   runResetUIForNewQuestion(host: Host): void {
     host.hasUserClicked.set(false);
+    host.optionBindingsInitialized.set(false);
     host.highlightedOptionIds.clear();
     host.selectedOptionMap.clear();
     host.showFeedbackForOption = {};
