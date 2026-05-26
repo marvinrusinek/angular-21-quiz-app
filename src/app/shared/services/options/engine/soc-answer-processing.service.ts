@@ -529,7 +529,6 @@ export class SocAnswerProcessingService {
         };
         const fetText = this.sharedOptionExplanationService.resolveExplanationText(singleFetCtxSync as any)?.trim()
           || singleFetQuestion?.explanation || '';
-        console.log('[FET-DIAG-A] single-correct fetText resolved:', fetText ? fetText.substring(0,80) : '(empty)', 'displayIdx:', displayIdx, 'qIdx:', qIdx);
         if (fetText) {
           this.explanationTextService._activeIndex = displayIdx;
           (this.explanationTextService as any).latestExplanation = fetText;

@@ -33,8 +33,6 @@ export class CqcDisplayTextService {
         next: (text: string) => {
           let finalText = text;
           const lowerText = (text ?? '').toLowerCase();
-          const _isFetIn = lowerText.includes('correct because');
-          if (_isFetIn) console.log('[FET-DIAG-B] displayText$ emitted FET to CQC subscriber, len:', text.length, 'first80:', text.substring(0,80));
           // Read currentIdx from the input signal — host.currentIndex is a
           // plain field updated asynchronously by an effect, so it lags
           // questionIndex() by a microtask. Without this, after timer
@@ -59,30 +57,29 @@ export class CqcDisplayTextService {
           // Check at currentIdx first; also check at latestExplanationIndex
           // in case host.questionIndex() is stale (lags a microtask behind SOC).
           const _latestExpIdx = host.explanationTextService?.latestExplanationIndex ?? -1;
+          // PIPELINE-TRUST: the displayText$ pipeline only emits FET when its
+          // own gates (shouldShowExplanation) verify resolution — if it
+          // emitted FET AND the user has clicked this idx, the FET is real
+          // even if SOC hasn't set the bypass map yet (race: pipeline can
+          // format raw explanation on-the-fly before SOC's bypass write).
+          const _clickedThisIdx =
+            !!host.quizStateService?.hasClickedInSession?.(currentIdx);
           const _fetBypass = host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true
             || host.quizService?._multiAnswerPerfect?.get(currentIdx) === true
             || (_latestExpIdx >= 0 && (
                 host.explanationTextService?.fetBypassForQuestion?.get(_latestExpIdx) === true
                 || host.quizService?._multiAnswerPerfect?.get(_latestExpIdx) === true
-            ));
+            ))
+            || _clickedThisIdx;
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             const el = host.qText?.()?.nativeElement;
-            console.log('[FET-DIAG-D] FAST-PATH FET BYPASS fired, el present:', !!el, 'currentIdx:', currentIdx, '_latestExpIdx:', _latestExpIdx);
             if (el) {
               host.qTextHtmlSig?.set(text);
               host._lastDisplayedText = text;
               host.renderer.setProperty(el, 'innerHTML', text);
               (host as any)._fetLockedForIndex = currentIdx;
-              const _expectedFet = text;
-              setTimeout(() => {
-                const nowHtml = (el.innerHTML ?? '').trim();
-                const matches = nowHtml === _expectedFet.trim();
-                console.log('[FET-DIAG-F] 250ms after FAST-PATH write: DOM matches FET?', matches, 'DOM len:', nowHtml.length, 'first80:', nowHtml.substring(0, 80));
-              }, 250);
               return;
             }
-          } else if (lowerText.includes('correct because')) {
-            console.log('[FET-DIAG-E] FAST-PATH SKIPPED for FET. isQuestionText:', isQuestionText, '_fetBypass:', _fetBypass, 'currentIdx:', currentIdx, '_latestExpIdx:', _latestExpIdx, 'fetBypassMap.get(curr):', host.explanationTextService?.fetBypassForQuestion?.get(currentIdx), 'multiPerfectMap.get(curr):', host.quizService?._multiAnswerPerfect?.get(currentIdx));
           }
 
           // TIMER-EXPIRY FET FAST PATH: when timed out and incoming text
