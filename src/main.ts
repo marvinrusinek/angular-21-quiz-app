@@ -1,4 +1,8 @@
-import { bootstrapApplication } from '@angular/platform-browser';
+import {
+  bootstrapApplication,
+  provideClientHydration,
+  withEventReplay,
+} from '@angular/platform-browser';
 import { HttpClient, provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -20,6 +24,7 @@ installGlobalFetWatchdog();
 bootstrapApplication(AppComponent, {
   providers: [
     provideZonelessChangeDetection(),
+    provideClientHydration(withEventReplay()),
     provideHttpClient(withFetch()),
     provideRouter(routes),
     provideAnimations(),
@@ -34,14 +39,14 @@ bootstrapApplication(AppComponent, {
           http.get<{ quizzes: Quiz[]; resources: QuizResource[] }>('assets/quiz.json')
         );
         setQuizDataCache(data?.quizzes ?? [], data?.resources ?? []);
-      } catch (err) {
+      } catch (err: any) {
         console.error('[bootstrap] failed to load assets/quiz.json', err);
         setQuizDataCache([], []);
       }
     }),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000',
-    }),
-  ],
-}).catch((err) => console.error(err));
+      registrationStrategy: 'registerWhenStable:30000'
+    })
+  ]
+}).catch((err: any) => console.error(err));
