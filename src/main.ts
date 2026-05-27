@@ -9,6 +9,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   inject, isDevMode, provideAppInitializer, provideZonelessChangeDetection
 } from '@angular/core';
+import { provideServiceWorker } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app/router/quiz-routing.routes';
@@ -17,7 +18,6 @@ import { installGlobalFetWatchdog } from './app/shared/utils/fet-watchdog';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
 import { Quiz } from './app/shared/models/Quiz.model';
 import { QuizResource } from './app/shared/models/QuizResource.model';
-import { provideServiceWorker } from '@angular/service-worker';
 
 installGlobalFetWatchdog();
 
