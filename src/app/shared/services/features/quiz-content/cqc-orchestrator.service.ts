@@ -239,6 +239,7 @@ export class CqcOrchestratorService {
       .pipe(takeUntilDestroyed(host.destroyRef))
       .subscribe(() => {
         const idx = host.currentIndex >= 0 ? host.currentIndex : (host.quizService.getCurrentQuestionIndex?.() ?? host.currentQuestionIndexValue ?? 0);
+        console.log('[TIMER-DIAG] expired$ fired. idx:', idx, 'host.currentIndex:', host.currentIndex, 'host.questionIndex():', host.questionIndex?.(), 'quizService.getCurrentQuestionIndex():', host.quizService.getCurrentQuestionIndex?.());
 
         host.timedOutIdxSig.set(idx);
         host.timedOutIdxSubject.next(idx);
@@ -250,6 +251,7 @@ export class CqcOrchestratorService {
           : host.quizService.questions?.[idx];
 
         q = q ?? null;
+        console.log('[TIMER-DIAG] resolved q for idx', idx, ':', q?.questionText, '| isShuffled:', isShuffled, '| explanation:', q?.explanation?.substring(0, 60));
         if (q?.explanation) {
           const visualOpts = host.quizQuestionComponent?.()?.optionsToDisplay ?? q.options;
           host.explanationTextService.storeFormattedExplanation(idx, q.explanation, q, visualOpts);
@@ -273,18 +275,19 @@ export class CqcOrchestratorService {
               // by an effect, so it lags the signal by a microtask and
               // would let stale Q(N) writes leak into Q(N+1).
               const expectedIdx = idx;
-              const write = () => {
+              const write = (label: string) => {
                 const liveIdx = host.questionIndex?.() ?? host.currentIndex ?? 0;
+                console.log('[TIMER-DIAG] direct-DOM write attempt', label, '| expectedIdx:', expectedIdx, '| liveIdx:', liveIdx, '| match:', liveIdx === expectedIdx, '| fetHtml first60:', fetHtml.substring(0, 60));
                 if (liveIdx !== expectedIdx) return;
                 el.innerHTML = fetHtml;
                 host.qTextHtmlSig?.set(fetHtml);
                 host._lastDisplayedText = fetHtml;
                 (host as any)._fetLockedForIndex = idx;
               };
-              write();
-              setTimeout(write, 50);
-              setTimeout(write, 200);
-              setTimeout(write, 500);
+              write('immediate');
+              setTimeout(() => write('50ms'), 50);
+              setTimeout(() => write('200ms'), 200);
+              setTimeout(() => write('500ms'), 500);
             }
           }
         } catch { /* ignore */ }
