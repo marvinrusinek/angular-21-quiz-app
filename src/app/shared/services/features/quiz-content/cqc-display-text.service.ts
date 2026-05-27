@@ -84,6 +84,22 @@ export class CqcDisplayTextService {
                 || host.quizService?._multiAnswerPerfect?.get(_latestExpIdx) === true
             ))
             || _incomingMatchesCachedFet;
+          // ATTACH MUTATION-OBSERVER on H3 to log EVERY DOM change with FET
+          if (!(host as any).__wcMutObs) {
+            try {
+              const elW = host.qText?.()?.nativeElement;
+              if (elW && typeof MutationObserver !== 'undefined') {
+                const obs = new MutationObserver(() => {
+                  const html = (elW.innerHTML ?? '').trim();
+                  if (html.toLowerCase().includes('correct because')) {
+                    console.log('[WC-DIAG-MUT] H3 contains FET. first80:', html.substring(0, 80));
+                  }
+                });
+                obs.observe(elW, { childList: true, characterData: true, subtree: true });
+                (host as any).__wcMutObs = obs;
+              }
+            } catch { /* ignore */ }
+          }
           if (lowerText.includes('correct because')) {
             console.log('[WC-DIAG] FET arrived at CQC. currentIdx:', currentIdx,
               '| bypass.get(curr):', host.explanationTextService?.fetBypassForQuestion?.get(currentIdx),
