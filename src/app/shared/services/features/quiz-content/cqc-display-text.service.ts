@@ -57,20 +57,33 @@ export class CqcDisplayTextService {
           // Check at currentIdx first; also check at latestExplanationIndex
           // in case host.questionIndex() is stale (lags a microtask behind SOC).
           const _latestExpIdx = host.explanationTextService?.latestExplanationIndex ?? -1;
-          // PIPELINE-TRUST: the displayText$ pipeline only emits FET when its
-          // own gates (shouldShowExplanation) verify resolution — if it
-          // emitted FET AND the user has clicked this idx, the FET is real
-          // even if SOC hasn't set the bypass map yet (race: pipeline can
-          // format raw explanation on-the-fly before SOC's bypass write).
-          const _clickedThisIdx =
-            !!host.quizStateService?.hasClickedInSession?.(currentIdx);
+          // PIPELINE-TRUST (TIGHTENED): only accept incoming FET when the
+          // explanation service has stored a FET FOR THIS EXACT QUESTION
+          // INDEX AND it matches the incoming text. This closes both races:
+          //   • SOC hasn't set bypass yet but pipeline emitted FET on a real
+          //     correct click — the cached FET will match.
+          //   • User clicks wrong on a new question after previously
+          //     answering another correctly — the cache at currentIdx has
+          //     no entry (or different text), so leak from previous Q's
+          //     bypass is rejected.
+          const _cachedFetForCurr = (
+            host.explanationTextService?.formattedExplanations?.[currentIdx]?.explanation
+            ?? (host.explanationTextService as any)?.fetByIndex?.get?.(currentIdx)
+            ?? ''
+          ).toString().trim();
+          const _incomingMatchesCachedFet =
+            !!_cachedFetForCurr && (text ?? '').trim() === _cachedFetForCurr;
+          // _latestExpIdx fallback is only valid when it points to THE SAME
+          // current question — otherwise it's a leak from a previously
+          // answered question and must not be used as bypass evidence here.
+          const _latestExpMatchesCurr = _latestExpIdx === currentIdx;
           const _fetBypass = host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true
             || host.quizService?._multiAnswerPerfect?.get(currentIdx) === true
-            || (_latestExpIdx >= 0 && (
+            || (_latestExpMatchesCurr && (
                 host.explanationTextService?.fetBypassForQuestion?.get(_latestExpIdx) === true
                 || host.quizService?._multiAnswerPerfect?.get(_latestExpIdx) === true
             ))
-            || _clickedThisIdx;
+            || _incomingMatchesCachedFet;
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             const el = host.qText?.()?.nativeElement;
             if (el) {
