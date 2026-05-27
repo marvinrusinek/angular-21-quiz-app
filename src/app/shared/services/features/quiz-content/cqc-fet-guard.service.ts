@@ -43,6 +43,11 @@ export class CqcFetGuardService {
   writeQText(host: Host, html: string): void {
     try {
       let safe = html ?? '';
+      const _wLower = (safe ?? '').toLowerCase();
+      if (_wLower.includes('correct because')) {
+        const _stack = new Error().stack?.split('\n').slice(1, 6).join(' || ') ?? '';
+        console.log('[WC-DIAG-WQ] writeQText FET in. first80:', safe.substring(0, 80), 'stack:', _stack);
+      }
 
       // URL-AUTHORITATIVE GUARD: when on a /question/{quizId}/{N} URL,
       // ALWAYS overwrite non-FET writes with the URL question's text.
