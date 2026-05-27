@@ -238,12 +238,31 @@ export class CqcOrchestratorService {
     host.timerService.expired$
       .pipe(takeUntilDestroyed(host.destroyRef))
       .subscribe(() => {
-        const idx = host.currentIndex >= 0 ? host.currentIndex : (host.quizService.getCurrentQuestionIndex?.() ?? host.currentQuestionIndexValue ?? 0);
-        console.log('[TIMER-DIAG] expired$ fired. idx:', idx, 'host.currentIndex:', host.currentIndex, 'host.questionIndex():', host.questionIndex?.(), 'quizService.getCurrentQuestionIndex():', host.quizService.getCurrentQuestionIndex?.());
+        // Use signal-first idx resolution. host.currentIndex is a plain field
+        // updated asynchronously by an effect, so it lags the signal by a
+        // microtask. Reading it first lets a stale Q(N) timer expiry write
+        // Q(N)'s FET into Q(N+1)'s heading after navigation.
+        const sigIdx = host.questionIndex?.();
+        const idx = (typeof sigIdx === 'number' && sigIdx >= 0)
+          ? sigIdx
+          : (host.currentIndex >= 0
+              ? host.currentIndex
+              : (host.quizService.getCurrentQuestionIndex?.() ?? host.currentQuestionIndexValue ?? 0));
 
         host.timedOutIdxSig.set(idx);
         host.timedOutIdxSubject.next(idx);
         (window as any).__quizTimerExpired = true;
+
+        // GATE: only auto-reveal FET on timer expiry when the user has
+        // actually answered correctly (fetBypass or multiPerfect set by SOC,
+        // or scoring service confirms correctness). Otherwise no FET — the
+        // user only sees the FET for questions they got right.
+        const expSvc: any = host.explanationTextService;
+        const quizSvc: any = host.quizService;
+        const isCorrectlyAnswered =
+          expSvc?.fetBypassForQuestion?.get?.(idx) === true
+          || quizSvc?._multiAnswerPerfect?.get?.(idx) === true
+          || quizSvc?.questionCorrectness?.get?.(idx) === true;
 
         const isShuffled = host.quizService.isShuffleEnabled?.() && Array.isArray(host.quizService.shuffledQuestions) && host.quizService.shuffledQuestions.length > 0;
         let q = isShuffled
@@ -251,10 +270,13 @@ export class CqcOrchestratorService {
           : host.quizService.questions?.[idx];
 
         q = q ?? null;
-        console.log('[TIMER-DIAG] resolved q for idx', idx, ':', q?.questionText, '| isShuffled:', isShuffled, '| explanation:', q?.explanation?.substring(0, 60));
-        if (q?.explanation) {
+        if (q?.explanation && isCorrectlyAnswered) {
           const visualOpts = host.quizQuestionComponent?.()?.optionsToDisplay ?? q.options;
           host.explanationTextService.storeFormattedExplanation(idx, q.explanation, q, visualOpts);
+        }
+        if (!isCorrectlyAnswered) {
+          host.cdRef.markForCheck();
+          return;
         }
 
         // DIRECT DOM FET WRITE on timer expiry â€” bypasses all service/guard layers
@@ -275,19 +297,18 @@ export class CqcOrchestratorService {
               // by an effect, so it lags the signal by a microtask and
               // would let stale Q(N) writes leak into Q(N+1).
               const expectedIdx = idx;
-              const write = (label: string) => {
+              const write = () => {
                 const liveIdx = host.questionIndex?.() ?? host.currentIndex ?? 0;
-                console.log('[TIMER-DIAG] direct-DOM write attempt', label, '| expectedIdx:', expectedIdx, '| liveIdx:', liveIdx, '| match:', liveIdx === expectedIdx, '| fetHtml first60:', fetHtml.substring(0, 60));
                 if (liveIdx !== expectedIdx) return;
                 el.innerHTML = fetHtml;
                 host.qTextHtmlSig?.set(fetHtml);
                 host._lastDisplayedText = fetHtml;
                 (host as any)._fetLockedForIndex = idx;
               };
-              write('immediate');
-              setTimeout(() => write('50ms'), 50);
-              setTimeout(() => write('200ms'), 200);
-              setTimeout(() => write('500ms'), 500);
+              write();
+              setTimeout(write, 50);
+              setTimeout(write, 200);
+              setTimeout(write, 500);
             }
           }
         } catch { /* ignore */ }
