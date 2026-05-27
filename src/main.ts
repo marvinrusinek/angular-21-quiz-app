@@ -1,7 +1,7 @@
 import {
   bootstrapApplication,
   provideClientHydration,
-  withEventReplay,
+  withEventReplay
 } from '@angular/platform-browser';
 import { HttpClient, provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
