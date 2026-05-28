@@ -321,6 +321,21 @@ export class SocAnswerProcessingService {
         } as any);
         this.explanationTextService.lockExplanation();
         this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
+
+        // DIRECT DOM WRITE: ensure FET appears in the H3 heading even if the
+        // displayText$ pipeline's emission gets filtered by distinctUntilChanged
+        // or a signal-timing race. Without this, the FET would only appear on
+        // navigate-away-and-back (when the orchestrator's computeIntendedQText
+        // rebuilds it from cache).
+        try {
+          // codelab-quiz-content's H3 — the only h3 inside that component
+          const qTextEl =
+            (typeof document !== 'undefined'
+              && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
+          if (qTextEl && formattedFET) {
+            qTextEl.innerHTML = formattedFET;
+          }
+        } catch { /* ignore */ }
       }
 
       // Also try the component path as backup
