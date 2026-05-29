@@ -412,16 +412,7 @@ export class SharedOptionOrchestratorService {
   runCanShowOptions(host: Host): boolean {
     const hasBindings = (host.optionBindings()?.length ?? 0) > 0;
     if (!hasBindings) return false;
-    const cd = host.canDisplayOptions();
-    const rr = host.renderReady();
-    if (!cd || !rr) {
-      const _h: any = host;
-      _h.__optsBlockSeq = (_h.__optsBlockSeq ?? 0) + 1;
-      if (_h.__optsBlockSeq <= 3) {
-        console.log('[OPTS-BLOCKED]', 'seq:', _h.__optsBlockSeq, 'hasBindings:', hasBindings, 'canDisplayOptions:', cd, 'renderReady:', rr, 'form:', !!host.form, 'showOptions:', host.showOptions?.(), 'bindingsLen:', host.optionBindings()?.length, 'everyHasOption:', host.optionBindings()?.every?.((b: any) => !!b?.option));
-      }
-    }
-    return cd && rr;
+    return host.canDisplayOptions() && host.renderReady();
   }
 
   runCanDisplayOptions(host: Host): boolean {

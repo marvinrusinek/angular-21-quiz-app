@@ -214,30 +214,6 @@ export class OptionItemComponent implements OnInit {
 
   getOptionClasses(): { [key: string]: boolean } {
     const classes = { ...this.binding().cssClasses };
-    const _b = this.binding();
-    if (this._userHasClicked) {
-      const _res = (() => {
-        try {
-          const r = this.questionResolution.resolve(this.resolveQuestionIndex(), { includeWrongDetection: true });
-          return { c: r.fullyResolvedCorrect, w: r.fullyResolvedWrong };
-        } catch { return { c: 'err', w: 'err' }; }
-      })();
-      setTimeout(() => {
-        try {
-          // Find the mat-radio-button/mat-checkbox, NOT the wrapper div
-          const matEl = (document.querySelectorAll(`mat-radio-button[data-option-id="${_b?.option?.optionId}"], mat-checkbox[data-option-id="${_b?.option?.optionId}"]`) as any)?.[0] as HTMLElement;
-          if (matEl) {
-            const cls = matEl.className;
-            const inlineBg = matEl.style.backgroundColor;
-            const computedBg = getComputedStyle(matEl).backgroundColor;
-            console.log('[HL3-MAT] optId:', _b?.option?.optionId, 'cls:', cls, 'inlineBg:', inlineBg, 'computedBg:', computedBg);
-          } else {
-            console.log('[HL3-MAT] no mat element found for optId:', _b?.option?.optionId);
-          }
-        } catch (e) { console.error('HL3-MAT err', e); }
-      }, 100);
-      console.log('[HL2]', 'optId:', _b?.option?.optionId, 'idx:', this.displayIndex(), 'isSel:', _b?.isSelected, 'hl:', _b?.option?.highlight, 'sHL:', this.shouldHighlightOption(), 'isCorr:', this.isCurrentOptionCorrect(), 'disabled:', this.isDisabled(), 'frc:', _res.c, 'frw:', _res.w);
-    }
 
     // Previous-revisit override (highest priority): when the user revisits a
     // FULLY-resolved question, paint correct options green and incorrect ones
@@ -698,6 +674,10 @@ export class OptionItemComponent implements OnInit {
 
   onChanged(event: any): void {
     this._userHasClicked = true;
+    // Force CD on this OnPush option-item — otherwise the binding-signal
+    // update path can race the click and the red/green highlight doesn't
+    // appear until the user clicks again.
+    this.cdRef.markForCheck();
     this.optionUI.emit({
       optionId: this.optionId,
       displayIndex: this.displayIndex(),
@@ -710,6 +690,10 @@ export class OptionItemComponent implements OnInit {
   onContentClick(event: MouseEvent): void {
     event.stopPropagation();  // prevents double firing with parent (click)
     this._userHasClicked = true;
+    // Force CD on this OnPush option-item — otherwise the binding-signal
+    // update path can race the click and the red/green highlight doesn't
+    // appear until the user clicks again.
+    this.cdRef.markForCheck();
     this.optionUI.emit({
       optionId: this.optionId,
       displayIndex: this.displayIndex(),
