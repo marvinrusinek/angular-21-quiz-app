@@ -214,6 +214,10 @@ export class OptionItemComponent implements OnInit {
 
   getOptionClasses(): { [key: string]: boolean } {
     const classes = { ...this.binding().cssClasses };
+    const _b = this.binding();
+    if (this._userHasClicked) {
+      console.log('[GOC] optId:', _b?.option?.optionId, 'idx:', this.displayIndex(), 'isSel:', _b?.isSelected, 'hl:', _b?.option?.highlight, 'sHL:', this.shouldHighlightOption(), 'isCorr:', this.isCurrentOptionCorrect(), 'disabled:', this.isDisabled());
+    }
 
     // Previous-revisit override (highest priority): when the user revisits a
     // FULLY-resolved question, paint correct options green and incorrect ones
@@ -673,10 +677,8 @@ export class OptionItemComponent implements OnInit {
   }
 
   onChanged(event: any): void {
+    console.log('[CLK-CH] onChanged. optId:', this.optionId, 'idx:', this.displayIndex());
     this._userHasClicked = true;
-    // Force CD on this OnPush option-item — otherwise the binding-signal
-    // update path can race the click and the red/green highlight doesn't
-    // appear until the user clicks again.
     this.cdRef.markForCheck();
     this.optionUI.emit({
       optionId: this.optionId,
@@ -688,11 +690,9 @@ export class OptionItemComponent implements OnInit {
   }
 
   onContentClick(event: MouseEvent): void {
-    event.stopPropagation();  // prevents double firing with parent (click)
+    console.log('[CLK-CC] onContentClick. optId:', this.optionId, 'idx:', this.displayIndex());
+    event.stopPropagation();
     this._userHasClicked = true;
-    // Force CD on this OnPush option-item — otherwise the binding-signal
-    // update path can race the click and the red/green highlight doesn't
-    // appear until the user clicks again.
     this.cdRef.markForCheck();
     this.optionUI.emit({
       optionId: this.optionId,
