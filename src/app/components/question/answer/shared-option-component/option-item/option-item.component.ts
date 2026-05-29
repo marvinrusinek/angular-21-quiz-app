@@ -112,13 +112,15 @@ export class OptionItemComponent implements OnInit {
       const nextQuestionIndex = Number(this.currentQuestionIndex() ?? -1);
       if (!Number.isFinite(nextQuestionIndex) ||
           nextQuestionIndex === this._lastQuestionIndex) return;
-      // Clear stale visual state when navigating AWAY from a question.
-      // Gate on _userHasClicked OR _wasTimerExpired so timer-expired
-      // highlighting (correct answers revealed on timeout) is also
-      // cleared when the user advances without having clicked.
+      // Always clear the _wasSelected latch on question change.
+      // _wasSelected is per-visit click evidence; carrying it across
+      // questions (including restart) wrongly persists highlights.
+      this._wasSelected = false;
+      // Clear additional stale state when navigating AWAY from a question
+      // the user actually interacted with. Gated separately so we don't
+      // wipe binding flags on a fresh first-visit.
       if (this._lastQuestionIndex !== -1 &&
           (this._userHasClicked || this._wasTimerExpired)) {
-        this._wasSelected = false;
         this._wasTimerExpired = false;
         this._directTimerExpired = false;
         this._directTimerExpiredForIndex = -1;
