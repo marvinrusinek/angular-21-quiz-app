@@ -852,6 +852,18 @@ export class SocAnswerProcessingService {
         } as any);
         this.explanationTextService.lockExplanation();
         this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
+
+        // DIRECT DOM WRITE: same as multi/single-answer paths — ensure the
+        // FET shows in the H3 immediately on all-incorrects-exhausted
+        // auto-reveal, bypassing the pipeline race.
+        try {
+          const qTextEl =
+            (typeof document !== 'undefined'
+              && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
+          if (qTextEl && fetTextAR) {
+            qTextEl.innerHTML = fetTextAR;
+          }
+        } catch { /* ignore */ }
       }
 
       // Synchronous binding rebuild — MUST happen after FET emission
