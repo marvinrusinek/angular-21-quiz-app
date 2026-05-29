@@ -391,6 +391,28 @@ export class SharedOptionComponent
     effect(() => {
       if (this.optionBindings().length > 0) this.showOptions.set(true);
     });
+
+    // SELF-HEAL WATCHDOG: when optionsToDisplay has items but
+    // optionBindings is empty, the binding generation race lost — options
+    // never render. This watchdog forces generation. Runs only when the
+    // mismatch persists (no infinite loop because once bindings exist
+    // the condition stops firing).
+    effect(() => {
+      const opts = this.optionsToDisplay;
+      const bindings = this.optionBindings();
+      if (Array.isArray(opts) && opts.length > 0 && (!bindings || bindings.length === 0)) {
+        // Reset the early-return guard in generateOptionBindings
+        this.optionBindingsInitialized.set(false);
+        // Defer one microtask so we don't recurse inside the current effect
+        queueMicrotask(() => {
+          try {
+            this.bindingService.generateOptionBindings(this);
+          } catch (e) {
+            console.error('SharedOptionComponent self-heal generateOptionBindings failed', e);
+          }
+        });
+      }
+    });
     effect(() => {
       this.isNavigatingBackwards.set(this.isNavigatingBackwardsInput());
     });

@@ -413,27 +413,12 @@ export class SharedOptionOrchestratorService {
     const hasBindings = (host.optionBindings()?.length ?? 0) > 0;
     // Primary path: strict gating
     if (hasBindings && host.canDisplayOptions() && host.renderReady()) return true;
-    // Resilience fallback
+    // Resilience fallback: form + every binding has an option resolved
     const bindings = host.optionBindings();
     const everyHasOption = Array.isArray(bindings)
       && bindings.length > 0
       && bindings.every((b: OptionBindings) => !!b?.option);
-    if (!!host.form && everyHasOption) return true;
-    // Diagnostic: log why we're returning false
-    const _h: any = host;
-    _h.__optsFailSeq = (_h.__optsFailSeq ?? 0) + 1;
-    if (_h.__optsFailSeq <= 5) {
-      console.log('[OPTS-FAIL]', 'seq:', _h.__optsFailSeq,
-        'hasBindings:', hasBindings,
-        'bindingsLen:', host.optionBindings()?.length ?? 0,
-        'form:', !!host.form,
-        'canDisplay:', host.canDisplayOptions?.(),
-        'renderReady:', host.renderReady?.(),
-        'showOptions:', host.showOptions?.(),
-        'optsToDisplayLen:', host.optionsToDisplay?.length ?? 0,
-        'everyHasOption:', everyHasOption);
-    }
-    return false;
+    return !!host.form && everyHasOption;
   }
 
   runCanDisplayOptions(host: Host): boolean {
