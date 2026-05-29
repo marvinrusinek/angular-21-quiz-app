@@ -224,14 +224,17 @@ export class OptionItemComponent implements OnInit {
       })();
       setTimeout(() => {
         try {
-          const el = (document.querySelectorAll(`[data-option-id="${_b?.option?.optionId}"]`) as any)?.[0] as HTMLElement;
-          if (el) {
-            const cls = el.className;
-            const inlineBg = el.style.backgroundColor;
-            const computedBg = getComputedStyle(el).backgroundColor;
-            console.log('[HL3-DOM] optId:', _b?.option?.optionId, 'classList:', cls, 'inlineBg:', inlineBg, 'computedBg:', computedBg);
+          // Find the mat-radio-button/mat-checkbox, NOT the wrapper div
+          const matEl = (document.querySelectorAll(`mat-radio-button[data-option-id="${_b?.option?.optionId}"], mat-checkbox[data-option-id="${_b?.option?.optionId}"]`) as any)?.[0] as HTMLElement;
+          if (matEl) {
+            const cls = matEl.className;
+            const inlineBg = matEl.style.backgroundColor;
+            const computedBg = getComputedStyle(matEl).backgroundColor;
+            console.log('[HL3-MAT] optId:', _b?.option?.optionId, 'cls:', cls, 'inlineBg:', inlineBg, 'computedBg:', computedBg);
+          } else {
+            console.log('[HL3-MAT] no mat element found for optId:', _b?.option?.optionId);
           }
-        } catch (e) { console.error('HL3-DOM err', e); }
+        } catch (e) { console.error('HL3-MAT err', e); }
       }, 100);
       console.log('[HL2]', 'optId:', _b?.option?.optionId, 'idx:', this.displayIndex(), 'isSel:', _b?.isSelected, 'hl:', _b?.option?.highlight, 'sHL:', this.shouldHighlightOption(), 'isCorr:', this.isCurrentOptionCorrect(), 'disabled:', this.isDisabled(), 'frc:', _res.c, 'frw:', _res.w);
     }
