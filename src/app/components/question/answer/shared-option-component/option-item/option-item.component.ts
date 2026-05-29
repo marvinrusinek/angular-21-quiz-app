@@ -214,6 +214,16 @@ export class OptionItemComponent implements OnInit {
 
   getOptionClasses(): { [key: string]: boolean } {
     const classes = { ...this.binding().cssClasses };
+    const _b = this.binding();
+    if (this._userHasClicked) {
+      const _final = (() => {
+        try {
+          const res = this.questionResolution.resolve(this.resolveQuestionIndex(), { includeWrongDetection: true });
+          return { fullyResolvedCorrect: res.fullyResolvedCorrect, fullyResolvedWrong: res.fullyResolvedWrong };
+        } catch { return { fullyResolvedCorrect: 'err', fullyResolvedWrong: 'err' }; }
+      })();
+      console.log('[HL2]', 'optionId:', _b?.option?.optionId, 'displayIdx:', this.displayIndex(), 'isSelected:', _b?.isSelected, 'optHighlight:', _b?.option?.highlight, 'shouldHL:', this.shouldHighlightOption(), 'isCorrect:', this.isCurrentOptionCorrect(), 'isDisabled:', this.isDisabled(), 'fullyResolvedCorrect:', _final.fullyResolvedCorrect, 'fullyResolvedWrong:', _final.fullyResolvedWrong, 'cssClassesIn:', _b?.cssClasses);
+    }
 
     // Previous-revisit override (highest priority): when the user revisits a
     // FULLY-resolved question, paint correct options green and incorrect ones
