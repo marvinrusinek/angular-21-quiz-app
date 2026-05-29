@@ -43,9 +43,6 @@ export class CqcFetGuardService {
   writeQText(host: Host, html: string): void {
     try {
       let safe = html ?? '';
-      const _ts = Date.now() % 100000;
-      const _hasBanner = (safe ?? '').includes('correct-count');
-      console.log('[WQ-IN]', _ts, 'hasBanner:', _hasBanner, 'isFET:', (safe ?? '').toLowerCase().includes('correct because'), 'first80:', safe.substring(0, 80));
 
       // URL-AUTHORITATIVE GUARD: when on a /question/{quizId}/{N} URL,
       // ALWAYS overwrite non-FET writes with the URL question's text.

@@ -92,21 +92,6 @@ export class CqcDisplayTextService {
             // option selected. Required-AND prevents timer-expiry leak
             // (no correct selection → no bypass).
             || (_incomingMatchesCachedFet && _hasCorrectSelected);
-          // ATTACH H3 MutationObserver ONCE to log every DOM change
-          if (!(host as any).__h3Watcher) {
-            try {
-              const elObs = host.qText?.()?.nativeElement;
-              if (elObs && typeof MutationObserver !== 'undefined') {
-                const obs = new MutationObserver(() => {
-                  const html = (elObs.innerHTML ?? '').trim();
-                  const ts = Date.now() % 100000;
-                  console.log('[H3-WATCH]', ts, 'hasBanner:', html.includes('correct-count'), 'isFET:', html.toLowerCase().includes('correct because'), 'first80:', html.substring(0, 80));
-                });
-                obs.observe(elObs, { childList: true, characterData: true, subtree: true });
-                (host as any).__h3Watcher = obs;
-              }
-            } catch { /* ignore */ }
-          }
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             const el = host.qText?.()?.nativeElement;
             if (el) {
