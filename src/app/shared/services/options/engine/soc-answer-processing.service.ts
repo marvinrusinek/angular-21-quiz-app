@@ -332,6 +332,7 @@ export class SocAnswerProcessingService {
           const qTextEl =
             (typeof document !== 'undefined'
               && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
+          console.log('[SOC-DOMWRITE-MA]', 'elFound:', !!qTextEl, 'formattedFETLen:', formattedFET?.length, 'first60:', formattedFET?.substring(0, 60));
           if (qTextEl && formattedFET) {
             qTextEl.innerHTML = formattedFET;
           }
@@ -580,6 +581,7 @@ export class SocAnswerProcessingService {
             const qTextEl =
               (typeof document !== 'undefined'
                 && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
+            console.log('[SOC-DOMWRITE-SA]', 'elFound:', !!qTextEl, 'fetTextLen:', fetText?.length, 'first60:', fetText?.substring(0, 60));
             if (qTextEl && fetText) {
               qTextEl.innerHTML = fetText;
             }
