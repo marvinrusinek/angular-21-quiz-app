@@ -92,30 +92,9 @@ export class CqcDisplayTextService {
             // option selected. Required-AND prevents timer-expiry leak
             // (no correct selection → no bypass).
             || (_incomingMatchesCachedFet && _hasCorrectSelected);
-          // ATTACH H3 MutationObserver ONCE to log every DOM change
-          if (!(host as any).__h3Watcher) {
-            try {
-              const elObs = host.qText?.()?.nativeElement;
-              if (elObs && typeof MutationObserver !== 'undefined') {
-                const obs = new MutationObserver(() => {
-                  const html = (elObs.innerHTML ?? '').trim();
-                  const ts = Date.now() % 100000;
-                  console.log('[H3-WATCH]', ts, 'isFET:', html.toLowerCase().includes('correct because'), 'first80:', html.substring(0, 80));
-                });
-                obs.observe(elObs, { childList: true, characterData: true, subtree: true });
-                (host as any).__h3Watcher = obs;
-              }
-            } catch { /* ignore */ }
-          }
-          if (lowerText.includes('correct because')) {
-            const ts = Date.now() % 100000;
-            console.log('[SUB-DIAG]', ts, 'FET-text received in subscriber. currentIdx:', currentIdx, 'isQuestionText:', isQuestionText, '_fetBypass:', _fetBypass, 'bypass.get(curr):', host.explanationTextService?.fetBypassForQuestion?.get(currentIdx));
-          }
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             const el = host.qText?.()?.nativeElement;
             if (el) {
-              const ts = Date.now() % 100000;
-              console.log('[FAST-PATH]', ts, 'about to write FET. first80:', text.substring(0, 80));
               host.qTextHtmlSig?.set(text);
               host._lastDisplayedText = text;
               host.renderer.setProperty(el, 'innerHTML', text);

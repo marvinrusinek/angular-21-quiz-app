@@ -43,9 +43,6 @@ export class CqcFetGuardService {
   writeQText(host: Host, html: string): void {
     try {
       let safe = html ?? '';
-      const _ts = Date.now() % 100000;
-      const _lower = (safe ?? '').toLowerCase();
-      console.log('[WQ-IN]', _ts, 'isFET:', _lower.includes('correct because'), 'first80:', safe.substring(0, 80), '\nstack:', new Error().stack?.split('\n').slice(2, 5).join(' | '));
 
       // URL-AUTHORITATIVE GUARD: when on a /question/{quizId}/{N} URL,
       // ALWAYS overwrite non-FET writes with the URL question's text.
@@ -155,19 +152,16 @@ export class CqcFetGuardService {
       // overwriting a legitimate FET after the user has answered correctly.
       const _safeIsFetEarly = (safe ?? '').toLowerCase().includes('correct because');
       if (!_safeIsFetEarly && _liveIdx >= 0) {
-        const _bypassNow = host.explanationTextService?.fetBypassForQuestion?.get(_liveIdx);
-        const _perfectNow = host.quizService?._multiAnswerPerfect?.get(_liveIdx);
-        const _socConfirmedNow = _bypassNow === true || _perfectNow === true;
-        const _cachedFet = (
-          host.explanationTextService?.formattedExplanations?.[_liveIdx]?.explanation ?? ''
-        ).toString().trim() || (
-          (host.explanationTextService as any)?.fetByIndex?.get?.(_liveIdx) ?? ''
-        ).toString().trim();
-        const _ts = Date.now() % 100000;
-        console.log('[PRES-GUARD]', _ts, '_liveIdx:', _liveIdx, 'incomingFirst60:', (safe ?? '').substring(0, 60), 'bypassNow:', _bypassNow, 'perfectNow:', _perfectNow, 'socConfirmed:', _socConfirmedNow, 'cachedFetFirst60:', _cachedFet.substring(0, 60));
+        const _socConfirmedNow =
+          host.explanationTextService?.fetBypassForQuestion?.get(_liveIdx) === true
+          || host.quizService?._multiAnswerPerfect?.get(_liveIdx) === true;
         if (_socConfirmedNow) {
+          const _cachedFet = (
+            host.explanationTextService?.formattedExplanations?.[_liveIdx]?.explanation ?? ''
+          ).toString().trim() || (
+            (host.explanationTextService as any)?.fetByIndex?.get?.(_liveIdx) ?? ''
+          ).toString().trim();
           if (_cachedFet && _cachedFet.toLowerCase().includes('correct because')) {
-            console.log('[PRES-GUARD] WRITING FET INSTEAD');
             host.qTextHtmlSig?.set(_cachedFet);
             host._lastDisplayedText = _cachedFet;
             const el = host.qText?.()?.nativeElement;

@@ -230,8 +230,6 @@ export class SocAnswerProcessingService {
       }
     } catch (e) { console.error('processMultiAnswerClick allCorrectInDurable check failed:', e); }
 
-    const _ts = Date.now() % 100000;
-    console.log('[SOC-MA]', _ts, 'allCorrectInDurable:', allCorrectInDurable, 'qIdx:', qIdx, 'displayIdx:', displayIdx, 'durableSet:', [...durableSet], 'effectiveCorrectIndices:', effectiveCorrectIndices, 'isShuffled:', isShuffled);
     if (allCorrectInDurable) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch {}
       this.nextButtonStateService.setNextButtonState(true);
@@ -332,7 +330,6 @@ export class SocAnswerProcessingService {
           const qTextEl =
             (typeof document !== 'undefined'
               && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
-          console.log('[SOC-DOMWRITE-MA]', 'elFound:', !!qTextEl, 'formattedFETLen:', formattedFET?.length, 'first60:', formattedFET?.substring(0, 60));
           if (qTextEl && formattedFET) {
             qTextEl.innerHTML = formattedFET;
           }
@@ -404,8 +401,6 @@ export class SocAnswerProcessingService {
   }): void {
     const { comp, index, qIdx, displayIdx, durableSet, effectiveCorrectIndices, isShuffled } = params;
 
-    const _ts = Date.now() % 100000;
-    console.log('[SOC-SA-ENTRY]', _ts, 'index:', index, 'qIdx:', qIdx, 'displayIdx:', displayIdx, 'effectiveCorrectIndices:', effectiveCorrectIndices, 'isShuffled:', isShuffled);
     // GUARD: If pristine data says this is actually a multi-answer
     // question, abort the single-answer path. Otherwise selecting one
     // correct option (or one incorrect + one correct) would lock the
@@ -581,7 +576,6 @@ export class SocAnswerProcessingService {
             const qTextEl =
               (typeof document !== 'undefined'
                 && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
-            console.log('[SOC-DOMWRITE-SA]', 'elFound:', !!qTextEl, 'fetTextLen:', fetText?.length, 'first60:', fetText?.substring(0, 60));
             if (qTextEl && fetText) {
               qTextEl.innerHTML = fetText;
             }
