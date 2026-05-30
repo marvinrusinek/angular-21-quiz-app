@@ -15,9 +15,9 @@ import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 
 const START_MSG = 'Please start the quiz by selecting an option.';
-const CONTINUE_MSG = 'Please click an option to continue.';
-const NEXT_BTN_MSG = 'Please click the Next button to continue.';
-const SHOW_RESULTS_MSG = 'Please click the Show Results button.';
+const CONTINUE_MSG = 'Please select an option to continue...';
+const NEXT_BTN_MSG = 'Answered ✓ Click Next to continue...';
+const SHOW_RESULTS_MSG = 'Answered ✓ Click Show Results...';
 
 interface OptionSnapshot {
   id: number | string,
@@ -154,7 +154,7 @@ export class SelectionMessageService {
       if (selectedCorrect > 0) {
         this._singleAnswerCorrectLock.add(index);
         this._singleAnswerIncorrectLock.delete(index);
-        return isLastQuestion ? SHOW_RESULTS_MSG : 'Please click the Next button to continue.';
+        return isLastQuestion ? SHOW_RESULTS_MSG : NEXT_BTN_MSG;
       }
       if (selectedWrong > 0) {
         this._singleAnswerIncorrectLock.add(index);
@@ -182,7 +182,7 @@ export class SelectionMessageService {
       // All correct answers selected → Next button or Show Results
       if (remaining === 0) {
         this._multiAnswerCompletionLock.add(index);
-        return isLastQuestion ? SHOW_RESULTS_MSG : 'Please click the Next button to continue.';
+        return isLastQuestion ? SHOW_RESULTS_MSG : NEXT_BTN_MSG;
       }
 
       // Nothing selected → prompt for total correct count
