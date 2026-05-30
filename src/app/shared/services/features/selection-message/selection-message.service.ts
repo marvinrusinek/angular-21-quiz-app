@@ -1,4 +1,4 @@
-import { computed, effect, Injectable, inject, signal } from '@angular/core';
+import { computed, effect, Injectable, inject, signal, untracked } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
@@ -80,9 +80,15 @@ export class SelectionMessageService {
     // current question changes. Click-driven messages (wrong-click feedback,
     // partial-multi progress) still push directly via pushMessage() and
     // remain authoritative until the next nav transition.
+    //
+    // CRITICAL: read selectionMessageSig via untracked() — otherwise the
+    // effect would track it as a dependency, re-fire on every click-driven
+    // push, and overwrite the click message with the stale nav message.
     effect(() => {
       const msg = this.computedNavMessage();
-      if (msg && msg !== this.selectionMessageSig()) {
+      if (!msg) return;
+      const current = untracked(() => this.selectionMessageSig());
+      if (msg !== current) {
         this.selectionMessageSig.set(msg);
       }
     });
