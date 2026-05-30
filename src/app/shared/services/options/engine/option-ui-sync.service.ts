@@ -209,8 +209,8 @@ export class OptionUiSyncService {
 
     // Scoring and FET triggering for Multi-answer
     // In shuffled mode, SOC handles all scoring/FET.
-    const isShufSkipScore = (this.quizService as any)?.isShuffleEnabled?.()
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const isShufSkipScore = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
     if (isTrulyMulti && !isShufSkipScore) {
       this.checkAndScoreMultiAnswer(ctx, currentIndex);
     }
@@ -268,8 +268,8 @@ export class OptionUiSyncService {
     // so scoring must happen here for multi-answer questions. Check if ALL correct
     // answers are now selected and score accordingly.
     // In shuffled mode, SOC handles all scoring/FET.
-    const isShufSkipScore2 = (this.quizService as any)?.isShuffleEnabled?.()
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const isShufSkipScore2 = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
     if (!isShufSkipScore2) {
       this.checkAndScoreMultiAnswer(ctx, currentIndex);
     }
@@ -395,24 +395,24 @@ export class OptionUiSyncService {
     // clicked option is actually correct (pristine check). After Restart Quiz,
     // binding correct flags can be stale, so resolve from quizInitialState.
     // In SHUFFLED mode, skip entirely â€” SOC handles all scoring/FET.
-    const isShufForFET = (this.quizService as any)?.isShuffleEnabled?.()
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const isShufForFET = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
     if (ctx.type === 'single' && !isShufForFET) {
       let clickedIsCorrect = false;
       try {
         const clickedText = norm(optionBinding?.option?.text);
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        const bundle = this.quizService?.quizInitialState ?? [];
         if (clickedText && bundle.length > 0) {
           // Use TEXT-BASED question matching â€” index-based lookup fails in
           // shuffled mode because pristineQuiz.questions[displayIndex] is
           // the WRONG question (original order).
-          const isShuf = (this.quizService as any)?.isShuffleEnabled?.()
-            && (this.quizService as any)?.shuffledQuestions?.length > 0;
+          const isShuf = this.quizService?.isShuffleEnabled?.()
+            && this.quizService?.shuffledQuestions?.length > 0;
           const displayQ = isShuf
-            ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[currentIndex]
-              ?? (this.quizService as any)?.shuffledQuestions?.[currentIndex])
+            ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[currentIndex]
+              ?? this.quizService?.shuffledQuestions?.[currentIndex])
             : (ctx.getQuestionAtDisplayIndex?.(currentIndex)
-              ?? (this.quizService as any)?.questions?.[currentIndex]);
+              ?? this.quizService?.questions?.[currentIndex]);
           const qText = norm(displayQ?.questionText);
           if (qText) {
             let matched = false;
@@ -639,15 +639,15 @@ export class OptionUiSyncService {
     );
 
     try {
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      const bundle = this.quizService?.quizInitialState ?? [];
       if (bundle.length > 0) {
         // Use TEXT-BASED question matching â€” index-based lookup
         // (pristineQuiz.questions[displayIndex]) fails in shuffled mode.
-        const isShuf = (this.quizService as any)?.isShuffleEnabled?.()
-          && (this.quizService as any)?.shuffledQuestions?.length > 0;
+        const isShuf = this.quizService?.isShuffleEnabled?.()
+          && this.quizService?.shuffledQuestions?.length > 0;
         const displayQ = isShuf
-          ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[questionIndex]
-            ?? (this.quizService as any)?.shuffledQuestions?.[questionIndex])
+          ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[questionIndex]
+            ?? this.quizService?.shuffledQuestions?.[questionIndex])
           : question;
         const qText = normalize(displayQ?.questionText);
         if (qText) {
@@ -841,7 +841,7 @@ export class OptionUiSyncService {
       if (!bindings?.length) return 0;
       const bindingTexts = bindings.map(b => norm(b?.option?.text)).filter(Boolean);
       if (!bindingTexts.length) return 0;
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      const bundle = this.quizService?.quizInitialState ?? [];
       for (const quiz of bundle) {
         for (const pq of (quiz?.questions ?? [])) {
           const opts = pq?.options ?? [];

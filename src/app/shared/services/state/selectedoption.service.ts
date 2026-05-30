@@ -290,7 +290,7 @@ export class SelectedOptionService {
           const fromHistory = this._selectionHistory.get(questionIndex) ?? [];
           for (const h of fromHistory) {
             if (!h || h.optionId == null) continue;
-            if ((h as any).highlight !== true || (h as any).showIcon !== true) continue;
+            if (h.highlight !== true || h.showIcon !== true) continue;
             const k = keyOf(h);
             if (!merged.has(k)) {
               merged.set(k, { ...h, selected: false } as any);

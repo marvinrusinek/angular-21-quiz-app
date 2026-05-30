@@ -295,11 +295,11 @@ export class QuizSetupService {
     host._processingOptionClick = true;
     const idx = host.normalizeQuestionIndex(option?.questionIndex);
 
-    const _isShuf = (this.quizService as any)?.isShuffleEnabled?.()
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const _isShuf = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
     const authQ = _isShuf
-      ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[idx]
-        ?? (this.quizService as any)?.shuffledQuestions?.[idx]
+      ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[idx]
+        ?? this.quizService?.shuffledQuestions?.[idx]
         ?? host.currentQuestion())
       : (this.quizService.questions?.[idx] ?? host.currentQuestion());
     const correctCount = (authQ?.options ?? []).filter(
@@ -311,21 +311,11 @@ export class QuizSetupService {
     if (!isMultiAnswer) {
       try {
         const clickedText = norm(option?.text);
-        const qTextF = norm(authQ?.questionText);
-        if (clickedText && qTextF) {
-          const bundleF: any[] = (this.quizService as any)?.quizInitialState ?? [];
-          for (const quiz of bundleF) {
-            let found = false;
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qTextF) continue;
-              const mo = (pq?.options ?? []).find((o: any) => norm(o?.text) === clickedText);
-              if (mo) {
-                clickedIsCorrectForFET = isOptionCorrect(mo);
-              }
-              found = true;
-              break;
-            }
-            if (found) break;
+        if (clickedText) {
+          const pq = this.quizService?.getPristineQuestionByText(authQ?.questionText);
+          if (pq) {
+            const mo = (pq.options ?? []).find((o: any) => norm(o?.text) === clickedText);
+            if (mo) clickedIsCorrectForFET = isOptionCorrect(mo);
           }
         }
       } catch { /* ignore */ }
@@ -349,7 +339,7 @@ export class QuizSetupService {
     // `idx` from option.questionIndex can both be stale on Q2+, leaving
     // markQuestionAnswered called with 0 on every question (already in
     // the set, early-returns, progress freezes).
-    const liveQIdx = (this.quizService as any)?.currentQuestionIndex;
+    const liveQIdx = this.quizService?.currentQuestionIndex;
     const hostIdx = host.currentQuestionIndex();
     const progressIdx = Number.isFinite(liveQIdx)
       ? liveQIdx
@@ -520,34 +510,24 @@ subscribeToTimerExpiry(host: Host): void {
 
     const qIdx = resolved.index ?? this.quizService.getCurrentQuestionIndex?.() ?? 0;
 
-    const _isShufEC = (this.quizService as any)?.isShuffleEnabled?.()
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
-    const rawQ: any = _isShufEC
-      ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
-        ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]
-        ?? (this.quizService as any)?.questions?.[qIdx])
-      : (this.quizService as any)?.questions?.[qIdx];
+    const _isShufEC = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
+    const rawQ = _isShufEC
+      ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]
+        ?? this.quizService?.shuffledQuestions?.[qIdx]
+        ?? this.quizService?.questions?.[qIdx])
+      : this.quizService?.questions?.[qIdx];
 
-    const qTextEC = norm(rawQ?.questionText);
     let correctCountEC = 0;
     let correctTextsEC: string[] = [];
     try {
-      const bundleEC: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      if (qTextEC && bundleEC.length > 0) {
-        for (const quiz of bundleEC) {
-          let found = false;
-          for (const pq of (quiz?.questions ?? [])) {
-            if (norm(pq?.questionText) !== qTextEC) continue;
-            found = true;
-            const pOpts = (pq?.options ?? []).filter(
-              (o: any) => isOptionCorrect(o)
-            );
-            correctCountEC = pOpts.length;
-            correctTextsEC = pOpts.map((o: any) => norm(o?.text)).filter((t: string) => !!t);
-            break;
-          }
-          if (found) break;
-        }
+      const pq = this.quizService?.getPristineQuestionByText(rawQ?.questionText);
+      if (pq) {
+        const pOpts = (pq.options ?? []).filter(
+          (o: any) => isOptionCorrect(o)
+        );
+        correctCountEC = pOpts.length;
+        correctTextsEC = pOpts.map((o: any) => norm(o?.text)).filter((t: string) => !!t);
       }
     } catch { /* ignore */ }
     if (correctCountEC === 0) {
@@ -565,10 +545,10 @@ subscribeToTimerExpiry(host: Host): void {
     if (!isMultiAnswer) {
       let scoredCorrect = false;
       try {
-        const scoringSvc = (this.quizService as any)?.scoringService;
-        const isShuf = (this.quizService as any)?.isShuffleEnabled?.() && (this.quizService as any)?.shuffledQuestions?.length > 0;
+        const scoringSvc = this.quizService?.scoringService as any;
+        const isShuf = this.quizService?.isShuffleEnabled?.() && this.quizService?.shuffledQuestions?.length > 0;
         if (isShuf && scoringSvc?.questionCorrectness) {
-          let effectiveQuizId = (this.quizService as any)?.quizId || '';
+          let effectiveQuizId = this.quizService?.quizId || '';
           if (!effectiveQuizId) {
             try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
           }
@@ -603,10 +583,10 @@ subscribeToTimerExpiry(host: Host): void {
       if (!allCorrectSelected) {
         let scoredCorrect = false;
         try {
-          const scoringSvc = (this.quizService as any)?.scoringService;
-          const isShuf = (this.quizService as any)?.isShuffleEnabled?.() && (this.quizService as any)?.shuffledQuestions?.length > 0;
+          const scoringSvc = this.quizService?.scoringService as any;
+          const isShuf = this.quizService?.isShuffleEnabled?.() && this.quizService?.shuffledQuestions?.length > 0;
           if (isShuf && scoringSvc?.questionCorrectness) {
-            let effectiveQuizId = (this.quizService as any)?.quizId || '';
+            let effectiveQuizId = this.quizService?.quizId || '';
             if (!effectiveQuizId) {
               try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
             }

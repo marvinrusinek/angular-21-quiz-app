@@ -54,7 +54,7 @@ export class ExplanationTextService {
       // FAST PATH: if SOC has confirmed this question correct, bypass all checks.
       if (this.fetBypassForQuestion.get(idx) === true) return true;
       try {
-        const scoringSvc = (this.quizService as any)?.scoringService;
+        const scoringSvc = this.quizService?.scoringService as any;
         if (scoringSvc?.questionCorrectness?.get(idx) === true) return true;
       } catch { /* ignore */ }
 
@@ -68,19 +68,9 @@ export class ExplanationTextService {
       const qText = norm(liveQ?.questionText ?? '');
       if (!qText) return null;
 
-      let pristineCorrectTexts: string[] = [];
-      const pristineBundle: any[] = qs?.quizInitialState ?? [];
-      for (const quiz of pristineBundle) {
-        for (const pq of quiz?.questions ?? []) {
-          if (norm(pq?.questionText) !== qText) continue;
-          pristineCorrectTexts = (pq?.options ?? [])
-            .filter((o: any) => isOptionCorrect(o))
-            .map((o: any) => norm(o?.text))
-            .filter((t: string) => !!t);
-          break;
-        }
-        if (pristineCorrectTexts.length > 0) break;
-      }
+      const pristineCorrectTexts = Array.from(
+        this.quizService.getPristineCorrectTextsForQuestion(qText)
+      );
 
       if (pristineCorrectTexts.length < 2) return null;  // not multi-answer
 
@@ -99,7 +89,7 @@ export class ExplanationTextService {
 
       // selectedOptionsMap
       try {
-        const rawMap: any = (this.selectedOptionService as any)?.selectedOptionsMap;
+        const rawMap = this.selectedOptionService?.selectedOptionsMap;
         if (rawMap && typeof rawMap.get === 'function') {
           const mapSel: any[] = rawMap.get(idx) ?? [];
           for (const o of mapSel) {

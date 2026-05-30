@@ -71,8 +71,8 @@ export class SocAnswerProcessingService {
     // for multi-answer questions.
     try {
       const liveQ: any = comp.currentQuestion()
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
-        ?? (this.quizService as any)?.questions?.[qIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]
+        ?? this.quizService?.questions?.[qIdx];
       const bindings: any[] = comp.optionBindings() ?? [];
       if (bindings.length) {
         const pristineCorrectTexts =
@@ -127,8 +127,8 @@ export class SocAnswerProcessingService {
     let suppressDisableForUnselected = false;
     try {
       const liveQS: any = comp.currentQuestion()
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]
-        ?? (this.quizService as any)?.questions?.[qIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]
+        ?? this.quizService?.questions?.[qIdx];
       const pristineCorrectTextsS =
         this.quizService.getPristineCorrectTextsForQuestion(liveQS?.questionText);
       if (pristineCorrectTextsS.size > 1) {
@@ -215,8 +215,8 @@ export class SocAnswerProcessingService {
       effectiveCorrectIndices.every((ci: number) => durableSet.has(ci));
     try {
       const liveQAC: any = comp.currentQuestion()
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]
-        ?? (this.quizService as any)?.questions?.[qIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]
+        ?? this.quizService?.questions?.[qIdx];
       const bindingsAC: any[] = comp.optionBindings() ?? [];
       if (bindingsAC.length) {
         const pristineCorrectTextsAC =
@@ -257,17 +257,17 @@ export class SocAnswerProcessingService {
       let fetText = '';
       try {
         const fetQText = isShuffled
-          ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText
-            ?? (this.quizService as any)?.shuffledQuestions?.[displayIdx]?.questionText)
+          ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText
+            ?? this.quizService?.shuffledQuestions?.[displayIdx]?.questionText)
           : (comp.currentQuestion()?.questionText
-            ?? (this.quizService as any)?.questions?.[qIdx]?.questionText);
+            ?? this.quizService?.questions?.[qIdx]?.questionText);
         const pristineFETQ = this.quizService.getPristineQuestionByText(fetQText);
         fetText = ((pristineFETQ as any)?.explanation ?? '').trim();
         // Also try live question objects
         if (!fetText) {
           const liveQ = comp.currentQuestion()
             ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
-            ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
+            ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
           fetText = (liveQ?.explanation ?? '').trim();
         }
       } catch (e) { console.error('processMultiAnswerClick FET-text resolution failed:', e); }
@@ -283,8 +283,8 @@ export class SocAnswerProcessingService {
             .filter((n: number) => Number.isFinite(n) && n > 0);
           const qForFormat = comp.currentQuestion()
             ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
-            ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]
-            ?? (this.quizService as any)?.questions?.[qIdx];
+            ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]
+            ?? this.quizService?.questions?.[qIdx];
           if (qForFormat && oneBasedIndices.length > 0) {
             formattedFET = this.explanationTextService.formatExplanation(
               qForFormat,
@@ -301,7 +301,7 @@ export class SocAnswerProcessingService {
         (this.explanationTextService as any).latestExplanationIndex = displayIdx;
         const qForStore = comp.currentQuestion()
           ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
-          ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
+          ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
         this.explanationTextService.storeFormattedExplanation(
           displayIdx, formattedFET, qForStore, qForStore?.options ?? [], true
         );
@@ -403,8 +403,8 @@ export class SocAnswerProcessingService {
     // incorrects after all correct answers are selected.
     try {
       const liveQText = comp.currentQuestion()?.questionText
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText
-        ?? (this.quizService as any)?.questions?.[qIdx]?.questionText;
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText
+        ?? this.quizService?.questions?.[qIdx]?.questionText;
       const pristineCorrectTexts =
         this.quizService.getPristineCorrectTextsForQuestion(liveQText);
       const pristineCorrectCount = pristineCorrectTexts.size;
@@ -437,7 +437,7 @@ export class SocAnswerProcessingService {
     // quizService.questions[] to get authoritative correct flags.
     let correctIdxs: number[] = [];
     try {
-      const allQs: any[] = (this.quizService as any)?.questions ?? [];
+      const allQs: any[] = this.quizService?.questions ?? [];
       const passedText = norm(comp.currentQuestion()?.questionText);
       let canonicalQ: any = null;
       if (passedText && allQs.length) {
@@ -483,13 +483,13 @@ export class SocAnswerProcessingService {
         const candidates = isShuffled
           ? [
               comp.currentQuestion()?.questionText,
-              (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText,
-              (this.quizService as any)?.shuffledQuestions?.[displayIdx]?.questionText,
-              (this.quizService as any)?.questions?.[qIdx]?.questionText,
+              this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx]?.questionText,
+              this.quizService?.shuffledQuestions?.[displayIdx]?.questionText,
+              this.quizService?.questions?.[qIdx]?.questionText,
             ]
           : [
-              (this.quizService as any)?.questions?.[qIdx]?.questionText,
-              (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText,
+              this.quizService?.questions?.[qIdx]?.questionText,
+              this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText,
               comp.currentQuestion()?.questionText
             ];
         for (const qText of candidates) {
@@ -523,7 +523,7 @@ export class SocAnswerProcessingService {
       comp.showExplanationChange.emit(true);
       const singleFetQuestion = comp.currentQuestion()
         ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
 
       // Synchronous FET write
       try {
@@ -676,8 +676,8 @@ export class SocAnswerProcessingService {
   private triggerAllIncorrectsExhaustedAutoReveal(comp: any, index: number, qIdx: number, displayIdx: number): void {
     try {
       const liveQAR: any = comp.currentQuestion()
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]
-        ?? (this.quizService as any)?.questions?.[qIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]
+        ?? this.quizService?.questions?.[qIdx];
       const bindingsAR: any[] = Array.isArray(comp.optionBindings())
         ? comp.optionBindings()
         : (typeof comp.optionBindings() === 'function' ? comp.optionBindings() : []);
@@ -781,7 +781,7 @@ export class SocAnswerProcessingService {
       // runs — wiping _autoRevealedCorrect and the green highlight.
       const fetQuestionAR = comp.currentQuestion()
         ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
-        ?? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[displayIdx];
+        ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
       const fetCtxAR = {
         resolvedIndex: displayIdx,
         question: fetQuestionAR,

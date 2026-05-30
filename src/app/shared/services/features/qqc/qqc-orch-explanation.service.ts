@@ -25,7 +25,7 @@ export class QqcOrchExplanationService {
       const fallback = host.currentQuestionIndex?.() ?? 0;
       try {
         const liveQText = norm(host.currentQuestion?.()?.questionText);
-        const allQs: any[] = (host.quizService as any)?.questions ?? [];
+        const allQs = host.quizService?.questions ?? [];
         if (liveQText && allQs.length) {
           const atFallback = norm(allQs[fallback]?.questionText);
           if (liveQText !== atFallback) {

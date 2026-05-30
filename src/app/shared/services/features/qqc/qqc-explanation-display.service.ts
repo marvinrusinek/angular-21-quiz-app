@@ -63,7 +63,7 @@ export class QqcExplanationDisplayService {
       }
 
       if (!q) {
-        const svcQuestions = (quizSvc as any).shuffledQuestions || quizSvc.questions || [];
+        const svcQuestions = quizSvc.shuffledQuestions || quizSvc.questions || [];
         q = svcQuestions[i0];
       }
     } catch (err) {
@@ -91,8 +91,8 @@ export class QqcExplanationDisplayService {
         visualOpts = params.optionsToDisplay;
       } else {
         try {
-          const questions = (quizSvc as any).shuffledQuestions?.length
-            ? (quizSvc as any).shuffledQuestions
+          const questions = quizSvc.shuffledQuestions?.length
+            ? quizSvc.shuffledQuestions
             : quizSvc.questions || [];
           const targetQ = questions[i0];
           if (targetQ?.options?.length) {
@@ -144,8 +144,8 @@ export class QqcExplanationDisplayService {
         questionIndex: i0,
         explanation: clean || baseRaw,
       };
-      if (typeof (svc as any).fetByIndex?.set === 'function') {
-        (svc as any).fetByIndex.set(i0, clean || baseRaw);
+      if (typeof svc.fetByIndex?.set === 'function') {
+        svc.fetByIndex.set(i0, clean || baseRaw);
       }
     } catch (e) {
       console.error('QqcExplanationDisplayService.resolveFormatted FET cache write failed:', e);

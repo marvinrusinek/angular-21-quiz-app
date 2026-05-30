@@ -167,7 +167,7 @@ export class SharedOptionExplanationService {
     let pristineCorrectTexts = new Set<string>();
     const qText = this.normalize(authQuestion?.questionText ?? question?.questionText);
     try {
-      for (const quiz of ((this.quizService as any)?.quizInitialState ?? []) as any[]) {
+      for (const quiz of this.quizService?.quizInitialState ?? []) {
         for (const pq of quiz?.questions ?? []) {
           if (this.normalize(pq?.questionText) !== qText) continue;
           const correctOpts = (pq?.options ?? []).filter(

@@ -196,13 +196,12 @@ export class SharedOptionFeedbackService {
     // source of truth (selectedOptions Set, optionBindings, optionsToDisplay, current click).
     let finalFeedback = feedbackMessage;
     if (isMulti) {
-      const isCorrectFlag = isOptionCorrect;
       const displayOpts = ctx.optionsToDisplay || [];
 
       // Count correct options
       const correctIndices: number[] = [];
       for (const [i, o] of displayOpts.entries()) {
-        if (isCorrectFlag(o)) correctIndices.push(i);
+        if (isOptionCorrect(o)) correctIndices.push(i);
       }
       const correctCount = correctIndices.length;
 
@@ -226,8 +225,8 @@ export class SharedOptionFeedbackService {
       let incorrectSelectedCount = 0;
       for (const [i, o] of displayOpts.entries()) {
         const selected = isOptSelected(o, i);
-        if (isCorrectFlag(o) && selected) correctSelectedCount++;
-        if (!isCorrectFlag(o) && selected) incorrectSelectedCount++;
+        if (isOptionCorrect(o) && selected) correctSelectedCount++;
+        if (!isOptionCorrect(o) && selected) incorrectSelectedCount++;
       }
 
       if (correctCount > 0 && correctSelectedCount >= correctCount && incorrectSelectedCount === 0) {

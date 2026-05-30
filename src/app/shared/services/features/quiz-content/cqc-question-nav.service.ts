@@ -286,7 +286,7 @@ export class CqcQuestionNavService {
           for (const t of host._eagerFetRetryTimers) clearTimeout(t);
         }
         host._eagerFetRetryTimers = [];
-        (host as any)._fetLockedForIndex = -1;
+        host._fetLockedForIndex = -1;
 
         try {
           let isPageRefresh = false;
@@ -356,7 +356,7 @@ export class CqcQuestionNavService {
             if (correctIndices.length > 0) {
               const formattedFet = ets.formatExplanation(question, correctIndices, question.explanation);
               if (formattedFet) {
-                (host as any)._fetLockedForIndex = zeroBasedIndex;
+                host._fetLockedForIndex = zeroBasedIndex;
                 const injectNow = () => {
                   if (host.currentIndex !== zeroBasedIndex) return;
                   try {

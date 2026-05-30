@@ -30,10 +30,10 @@ interface OptionSnapshot {
 
 @Injectable({ providedIn: 'root' })
 export class SelectionMessageService {
-  // Signal-first source of truth
-  readonly selectionMessageSig = signal<string>(START_MSG);
-  public readonly selectionMessage$: Observable<string> =
-    toObservable(this.selectionMessageSig).pipe(distinctUntilChanged());
+  // Click-driven override consumed by the computed selectionMessageSig.
+  // Cleared on nav transitions (see ctor effect) so a prior question's
+  // override never bleeds into the next visit.
+  private readonly _clickOverride = signal<{ idx: number, msg: string } | null>(null);
 
   // Signal-first options snapshot
   readonly optionsSnapshotSig = signal<Option[]>([]);
@@ -53,6 +53,14 @@ export class SelectionMessageService {
   public _baselineReleased = new Set<number>();
   public _wrongClickCounts = new Map<number, number>();
 
+  // In-session "this idx was completed" tracker. Populated only when
+  // pushMessage records a real completion message (NEXT_BTN / SHOW_RESULTS /
+  // "Answered ✓..."). Used by deriveNavMessageForIdx as the authoritative
+  // answered probe — external maps (questionCorrectness, _multiAnswerPerfect,
+  // quizStateService.isQuestionAnswered) leak across sessions / collide in
+  // shuffled mode.
+  private _completedIdxSet = new Set<number>();
+
   private _pendingMsgTokens = new Map<number, number>();
 
   private explanationTextService = inject(ExplanationTextService);
@@ -60,41 +68,35 @@ export class SelectionMessageService {
   private quizStateService = inject(QuizStateService);
   private selectedOptionService = inject(SelectedOptionService);
 
-  // Derived nav-driven message. Re-evaluates whenever the current question
-  // index changes (i.e. on Previous / Next / dot navigation). Reads the
-  // answered-state maps non-reactively — they're updated infrequently and
-  // by the time a new index lands they reflect the prior question's state.
-  //
-  // This is the computed-signal replacement for the imperative
-  // pushNavMessageForCurrentRoute() that the navigation service was
-  // calling after every nav transition. Now: nav changes index → computed
-  // re-fires → effect pushes the message. No explicit push needed.
-  private readonly computedNavMessage = computed<string | null>(() => {
+  // Strict computed: click override (if for current idx) → derive from
+  // currentQuestionIndexSig + _completedIdxSet. No writers anywhere.
+  public readonly selectionMessageSig = computed<string>(() => {
     const idx = this.quizService.currentQuestionIndexSig();
-    if (!Number.isFinite(idx) || idx < 0) return null;
-    const result = this.deriveNavMessageForIdx(idx);
-    const isAns = this.isQuestionAlreadyAnswered(idx);
-    console.log('[COMPUTED-NAV] idx:', idx, 'isAnswered:', isAns, 'result:', result);
-    return result;
+    if (!Number.isFinite(idx) || idx < 0) return START_MSG;
+    const override = this._clickOverride();
+    if (override && override.idx === idx) return override.msg;
+    return this.deriveNavMessageForIdx(idx);
   });
 
+  public readonly selectionMessage$: Observable<string> =
+    toObservable(this.selectionMessageSig).pipe(distinctUntilChanged());
+
   constructor() {
-    // Push the computed nav message into the writable signal whenever the
-    // current question changes. Click-driven messages (wrong-click feedback,
-    // partial-multi progress) still push directly via pushMessage() and
-    // remain authoritative until the next nav transition.
-    //
-    // CRITICAL: read selectionMessageSig via untracked() — otherwise the
-    // effect would track it as a dependency, re-fire on every click-driven
-    // push, and overwrite the click message with the stale nav message.
+    // Invalidate the click override the moment the user nav'd to a different
+    // index. Without this, revisiting a previously-completed Q would see the
+    // stale "Please click the Next button..." override and skip the
+    // "Answered ✓..." derivation.
+    let lastIdx: number | null = null;
     effect(() => {
-      const msg = this.computedNavMessage();
-      if (!msg) return;
-      const current = untracked(() => this.selectionMessageSig());
-      console.log('[NAV-EFFECT] computedMsg:', msg, 'currentMsg:', current, 'willWrite:', msg !== current);
-      if (msg !== current) {
-        this.selectionMessageSig.set(msg);
+      const idx = this.quizService.currentQuestionIndexSig();
+      if (!Number.isFinite(idx) || idx < 0) return;
+      if (lastIdx !== null && lastIdx !== idx) {
+        untracked(() => {
+          const cur = this._clickOverride();
+          if (cur && cur.idx !== idx) this._clickOverride.set(null);
+        });
       }
+      lastIdx = idx;
     });
   }
 
@@ -102,11 +104,12 @@ export class SelectionMessageService {
     const total = this.quizService.totalQuestions();
     const qs: any = this.quizService;
 
-    // Resolve original index for shuffled mode — questionCorrectness
-    // is keyed by ORIGINAL question index, not display position.
+    // Resolve original index for shuffled mode — questionCorrectness is
+    // keyed by ORIGINAL question index, not display position.
+    let isShuf = false;
     let origIdx = -1;
     try {
-      const isShuf = qs?.isShuffleEnabled?.() && qs?.shuffledQuestions?.length > 0;
+      isShuf = !!qs?.isShuffleEnabled?.();
       if (isShuf) {
         let eqId = qs?.quizId || '';
         if (!eqId) {
@@ -119,12 +122,11 @@ export class SelectionMessageService {
       }
     } catch { /* ignore */ }
 
-    const answered =
-      this.quizStateService.isQuestionAnswered?.(idx) === true
-      || qs?.questionCorrectness?.get?.(idx) === true
-      || (origIdx >= 0 && qs?.questionCorrectness?.get?.(origIdx) === true)
-      || qs?._multiAnswerPerfect?.get?.(idx) === true
-      || this.explanationTextService?.fetBypassForQuestion?.get?.(idx) === true;
+    // Single authoritative probe: only marked when this session's pushMessage
+    // already recorded a real completion message for this idx. No reliance on
+    // external maps that leak across sessions or collide in shuffled mode.
+    void isShuf; void origIdx; void qs;
+    const answered = this._completedIdxSet.has(idx);
 
     const isLast = total > 0 && idx === total - 1;
     return answered
@@ -163,6 +165,10 @@ export class SelectionMessageService {
     return this.selectionMessageSig();
   }
 
+  public isCompletedInSession(idx: number): boolean {
+    return this._completedIdxSet.has(idx);
+  }
+
   public resetAll(): void {
     this._singleAnswerCorrectLock.clear();
     this._singleAnswerIncorrectLock.clear();
@@ -174,8 +180,9 @@ export class SelectionMessageService {
     this._pendingMsgTokens.clear();
     this._idMapByIndex.clear();
     this._wrongClickCounts?.clear();
+    this._completedIdxSet.clear();
     this.optionsSnapshotSig.set([]);
-    this.selectionMessageSig.set(START_MSG);
+    this._clickOverride.set(null);
   }
 
   private getQuestion(index: number): QuizQuestion | null {
@@ -248,11 +255,9 @@ export class SelectionMessageService {
     if (!opts || opts.length === 0) return index === 0 ? START_MSG : CONTINUE_MSG;
     const isLastQuestion = total > 0 && index === total - 1;
 
-    const isCorrectHelper = isOptionCorrect;
-
-    const totalCorrect = opts.filter(o => isCorrectHelper(o)).length;
-    const selectedCorrect = opts.filter(o => o.selected && isCorrectHelper(o)).length;
-    const selectedWrong = opts.filter(o => o.selected && !isCorrectHelper(o)).length;
+    const totalCorrect = opts.filter(o => isOptionCorrect(o)).length;
+    const selectedCorrect = opts.filter(o => o.selected && isOptionCorrect(o)).length;
+    const selectedWrong = opts.filter(o => o.selected && !isOptionCorrect(o)).length;
 
     if (qType === QuestionType.SingleAnswer) {
       if (selectedCorrect > 0) {
@@ -269,7 +274,7 @@ export class SelectionMessageService {
         // On the last question, show "Show Results" only when ALL incorrect
         // options have been exhausted (correct auto-revealed).
         if (isLastQuestion) {
-          const totalIncorrect = opts.filter(o => !isCorrectHelper(o)).length;
+          const totalIncorrect = opts.filter(o => !isOptionCorrect(o)).length;
           if (this._wrongClickCounts.get(index)! >= totalIncorrect) {
             return SHOW_RESULTS_MSG;
           }
@@ -303,8 +308,12 @@ export class SelectionMessageService {
   }
 
   public pushMessage(newMsg: string, _index: number): void {
-    console.log('[PUSH-MSG]', 'idx:', _index, 'msg:', newMsg, 'from:', new Error().stack?.split('\n')[2]?.trim());
-    this.selectionMessageSig.set(newMsg);
+    if (newMsg === NEXT_BTN_MSG
+        || newMsg === SHOW_RESULTS_MSG
+        || (typeof newMsg === 'string' && newMsg.startsWith('Answered ✓'))) {
+      this._completedIdxSet.add(_index);
+    }
+    this._clickOverride.set({ idx: _index, msg: newMsg });
   }
 
   public releaseBaseline(index: number): void {
@@ -325,7 +334,7 @@ export class SelectionMessageService {
     if (this._baselineReleased.has(i0)) return;
     // Skip baseline for already-answered questions — pushing "Select N..."
     // would overwrite the nav-driven Answered ✓ message on revisit.
-    if (this.isQuestionAlreadyAnswered(i0)) {
+    if (this._completedIdxSet.has(i0)) {
       const total = this.quizService.totalQuestions();
       const isLast = total > 0 && i0 === total - 1;
       const navMsg = isLast
@@ -493,7 +502,7 @@ export class SelectionMessageService {
   }
 
   public setSelectionMessageText(message: string): void {
-    console.log('[SET-MSG-TEXT]', 'msg:', message, 'from:', new Error().stack?.split('\n')[2]?.trim());
-    this.selectionMessageSig.set(message);
+    const idx = this.quizService.currentQuestionIndex ?? 0;
+    this._clickOverride.set({ idx, msg: message });
   }
 }

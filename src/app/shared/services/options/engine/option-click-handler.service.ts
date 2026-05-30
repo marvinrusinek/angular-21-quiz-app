@@ -120,7 +120,7 @@ export class OptionClickHandlerService {
     let fromPristine: number[] = [];
     if (qText) {
       try {
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        const bundle = this.quizService?.quizInitialState ?? [];
         for (const quiz of bundle) {
           for (const pq of (quiz?.questions ?? [])) {
             if (norm(pq?.questionText) !== qText) continue;
@@ -270,12 +270,12 @@ export class OptionClickHandlerService {
           this.quizService?.shuffledQuestions?.length > 0;
         const liveIdx = this.quizService?.getCurrentQuestionIndex?.() ?? 0;
         const liveQ: any = isShuffled
-          ? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[liveIdx]
-            ?? (this.quizService as any)?.shuffledQuestions?.[liveIdx]
-          : (this.quizService as any)?.questions?.[liveIdx];
+          ? this.quizService?.getQuestionsInDisplayOrder?.()?.[liveIdx]
+            ?? this.quizService?.shuffledQuestions?.[liveIdx]
+          : this.quizService?.questions?.[liveIdx];
         const liveQText = norm(liveQ?.questionText);
         if (liveQText) {
-          const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+          const bundle = this.quizService?.quizInitialState ?? [];
           for (const quiz of bundle) {
             for (const pq of (quiz?.questions ?? [])) {
               if (norm(pq?.questionText) !== liveQText) continue;
@@ -386,7 +386,7 @@ export class OptionClickHandlerService {
         const isShuffledChk = this.quizService?.isShuffleEnabled?.() &&
           this.quizService?.shuffledQuestions?.length > 0;
         const qSrc = isShuffledChk
-          ? (this.quizService as any)?.getQuestionsInDisplayOrder?.() ?? this.quizService.shuffledQuestions
+          ? this.quizService?.getQuestionsInDisplayOrder?.() ?? this.quizService.shuffledQuestions
           : this.quizService?.questions;
         const chkQ = qSrc?.[qIndex] ?? null;
         const chkCorrectCount = (chkQ?.options ?? []).filter(
@@ -445,9 +445,9 @@ export class OptionClickHandlerService {
         const isShuffledSA = this.quizService?.isShuffleEnabled?.() &&
           this.quizService?.shuffledQuestions?.length > 0;
         const liveSAQ = isShuffledSA
-          ? (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIndex]
-            ?? (this.quizService as any)?.shuffledQuestions?.[qIndex]
-          : (this.quizService as any)?.questions?.[qIndex];
+          ? this.quizService?.getQuestionsInDisplayOrder?.()?.[qIndex]
+            ?? this.quizService?.shuffledQuestions?.[qIndex]
+          : this.quizService?.questions?.[qIndex];
         const correctTextsSA =
           this.quizService.getPristineCorrectTextsForQuestion(liveSAQ?.questionText);
         // anyCorrectSelected: trust the selection's own `correct` flag

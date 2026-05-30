@@ -86,7 +86,7 @@ export class QqcOrchClickService {
       const applySingleAnswerDisable = () => {
       try {
         const rawQuestion: any = host.quizService.getQuestionsInDisplayOrder?.()?.[idx]
-          ?? (host.quizService as any)?.questions?.[idx]
+          ?? host.quizService?.questions?.[idx]
           ?? q;
         const rawOpts: any[] = rawQuestion?.options ?? [];
         const rawCorrectCount = rawOpts.filter((o: any) =>
@@ -104,7 +104,7 @@ export class QqcOrchClickService {
         try {
           const liveQText = norm(rawQuestion?.questionText);
           if (liveQText) {
-            const bundleM: any[] = (host.quizService as any)?.quizInitialState ?? [];
+            const bundleM = host.quizService?.quizInitialState ?? [];
             for (const quizM of bundleM) {
               for (const pqM of (quizM?.questions ?? [])) {
                 if (norm(pqM?.questionText) !== liveQText) continue;
@@ -182,24 +182,11 @@ export class QqcOrchClickService {
       if (fetGatePassed) {
         try {
           const displayQ: any = host.quizService.getQuestionsInDisplayOrder?.()?.[idx]
-            ?? (host.quizService as any)?.questions?.[idx]
+            ?? host.quizService?.questions?.[idx]
             ?? q;
           let rawCorrectTexts = new Set<string>();
           try {
-            const qTextNorm = norm(displayQ?.questionText);
-            for (const quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
-              for (const pq of (quiz?.questions ?? [])) {
-                if (norm(pq?.questionText) !== qTextNorm) continue;
-                rawCorrectTexts = new Set(
-                  (pq?.options ?? [])
-                    .filter((o: any) => isOptionCorrect(o))
-                    .map((o: any) => norm(o?.text))
-                    .filter((t: string) => !!t)
-                );
-                break;
-              }
-              if (rawCorrectTexts.size > 0) break;
-            }
+            rawCorrectTexts = host.quizService.getPristineCorrectTextsForQuestion(displayQ?.questionText);
           } catch { /* ignore */ }
           if (rawCorrectTexts.size === 0) {
             const rawOpts: any[] = displayQ?.options ?? [];

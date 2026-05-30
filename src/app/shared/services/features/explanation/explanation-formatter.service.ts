@@ -177,7 +177,7 @@ export class ExplanationFormatterService {
         try {
           const quizSvc = this.injector.get(QuizService, null);
           if (quizSvc) {
-            const shuffledQs = (quizSvc as any).shuffledQuestions;
+            const shuffledQs = quizSvc.shuffledQuestions;
             const isShuffled = quizSvc.isShuffleEnabled?.() ?? false;
             const questions = isShuffled && shuffledQs?.length > 0
               ? shuffledQs
@@ -365,7 +365,7 @@ export class ExplanationFormatterService {
         : (typeof quizSvc?.getCurrentQuestionIndex === 'function'
           ? quizSvc.getCurrentQuestionIndex()
           : -1);
-      const rawOpts = (quizSvc as any)?.questions?.[idx]?.options;
+      const rawOpts = quizSvc?.questions?.[idx]?.options;
       if (Array.isArray(rawOpts) && rawOpts.length) opts = rawOpts;
     } catch (e) {
       console.error('ExplanationFormatterService.formatExplanation options fallback lookup failed:', e);
@@ -754,7 +754,7 @@ export class ExplanationFormatterService {
           const quizSvc = this.injector.get(QuizService, null);
 
           if (quizSvc) {
-            const shuffledQs = (quizSvc as any).shuffledQuestions;
+            const shuffledQs = quizSvc.shuffledQuestions;
             const isShuffled = quizSvc.isShuffleEnabled?.() ?? false;
             const questions = isShuffled && shuffledQs?.length > 0
               ? shuffledQs : quizSvc.questions;

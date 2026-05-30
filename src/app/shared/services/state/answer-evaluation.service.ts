@@ -105,7 +105,7 @@ export class AnswerEvaluationService {
     let questionOptions = Array.isArray(question.options) ? question.options : [];
     try {
       const qText = norm(question.questionText);
-      const pristineBundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+      const pristineBundle = this.quizService?.quizInitialState ?? [];
       let pristineQ: any = null;
       for (const quiz of pristineBundle) {
         for (const pq of (quiz?.questions ?? [])) {

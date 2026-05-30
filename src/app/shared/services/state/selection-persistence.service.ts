@@ -181,7 +181,7 @@ export class SelectionPersistenceService {
 
     for (const s of fromPrior) {
       if (s == null || s.optionId == null) continue;
-      if ((s as any).highlight !== true || (s as any).showIcon !== true) {
+      if (s.highlight !== true || s.showIcon !== true) {
         continue;
       }
       const key = this.buildMergeKey(s);
@@ -190,18 +190,18 @@ export class SelectionPersistenceService {
 
     for (const s of fromHistory) {
       if (s == null || s.optionId == null) continue;
-      if ((s as any).highlight !== true || (s as any).showIcon !== true) {
+      if (s.highlight !== true || s.showIcon !== true) {
         continue;
       }
       const key = this.buildMergeKey(s);
       const existing = merged.get(key);
-      if (existing && (existing as any).selected === true) continue;
+      if (existing && existing.selected === true) continue;
       merged.set(key, { ...s, selected: false });
     }
 
     for (const s of fromMap) {
       if (s == null || s.optionId == null) continue;
-      if ((s as any).selected === false) continue;
+      if (s.selected === false) continue;
       const key = this.buildMergeKey(s);
       merged.set(key, { ...s, highlight: true, showIcon: true });
     }
@@ -215,10 +215,10 @@ export class SelectionPersistenceService {
   }
 
   private buildMergeKey(s: any): string {
-    const sKeyText = norm((s as any).text);
+    const sKeyText = norm(s.text);
     return sKeyText
       ? `t:${s.optionId}|${sKeyText}`
-      : `i:${s.optionId}|${(s as any).displayIndex ?? (s as any).index ?? -1}`;
+      : `i:${s.optionId}|${s.displayIndex ?? s.index ?? -1}`;
   }
 
   // ── Durable answer persistence (localStorage) ──────────────

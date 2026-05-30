@@ -591,6 +591,25 @@ export class QuizService {
     return this.currentQuestionIndexSig();
   }
 
+  /**
+   * Canonical "what question is the user on right now" resolver.
+   *
+   * Prefers the caller's component-input value (which the URL-authoritative
+   * parent feeds down) over the service value, because `currentQuestionIndex`
+   * on this service can lag or briefly reset to 0 during re-initialization
+   * (signal hydration, route resolver, BehaviorSubject defaults).
+   *
+   * Falls back to the service value, then 0, when no input is available
+   * (e.g. service callsites that don't have a component input).
+   */
+  resolveActiveQuestionIndex(inputIdx?: number | null): number {
+    if (typeof inputIdx === 'number' && inputIdx >= 0) return inputIdx;
+    const svcIdx = this.getCurrentQuestionIndex();
+    if (typeof svcIdx === 'number' && svcIdx >= 0) return svcIdx;
+    return Number.isFinite(this.currentQuestionIndex) && this.currentQuestionIndex >= 0
+      ? this.currentQuestionIndex : 0;
+  }
+
   getCurrentQuestionIndexObservable(): Observable<number> {
     return this.currentQuestionIndex$;
   }
@@ -805,10 +824,9 @@ export class QuizService {
       this._correctTextsByQText.set(key, empty);
       return empty;
     }
-    const isCorrect = isOptionCorrect;
     const texts = new Set<string>();
     for (const opt of (pq as any).options ?? []) {
-      if (isCorrect(opt?.correct)) {
+      if (isOptionCorrect(opt?.correct)) {
         const txt = norm(opt?.text);
         if (txt) texts.add(txt);
       }

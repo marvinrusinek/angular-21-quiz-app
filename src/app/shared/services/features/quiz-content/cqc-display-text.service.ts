@@ -69,7 +69,7 @@ export class CqcDisplayTextService {
           // one selected option for this idx is a correct answer.
           const _cachedFetForCurr = (
             host.explanationTextService?.formattedExplanations?.[currentIdx]?.explanation
-            ?? (host.explanationTextService as any)?.fetByIndex?.get?.(currentIdx)
+            ?? host.explanationTextService?.fetByIndex?.get?.(currentIdx)
             ?? ''
           ).toString().trim();
           const _incomingMatchesCachedFet =
@@ -78,7 +78,7 @@ export class CqcDisplayTextService {
           try {
             const _selOpts = host.selectedOptionService?.getSelectedOptionsForQuestion?.(currentIdx) ?? [];
             _hasCorrectSelected = Array.isArray(_selOpts) && _selOpts.some(
-              (s: any) => (s?.correct === true || s?.isCorrect === true) && s?.selected !== false
+              (s: any) => isOptionCorrect(s) && s?.selected !== false
             );
           } catch { /* ignore */ }
           const _latestExpMatchesCurr = _latestExpIdx === currentIdx;
@@ -95,7 +95,7 @@ export class CqcDisplayTextService {
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
             host.qTextHtmlSig?.set(text);
             host._lastDisplayedText = text;
-            (host as any)._fetLockedForIndex = currentIdx;
+            host._fetLockedForIndex = currentIdx;
             return;
           }
 
@@ -104,7 +104,7 @@ export class CqcDisplayTextService {
           if (isTimedOutForIdx && !isQuestionText && (text ?? '').trim().length > 0) {
             host.qTextHtmlSig?.set(text);
             host._lastDisplayedText = text;
-            (host as any)._fetLockedForIndex = currentIdx;
+            host._fetLockedForIndex = currentIdx;
             return;
           }
 
@@ -120,18 +120,13 @@ export class CqcDisplayTextService {
             (o: any) => isOptionCorrect(o)
           ).length;
           try {
-            const _qText = norm(qForMultiCheck?.questionText);
-            const _bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
-            for (const _quiz of _bundle) {
-              for (const _pq of (_quiz?.questions ?? [])) {
-                if (norm(_pq?.questionText) !== _qText) continue;
-                const pristineCount = (_pq?.options ?? []).filter(
-                  (o: any) => isOptionCorrect(o)
-                ).length;
-                if (pristineCount > multiCorrectCount) {
-                  multiCorrectCount = pristineCount;
-                }
-                break;
+            const _pq = host.quizService?.getPristineQuestionByText(qForMultiCheck?.questionText);
+            if (_pq) {
+              const pristineCount = (_pq.options ?? []).filter(
+                (o: any) => isOptionCorrect(o)
+              ).length;
+              if (pristineCount > multiCorrectCount) {
+                multiCorrectCount = pristineCount;
               }
             }
           } catch { /* ignore */ }
@@ -154,7 +149,7 @@ export class CqcDisplayTextService {
           if (isExplanation) {
             const idx = currentIdx;
             const cached = (host.explanationTextService.formattedExplanations[idx]?.explanation ?? '').trim()
-              || ((host.explanationTextService as any).fetByIndex?.get(idx) ?? '').trim();
+              || (host.explanationTextService.fetByIndex?.get(idx) ?? '').trim();
             if (cached && cached.toLowerCase().includes('correct because')) {
               finalText = cached;
             } else {
@@ -180,7 +175,7 @@ export class CqcDisplayTextService {
             const incoming = (finalText ?? '').trim();
             const cached = (host._lastDisplayedText ?? '').trim();
             if (!incoming) {
-              if ((host as any)._fetLockedForIndex === currentIdx && !multiAnswerBlocked) {
+              if (host._fetLockedForIndex === currentIdx && !multiAnswerBlocked) {
                 return;
               }
               if (cached) {
@@ -231,7 +226,7 @@ export class CqcDisplayTextService {
             if (hasRealInteraction && isQuestionText && (isResolvedForGuard || _fetBypass)) {
               const fetCached =
                 (host.explanationTextService.formattedExplanations[currentIdx]?.explanation ?? '').trim()
-                || ((host.explanationTextService as any).fetByIndex?.get(currentIdx) ?? '').trim();
+                || (host.explanationTextService.fetByIndex?.get(currentIdx) ?? '').trim();
               if (fetCached && fetCached.toLowerCase().includes('correct because')) {
                 this.fetGuard.writeQText(host, fetCached);
                 return;
@@ -247,7 +242,7 @@ export class CqcDisplayTextService {
             }
 
             // FET LOCK
-            if ((host as any)._fetLockedForIndex === currentIdx && 
+            if (host._fetLockedForIndex === currentIdx && 
               isQuestionText && 
               !multiAnswerBlocked
             ) return;
@@ -257,7 +252,7 @@ export class CqcDisplayTextService {
               const finalNorm = norm(finalText);
               const qTextNormForFet = norm(qForMultiCheck?.questionText);
               const rawExplanation = norm(
-                (host.quizService as any)?.questions?.[currentIdx]?.explanation
+                host.quizService?.questions?.[currentIdx]?.explanation
                   ?? qForMultiCheck?.explanation
               );
               const isFetText = !!finalNorm && (
@@ -266,14 +261,14 @@ export class CqcDisplayTextService {
                 || (!!qTextNormForFet && !finalNorm.includes(qTextNormForFet))
               );
               const rawQForBlock: any = 
-                (host.quizService as any)?.questions?.[currentIdx] ?? qForMultiCheck;
+                host.quizService?.questions?.[currentIdx] ?? qForMultiCheck;
               const rawOptsForBlock: any[] = rawQForBlock?.options ?? [];
               let rawCorrectCountBlock = rawOptsForBlock.filter(
                 (o: any) => isOptionCorrect(o)
               ).length;
               try {
                 const _qText2 = norm(rawQForBlock?.questionText ?? qForMultiCheck?.questionText);
-                const _bundle2: any[] = (host.quizService as any)?.quizInitialState ?? [];
+                const _bundle2 = host.quizService?.quizInitialState ?? [];
                 for (const _quiz2 of _bundle2) {
                   for (const _pq2 of (_quiz2?.questions ?? [])) {
                     if (norm(_pq2?.questionText) !== _qText2) continue;

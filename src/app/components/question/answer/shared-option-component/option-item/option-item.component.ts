@@ -9,7 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FeedbackProps } from '../../../../../shared/models/FeedbackProps.model';
-import { Option } from '../../../../../shared/models/Option.model';
 import { OptionBindings } from '../../../../../shared/models/OptionBindings.model';
 import { SelectedOption } from '../../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../../shared/models/SharedOptionConfig.model';
@@ -20,7 +19,11 @@ import { QuizService } from '../../../../../shared/services/data/quiz.service';
 import { SelectedOptionService } from '../../../../../shared/services/state/selectedoption.service';
 import { TimerService } from '../../../../../shared/services/features/timer/timer.service';
 
-import { QUESTION_ROUTE_REGEX } from '../../../../../shared/constants/route-patterns';
+import { OptionItemTimerStateService } from '../../../../../shared/services/options/view/option-item-timer-state.service';
+
+import { isCurrentOptionCorrect as isOptCorrect } from './helpers/option-item-correctness';
+import { isSelectedForCurrentQuestion as isSelForCurrentQ } from './helpers/option-item-selection-matcher';
+
 import { isOptionCorrect } from '../../../../../shared/utils/is-option-correct';
 import { norm } from '../../../../../shared/utils/text-norm';
 
@@ -68,6 +71,7 @@ export class OptionItemComponent implements OnInit {
   private readonly quizService = inject(QuizService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly timerService = inject(TimerService);
+  private readonly timerState = inject(OptionItemTimerStateService);
   private readonly cdRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -801,33 +805,12 @@ export class OptionItemComponent implements OnInit {
   }
 
 
-  /**
-   * Authoritative timer-expired check: the `timerExpired` input may be
-   * stale (set for Q1 but not yet cleared when Q2 renders). Cross-check
-   * against TimerService.expiredForQuestionIndex so a stale input from
-   * Q1 doesn't disable/highlight Q2's options.
-   */
   private isTimerExpiredForThisQuestion(): boolean {
-    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-
-    // Signal-based check: reading expiredForQuestionIndexSig() inside a
-    // template-bound method lets Angular auto-track the dependency and
-    // re-render this OnPush component when the signal changes.
-    const expiredIdx = this.timerService.expiredForQuestionIndexSig();
-    if (expiredIdx >= 0 && expiredIdx === qIdx) return true;
-
-    // Direct subscription flag (belt-and-suspenders)
-    if (this._directTimerExpired && this._directTimerExpiredForIndex === qIdx) {
-      return true;
-    }
-
-    // STRICT: drop the legacy parent-input fallback. timerExpired() can
-    // remain true from Q1's expiry even after navigation to Q2, and the
-    // permissive `expiredPlain < 0` branch then treats Q2 as expired,
-    // stamping all of Q2's bindings as disabled (dark gray). Require
-    // signal/direct-subscription scope match — both checks above already
-    // gate on qIdx, so falling through here means "not expired for me".
-    return false;
+    return this.timerState.isExpiredForQuestion(
+      this.currentQuestionIndex(),
+      this._directTimerExpired,
+      this._directTimerExpiredForIndex
+    );
   }
 
   private get inputType(): 'radio' | 'checkbox' {
@@ -835,152 +818,16 @@ export class OptionItemComponent implements OnInit {
   }
 
   private isCurrentOptionCorrect(): boolean {
-    const binding = this.binding();
-    const opt = binding?.option as any;
-    if (isOptionCorrect(opt) || binding?.isCorrect === true) return true;
-
-    // Fallback: check authoritative question data from quiz service.
-    // Binding options may lack the `correct` flag after regeneration.
     const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-    const question = (this.quizService as any).questions?.[qIdx];
-    if (question?.options && opt?.text) {
-      const optText = norm(opt.text);
-      const match = question.options.find(
-        (o: Option) => o?.text && norm(o.text) === optText
-      );
-      if (isOptionCorrect(match)) {
-        return true;
-      }
-    }
-
-    return false;
+    return isOptCorrect(this.binding(), this.quizService, qIdx);
   }
 
-  /**
-   * True when the timer-expiry handler pre-stamped this binding for the
-   * CURRENT question. Stamps are scoped to the question index they were
-   * applied for; a stale stamp from a previous question is ignored so
-   * Q2's options don't inherit Q1's expired state.
-   */
   private isTimerStamped(): boolean {
-    const stamped = this.binding()?._timerExpiredStamped;
-    if (!stamped) return false;
-
-    const stampedFor = this.binding()?._timerExpiredStampedForIndex;
-    // STRICT: a stamp without scope can't be trusted (it might be from a
-    // prior question whose bindings got mutated in place). Require the
-    // scope to match the active question.
-    if (stampedFor == null) return false;
-
-    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-    return stampedFor === qIdx;
+    return this.timerState.isStamped(this.binding(), this.currentQuestionIndex());
   }
 
-  /** True when this binding was stamped as a correct option by the timer handler. */
   private isStampedCorrect(): boolean {
-    return this.isTimerStamped() && this.binding()?.cssClasses?.['correct-option'] === true;
-  }
-
-  private getSelectionsForCurrentBinding(): any[] {
-    let qIndex = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-
-    // On page refresh, the input signal and quiz service may both
-    // still be 0 (BehaviorSubject default) before the route resolver
-    // updates them with the URL-derived index. Fall back to the URL
-    // so saved selections for Q2+ are found on first render.
-    if (qIndex === 0) {
-      try {
-        const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
-        if (m) {
-          const urlIdx = Number(m[1]) - 1;
-          if (Number.isFinite(urlIdx) && urlIdx > 0) qIndex = urlIdx;
-        }
-      } catch { /* ignore */ }
-    }
-
-    const selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIndex) ?? [];
-    if (selections.length > 0) return selections;
-
-    // Visual-only fallback: check refresh backup for highlight/disable state
-    return this.selectedOptionService.getRefreshBackup(qIndex);
-  }
-
-  private matchesBindingSelection(sel: any): boolean {
-    let qIndex =
-      this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-
-    // Same URL fallback as getSelectionsForCurrentBinding — on refresh
-    // the input may still be 0 before the route resolves.
-    if (qIndex === 0) {
-      try {
-        const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
-        if (m) {
-          const urlIdx = Number(m[1]) - 1;
-          if (Number.isFinite(urlIdx) && urlIdx > 0) qIndex = urlIdx;
-        }
-      } catch { /* ignore */ }
-    }
-
-    const selQIdx =
-      sel.questionIndex ?? (sel as any).qIdx ?? (sel as any).questionIdx;
-
-    // Strict Question Context Check
-    if (selQIdx !== undefined && selQIdx !== null && selQIdx !== -1) {
-      if (Number(selQIdx) !== qIndex) return false;
-    }
-
-    // Saved record must represent an actual selection. `selected: false`
-    // is an unselect trace — ignore it so a never-clicked binding that
-    // happens to share an index with an unselect entry never lights up.
-    // EXCEPTION: entries with explicit showIcon/highlight are previously-
-    // clicked wrong options saved by the correct-click handler — they
-    // MUST match so the red+X icon restores on refresh.
-    if (sel?.selected === false && !sel?.showIcon && !sel?.highlight) {
-      return false;
-    }
-
-    // TEXT MATCH (most reliable — immune to synthetic ID mismatches
-    // and index collisions from different init paths).
-    const selText = norm((sel as any)?.text);
-    const bText = norm(this.binding()?.option?.text);
-    if (selText && bText) return selText === bText;
-
-    // Prefer `displayIndex` — that's what setSelectedOption enriches with
-    // and it is stable across refresh. `sel.index` can be a stale legacy
-    // field with an unrelated value (e.g. an array position), causing a
-    // false positive against this binding's `this.i`. Fall back to
-    // `index`/`idx` only when displayIndex is missing.
-    const rawIdx =
-      sel?.displayIndex ?? (sel as any)?.index ?? (sel as any)?.idx;
-    const normalizedSelectedIndex =
-      rawIdx != null && Number.isFinite(Number(rawIdx)) ? Number(rawIdx) : null;
-
-    if (normalizedSelectedIndex != null) {
-      if (normalizedSelectedIndex !== this.displayIndex()) return false;
-
-      // Position matches — cross-check optionId to prevent false
-      // positives when options reload in a different order or when
-      // stale displayIndex values leak from a prior session.
-      const selId = sel?.optionId;
-      const bId = this.binding()?.option?.optionId;
-      const selIdIsReal =
-        selId != null && selId !== -1 && String(selId) !== '-1';
-      const bIdIsReal =
-        bId != null && bId !== -1 && String(bId) !== '-1';
-      return !selIdIsReal || !bIdIsReal || String(selId) === String(bId);
-    }
-
-    // Fallback: match by optionId only when no index data exists on the
-    // selection record (e.g. refresh-backup data after deserialization).
-    // Require a real, non-sentinel id on BOTH sides so that multiple
-    // bindings sharing a -1/null optionId don't all match the same record.
-    const selId = sel?.optionId;
-    const bId = this.binding()?.option?.optionId;
-    const selIdIsReal =
-      selId != null && selId !== -1 && String(selId) !== '-1';
-    const bIdIsReal =
-      bId != null && bId !== -1 && String(bId) !== '-1';
-    return selIdIsReal && bIdIsReal && String(selId) === String(bId);
+    return this.timerState.isStampedCorrect(this.binding(), this.currentQuestionIndex());
   }
 
   private isOptionIndividuallySelected(): boolean {
@@ -993,18 +840,19 @@ export class OptionItemComponent implements OnInit {
   }
 
   private isSelectedForCurrentQuestion(): boolean {
-    const selections = this.getSelectionsForCurrentBinding();
-    return selections.some((s: SelectedOption) => this.matchesBindingSelection(s));
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+    return isSelForCurrentQ(
+      this.selectedOptionService,
+      this.binding(),
+      this.displayIndex(),
+      qIdx
+    );
   }
 
-  /** Resolve the active question index, preferring the component input
-   *  (set from the URL-authoritative parent) over the service value which
-   *  can lag or reset to 0 during re-initialization. */
+  /** Resolve the active question index. Delegates to the canonical
+   *  helper on QuizService so all callers share identical semantics
+   *  (input-first; service fallback; 0 when neither resolves). */
   private resolveQuestionIndex(): number {
-    const inputIdx = this.currentQuestionIndex();
-    if (typeof inputIdx === 'number' && inputIdx >= 0) return inputIdx;
-    const svcIdx = (this.quizService as any)?.getCurrentQuestionIndex?.()
-      ?? (this.quizService as any)?.currentQuestionIndex;
-    return (typeof svcIdx === 'number' && svcIdx >= 0) ? svcIdx : 0;
+    return this.quizService.resolveActiveQuestionIndex(this.currentQuestionIndex());
   }
 }

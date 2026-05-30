@@ -213,7 +213,7 @@ export class QqcOrchLifecycleService {
       if (host.currentQuestionIndex() === 0) {
         const initialMessage = 'Please start the quiz by selecting an option.';
         if (host.selectionMessage() !== initialMessage) {
-          host.selectionMessage.set(initialMessage);
+          host.selectionMessageService.pushMessage(initialMessage, 0);
         }
       } else {
         host.resetManager.clearSelection(host.correctAnswers, host.currentQuestion());

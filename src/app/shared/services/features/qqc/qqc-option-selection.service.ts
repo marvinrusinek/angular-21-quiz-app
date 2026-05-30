@@ -327,7 +327,7 @@ export class QqcOptionSelectionService {
 
     // Multi-answer guard: don't emit FET-related state for partially-answered
     // multi-answer questions. Check RAW question data for correct count.
-    const rawQ: any = (this.quizService as any)?.questions?.[currentQuestionIndex] ?? currentQuestion;
+    const rawQ = this.quizService?.questions?.[currentQuestionIndex] ?? currentQuestion;
     const rawOpts: any[] = rawQ?.options ?? [];
     const maCorrectCount = rawOpts.filter(
       (o: any) => isOptionCorrect(o)

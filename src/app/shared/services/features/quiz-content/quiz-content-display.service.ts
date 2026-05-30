@@ -154,25 +154,21 @@ export class QuizContentDisplayService {
     let qDisplay = effectiveQText;
     // Use PRISTINE quizInitialState as the source of truth for the correct
     // count. Live quizService.questions[] can be mutated by option-lock-policy.
-    const rawQuestion = (this.quizService as any)?.questions?.[safeIdx] as QuizQuestion | undefined;
+    const rawQuestion = this.quizService?.questions?.[safeIdx] as QuizQuestion | undefined;
     const sourceOpts = rawQuestion?.options ?? qObj?.options ?? [];
     let numCorrect = sourceOpts.filter((o: Option) => isOptionCorrect(o)).length;
     // Cross-check against pristine data — always prefer pristine count.
     // After Restart Quiz, live options can have ALL correct flags set to
     // true (stale mutation), inflating numCorrect. Pristine is immutable.
     try {
-      const _qText = norm(rawQuestion?.questionText ?? qObj?.questionText);
-      const _bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      for (const _quiz of _bundle) {
-        for (const _pq of (_quiz?.questions ?? [])) {
-          if (norm(_pq?.questionText) === _qText) {
-            const pc = (_pq?.options ?? []).filter(
-              (o: any) => isOptionCorrect(o)
-            ).length;
-            if (pc > 0) numCorrect = pc;
-            break;
-          }
-        }
+      const _pq = this.quizService?.getPristineQuestionByText(
+        rawQuestion?.questionText ?? qObj?.questionText
+      );
+      if (_pq) {
+        const pc = (_pq.options ?? []).filter(
+          (o: any) => isOptionCorrect(o)
+        ).length;
+        if (pc > 0) numCorrect = pc;
       }
     } catch { /* ignore */ }
     if (numCorrect > 1 && sourceOpts.length) {
@@ -208,22 +204,9 @@ export class QuizContentDisplayService {
         // option. If not, the "correct" hit was pollution.
         if (isResolved) {
           try {
-            const qTextLookup = norm(qObj?.questionText);
-            const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-            let pristineCorrectTexts = new Set<string>();
-            for (const quiz of bundle) {
-              for (const pq of (quiz?.questions ?? [])) {
-                if (norm(pq?.questionText) !== qTextLookup) continue;
-                for (const o of (pq?.options ?? [])) {
-                  if (isOptionCorrect(o)) {
-                    const t = norm(o?.text);
-                    if (t) pristineCorrectTexts.add(t);
-                  }
-                }
-                break;
-              }
-              if (pristineCorrectTexts.size > 0) break;
-            }
+            const pristineCorrectTexts = new Set(
+              this.quizService?.getPristineCorrectTextsForQuestion(qObj?.questionText) ?? []
+            );
             if (pristineCorrectTexts.size > 0) {
               // Find the last actively-selected entry (most recent click)
               const activeSelections = safeSelections.filter(
@@ -283,22 +266,14 @@ export class QuizContentDisplayService {
         // Validate: for multi-answer questions, confirm all correct are truly selected
         let oisBypassAllowed = true;
         try {
-          const bundle2: any[] = (this.quizService as any)?.quizInitialState ?? [];
           const qs2: any = this.quizService;
           const isShuf2 = qs2?.isShuffleEnabled?.() && Array.isArray(qs2?.shuffledQuestions) && qs2.shuffledQuestions.length > 0;
           const liveQ2: any = isShuf2 ? qs2?.shuffledQuestions?.[safeIdx] : qs2?.questions?.[safeIdx];
-          const qText2 = norm(liveQ2?.questionText ?? qObj?.questionText ?? '');
-          let pCorrect: string[] = [];
-          for (const quiz of bundle2) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qText2) continue;
-              pCorrect = (pq?.options ?? [])
-                .filter((o: any) => isOptionCorrect(o))
-                .map((o: any) => norm(o?.text)).filter((t: string) => !!t);
-              break;
-            }
-            if (pCorrect.length > 0) break;
-          }
+          const pCorrect = Array.from(
+            this.quizService?.getPristineCorrectTextsForQuestion(
+              liveQ2?.questionText ?? qObj?.questionText
+            ) ?? []
+          );
           if (pCorrect.length >= 2) {
             const selNow2 = new Set<string>();
             for (const s of safeSelections) {
@@ -340,12 +315,12 @@ export class QuizContentDisplayService {
     // don't reflect the SharedOptionComponent's binding state.
     if (!shouldShowExplanation && hasInteracted) {
       try {
-        const scoringSvc = (this.quizService as any)?.scoringService;
+        const scoringSvc = this.quizService?.scoringService as any;
         if (scoringSvc?.questionCorrectness) {
           let scored = scoringSvc.questionCorrectness.get(safeIdx) === true;
           if (!scored) {
             // Full quizId resolution chain (mirrors incrementScore)
-            let effectiveQuizId = (this.quizService as any)?.quizId || '';
+            let effectiveQuizId = this.quizService?.quizId || '';
             if (!effectiveQuizId) {
               try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
             }
@@ -410,20 +385,11 @@ export class QuizContentDisplayService {
         const liveQForGate: any = isShuffled
           ? qs?.shuffledQuestions?.[safeIdx]
           : qs?.questions?.[safeIdx];
-        const qText = norm(liveQForGate?.questionText ?? qObj?.questionText ?? '');
-        let pristineCorrect: string[] = [];
-        const bundle: any[] = qs?.quizInitialState ?? [];
-        for (const quiz of bundle) {
-          for (const pq of quiz?.questions ?? []) {
-            if (norm(pq?.questionText) !== qText) continue;
-            pristineCorrect = (pq?.options ?? [])
-              .filter((o: any) => isOptionCorrect(o))
-              .map((o: any) => norm(o?.text))
-              .filter((t: string) => !!t);
-            break;
-          }
-          if (pristineCorrect.length > 0) break;
-        }
+        const pristineCorrect = Array.from(
+          this.quizService?.getPristineCorrectTextsForQuestion(
+            liveQForGate?.questionText ?? qObj?.questionText
+          ) ?? []
+        );
         if (pristineCorrect.length >= 2) {
           const selectedNow = new Set<string>();
           // Active selections only
@@ -451,12 +417,12 @@ export class QuizContentDisplayService {
             // conversion internally.
             let scoringOverrideGate = false;
             try {
-              const scoringSvc4 = (this.quizService as any)?.scoringService;
+              const scoringSvc4 = this.quizService?.scoringService as any;
               if (scoringSvc4?.questionCorrectness) {
                 scoringOverrideGate = scoringSvc4.questionCorrectness.get(safeIdx) === true;
                 if (!scoringOverrideGate) {
                   // Full quizId resolution chain
-                  let eqId4 = (this.quizService as any)?.quizId || '';
+                  let eqId4 = this.quizService?.quizId || '';
                   if (!eqId4) {
                     try { eqId4 = localStorage.getItem('lastQuizId') || ''; } catch {}
                   }

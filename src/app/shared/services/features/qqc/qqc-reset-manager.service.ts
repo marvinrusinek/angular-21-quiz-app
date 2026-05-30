@@ -66,7 +66,7 @@ export class QqcResetManagerService {
     // Previous: the in-memory selections may have been pruned but the
     // questionCorrectness map persists across nav).
     const questionCorrectnessMap: Map<number, boolean> | undefined =
-      (this.quizService as any)?.questionCorrectness;
+      this.quizService?.questionCorrectness;
     const scoredCorrect = !!questionCorrectnessMap?.get?.(i0);
     let dotConfirmed = false;
     try {
@@ -276,10 +276,8 @@ export class QqcResetManagerService {
     if (!Array.isArray(optionsToDisplay) || optionsToDisplay.length === 0) return false;
     if (!Array.isArray(selectedOptions) || selectedOptions.length === 0) return false;
 
-    const isCorrect = isOptionCorrect;
-
     const correctIds = new Set<string>(
-      optionsToDisplay.filter(isCorrect).map(o => String(o.optionId))
+      optionsToDisplay.filter(isOptionCorrect).map(o => String(o.optionId))
     );
     if (correctIds.size === 0) return false;
 

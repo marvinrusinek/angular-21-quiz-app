@@ -556,18 +556,13 @@ export class QuizNavigationService {
         // banner flicker on Q(N) -> Q(N+1) transitions.
         let targetQText = rawQText;
         try {
-          const qNormText = norm(rawQText);
           let numCorrect = 0;
           let totalOpts = (targetQ?.options ?? []).length;
-          for (const quiz of ((qs as any)?.quizInitialState ?? []) as any[]) {
-            for (const pq of quiz?.questions ?? []) {
-              if (norm(pq?.questionText) !== qNormText) continue;
-              const pOpts = pq?.options ?? [];
-              numCorrect = pOpts.filter((o: any) => isOptionCorrect(o)).length;
-              totalOpts = pOpts.length;
-              break;
-            }
-            if (numCorrect > 0) break;
+          const pq = qs?.getPristineQuestionByText?.(rawQText);
+          if (pq) {
+            const pOpts = pq.options ?? [];
+            numCorrect = pOpts.filter((o: any) => isOptionCorrect(o)).length;
+            totalOpts = pOpts.length;
           }
           if (numCorrect === 0) {
             const sourceOpts = targetQ?.options ?? [];

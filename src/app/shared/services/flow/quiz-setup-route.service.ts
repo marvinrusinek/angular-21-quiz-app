@@ -387,18 +387,12 @@ export class QuizSetupRouteService {
 
     // Cross-check against pristine data for accurate count
     try {
-      const qText = norm(rawQ);
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      for (const quiz of bundle) {
-        for (const pq of (quiz?.questions ?? [])) {
-          if (norm(pq?.questionText) !== qText) continue;
-          const pc = (pq?.options ?? []).filter(
-            (o: any) => isOptionCorrect(o)
-          ).length;
-          if (pc > numCorrect) numCorrect = pc;
-          break;
-        }
-        if (numCorrect > 1) break;
+      const pq = this.quizService?.getPristineQuestionByText(rawQ);
+      if (pq) {
+        const pc = (pq.options ?? []).filter(
+          (o: any) => isOptionCorrect(o)
+        ).length;
+        if (pc > numCorrect) numCorrect = pc;
       }
     } catch {}
 

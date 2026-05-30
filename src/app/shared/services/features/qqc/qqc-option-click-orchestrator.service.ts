@@ -129,35 +129,25 @@ export class QqcOptionClickOrchestratorService {
     // stale/mutated correct flags on question.options.
     let correctIndices: number[] = [];
     try {
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      const quizId = (this.quizService as any)?.quizId;
-      const qText = norm(question?.questionText);
-      let pristineOpts: any[] | null = null;
+      let pristineCorrectTexts =
+        this.quizService.getPristineCorrectTextsForQuestion(question?.questionText);
 
-      if (qText && bundle.length > 0) {
-        for (const quiz of bundle) {
-          for (const pq of (quiz?.questions ?? [])) {
-            if (norm(pq?.questionText) !== qText) continue;
-            pristineOpts = pq?.options ?? [];
-            break;
-          }
-          if (pristineOpts) break;
-        }
-      }
-      if (!pristineOpts && quizId) {
-        const pristineQuiz = bundle.find((qz: any) => qz?.quizId === quizId);
-        pristineOpts = pristineQuiz?.questions?.[questionIndex]?.options ?? null;
-      }
-      if (pristineOpts) {
-        const pristineCorrectTexts = new Set<string>(
+      // Index-based fallback when question-text doesn't match canonical
+      // (e.g., text drift between live data and quizInitialState).
+      if (pristineCorrectTexts.size === 0 && this.quizService?.quizId) {
+        const pristineQuiz = (this.quizService?.quizInitialState ?? [])
+          .find((qz: any) => qz?.quizId === this.quizService?.quizId);
+        const pristineOpts: any[] = pristineQuiz?.questions?.[questionIndex]?.options ?? [];
+        pristineCorrectTexts = new Set(
           pristineOpts
             .filter((o: any) => isOptionCorrect(o))
             .map((o: any) => norm(o?.text))
             .filter((t: string) => !!t)
         );
-        for (const [i, o] of (question.options as any[]).entries()) {
-          if (pristineCorrectTexts.has(norm(o?.text))) correctIndices.push(i);
-        }
+      }
+
+      for (const [i, o] of (question.options as any[]).entries()) {
+        if (pristineCorrectTexts.has(norm(o?.text))) correctIndices.push(i);
       }
     } catch { /* ignore */ }
 
@@ -315,7 +305,7 @@ export class QqcOptionClickOrchestratorService {
     let rawAllCorrect = true;
     if (isMultiForSelection) {
       try {
-        const rawQs: any[] = (this.quizService as any)?.questions ?? [];
+        const rawQs: any[] = this.quizService?.questions ?? [];
         const qText = norm(question?.questionText);
         const rawQ = qText
           ? rawQs.find((r: any) => norm(r?.questionText) === qText)

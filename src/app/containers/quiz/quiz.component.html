@@ -36,7 +36,7 @@
             <mat-card-footer>
               <!-- Row 1: Selection Message (left) + Navigation (right) -->
               <section class="footer-row-1">
-                <div class="message-area">
+                <div class="message-area" role="status" aria-live="polite" aria-atomic="true">
                   @if (selectionMessage(); as message) {
                     <span class="instructions-message">{{ message }}</span>
                   }
@@ -85,7 +85,14 @@
                     <div class="paging-dots">
                       @for (q of questionsList(); track q.questionText) {
                         <div class="dot" [ngClass]="getDotClass($index)" [class.disabled]="!isDotClickable($index)"
-                          (click)="navigateToDot($index)" [attr.aria-label]="'Go to question ' + ($index + 1)">
+                          (click)="navigateToDot($index)"
+                          role="button"
+                          [attr.tabindex]="isDotClickable($index) ? 0 : -1"
+                          [attr.aria-disabled]="!isDotClickable($index)"
+                          [attr.aria-label]="'Go to question ' + ($index + 1)"
+                          [attr.aria-current]="currentQuestionIndex() === $index ? 'step' : null"
+                          (keydown.enter)="navigateToDot($index)"
+                          (keydown.space)="$event.preventDefault(); navigateToDot($index)">
                         </div>
                       }
                     </div>

@@ -57,7 +57,7 @@ export class QuestionResolutionService {
     }
 
     // Signal 3: scoring map (must use original index in shuffled mode)
-    const scoreMap = (this.quizService as any)?.questionCorrectness as Map<number, boolean> | undefined;
+    const scoreMap = this.quizService?.questionCorrectness as Map<number, boolean> | undefined;
     let scoredCorrect = false;
     if (scoreMap) {
       const qs: any = this.quizService;
@@ -80,26 +80,20 @@ export class QuestionResolutionService {
 
     // Signal 4: pristine correct options from quizInitialState
     const optsForQ: any[] =
-      (this.quizService as any)?.questions?.[qIdx]?.options
-      ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]?.options
+      this.quizService?.questions?.[qIdx]?.options
+      ?? this.quizService?.shuffledQuestions?.[qIdx]?.options
       ?? [];
 
     let correctOpts: any[] = [];
     try {
-      const liveQText = norm(
-        (this.quizService as any)?.questions?.[qIdx]?.questionText
+      const pq = this.quizService?.getPristineQuestionByText(
+        this.quizService?.questions?.[qIdx]?.questionText
         ?? optsForQ?.[0]?.questionText
       );
-      const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
-      outer: for (const quiz of bundle) {
-        for (const pq of (quiz?.questions ?? [])) {
-          if (liveQText && norm(pq?.questionText) === liveQText) {
-            correctOpts = (pq?.options ?? []).filter(
-              (o: any) => isOptionCorrect(o)
-            );
-            if (correctOpts.length > 0) break outer;
-          }
-        }
+      if (pq) {
+        correctOpts = (pq.options ?? []).filter(
+          (o: any) => isOptionCorrect(o)
+        );
       }
     } catch { /* ignore */ }
     if (correctOpts.length === 0) {

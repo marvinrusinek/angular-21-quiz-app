@@ -102,7 +102,7 @@ export class CqcOrchestratorService {
         // re-compute below.
         let cachedFet = isResolvedForCache
           ? ((host.explanationTextService.formattedExplanations?.[idx]?.explanation ?? '').trim()
-            || ((host.explanationTextService as any).fetByIndex?.get(idx) ?? '').trim())
+            || (host.explanationTextService.fetByIndex?.get(idx) ?? '').trim())
           : '';
         if (cachedFet) {
           try {
@@ -288,7 +288,7 @@ export class CqcOrchestratorService {
                 el.innerHTML = fetHtml;
                 host.qTextHtmlSig?.set(fetHtml);
                 host._lastDisplayedText = fetHtml;
-                (host as any)._fetLockedForIndex = idx;
+                host._fetLockedForIndex = idx;
               };
               write();
               setTimeout(write, 50);

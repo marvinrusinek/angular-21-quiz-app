@@ -160,9 +160,9 @@ export class SharedOptionClickService {
     comp.freezeOptionBindings.set(true);
     state.freezeOptionBindings = true;
 
-    const _isShuffledForFET = (this.quizService as any)?.isShuffleEnabled?.()
-      && Array.isArray((this.quizService as any)?.shuffledQuestions)
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const _isShuffledForFET = this.quizService?.isShuffleEnabled?.()
+      && Array.isArray(this.quizService?.shuffledQuestions)
+      && this.quizService?.shuffledQuestions?.length > 0;
     const emitExplanationFn = _isShuffledForFET
       ? (_idx: number, _skip?: boolean) => { /* no-op in shuffled mode */ }
       : (idx: number, skipGuard?: boolean) => comp.emitExplanation(idx, skipGuard);
@@ -212,7 +212,7 @@ export class SharedOptionClickService {
     // increments are skipped because that slot is already 'correct'.
     try {
       const liveQText = norm(comp.currentQuestion()?.questionText);
-      const allQs: any[] = (this.quizService as any)?.questions ?? [];
+      const allQs: any[] = this.quizService?.questions ?? [];
       if (liveQText && allQs.length) {
         const atQIdx = norm(allQs[qIdx]?.questionText);
         if (liveQText !== atQIdx) {
@@ -251,18 +251,18 @@ export class SharedOptionClickService {
 
     // Resolve correct indices from pristine quizInitialState
     let effectiveCorrectIndices = correctIndicesFromQ;
-    const isShuffled = (this.quizService as any)?.isShuffleEnabled?.()
-      && Array.isArray((this.quizService as any)?.shuffledQuestions)
-      && (this.quizService as any)?.shuffledQuestions?.length > 0;
+    const isShuffled = this.quizService?.isShuffleEnabled?.()
+      && Array.isArray(this.quizService?.shuffledQuestions)
+      && this.quizService?.shuffledQuestions?.length > 0;
 
     let pristineCorrectCount = correctCountFromQ;
     try {
       const qTextForLookup = isShuffled
-        ? ((this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
-          ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]?.questionText
+        ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
+          ?? this.quizService?.shuffledQuestions?.[qIdx]?.questionText
           ?? comp.getQuestionAtDisplayIndex?.(qIdx)?.questionText)
         : (comp.currentQuestion()?.questionText
-          ?? (this.quizService as any)?.questions?.[qIdx]?.questionText
+          ?? this.quizService?.questions?.[qIdx]?.questionText
           ?? comp.getQuestionAtDisplayIndex?.(qIdx)?.questionText);
       const pristineCorrectTexts =
         this.quizService.getPristineCorrectTextsForQuestion(qTextForLookup);
@@ -287,7 +287,7 @@ export class SharedOptionClickService {
     // Universal "all correct selected" timer stop
     try {
       let allCorrectIdxs: number[] = [];
-      const allQs: any[] = (this.quizService as any)?.questions ?? [];
+      const allQs: any[] = this.quizService?.questions ?? [];
       const passedText = norm(comp.currentQuestion()?.questionText);
       let canonicalQ: any = null;
       if (passedText && allQs.length) {

@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -12,18 +14,23 @@ describe('SelectionMessageService', () => {
   let selectedOptionServiceMock: any;
 
   const START_MSG = 'Please start the quiz by selecting an option.';
-  const CONTINUE_MSG = 'Please click an option to continue.';
+  const CONTINUE_MSG = 'Please select an option to continue...';
   const NEXT_BTN_MSG = 'Please click the Next button to continue.';
   const SHOW_RESULTS_MSG = 'Please click the Show Results button.';
 
   beforeEach(() => {
     quizServiceMock = {
       currentQuestionIndex: 0,
-      totalQuestions: 6,
+      currentQuestionIndexSig: () => 0,
+      totalQuestions: () => 6,
       questions: [],
       shuffledQuestions: [],
+      quizInitialState: [],
       isShuffleEnabled: jest.fn().mockReturnValue(false),
       currentQuestion: { value: null },
+      scoringService: { questionCorrectness: new Map() },
+      _multiAnswerPerfect: new Map(),
+      getCurrentQuestionIndex: () => 0,
     };
 
     selectedOptionServiceMock = {
@@ -35,6 +42,7 @@ describe('SelectionMessageService', () => {
         SelectionMessageService,
         { provide: QuizService, useValue: quizServiceMock },
         { provide: SelectedOptionService, useValue: selectedOptionServiceMock },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } }, params: of({}) } },
       ],
     });
 
@@ -45,17 +53,22 @@ describe('SelectionMessageService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should initialize with START_MSG', () => {
-    expect(service.getCurrentMessage()).toBe(START_MSG);
+  it('should initialize with CONTINUE_MSG (Q1 unanswered default)', () => {
+    // Service was refactored to a strict computed signal that always derives
+    // from currentQuestionIndexSig + _completedIdxSet. For idx=0 unanswered,
+    // derive returns CONTINUE_MSG.
+    expect(service.getCurrentMessage()).toBe(CONTINUE_MSG);
   });
 
   // ── resetAll ────────────────────────────────────────────────
 
   describe('resetAll', () => {
-    it('should reset message to START_MSG', () => {
+    it('should reset back to derived default after resetAll', () => {
       service.pushMessage('some other message', 0);
       service.resetAll();
-      expect(service.getCurrentMessage()).toBe(START_MSG);
+      // After reset, _completedIdxSet is cleared and override is gone, so the
+      // computed re-derives CONTINUE_MSG for idx=0 unanswered.
+      expect(service.getCurrentMessage()).toBe(CONTINUE_MSG);
     });
 
     it('should clear all locks', () => {
@@ -218,13 +231,16 @@ describe('SelectionMessageService', () => {
 
   describe('forceNextButtonMessage', () => {
     it('should set NEXT_BTN_MSG for non-last question', () => {
-      quizServiceMock.totalQuestions = 6;
+      quizServiceMock.totalQuestions = () => 6;
       service.forceNextButtonMessage(0);
       expect(service.getCurrentMessage()).toBe(NEXT_BTN_MSG);
     });
 
     it('should set SHOW_RESULTS_MSG for last question', () => {
-      quizServiceMock.totalQuestions = 6;
+      quizServiceMock.totalQuestions = () => 6;
+      // Move the current index to 5 so the strict-computed signal honors the
+      // click override pushed for that index.
+      quizServiceMock.currentQuestionIndexSig = () => 5;
       service.forceNextButtonMessage(5);
       expect(service.getCurrentMessage()).toBe(SHOW_RESULTS_MSG);
     });

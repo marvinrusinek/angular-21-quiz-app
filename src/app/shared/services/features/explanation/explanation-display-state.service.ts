@@ -191,7 +191,7 @@ export class ExplanationDisplayStateService {
         const selectedSvc = this.injector.get(SelectedOptionService, null);
         if (quizSvc && selectedSvc) {
           const activeIdx = targetIdx ?? quizSvc.getCurrentQuestionIndex?.() ?? 0;
-          const rawQ: any = (quizSvc as any)?.questions?.[activeIdx];
+          const rawQ: any = quizSvc?.questions?.[activeIdx];
           const rawOpts: any[] = rawQ?.options ?? [];
           const correctCount = rawOpts.filter(
             (o: any) => isOptionCorrect(o)
@@ -527,13 +527,13 @@ export class ExplanationDisplayStateService {
           const activeIdx = this._activeIndexValue ?? quizSvc.getCurrentQuestionIndex?.() ?? 0;
 
           // SHUFFLED FIX: use display-order question source
-          const _isShufG = (quizSvc as any)?.isShuffleEnabled?.()
-            && (quizSvc as any)?.shuffledQuestions?.length > 0;
+          const _isShufG = quizSvc?.isShuffleEnabled?.()
+            && quizSvc?.shuffledQuestions?.length > 0;
           const rawQ: any = _isShufG
-            ? ((quizSvc as any)?.getQuestionsInDisplayOrder?.()?.[activeIdx]
-              ?? (quizSvc as any)?.shuffledQuestions?.[activeIdx]
-              ?? (quizSvc as any)?.questions?.[activeIdx])
-            : (quizSvc as any)?.questions?.[activeIdx];
+            ? (quizSvc?.getQuestionsInDisplayOrder?.()?.[activeIdx]
+              ?? quizSvc?.shuffledQuestions?.[activeIdx]
+              ?? quizSvc?.questions?.[activeIdx])
+            : quizSvc?.questions?.[activeIdx];
           const rawOpts: any[] = rawQ?.options ?? [];
           const correctCount = rawOpts.filter(
             (o: any) => isOptionCorrect(o)
@@ -554,7 +554,7 @@ export class ExplanationDisplayStateService {
               && correctTexts.every((t: string) => selTexts.has(t));
             if (!allCorrectSelected) {
               // Check questionCorrectness override before blocking
-              const scoringSvc = (quizSvc as any)?.scoringService;
+              const scoringSvc = quizSvc?.scoringService as any;
               const scoredCorrect = scoringSvc?.questionCorrectness?.get(activeIdx) === true;
               if (!scoredCorrect) {
                 return;
@@ -705,8 +705,8 @@ export class ExplanationDisplayStateService {
 
         if (quizSvc) {
           const isShuffled = quizSvc.isShuffleEnabled?.() ?? false;
-          const shuffled = Array.isArray((quizSvc as any).shuffledQuestions)
-            ? (quizSvc as any).shuffledQuestions
+          const shuffled = Array.isArray(quizSvc.shuffledQuestions)
+            ? quizSvc.shuffledQuestions
             : [];
           const baseQuestions = isShuffled && shuffled.length > 0
             ? shuffled
@@ -714,8 +714,8 @@ export class ExplanationDisplayStateService {
 
           // Prefer display-order accessor when available
           const displayQuestions =
-            typeof (quizSvc as any).getQuestionsInDisplayOrder === 'function'
-              ? (quizSvc as any).getQuestionsInDisplayOrder()
+            typeof quizSvc.getQuestionsInDisplayOrder === 'function'
+              ? quizSvc.getQuestionsInDisplayOrder()
               : baseQuestions;
 
           const question = displayQuestions?.[index] ?? baseQuestions?.[index] ?? null;
@@ -728,7 +728,7 @@ export class ExplanationDisplayStateService {
           }
 
           // Determine authoritative correct count from RAW questions (unmutated).
-          const rawQs: any[] = (quizSvc as any).questions ?? [];
+          const rawQs = quizSvc.questions ?? [];
           const rawQ: any = rawQs[index] ?? question;
           const rawCorrectCount = (rawQ?.options ?? []).filter(
             (o: any) => isOptionCorrect(o)

@@ -118,11 +118,12 @@ export class QuizSessionManagerService {
       const savedCount = state.correctCount;
       const savedShuffled = state.shuffledQuestions ? [...state.shuffledQuestions] : [];
       const savedQuestions = _questions ? [..._questions] : [];
-      const savedQuestionsQuizId = questionsQuizId;
 
       state.resetAll();
 
-      // Restore state immediately to maintain score persistence
+      // Restore state immediately to maintain score persistence.
+      // (questionsQuizId is intentionally NOT saved/restored — state.resetAll()
+      // doesn't touch it; it's a host QuizService field, not on QuizSessionState.)
       state.questionCorrectness = savedCorrectness;
       state.selectedOptionsMap = savedSelections;
       state.correctCount = savedCount;
@@ -131,7 +132,6 @@ export class QuizSessionManagerService {
         state.questions = savedQuestions;
         questionsSig.set(savedQuestions);
       }
-      questionsQuizId = savedQuestionsQuizId;
     }
 
     const base = options;

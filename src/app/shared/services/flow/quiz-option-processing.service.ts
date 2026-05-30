@@ -198,7 +198,7 @@ export class QuizOptionProcessingService {
     try {
       const qText = norm(questionForSelection?.questionText ?? currentQuestion?.questionText);
       if (qText) {
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        const bundle = this.quizService?.quizInitialState ?? [];
         for (const quiz of bundle) {
           for (const pq of (quiz?.questions ?? [])) {
             if (norm(pq?.questionText) !== qText) continue;
@@ -374,7 +374,7 @@ export class QuizOptionProcessingService {
       // persists displayMode=explanation â€” causing premature FET display.
       let rawAllCorrectSelected = everyCorrectSelected;
       try {
-        const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+        const bundle = this.quizService?.quizInitialState ?? [];
         const quizIdVal = this.quizService?.quizId;
         const qText = norm(questionForSelection?.questionText);
         let pristineCorrectTexts: string[] = [];
@@ -511,7 +511,7 @@ export class QuizOptionProcessingService {
       let pristineBlocked = false;
       if (!isSingleAnswerQuestion) {
         try {
-          const bundle: any[] = (this.quizService as any)?.quizInitialState ?? [];
+          const bundle = this.quizService?.quizInitialState ?? [];
           const q = this.quizService.questions?.[idx];
           const qText = norm(q?.questionText);
           let pristineCorrectTexts: string[] = [];

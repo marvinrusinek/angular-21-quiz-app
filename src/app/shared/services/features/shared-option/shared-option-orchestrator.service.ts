@@ -149,19 +149,14 @@ export class SharedOptionOrchestratorService {
         const displayQ = isShuffled
           ? (qs?.getQuestionsInDisplayOrder?.()?.[idx] ?? qs?.shuffledQuestions?.[idx])
           : currentQ;
-        const qText = norm(displayQ?.questionText ?? currentQ?.questionText);
-        if (qText) {
-          const bundle: any[] = qs?.quizInitialState ?? [];
-          outerQ: for (const quiz of bundle) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qText) continue;
-              const correctCount = (pq?.options ?? []).filter(
-                (o: any) => isOptionCorrect(o)
-              ).length;
-              if (correctCount > 1) result = true;
-              break outerQ;
-            }
-          }
+        const pq = qs?.getPristineQuestionByText?.(
+          displayQ?.questionText ?? currentQ?.questionText
+        );
+        if (pq) {
+          const correctCount = (pq.options ?? []).filter(
+            (o: any) => isOptionCorrect(o)
+          ).length;
+          if (correctCount > 1) result = true;
         }
       }
     } catch { /* ignore */ }

@@ -147,15 +147,13 @@ export class FeedbackService {
     // the source of truth for "which question the user is looking at".
     // We then read the canonical options (with correct flags) from
     // quizService.questions[] for that same text.
-    const isCorrectFlag = isOptionCorrect;
-
     let resolvedQuestion: QuizQuestion = question ?? {
       questionText: '', options: optionsToDisplay ?? [], explanation: '',
       type: QuestionType.SingleAnswer
     };
     let resolvedIdx = -1;
     try {
-      const allQs: QuizQuestion[] = (quizSvc as any)?.questions ?? [];
+      const allQs: QuizQuestion[] = quizSvc?.questions ?? [];
 
       // FIRST: parse the URL directly. The URL is the only truly reliable
       // source â€” signals/services can lag during rapid navigation, and
@@ -199,7 +197,7 @@ export class FeedbackService {
     let correctIndices: number[] = [];
     const canonicalOpts: Option[] = (resolvedQuestion?.options ?? []) as Option[];
     for (const [i, o] of canonicalOpts.entries()) {
-      if (isCorrectFlag(o)) correctIndices.push(i + 1);
+      if (isOptionCorrect(o)) correctIndices.push(i + 1);
     }
     if (correctIndices.length === 0) {
       correctIndices = this.explanationTextService.getCorrectOptionIndices(
@@ -208,8 +206,6 @@ export class FeedbackService {
         idxForLookup
       );
     }
-
-    const isCorrectHelper = isOptionCorrect;
 
     if ((!correctIndices || correctIndices.length === 0) && quizSvc) {
       const qText = norm(question.questionText);
@@ -221,7 +217,7 @@ export class FeedbackService {
         if (sourceQ?.options) {
           const foundIndices = sourceQ.options
             .map((o: Option, i: number) =>
-              isCorrectHelper(o) ? i + 1 : null
+              isOptionCorrect(o) ? i + 1 : null
             )
             .filter((n: number | null): n is number => n !== null);
           if (foundIndices.length > 0) correctIndices = foundIndices;
@@ -243,7 +239,7 @@ export class FeedbackService {
     // â”€â”€ GUARDRAIL: Cross-validate correctIndices against visual correct flags â”€â”€
     if (truthOptions.length > 0) {
       const visualCorrect = truthOptions
-        .map((o: Option, i: number) => isCorrectHelper(o) ? i + 1 : null)
+        .map((o: Option, i: number) => isOptionCorrect(o) ? i + 1 : null)
         .filter((n: number | null): n is number => n !== null);
 
       if (visualCorrect.length > 0) {
@@ -284,7 +280,7 @@ export class FeedbackService {
       const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
       if (m) {
         const urlIdx = Number(m[1]) - 1;
-        const allQs: any[] = (quizSvc as any)?.questions ?? [];
+        const allQs: any[] = quizSvc?.questions ?? [];
         if (urlIdx >= 0 && allQs[urlIdx]?.options?.length) {
           canonicalOptionsForMatch = allQs[urlIdx].options as Option[];
         }
@@ -313,14 +309,14 @@ export class FeedbackService {
         const match = canonicalOptionsForMatch.find(
           (o: Option) => o?.text && String(o.text).trim() === selText
         );
-        if (match) canonicalCorrect = isCorrectHelper(match);
+        if (match) canonicalCorrect = isOptionCorrect(match);
       }
 
       // ROBUST EVALUATION:
       // An option is correct if its `correct` flag is true OR its visual
       // position matches a correct index OR the canonical-by-text lookup
       // says it's correct.
-      const isCorrect = isCorrectHelper(sel) ||
+      const isCorrect = isOptionCorrect(sel) ||
         (visualIdx >= 0 && correctIndices.includes(visualIdx + 1)) ||
         canonicalCorrect;
 
@@ -338,7 +334,7 @@ export class FeedbackService {
       let rawIncorrectSelected = 0;
       for (const o of optionsRaw) {
         if (o.selected) {
-          if (isCorrectHelper(o)) {
+          if (isOptionCorrect(o)) {
             rawCorrectSelected++;
           } else {
             rawIncorrectSelected++;
@@ -346,10 +342,10 @@ export class FeedbackService {
         }
       }
       // Also count targetOption if it's correct and selected (just clicked)
-      if (targetOption && targetOption.selected && isCorrectHelper(targetOption)) {
+      if (targetOption && targetOption.selected && isOptionCorrect(targetOption)) {
         // Check if targetOption is already counted in rawCorrectSelected
         const alreadyCounted = optionsRaw.some(o =>
-          o.selected && isCorrectHelper(o) &&
+          o.selected && isOptionCorrect(o) &&
           ((o.text && targetOption.text && String(o.text).trim() === String(targetOption.text).trim()) ||
             (o.optionId != null && targetOption.optionId != null && String(o.optionId) === String(targetOption.optionId)))
         );
@@ -397,7 +393,7 @@ export class FeedbackService {
       // If a specific option was clicked, prioritize its individual feedback
       if (targetOption) {
         // Robustly determine if the target option is correct
-        const isTargetCorrect = isCorrectHelper(targetOption) ||
+        const isTargetCorrect = isOptionCorrect(targetOption) ||
           (optionsRaw.findIndex(o =>
             o === targetOption ||
             (o.optionId != null && targetOption.optionId != null && String(o.optionId) === String(targetOption.optionId)) ||
@@ -458,14 +454,9 @@ export class FeedbackService {
     const quizSvc = this.injector.get(QuizService, null);
     const currentIndex = quizSvc?.currentQuestionIndex;
     // Resolve canonical question by text-match against quizService.questions[]
-    const isCorrectFlagSCM = (val: any): boolean => {
-      if (!val) return false;
-      const c = (val as any).correct ?? (val as any).isCorrect;
-      return c === true || String(c) === 'true' || c === 1 || c === '1';
-    };
     let canonicalQ: QuizQuestion | undefined = question;
     try {
-      const allQs: QuizQuestion[] = (quizSvc as any)?.questions ?? [];
+      const allQs: QuizQuestion[] = quizSvc?.questions ?? [];
       const passedText = norm(question?.questionText);
       if (passedText && allQs.length) {
         const idx = allQs.findIndex(q => norm(q?.questionText) === passedText);
@@ -474,7 +465,7 @@ export class FeedbackService {
     } catch {}
     const directFromCanonical: number[] = [];
     for (const [i, o] of (canonicalQ?.options ?? []).entries()) {
-      if (isCorrectFlagSCM(o)) directFromCanonical.push(i + 1);
+      if (isOptionCorrect(o)) directFromCanonical.push(i + 1);
     }
     const indices = directFromCanonical.length > 0
       ? directFromCanonical

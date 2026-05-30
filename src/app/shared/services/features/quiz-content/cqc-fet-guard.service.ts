@@ -54,7 +54,7 @@ export class CqcFetGuardService {
         const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
         if (m) {
           const urlIdx = Number(m[1]) - 1;
-          const allQs: any[] = (host.quizService as any)?.questions ?? [];
+          const allQs: any[] = host.quizService?.questions ?? [];
           const urlQ = allQs[urlIdx];
           const safeText = norm(safe);
           const safeIsFet = safeText.includes('correct because') ||
@@ -66,16 +66,11 @@ export class CqcFetGuardService {
               // options can be mutated by option-lock-policy.
               let correctCount = 0;
               let totalOpts = (urlQ?.options ?? []).length;
-              const _qTextUrl = norm(urlQ.questionText);
               try {
-                for (const _quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
-                  for (const _pq of (_quiz?.questions ?? [])) {
-                    if (norm(_pq?.questionText) !== _qTextUrl) continue;
-                    correctCount = (_pq?.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
-                    totalOpts = (_pq?.options ?? []).length;
-                    break;
-                  }
-                  if (correctCount > 0) break;
+                const _pq = host.quizService?.getPristineQuestionByText(urlQ.questionText);
+                if (_pq) {
+                  correctCount = (_pq.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
+                  totalOpts = (_pq.options ?? []).length;
                 }
               } catch { /* ignore */ }
               if (correctCount === 0) {
@@ -157,12 +152,12 @@ export class CqcFetGuardService {
           const _cachedFet = (
             host.explanationTextService?.formattedExplanations?.[_liveIdx]?.explanation ?? ''
           ).toString().trim() || (
-            (host.explanationTextService as any)?.fetByIndex?.get?.(_liveIdx) ?? ''
+            host.explanationTextService?.fetByIndex?.get?.(_liveIdx) ?? ''
           ).toString().trim();
           if (_cachedFet && _cachedFet.toLowerCase().includes('correct because')) {
             host.qTextHtmlSig?.set(_cachedFet);
             host._lastDisplayedText = _cachedFet;
-            (host as any)._fetLockedForIndex = _liveIdx;
+            host._fetLockedForIndex = _liveIdx;
             return;
           }
         }
@@ -191,7 +186,7 @@ export class CqcFetGuardService {
         }
       }
 
-      const rawQs: any[] = (host.quizService as any)?.questions ?? [];
+      const rawQs: any[] = host.quizService?.questions ?? [];
       const safeNorm = norm(safe);
 
       // ════════════════════════════════════════════════════════════════
@@ -219,15 +214,8 @@ export class CqcFetGuardService {
 
         let pristineExplanation = '';
         try {
-          const tnorm = norm(liveQEarly?.questionText ?? '');
-          for (const quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
-            for (const pq of quiz?.questions ?? []) {
-              if (norm(pq?.questionText) !== tnorm) continue;
-              pristineExplanation = norm(pq?.explanation ?? '');
-              break;
-            }
-            if (pristineExplanation) break;
-          }
+          const pq = host.quizService?.getPristineQuestionByText(liveQEarly?.questionText);
+          if (pq) pristineExplanation = norm(pq.explanation ?? '');
         } catch { /* ignore */ }
 
         const rawExplNorm = norm(liveQEarly?.explanation ?? '');
@@ -264,21 +252,11 @@ export class CqcFetGuardService {
           const liveQ: any = isShuffled
             ? qs?.shuffledQuestions?.[activeIdx]
             : qs?.questions?.[activeIdx];
-          const displayedQText = norm(liveQ?.questionText ?? '');
-          const pristineCorrectTexts = new Set<string>();
+          let pristineCorrectTexts = new Set<string>();
           try {
-            for (const quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
-              for (const pq of quiz?.questions ?? []) {
-                if (norm(pq?.questionText) !== displayedQText) continue;
-                for (const o of pq?.options ?? []) {
-                  if (!isOptionCorrect(o)) continue;
-                  const t = norm(o?.text);
-                  if (t) pristineCorrectTexts.add(t);
-                }
-                break;
-              }
-              if (pristineCorrectTexts.size > 0) break;
-            }
+            pristineCorrectTexts = new Set(
+              host.quizService?.getPristineCorrectTextsForQuestion(liveQ?.questionText) ?? []
+            );
           } catch { /* ignore */ }
 
           const correctTotal = pristineCorrectTexts.size;
@@ -321,19 +299,19 @@ export class CqcFetGuardService {
           } catch { /* ignore */ }
 
           try {
-            const rows = typeof document !== 'undefined'
+            const rows: NodeListOf<Element> | Element[] = typeof document !== 'undefined'
               ? document.querySelectorAll(
                 'codelab-option-item, .option-row, [data-option-text], .option-item'
               )
-              : ([] as any);
-            for (const row of rows) {
-              const cls = String((row as any)?.className ?? '');
+              : [];
+            for (const row of Array.from(rows)) {
+              const cls = String(row?.className ?? '');
               const isHighlighted = cls.includes('selected')
                 || cls.includes('highlight')
-                || (row as any)?.querySelector?.('.selected, .highlight, mat-icon') != null;
+                || row?.querySelector?.('.selected, .highlight, mat-icon') != null;
               if (!isHighlighted) continue;
               const txt = norm(
-                (row as any)?.getAttribute?.('data-option-text')
+                row?.getAttribute?.('data-option-text')
                 ?? row?.textContent
                 ?? ''
               );
@@ -397,13 +375,13 @@ export class CqcFetGuardService {
           }
         };
         addSource(qs?.questions);
-        addSource((qs as any)?.dataLoader?.currentQuizSig?.()?.questions);
-        const quizData = (qs as any)?.quizData;
+        addSource(qs?.dataLoader?.currentQuizSig?.()?.questions);
+        const quizData = qs?.quizData;
         if (Array.isArray(quizData)) {
           for (const quiz of quizData) addSource(quiz?.questions);
         }
         try {
-          for (const quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
+          for (const quiz of host.quizService?.quizInitialState ?? []) {
             addSource(quiz?.questions);
           }
         } catch { /* ignore */ }
@@ -481,7 +459,7 @@ export class CqcFetGuardService {
             if (!resolved) {
               let hardGateOverride = false;
               try {
-                const qs2 = host.quizService as any;
+                const qs2 = host.quizService;
                 const displayIdx = host.currentIndex ?? (
                   Number.isFinite(qs2?.currentQuestionIndex)
                     ? qs2.currentQuestionIndex
@@ -526,27 +504,17 @@ export class CqcFetGuardService {
           && !safeTextOnly_ll.startsWith(qTextNorm_ll)
           && safeTextOnly_ll !== qTextNorm_ll;
         if (isNotQuestionText) {
-          let pristineCorrect_ll: string[] = [];
-          const bundle_ll: any[] = qs_ll?.quizInitialState ?? [];
-          for (const quiz of bundle_ll) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qTextNorm_ll) continue;
-              pristineCorrect_ll = (pq?.options ?? [])
-                .filter((o: any) => isOptionCorrect(o))
-                .map((o: any) => norm(o?.text))
-                .filter((t: string) => !!t);
-              break;
-            }
-            if (pristineCorrect_ll.length > 0) break;
-          }
+          const pristineCorrect_ll = Array.from(
+            host.quizService?.getPristineCorrectTextsForQuestion(liveQ_ll?.questionText) ?? []
+          );
           if (pristineCorrect_ll.length >= 2) {
             const selNow_ll = new Set<string>();
             try {
               const rawMap_ll = host.selectedOptionService?.selectedOptionsMap;
               if (rawMap_ll && typeof rawMap_ll.get === 'function') {
                 for (const o of (rawMap_ll.get(idx_ll) ?? [])) {
-                  if ((o as any)?.selected === false) continue;
-                  const t = norm((o as any)?.text);
+                  if (o?.selected === false) continue;
+                  const t = norm(o?.text);
                   if (t) selNow_ll.add(t);
                 }
               }
@@ -603,8 +571,8 @@ export class CqcFetGuardService {
             const _map = host.selectedOptionService?.selectedOptionsMap;
             if (_map && typeof _map.get === 'function') {
               for (const _o of (_map.get(_idx) ?? [])) {
-                if ((_o as any)?.selected === false) continue;
-                const _t = norm((_o as any)?.text);
+                if (_o?.selected === false) continue;
+                const _t = norm(_o?.text);
                 if (_t) _selNow.add(_t);
               }
             }
@@ -651,7 +619,7 @@ export class CqcFetGuardService {
             : qsBs?.questions?.[bsIdx];
           const qTextBs = normBs(qObjBs?.questionText ?? '');
           if (qTextBs) {
-            for (const quiz of ((qsBs?.quizInitialState ?? []) as any[])) {
+            for (const quiz of qsBs?.quizInitialState ?? []) {
               for (const pq of quiz?.questions ?? []) {
                 if (normBs(pq?.questionText) !== qTextBs) continue;
                 pristineExplBs = normBs(pq?.explanation ?? '');
@@ -725,16 +693,11 @@ export class CqcFetGuardService {
       let numCorrect = 0;
       let totalOpts = (q?.options ?? []).length;
       try {
-        const qTextBld = norm(rawQ);
-        for (const quiz of ((host.quizService as any)?.quizInitialState ?? []) as any[]) {
-          for (const pq of quiz?.questions ?? []) {
-            if (norm(pq?.questionText) !== qTextBld) continue;
-            const pOpts = pq?.options ?? [];
-            numCorrect = pOpts.filter((o: any) => isOptionCorrect(o)).length;
-            totalOpts = pOpts.length;
-            break;
-          }
-          if (numCorrect > 0) break;
+        const pq = host.quizService?.getPristineQuestionByText(rawQ);
+        if (pq) {
+          const pOpts = pq.options ?? [];
+          numCorrect = pOpts.filter((o: any) => isOptionCorrect(o)).length;
+          totalOpts = pOpts.length;
         }
       } catch { /* ignore */ }
       if (numCorrect === 0) {
@@ -848,20 +811,9 @@ export class CqcFetGuardService {
           ?? host.quizService.questions;
         const q = questions?.[idx];
         if (q) {
-          const qText = norm(q?.questionText);
-          const bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
-          let pristineCorrectTexts: string[] = [];
-          for (const quiz of bundle) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qText) continue;
-              pristineCorrectTexts = (pq?.options ?? [])
-                .filter((o: any) => isOptionCorrect(o))
-                .map((o: any) => norm(o?.text))
-                .filter((t: string) => !!t);
-              break;
-            }
-            if (pristineCorrectTexts.length > 0) break;
-          }
+          const pristineCorrectTexts = Array.from(
+            host.quizService?.getPristineCorrectTextsForQuestion(q?.questionText) ?? []
+          );
           if (pristineCorrectTexts.length >= 2) {
             const selTexts = new Set(
               storedSelections
@@ -974,14 +926,10 @@ export class CqcFetGuardService {
       const qExp = norm(liveQ?.explanation ?? '');
       if (qExp && n.includes(qExp)) return true;
 
-      const qText = norm(liveQ?.questionText ?? '');
-      const bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
-      for (const quiz of bundle) {
-        for (const pq of quiz?.questions ?? []) {
-          if (norm(pq?.questionText) !== qText) continue;
-          const pExp = norm(pq?.explanation ?? '');
-          if (pExp && n.includes(pExp)) return true;
-        }
+      const pq = host.quizService?.getPristineQuestionByText(liveQ?.questionText);
+      if (pq) {
+        const pExp = norm(pq.explanation ?? '');
+        if (pExp && n.includes(pExp)) return true;
       }
     } catch { /* ignore */ }
     return false;
@@ -1017,19 +965,9 @@ export class CqcFetGuardService {
   }
 
   private getPristineCorrectTexts(host: Host, liveQ: any): string[] {
-    const qText = norm(liveQ?.questionText ?? '');
-    const bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
-    for (const quiz of bundle) {
-      for (const pq of quiz?.questions ?? []) {
-        if (norm(pq?.questionText) !== qText) continue;
-        const texts = (pq?.options ?? [])
-          .filter((o: any) => isOptionCorrect(o))
-          .map((o: any) => norm(o?.text))
-          .filter((t: string) => !!t);
-        if (texts.length > 0) return texts;
-      }
-    }
-    return [];
+    return Array.from(
+      host.quizService?.getPristineCorrectTextsForQuestion(liveQ?.questionText) ?? []
+    );
   }
 
   private collectSelectedTexts(host: Host, liveQ: any, idx: number): Set<string> {
@@ -1043,7 +981,7 @@ export class CqcFetGuardService {
       if (t) selectedNow.add(t);
     }
 
-    const rawMap: any = (host.selectedOptionService as any)?.selectedOptionsMap;
+    const rawMap: any = host.selectedOptionService?.selectedOptionsMap;
     if (rawMap && typeof rawMap.get === 'function') {
       const mapSel: any[] = rawMap.get(idx) ?? [];
       for (const o of mapSel) {
