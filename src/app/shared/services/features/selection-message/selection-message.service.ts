@@ -125,7 +125,7 @@ export class SelectionMessageService {
 
     const isLast = total > 0 && idx === total - 1;
     return answered
-      ? (isLast ? 'Answered ✓ Click Show Results button.' : 'Answered ✓ Click Next to continue...')
+      ? (isLast ? SHOW_RESULTS_MSG : 'Answered ✓ Click Next to continue...')
       : 'Please select an option to continue...';
   }
 
