@@ -451,6 +451,7 @@ export class SelectionMessageService {
   }
 
   public setSelectionMessageText(message: string): void {
+    console.log('[SET-MSG-TEXT]', 'msg:', message, 'from:', new Error().stack?.split('\n')[2]?.trim());
     this.selectionMessageSig.set(message);
   }
 }
