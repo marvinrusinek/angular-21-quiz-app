@@ -120,24 +120,41 @@ export class QuizNavigationService {
     const result = await this.navigateWithOffset(-1);
 
     // After Previous navigation lands, push the correct selection message
-    // for the target question. Without this, the message stays whatever
-    // it was on the prior question, which feels wrong on Previous.
-    try {
-      const targetIdx = this.quizService.currentQuestionIndex;
+    // for the target question. The check below uses multiple signals so
+    // it survives even if one source hasn't updated yet:
+    //   - quizStateService.isQuestionAnswered (in-memory answered set)
+    //   - questionCorrectness map (set by scoreDirectly on correct click)
+    //   - _multiAnswerPerfect map (set by SOC on multi-answer all-correct)
+    //   - fetBypassForQuestion (set by SOC paths that show FET)
+    const pushMsgForIdx = (targetIdx: number): void => {
+      if (!Number.isFinite(targetIdx) || targetIdx < 0) return;
       const total = this.quizService.totalQuestions();
-      const answered = this.quizStateService.isQuestionAnswered?.(targetIdx) === true;
+      const qs: any = this.quizService;
+      const answered =
+        this.quizStateService.isQuestionAnswered?.(targetIdx) === true
+        || qs?.questionCorrectness?.get?.(targetIdx) === true
+        || qs?._multiAnswerPerfect?.get?.(targetIdx) === true
+        || this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx) === true;
       const isLast = total > 0 && targetIdx === total - 1;
-      if (answered) {
-        this.selectionMessageService.pushMessage(
-          isLast ? 'Answered ✓ Click Show Results...' : 'Answered ✓ Click Next to continue...',
-          targetIdx
-        );
-      } else {
-        this.selectionMessageService.pushMessage(
-          'Please select an option to continue...',
-          targetIdx
-        );
-      }
+      const msg = answered
+        ? (isLast ? 'Answered ✓ Click Show Results...' : 'Answered ✓ Click Next to continue...')
+        : 'Please select an option to continue...';
+      this.selectionMessageService.pushMessage(msg, targetIdx);
+    };
+
+    try {
+      // Read target idx from the route (authoritative), with currentQuestionIndex
+      // as fallback. The route is 1-based; convert to 0-based.
+      let targetIdx = -1;
+      try {
+        const urlIdx = this.readQuestionIndexFromRouterSnapshot();
+        if (Number.isFinite(urlIdx) && urlIdx >= 1) targetIdx = urlIdx - 1;
+      } catch { /* ignore */ }
+      if (targetIdx < 0) targetIdx = this.quizService.currentQuestionIndex;
+      pushMsgForIdx(targetIdx);
+      // Re-push after a tick in case the answered-state maps populate late.
+      setTimeout(() => pushMsgForIdx(targetIdx), 50);
+      setTimeout(() => pushMsgForIdx(targetIdx), 200);
     } catch { /* ignore */ }
 
     // Reset flag after a short delay to allow display pipeline to process
