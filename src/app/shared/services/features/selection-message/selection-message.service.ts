@@ -17,8 +17,8 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
 
 const START_MSG = 'Please start the quiz by selecting an option.';
 const CONTINUE_MSG = 'Please select an option to continue...';
-const NEXT_BTN_MSG = 'Answered ✓ Click Next to continue...';
-const SHOW_RESULTS_MSG = 'Answered ✓ Click Show Results...';
+const NEXT_BTN_MSG = 'Please click the Next button to continue.';
+const SHOW_RESULTS_MSG = 'Please click the Show Results button.';
 
 interface OptionSnapshot {
   id: number | string,
@@ -145,17 +145,6 @@ export class SelectionMessageService {
     const { index, total, qType, opts } = args;
     if (!opts || opts.length === 0) return index === 0 ? START_MSG : CONTINUE_MSG;
     const isLastQuestion = total > 0 && index === total - 1;
-
-    // Already-answered short-circuit. When the user revisits a question
-    // they've already answered correctly (e.g. via the Previous button or
-    // after a refresh), surface the "Answered ✓ ..." message immediately
-    // — don't rely on the per-call option-selection state, which can be
-    // briefly empty during navigation rebinding.
-    const questionAlreadyAnswered =
-      this.quizStateService?.isQuestionAnswered?.(index) === true;
-    if (questionAlreadyAnswered) {
-      return isLastQuestion ? SHOW_RESULTS_MSG : NEXT_BTN_MSG;
-    }
 
     const isCorrectHelper = isOptionCorrect;
 
