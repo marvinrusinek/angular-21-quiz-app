@@ -163,6 +163,7 @@ export class QuizNavigationService {
       const msg = answered
         ? (isLast ? 'Answered ✓ Click Show Results button.' : 'Answered ✓ Click Next to continue...')
         : 'Please select an option to continue...';
+      console.log('[NAV-MSG] targetIdx:', targetIdx, '_origIdx:', _origIdx, 'isLast:', isLast, 'answered:', answered, 'isQAns:', this.quizStateService.isQuestionAnswered?.(targetIdx), 'scoredDisp:', qs?.questionCorrectness?.get?.(targetIdx), 'scoredOrig:', _origIdx >= 0 ? qs?.questionCorrectness?.get?.(_origIdx) : 'n/a', 'mp:', qs?._multiAnswerPerfect?.get?.(targetIdx), 'fb:', this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx), 'scoredKeys:', [...(qs?.questionCorrectness?.keys?.() ?? [])], 'quizId:', qs?.quizId, 'isShuf:', qs?.isShuffleEnabled?.(), 'msg:', msg);
       this.selectionMessageService.pushMessage(msg, targetIdx);
     };
 
