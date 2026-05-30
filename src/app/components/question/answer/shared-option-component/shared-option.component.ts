@@ -866,6 +866,12 @@ export class SharedOptionComponent
   }
 
   public shouldShowFeedbackAfter(b: OptionBindings, i: number): boolean {
+    const fbIdx = this._feedbackDisplay?.idx;
+    const ok = this._feedbackDisplay !== null && fbIdx === i;
+    if (ok || (this._feedbackDisplay !== null && i === 0)) {
+      // Only log once per render cycle for idx 0 to confirm template re-eval
+      console.log('[FB-SHOW]', 'i:', i, 'fbDisplay.idx:', fbIdx, 'returns:', ok);
+    }
     if (this._feedbackDisplay !== null && this._feedbackDisplay.idx === i) {
       return true;
     }
@@ -877,7 +883,11 @@ export class SharedOptionComponent
   }
 
   public getInlineFeedbackConfig(b: OptionBindings, i: number): FeedbackProps | null {
-    return this.bindingService.getInlineFeedbackConfig(this, b, i);
+    const cfg = this.bindingService.getInlineFeedbackConfig(this, b, i);
+    if (this._feedbackDisplay !== null && this._feedbackDisplay.idx === i) {
+      console.log('[FB-CFG]', 'i:', i, 'returned cfg:', !!cfg, 'showFeedback:', cfg?.showFeedback);
+    }
+    return cfg;
   }
 
   public resolveCurrentQuestionIndex(): number {
