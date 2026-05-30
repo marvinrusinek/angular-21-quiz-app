@@ -130,17 +130,28 @@ export class QuizNavigationService {
       if (!Number.isFinite(targetIdx) || targetIdx < 0) return;
       const total = this.quizService.totalQuestions();
       const qs: any = this.quizService;
-      const _a = this.quizStateService.isQuestionAnswered?.(targetIdx) === true;
-      const _b = qs?.questionCorrectness?.get?.(targetIdx) === true;
-      const _c = qs?._multiAnswerPerfect?.get?.(targetIdx) === true;
-      const _d = this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx) === true;
-      const _bypassKeys = [...(this.explanationTextService?.fetBypassForQuestion?.keys?.() ?? [])];
-      const _perfectKeys = [...(qs?._multiAnswerPerfect?.keys?.() ?? [])];
-      const _scoredKeys = [...(qs?.questionCorrectness?.keys?.() ?? [])];
-      const _answeredSet = qs?.quizStateService?._answeredQuestionIndices
-        ? [...qs.quizStateService._answeredQuestionIndices] : '?';
-      const answered = _a || _b || _c || _d;
-      console.log('[PREV-MSG] targetIdx:', targetIdx, 'answered:', answered, 'isQAns:', _a, 'scored:', _b, 'multiPerfect:', _c, 'fetBypass:', _d, 'bypassKeys:', _bypassKeys, 'perfectKeys:', _perfectKeys, 'scoredKeys:', _scoredKeys, 'answeredSet:', _answeredSet);
+      // Resolve original index for shuffled mode — questionCorrectness
+      // is keyed by ORIGINAL question index, not display position.
+      let _origIdx = -1;
+      try {
+        const isShuf = qs?.isShuffleEnabled?.() && qs?.shuffledQuestions?.length > 0;
+        if (isShuf) {
+          let eqId = qs?.quizId || '';
+          if (!eqId) { try { eqId = localStorage.getItem('lastQuizId') || ''; } catch { /* ignore */ } }
+          if (eqId) {
+            const mapped = qs?.scoringService?.quizShuffleService?.toOriginalIndex?.(eqId, targetIdx);
+            if (typeof mapped === 'number' && mapped >= 0) _origIdx = mapped;
+          }
+        }
+      } catch { /* ignore */ }
+      const scoredAtDisplay = qs?.questionCorrectness?.get?.(targetIdx) === true;
+      const scoredAtOrig = _origIdx >= 0 && qs?.questionCorrectness?.get?.(_origIdx) === true;
+      const answered =
+        this.quizStateService.isQuestionAnswered?.(targetIdx) === true
+        || scoredAtDisplay
+        || scoredAtOrig
+        || qs?._multiAnswerPerfect?.get?.(targetIdx) === true
+        || this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx) === true;
       const isLast = total > 0 && targetIdx === total - 1;
       const msg = answered
         ? (isLast ? 'Answered ✓ Click Show Results...' : 'Answered ✓ Click Next to continue...')
