@@ -72,7 +72,10 @@ export class SelectionMessageService {
   private readonly computedNavMessage = computed<string | null>(() => {
     const idx = this.quizService.currentQuestionIndexSig();
     if (!Number.isFinite(idx) || idx < 0) return null;
-    return this.deriveNavMessageForIdx(idx);
+    const result = this.deriveNavMessageForIdx(idx);
+    const isAns = this.isQuestionAlreadyAnswered(idx);
+    console.log('[COMPUTED-NAV] idx:', idx, 'isAnswered:', isAns, 'result:', result);
+    return result;
   });
 
   constructor() {
