@@ -15,6 +15,7 @@ import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { CqcOrchestratorService } from '../../../shared/services/features/quiz-content/cqc-orchestrator.service';
 import { ExplanationTextService, FETPayload } from
       '../../../shared/services/features/explanation/explanation-text.service';
+import { QuestionHeadingService } from '../../../shared/services/features/quiz-content/question-heading.service';
 import { QuizContentDisplayService } from '../../../shared/services/features/quiz-content/quiz-content-display.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { QuizNavigationService } from '../../../shared/services/flow/quiz-navigation.service';
@@ -40,6 +41,7 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
   private readonly displayService = inject(QuizContentDisplayService);
   public readonly explanationTextService = inject(ExplanationTextService);
   private readonly orchestrator = inject(CqcOrchestratorService);
+  public readonly questionHeadingService = inject(QuestionHeadingService);
   public readonly quizDataService = inject(QuizDataService);
   private readonly quizNavigationService = inject(QuizNavigationService);
   public readonly quizQuestionManagerService = inject(QuizQuestionManagerService);
@@ -113,11 +115,11 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
 
   isContentAvailable$!: Observable<boolean>;
 
-  // Signal-backed source of truth for the qText heading's innerHTML.
-  // Binding the template to this signal makes Angular's change detection
-  // keep the heading stable across tab visibility flips and async restores —
-  // no more fighting the DOM imperatively.
-  readonly qTextHtmlSig = signal<string>('');
+  // Single owner of the qText heading's innerHTML: QuestionHeadingService.
+  // qTextHtmlSig is now a direct reference to the service's signal so that
+  // legacy callers (`host.qTextHtmlSig?.set(x)`) keep working unchanged while
+  // new code can inject QuestionHeadingService directly and call setHtml().
+  readonly qTextHtmlSig = this.questionHeadingService.htmlSig;
 
   // Signal source of truth + sync BS mirror. The TIMER-EXPIRY FAST PATH
   // in cqc-display-text and the displayText$ pipeline both read .getValue()
@@ -183,15 +185,16 @@ export class CodelabQuizContentComponent implements OnInit, OnDestroy {
       }
     });
 
-    // qText DOM-write effect: signal-driven binding from qTextHtmlSig to
-    // the H3 element's innerHTML. This is the single canonical owner of
-    // the heading's DOM state — all writers should call qTextHtmlSig.set(...)
-    // instead of mutating innerHTML directly via renderer.setProperty or
+    // qText DOM-write effect: signal-driven binding from
+    // QuestionHeadingService.htmlSig to the H3 element's innerHTML.
+    // This is the single canonical writer of the heading's DOM state.
+    // All other code should call QuestionHeadingService.setHtml(...) —
+    // never mutate innerHTML directly via renderer.setProperty or
     // document.querySelector. Centralising here prevents the layered-gates
     // problem where many services fight over the H3.
     effect(() => {
       const el = this.qText()?.nativeElement;
-      const html = this.qTextHtmlSig();
+      const html = this.questionHeadingService.htmlSig();
       if (!el) return;
       if ((el.innerHTML ?? '') === html) return;
       this.renderer.setProperty(el, 'innerHTML', html);

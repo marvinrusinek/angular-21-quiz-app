@@ -139,8 +139,6 @@ export class CqcFetGuardService {
         if (!_isJustQuestionText) {
           host.qTextHtmlSig?.set(safe);
           host._lastDisplayedText = safe;
-          const el = host.qText?.()?.nativeElement;
-          if (el) host.renderer.setProperty(el, 'innerHTML', safe);
           return;
         }
       }
@@ -164,8 +162,6 @@ export class CqcFetGuardService {
           if (_cachedFet && _cachedFet.toLowerCase().includes('correct because')) {
             host.qTextHtmlSig?.set(_cachedFet);
             host._lastDisplayedText = _cachedFet;
-            const el = host.qText?.()?.nativeElement;
-            if (el) host.renderer.setProperty(el, 'innerHTML', _cachedFet);
             (host as any)._fetLockedForIndex = _liveIdx;
             return;
           }
@@ -191,8 +187,6 @@ export class CqcFetGuardService {
         if (_fetBypassEarly) {
           host.qTextHtmlSig?.set(safe);
           host._lastDisplayedText = safe;
-          const el = host.qText?.()?.nativeElement;
-          if (el) host.renderer.setProperty(el, 'innerHTML', safe);
           return;
         }
       }
@@ -252,8 +246,6 @@ export class CqcFetGuardService {
               safe = rebuilt || (liveQEarly?.questionText ?? '').trim() || '';
               host.qTextHtmlSig?.set(safe);
               host._lastDisplayedText = safe;
-              const el0 = host.qText?.()?.nativeElement;
-              if (el0) host.renderer.setProperty(el0, 'innerHTML', safe);
               return;
             }
           }
@@ -372,8 +364,6 @@ export class CqcFetGuardService {
               safe = rebuilt || (liveQ?.questionText ?? '').trim() || '';
               host.qTextHtmlSig?.set(safe);
               host._lastDisplayedText = safe;
-              const el0 = host.qText?.()?.nativeElement;
-              if (el0) host.renderer.setProperty(el0, 'innerHTML', safe);
               return;
             }
           }
@@ -383,8 +373,6 @@ export class CqcFetGuardService {
               safe = rebuilt || (liveQ?.questionText ?? '').trim() || '';
               host.qTextHtmlSig?.set(safe);
               host._lastDisplayedText = safe;
-              const el0 = host.qText?.()?.nativeElement;
-              if (el0) host.renderer.setProperty(el0, 'innerHTML', safe);
               return;
             }
           }
@@ -715,8 +703,6 @@ export class CqcFetGuardService {
 
       host.qTextHtmlSig?.set(safe);
       host._lastDisplayedText = safe;
-      const el = host.qText?.()?.nativeElement;
-      if (el) host.renderer.setProperty(el, 'innerHTML', safe);
     } catch { /* ignore */ }
   }
 

@@ -93,27 +93,19 @@ export class CqcDisplayTextService {
             // (no correct selection → no bypass).
             || (_incomingMatchesCachedFet && _hasCorrectSelected);
           if (!isQuestionText && lowerText.includes('correct because') && _fetBypass) {
-            const el = host.qText?.()?.nativeElement;
-            if (el) {
-              host.qTextHtmlSig?.set(text);
-              host._lastDisplayedText = text;
-              host.renderer.setProperty(el, 'innerHTML', text);
-              (host as any)._fetLockedForIndex = currentIdx;
-              return;
-            }
+            host.qTextHtmlSig?.set(text);
+            host._lastDisplayedText = text;
+            (host as any)._fetLockedForIndex = currentIdx;
+            return;
           }
 
           // TIMER-EXPIRY FET FAST PATH: when timed out and incoming text
           // contains actual FET content, write it directly.
           if (isTimedOutForIdx && !isQuestionText && (text ?? '').trim().length > 0) {
-            const el = host.qText?.()?.nativeElement;
-            if (el) {
-              host.qTextHtmlSig?.set(text);
-              host._lastDisplayedText = text;
-              host.renderer.setProperty(el, 'innerHTML', text);
-              (host as any)._fetLockedForIndex = currentIdx;
-              return;
-            }
+            host.qTextHtmlSig?.set(text);
+            host._lastDisplayedText = text;
+            (host as any)._fetLockedForIndex = currentIdx;
+            return;
           }
 
           const hasRealInteraction = this.fetGuard.hasInteractionEvidence(host, currentIdx);

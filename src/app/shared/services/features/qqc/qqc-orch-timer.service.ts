@@ -1,6 +1,8 @@
-import { afterNextRender, Injectable } from '@angular/core';
+import { afterNextRender, inject, Injectable } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
+
+import { QuestionHeadingService } from '../quiz-content/question-heading.service';
 
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
@@ -12,6 +14,7 @@ type Host = QuizQuestionComponent;
  */
 @Injectable({ providedIn: 'root' })
 export class QqcOrchTimerService {
+  private questionHeadingService = inject(QuestionHeadingService);
 
   runOnQuestionTimedOut(host: Host, targetIndex?: number): void {
     if (host.timedOut()) return;
@@ -58,44 +61,36 @@ export class QqcOrchTimerService {
     host.explanationToDisplayChange?.emit(result.explanationToDisplay);
     host._timerStoppedForQuestion = result.timerStoppedForQuestion;
 
-    // Write FET directly to the <h3> in codelab-quiz-content.
-    // The cqc-orchestrator's own expired$ subscription is unreliable
-    // (component may be destroyed/recreated), so we write from here.
+    // Write FET to the H3 via QuestionHeadingService. The codelab-quiz-content
+    // component's effect() applies the signal to the DOM through Renderer2.
     try {
       (window as any).__quizTimerExpired = true;
-      const qTextEl = document.querySelector('codelab-quiz-content h3');
-      if (qTextEl) {
-        const i0 = host.normalizeIndex(targetIndex ?? host.currentQuestionIndex() ?? 0);
-        const q = host.questions()?.[i0] ?? host.currentQuestion();
-        if (q) {
-          const opts = q.options ?? host.optionsToDisplay() ?? [];
-          const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, opts, i0);
-          let fetHtml = '';
-          if (correctIndices.length > 0) {
-            fetHtml = host.explanationTextService.formatExplanation(q, correctIndices, q.explanation);
-          }
-          if (!fetHtml) fetHtml = q.explanation || '';
+      const i0 = host.normalizeIndex(targetIndex ?? host.currentQuestionIndex() ?? 0);
+      const q = host.questions()?.[i0] ?? host.currentQuestion();
+      if (q) {
+        const opts = q.options ?? host.optionsToDisplay() ?? [];
+        const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, opts, i0);
+        let fetHtml = '';
+        if (correctIndices.length > 0) {
+          fetHtml = host.explanationTextService.formatExplanation(q, correctIndices, q.explanation);
+        }
+        if (!fetHtml) fetHtml = q.explanation || '';
 
-          if (fetHtml) {
-            // Guard the delayed writes against the user navigating away
-            // before they fire — without this, a Next click during the
-            // 600ms window re-writes the prior question's FET into qText
-            // after Q(N+1) has already rendered, causing FET->q-txt flash.
-            const expectedIdx = i0;
-            const write = () => {
-              // Read questionIndex() (the input signal — live), not
-              // currentQuestionIndex() which is a model updated async
-              // by an effect and therefore lags by a microtask.
-              const sigIdx = host.questionIndex?.() ?? host.currentQuestionIndex?.() ?? 0;
-              const liveIdx = host.normalizeIndex(sigIdx);
-              if (liveIdx !== expectedIdx) return;
-              qTextEl.innerHTML = fetHtml;
-            };
+        if (fetHtml) {
+          // Guard the delayed writes against the user navigating away
+          // before they fire — without this, a stale Q's FET would land
+          // in the heading after Q(N+1) has already rendered.
+          const expectedIdx = i0;
+          const write = () => {
+            const sigIdx = host.questionIndex?.() ?? host.currentQuestionIndex?.() ?? 0;
+            const liveIdx = host.normalizeIndex(sigIdx);
+            if (liveIdx !== expectedIdx) return;
+            this.questionHeadingService.setHtml(fetHtml);
+          };
+          write();
+          afterNextRender(() => {
             write();
-            afterNextRender(() => {
-              write();
-            });
-          }
+          });
         }
       }
     } catch { /* ignore */ }

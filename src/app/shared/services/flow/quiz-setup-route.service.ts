@@ -9,6 +9,7 @@ import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
 import { NextButtonStateService } from '../state/next-button-state.service';
+import { QuestionHeadingService } from '../features/quiz-content/question-heading.service';
 import { QuizContentLoaderService } from './quiz-content-loader.service';
 import { QuizDotStatusService } from './quiz-dot-status.service';
 import { QuizNavigationService } from './quiz-navigation.service';
@@ -36,6 +37,7 @@ export class QuizSetupRouteService {
   // ── injects ─────────────────────────────────────────────────────
   private dotStatusService = inject(QuizDotStatusService);
   private nextButtonStateService = inject(NextButtonStateService);
+  private questionHeadingService = inject(QuestionHeadingService);
   private quizContentLoaderService = inject(QuizContentLoaderService);
   private quizNavigationService = inject(QuizNavigationService);
   private quizPersistence = inject(QuizPersistenceService);
@@ -92,12 +94,9 @@ export class QuizSetupRouteService {
           const displayHTML = this.buildQuestionDisplayHTML(question);
           if (displayHTML) {
             const writeH3 = () => {
-              try {
-                const h3 = document.querySelector('codelab-quiz-content h3');
-                if (h3 && !h3.innerHTML.trim()) {
-                  h3.innerHTML = displayHTML;
-                }
-              } catch {}
+              if (!this.questionHeadingService.get().trim()) {
+                this.questionHeadingService.setHtml(displayHTML);
+              }
             };
             setTimeout(writeH3, 0);
             setTimeout(writeH3, 100);
@@ -243,10 +242,9 @@ export class QuizSetupRouteService {
       const displayHTML = this.buildQuestionDisplayHTML(result.question);
       if (displayHTML) {
         const writeH3 = () => {
-          try {
-            const h3 = document.querySelector('codelab-quiz-content h3');
-            if (h3 && !h3.innerHTML.trim()) h3.innerHTML = displayHTML;
-          } catch {}
+          if (!this.questionHeadingService.get().trim()) {
+            this.questionHeadingService.setHtml(displayHTML);
+          }
         };
         setTimeout(writeH3, 0);
         setTimeout(writeH3, 100);

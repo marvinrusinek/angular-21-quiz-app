@@ -12,6 +12,7 @@ import { ExplanationTextService } from '../../features/explanation/explanation-t
 import { FeedbackService } from '../../features/feedback/feedback.service';
 import { NextButtonStateService } from '../../state/next-button-state.service';
 import { OptionClickHandlerService } from './option-click-handler.service';
+import { QuestionHeadingService } from '../../features/quiz-content/question-heading.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -34,6 +35,7 @@ export class SocAnswerProcessingService {
   private explanationTextService = inject(ExplanationTextService);
   private feedbackService = inject(FeedbackService);
   private nextButtonStateService = inject(NextButtonStateService);
+  private questionHeadingService = inject(QuestionHeadingService);
   private quizService = inject(QuizService);
   private quizStateService = inject(QuizStateService);
   private selectedOptionService = inject(SelectedOptionService);
@@ -320,20 +322,12 @@ export class SocAnswerProcessingService {
         this.explanationTextService.lockExplanation();
         this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
 
-        // DIRECT DOM WRITE: ensure FET appears in the H3 heading even if the
-        // displayText$ pipeline's emission gets filtered by distinctUntilChanged
-        // or a signal-timing race. Without this, the FET would only appear on
-        // navigate-away-and-back (when the orchestrator's computeIntendedQText
-        // rebuilds it from cache).
-        try {
-          // codelab-quiz-content's H3 — the only h3 inside that component
-          const qTextEl =
-            (typeof document !== 'undefined'
-              && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
-          if (qTextEl && formattedFET) {
-            qTextEl.innerHTML = formattedFET;
-          }
-        } catch { /* ignore */ }
+        // Signal-driven write via QuestionHeadingService — single owner of
+        // the H3 heading's content. The codelab-quiz-content component
+        // subscribes via effect() and applies to the DOM through Renderer2.
+        if (formattedFET) {
+          this.questionHeadingService.setHtml(formattedFET);
+        }
       }
 
       // Also try the component path as backup
@@ -570,16 +564,10 @@ export class SocAnswerProcessingService {
           this.explanationTextService.lockExplanation();
           this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
 
-          // DIRECT DOM WRITE: same as multi-answer path — ensure the FET
-          // shows in the H3 immediately, bypassing the pipeline race.
-          try {
-            const qTextEl =
-              (typeof document !== 'undefined'
-                && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
-            if (qTextEl && fetText) {
-              qTextEl.innerHTML = fetText;
-            }
-          } catch { /* ignore */ }
+          // Signal-driven write via QuestionHeadingService.
+          if (fetText) {
+            this.questionHeadingService.setHtml(fetText);
+          }
         }
       } catch (e) { console.error('processSingleAnswerClick FET-sync write failed:', e); }
 
@@ -849,17 +837,10 @@ export class SocAnswerProcessingService {
         this.explanationTextService.lockExplanation();
         this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
 
-        // DIRECT DOM WRITE: same as multi/single-answer paths — ensure the
-        // FET shows in the H3 immediately on all-incorrects-exhausted
-        // auto-reveal, bypassing the pipeline race.
-        try {
-          const qTextEl =
-            (typeof document !== 'undefined'
-              && document.querySelector('codelab-quiz-content h3')) as HTMLElement | null;
-          if (qTextEl && fetTextAR) {
-            qTextEl.innerHTML = fetTextAR;
-          }
-        } catch { /* ignore */ }
+        // Signal-driven write via QuestionHeadingService.
+        if (fetTextAR) {
+          this.questionHeadingService.setHtml(fetTextAR);
+        }
       }
 
       // Synchronous binding rebuild — MUST happen after FET emission

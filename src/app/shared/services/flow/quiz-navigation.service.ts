@@ -16,6 +16,7 @@ import { QqcQuestionLoaderService } from '../features/qqc/qqc-question-loader.se
 import { QuizDataService } from '../data/quizdata.service';
 import { QuizQuestionManagerService } from '../flow/quizquestionmgr.service';
 import { QuizService } from '../data/quiz.service';
+import { QuestionHeadingService } from '../features/quiz-content/question-heading.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { SelectionMessageService } from '../features/selection-message/selection-message.service';
@@ -41,6 +42,7 @@ export class QuizNavigationService {
   private quizDataService = inject(QuizDataService);
   private quizQuestionLoaderService = inject(QqcQuestionLoaderService);
   private quizQuestionManagerService = inject(QuizQuestionManagerService);
+  private questionHeadingService = inject(QuestionHeadingService);
   private quizService = inject(QuizService);
   private quizStateService = inject(QuizStateService);
   private router = inject(Router);
@@ -633,7 +635,7 @@ export class QuizNavigationService {
         } catch { }
 
         if (targetQText) {
-          h3.innerHTML = targetQText;
+          this.questionHeadingService.setHtml(targetQText);
 
           const w: any = window;
           if (w.__navLockObserver) {
@@ -655,17 +657,19 @@ export class QuizNavigationService {
             const now = (h3.innerHTML ?? '').trim();
             if (now === targetQText) return;
             if (!now) {
-              h3.innerHTML = targetQText;
+              this.questionHeadingService.setHtml(targetQText);
               return;
             }
             if (looksLikeFet(now) && !looksLikeFet(targetQText)) {
-              h3.innerHTML = targetQText;
+              this.questionHeadingService.setHtml(targetQText);
               return;
             }
             // Bare-question-text write when target has the banner —
             // restore the banner version so the user doesn't see the
             // count flicker in/out as different writers race.
-            if (targetHasBanner && now === rawQText) h3.innerHTML = targetQText;
+            if (targetHasBanner && now === rawQText) {
+              this.questionHeadingService.setHtml(targetQText);
+            }
           };
 
           if (typeof MutationObserver !== 'undefined') {
