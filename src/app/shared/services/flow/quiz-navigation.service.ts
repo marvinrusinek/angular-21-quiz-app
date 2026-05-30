@@ -130,11 +130,17 @@ export class QuizNavigationService {
       if (!Number.isFinite(targetIdx) || targetIdx < 0) return;
       const total = this.quizService.totalQuestions();
       const qs: any = this.quizService;
-      const answered =
-        this.quizStateService.isQuestionAnswered?.(targetIdx) === true
-        || qs?.questionCorrectness?.get?.(targetIdx) === true
-        || qs?._multiAnswerPerfect?.get?.(targetIdx) === true
-        || this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx) === true;
+      const _a = this.quizStateService.isQuestionAnswered?.(targetIdx) === true;
+      const _b = qs?.questionCorrectness?.get?.(targetIdx) === true;
+      const _c = qs?._multiAnswerPerfect?.get?.(targetIdx) === true;
+      const _d = this.explanationTextService?.fetBypassForQuestion?.get?.(targetIdx) === true;
+      const _bypassKeys = [...(this.explanationTextService?.fetBypassForQuestion?.keys?.() ?? [])];
+      const _perfectKeys = [...(qs?._multiAnswerPerfect?.keys?.() ?? [])];
+      const _scoredKeys = [...(qs?.questionCorrectness?.keys?.() ?? [])];
+      const _answeredSet = qs?.quizStateService?._answeredQuestionIndices
+        ? [...qs.quizStateService._answeredQuestionIndices] : '?';
+      const answered = _a || _b || _c || _d;
+      console.log('[PREV-MSG] targetIdx:', targetIdx, 'answered:', answered, 'isQAns:', _a, 'scored:', _b, 'multiPerfect:', _c, 'fetBypass:', _d, 'bypassKeys:', _bypassKeys, 'perfectKeys:', _perfectKeys, 'scoredKeys:', _scoredKeys, 'answeredSet:', _answeredSet);
       const isLast = total > 0 && targetIdx === total - 1;
       const msg = answered
         ? (isLast ? 'Answered ✓ Click Show Results...' : 'Answered ✓ Click Next to continue...')
