@@ -5,6 +5,7 @@ import { debounceTime, tap } from 'rxjs/operators';
 
 import { QUESTION_ROUTE_REGEX } from '../../../constants/route-patterns';
 import { SK_SEL_Q } from '../../../constants/session-keys';
+import { FET_WRITE_RETRY_LONG_CASCADE_MS } from '../../../constants/timing';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -369,10 +370,9 @@ export class CqcQuestionNavService {
                   host._eagerFetRetryTimers = [];
                 }
                 host._eagerFetRetryTimers.push(setTimeout(injectNow, 0));
-                host._eagerFetRetryTimers.push(setTimeout(injectNow, 50));
-                host._eagerFetRetryTimers.push(setTimeout(injectNow, 200));
-                host._eagerFetRetryTimers.push(setTimeout(injectNow, 500));
-                host._eagerFetRetryTimers.push(setTimeout(injectNow, 1000));
+                for (const delay of FET_WRITE_RETRY_LONG_CASCADE_MS) {
+                  host._eagerFetRetryTimers.push(setTimeout(injectNow, delay));
+                }
               }
             } else {
               // No correct indices found — cannot format FET

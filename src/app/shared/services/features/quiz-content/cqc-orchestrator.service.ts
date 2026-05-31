@@ -9,6 +9,10 @@ import {
   take, tap, withLatestFrom
 } from 'rxjs/operators';
 
+import {
+  FET_WRITE_RETRY_CASCADE_MS,
+  VISIBILITY_RESTORE_REPLAY_CASCADE_MS
+} from '../../../constants/timing';
 import { QuestionType } from '../../../models/question-type.enum';
 
 import { CombinedQuestionDataType } from '../../../models/CombinedQuestionDataType.model';
@@ -227,11 +231,9 @@ export class CqcOrchestratorService {
       // flow (which runs async with ~350ms + 400ms setTimeouts and may
       // overwrite or clear the qText DOM).
       forceStampIfBlank('visibility:0');
-      setTimeout(() => forceStampIfBlank('visibility:100'), 100);
-      setTimeout(() => forceStampIfBlank('visibility:500'), 500);
-      setTimeout(() => forceStampIfBlank('visibility:900'), 900);
-      setTimeout(() => forceStampIfBlank('visibility:1200'), 1200);
-      setTimeout(() => forceStampIfBlank('visibility:2000'), 2000);
+      for (const delay of VISIBILITY_RESTORE_REPLAY_CASCADE_MS) {
+        setTimeout(() => forceStampIfBlank('visibility:' + delay), delay);
+      }
     };
     document.addEventListener('visibilitychange', host._cqcVisibilityHandler);
 
@@ -291,9 +293,7 @@ export class CqcOrchestratorService {
                 host._fetLockedForIndex = idx;
               };
               write();
-              setTimeout(write, 50);
-              setTimeout(write, 200);
-              setTimeout(write, 500);
+              for (const delay of FET_WRITE_RETRY_CASCADE_MS) setTimeout(write, delay);
             }
           }
         } catch { /* ignore */ }

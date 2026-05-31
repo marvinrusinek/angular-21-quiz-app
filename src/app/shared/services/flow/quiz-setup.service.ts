@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
+import { FET_WRITE_RETRY_CASCADE_MS, FET_WRITE_RETRY_LONG_CASCADE_MS } from '../../constants/timing';
+
 import { QuestionPayload } from '../../models/QuestionPayload.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
@@ -238,10 +240,7 @@ export class QuizSetupService {
                 this.questionHeadingService.setHtml(displayHTML);
               }
             };
-            setTimeout(writeH3, 50);
-            setTimeout(writeH3, 200);
-            setTimeout(writeH3, 500);
-            setTimeout(writeH3, 1000);
+            for (const delay of FET_WRITE_RETRY_LONG_CASCADE_MS) setTimeout(writeH3, delay);
           }
         }
       }
@@ -462,9 +461,7 @@ export class QuizSetupService {
                 this.questionHeadingService.setHtml(displayHTML);
               }
             };
-            setTimeout(writeH3, 50);
-            setTimeout(writeH3, 200);
-            setTimeout(writeH3, 500);
+            for (const delay of FET_WRITE_RETRY_CASCADE_MS) setTimeout(writeH3, delay);
           }
         }
       })

@@ -2,6 +2,8 @@
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
+import { PROMISE_RACE_TIMEOUT_MS } from '../../../constants/timing';
+
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
 import { Option } from '../../../models/Option.model';
 import { QuestionState } from '../../../models/QuestionState.model';
@@ -831,7 +833,7 @@ export class QqcExplanationDisplayService {
           const formattedExplanation = await Promise.race([
             firstValueFrom(formattedExplanationObservable),
             new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error('Timeout')), 5000)
+              setTimeout(() => reject(new Error('Timeout')), PROMISE_RACE_TIMEOUT_MS)
             )
           ]);
 

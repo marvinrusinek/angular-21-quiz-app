@@ -1,6 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { PROMISE_RACE_TIMEOUT_MS } from '../../../constants/timing';
+
 import { QuestionType } from '../../../models/question-type.enum';
 
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
@@ -55,7 +57,7 @@ export class QqcExplanationFlowService {
           const formattedExplanation = await Promise.race([
             firstValueFrom(formattedExplanationObservable),
             new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error('Timeout')), 5000)
+              setTimeout(() => reject(new Error('Timeout')), PROMISE_RACE_TIMEOUT_MS)
             )
           ]);
 
