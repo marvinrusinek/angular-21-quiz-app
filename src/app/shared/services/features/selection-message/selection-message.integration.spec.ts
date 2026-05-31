@@ -184,4 +184,80 @@ describe('SelectionMessageService integration', () => {
     expect(service.selectionMessageSig()).toBe(CONTINUE_MSG);
     expect(service.isCompletedInSession(0)).toBe(false);
   });
+
+  // ── completed-set isolation across rapid nav (regression guards) ──
+  //
+  // These tests guard the class of regressions that hit during today's
+  // A2 / A5 / E2 work. The pattern: rapid Q1→Q2→Q1→Q2 navigation in
+  // shuffled mode could leak completed-set or override state across
+  // indices, breaking the Next button or the multi-answer banner.
+
+  it('completed-set entries are isolated per index (Q0 completion does not leak to Q1)', () => {
+    service.pushMessage(NEXT_BTN_MSG, 0);
+    expect(service.isCompletedInSession(0)).toBe(true);
+    expect(service.isCompletedInSession(1)).toBe(false);
+    expect(service.isCompletedInSession(2)).toBe(false);
+    expect(service.isCompletedInSession(5)).toBe(false);
+  });
+
+  it('Q0→Q1→Q0→Q1 rapid nav: both indices completed, neither leaks', () => {
+    // Click Q0 to completion
+    service.pushMessage(NEXT_BTN_MSG, 0);
+    // Nav to Q1
+    currentIdxSig.set(1);
+    // Click Q1 to completion
+    service.pushMessage(NEXT_BTN_MSG, 1);
+    // Nav back to Q0
+    currentIdxSig.set(0);
+    expect(service.isCompletedInSession(0)).toBe(true);
+    // Nav forward to Q1 again
+    currentIdxSig.set(1);
+    expect(service.isCompletedInSession(1)).toBe(true);
+    // No leakage to other indices
+    expect(service.isCompletedInSession(2)).toBe(false);
+  });
+
+  it('completed-set survives multiple nav cycles without spurious entries', () => {
+    // Walk through Q0..Q4, mark each completed
+    for (let i = 0; i < 5; i++) {
+      currentIdxSig.set(i);
+      service.pushMessage(NEXT_BTN_MSG, i);
+    }
+    // Now check ALL indices: 0-4 completed, 5 NOT completed
+    for (let i = 0; i < 5; i++) {
+      expect(service.isCompletedInSession(i)).toBe(true);
+    }
+    expect(service.isCompletedInSession(5)).toBe(false);
+    expect(service.isCompletedInSession(99)).toBe(false);
+  });
+
+  it('non-completion pushes do not pollute the completed-set across nav', () => {
+    // Multi-answer partial-correct on Q0 ("Select 1 more...")
+    service.pushMessage('Select 1 more correct answer to continue...', 0);
+    expect(service.isCompletedInSession(0)).toBe(false);
+
+    // Nav to Q1, complete it
+    currentIdxSig.set(1);
+    service.pushMessage(NEXT_BTN_MSG, 1);
+
+    // Nav back to Q0 — still NOT completed
+    currentIdxSig.set(0);
+    expect(service.isCompletedInSession(0)).toBe(false);
+    expect(service.isCompletedInSession(1)).toBe(true);
+  });
+
+  it('resetAll clears completed-set entirely (no per-index leakage post-reset)', () => {
+    // Complete Q0, Q2, Q4
+    service.pushMessage(NEXT_BTN_MSG, 0);
+    service.pushMessage(NEXT_BTN_MSG, 2);
+    service.pushMessage(NEXT_BTN_MSG, 4);
+    expect(service.isCompletedInSession(0)).toBe(true);
+    expect(service.isCompletedInSession(2)).toBe(true);
+    expect(service.isCompletedInSession(4)).toBe(true);
+
+    service.resetAll();
+    for (let i = 0; i < 6; i++) {
+      expect(service.isCompletedInSession(i)).toBe(false);
+    }
+  });
 });
