@@ -185,16 +185,7 @@ export class OptionInteractionService {
     // PRISTINE correct-count: bindings can have mutated correct flags (e.g.
     // only 1 of 2 shown as correct). Cross-check against quizInitialState
     // so multi-answer questions are never misidentified as single-answer.
-    let pristineCorrectCount = correctCountInBindings;
-    try {
-      const qTextLookup = state.currentQuestion?.questionText
-        || this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
-        || (this.quizService as any)?.questions?.[qIdx]?.questionText;
-      const pristineTexts = this.quizService.getPristineCorrectTextsForQuestion(qTextLookup);
-      if (pristineTexts.size > 0) {
-        pristineCorrectCount = pristineTexts.size;
-      }
-    } catch { /* ignore */ }
+    const pristineCorrectCount = this.resolvePristineCorrectCount(correctCountInBindings, qIdx, state);
 
     // Authoritative Type Resolution
     const qText = state.currentQuestion?.questionText?.toLowerCase() || '';
@@ -598,6 +589,30 @@ export class OptionInteractionService {
 
     // MESSAGE UPDATE
     this.syncMessageAfterClick(state, qIdx, isMultipleMode, futureKeys);
+  }
+
+  /**
+   * Pristine correct-count probe: looks up the pristine quiz data for the
+   * current question and returns the count of correct options. Bindings can
+   * carry mutated correct flags (only 1 of 2 shown as correct), so this
+   * cross-check ensures multi-answer questions aren't misidentified as
+   * single-answer.
+   *
+   * Returns `seed` if the pristine lookup fails or yields nothing. Returns
+   * the pristine count when available (which OVERWRITES seed — same as
+   * the original inline behavior; may shrink seed in odd binding states).
+   */
+  private resolvePristineCorrectCount(seed: number, qIdx: number, state: OptionInteractionState): number {
+    try {
+      const qTextLookup = state.currentQuestion?.questionText
+        || this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
+        || (this.quizService as any)?.questions?.[qIdx]?.questionText;
+      const pristineTexts = this.quizService.getPristineCorrectTextsForQuestion(qTextLookup);
+      if (pristineTexts.size > 0) {
+        return pristineTexts.size;
+      }
+    } catch { /* ignore */ }
+    return seed;
   }
 
   /**
