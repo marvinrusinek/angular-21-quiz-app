@@ -197,21 +197,10 @@ export class QuizOptionProcessingService {
     // question objects. Cross-check against the pristine quiz bundle to
     // detect true multi-answer questions that were misclassified.
     try {
-      const qText = norm(questionForSelection?.questionText ?? currentQuestion?.questionText);
-      if (qText) {
-        const bundle = this.quizService?.quizInitialState ?? [];
-        for (const quiz of bundle) {
-          for (const pq of (quiz?.questions ?? [])) {
-            if (norm(pq?.questionText) !== qText) continue;
-            const pristineCorrectCount = (pq?.options ?? [])
-              .filter((o: any) => isOptionCorrect(o)).length;
-            if (pristineCorrectCount > correctCountForQuestion) {
-              correctCountForQuestion = pristineCorrectCount;
-            }
-            break;
-          }
-          if (correctCountForQuestion > 1) break;
-        }
+      const qText = questionForSelection?.questionText ?? currentQuestion?.questionText;
+      const pristineCorrectCount = this.quizService?.getPristineCorrectCountForQuestion?.(qText) ?? 0;
+      if (pristineCorrectCount > correctCountForQuestion) {
+        correctCountForQuestion = pristineCorrectCount;
       }
     } catch { /* ignore */ }
 
@@ -381,17 +370,10 @@ export class QuizOptionProcessingService {
         let pristineCorrectTexts: string[] = [];
 
         // Strategy 1: match by question text across all pristine quizzes
-        if (qText && bundle.length > 0) {
-          for (const quiz of bundle) {
-            for (const pq of (quiz?.questions ?? [])) {
-              if (norm(pq?.questionText) !== qText) continue;
-              pristineCorrectTexts = (pq?.options ?? [])
-                .filter((o: any) => isOptionCorrect(o))
-                .map((o: any) => norm(o?.text))
-                .filter((t: string) => !!t);
-              break;
-            }
-            if (pristineCorrectTexts.length > 0) break;
+        if (qText) {
+          const pristineSet = this.quizService?.getPristineCorrectTextsForQuestion?.(qText);
+          if (pristineSet && pristineSet.size > 0) {
+            pristineCorrectTexts = Array.from(pristineSet);
           }
         }
 
@@ -518,16 +500,9 @@ export class QuizOptionProcessingService {
           let pristineCorrectTexts: string[] = [];
 
           if (qText) {
-            for (const quiz of bundle) {
-              for (const pq of (quiz?.questions ?? [])) {
-                if (norm(pq?.questionText) !== qText) continue;
-                pristineCorrectTexts = (pq?.options ?? [])
-                  .filter((o: any) => isOptionCorrect(o))
-                  .map((o: any) => norm(o?.text))
-                  .filter((t: string) => !!t);
-                break;
-              }
-              if (pristineCorrectTexts.length > 0) break;
+            const pristineSet = this.quizService?.getPristineCorrectTextsForQuestion?.(qText);
+            if (pristineSet && pristineSet.size > 0) {
+              pristineCorrectTexts = Array.from(pristineSet);
             }
           }
 

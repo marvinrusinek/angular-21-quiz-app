@@ -837,8 +837,46 @@ export class QuizService {
     return texts;
   }
 
+  /**
+   * Lazy O(1) lookup of the full pristine correct Option[] for a given live
+   * questionText. Same memoization strategy as the texts helper; returns the
+   * actual Option references (not clones) so callers needing full option
+   * objects don't have to re-walk quizInitialState.
+   */
+  public getPristineCorrectOptionsForQuestion(
+    questionText: string | null | undefined
+  ): Option[] {
+    const key = norm(questionText);
+    if (!key) return [];
+    if (!this._correctOptionsByQText) this._correctOptionsByQText = new Map();
+    const cached = this._correctOptionsByQText.get(key);
+    if (cached) return cached;
+    const pq = this.getPristineQuestionByText(questionText);
+    if (!pq) {
+      const empty: Option[] = [];
+      this._correctOptionsByQText.set(key, empty);
+      return empty;
+    }
+    const opts = ((pq as any).options ?? []).filter(
+      (o: any) => isOptionCorrect(o)
+    ) as Option[];
+    this._correctOptionsByQText.set(key, opts);
+    return opts;
+  }
+
+  /**
+   * Convenience: number of pristine correct options for a given live
+   * questionText. Derived from the cached correct-options helper.
+   */
+  public getPristineCorrectCountForQuestion(
+    questionText: string | null | undefined
+  ): number {
+    return this.getPristineCorrectOptionsForQuestion(questionText).length;
+  }
+
   private _pristineByQText: Map<string, QuizQuestion> | null = null;
   private _correctTextsByQText: Map<string, Set<string>> | null = null;
+  private _correctOptionsByQText: Map<string, Option[]> | null = null;
 
   private buildPristineByTextCache(): Map<string, QuizQuestion> {
     const cache = new Map<string, QuizQuestion>();

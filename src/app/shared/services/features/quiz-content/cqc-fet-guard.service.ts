@@ -550,21 +550,8 @@ export class CqcFetGuardService {
       const _liveQ: any = _isShuf ? _qs?.shuffledQuestions?.[_idx] : _qs?.questions?.[_idx];
       const _qTextNorm = norm(_liveQ?.questionText);
       if (_qTextNorm && _safeStripped !== _qTextNorm && !_safeStripped.startsWith(_qTextNorm)) {
-        let _pCorrect: string[] = [];
-        const _bundle: any[] = _qs?.quizInitialState ?? [];
-        for (let qi = 0; qi < _bundle.length; qi++) {
-          const _questions = _bundle[qi]?.questions ?? [];
-          for (let pi = 0; pi < _questions.length; pi++) {
-            if (norm(_questions[pi]?.questionText) === _qTextNorm) {
-              _pCorrect = (_questions[pi]?.options ?? [])
-                .filter((o: any) => isOptionCorrect(o))
-                .map((o: any) => norm(o?.text))
-                .filter((t: string) => !!t);
-              break;
-            }
-          }
-          if (_pCorrect.length > 0) break;
-        }
+        const _pristineSet = _qs?.getPristineCorrectTextsForQuestion?.(_liveQ?.questionText);
+        const _pCorrect: string[] = _pristineSet ? Array.from(_pristineSet) : [];
         if (_pCorrect.length >= 2) {
           const _selNow = new Set<string>();
           try {

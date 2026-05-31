@@ -165,25 +165,12 @@ export class SharedOptionExplanationService {
     // gate. Pristine data is immutable and always authoritative.
     let correctCount = 0;
     let pristineCorrectTexts = new Set<string>();
-    const qText = this.normalize(authQuestion?.questionText ?? question?.questionText);
-    try {
-      for (const quiz of this.quizService?.quizInitialState ?? []) {
-        for (const pq of quiz?.questions ?? []) {
-          if (this.normalize(pq?.questionText) !== qText) continue;
-          const correctOpts = (pq?.options ?? []).filter(
-            (o: any) => isOptionCorrect(o)
-          );
-          if (correctOpts.length === 0) continue;
-          correctCount = correctOpts.length;
-          for (const o of correctOpts) {
-            const t = this.normalize(o?.text);
-            if (t) pristineCorrectTexts.add(t);
-          }
-          break;
-        }
-        if (correctCount > 0) break;
-      }
-    } catch { /* ignore */ }
+    const qText = authQuestion?.questionText ?? question?.questionText;
+    const pristineSet = this.quizService?.getPristineCorrectTextsForQuestion?.(qText);
+    if (pristineSet && pristineSet.size > 0) {
+      correctCount = pristineSet.size;
+      pristineCorrectTexts = new Set(pristineSet);
+    }
     // Fallback: use live data only if pristine lookup failed
     if (correctCount === 0) {
       correctCount = (authQuestion?.options ?? question!.options).filter(
