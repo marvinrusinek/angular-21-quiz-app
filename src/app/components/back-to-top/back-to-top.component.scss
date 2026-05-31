@@ -1,9 +1,11 @@
+@use '../../../variables' as vars;
+
 .back-to-top {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  background-color: #43e756;
-  color: #006400;
+  background-color: vars.$green;
+  color: vars.$dark-green;
   border: none;
   border-radius: 50%;
   width: 3rem;

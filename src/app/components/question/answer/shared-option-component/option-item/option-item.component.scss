@@ -100,8 +100,8 @@
 
 /* VALIDATION STATES */
 .correct-option {
-  background-color: #43e756 !important;
-  border-color: #36a34a !important;
+  background-color: vars.$green !important;
+  border-color: vars.$green-angular-leaf !important;
   color: #000000 !important;
   cursor: default !important;
   pointer-events: none !important;
@@ -113,7 +113,7 @@
 }
 
 .incorrect-option {
-  background-color: #ff0000 !important;
+  background-color: vars.$red !important;
   border-color: #c62828 !important;
   color: #000000 !important;
   cursor: default !important;
@@ -134,7 +134,7 @@
    locked-out cases. */
 .option-row.mat-mdc-radio-disabled:not(.correct-option):not(.incorrect-option),
 .option-row.mat-mdc-checkbox-disabled:not(.correct-option):not(.incorrect-option) {
-  background-color: #a0a0a0 !important;
+  background-color: vars.$disabled-option-gray !important;
   border-color: #888 !important;
   cursor: default !important;
   pointer-events: none !important;
