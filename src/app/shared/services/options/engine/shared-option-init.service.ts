@@ -718,9 +718,6 @@ export class SharedOptionInitService {
       if (matchIdx !== -1) {
         comp.resolvedQuestionIndex = matchIdx;
         qIndex = matchIdx; // Found authentic index via content match
-        if (qIndex !== inputIndex && Number.isFinite(inputIndex)) {
-
-        }
       } else {
         // No match found? Fallback to input index if valid
         if (Number.isFinite(inputIndex)) {

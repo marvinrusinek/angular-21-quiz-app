@@ -246,10 +246,7 @@ export class SharedOptionExplanationService {
       const correctSelected = selectedFromUi.filter(isSelectionCorrect).length;
 
       if (correctCount > 1) {
-        const allCorrect = correctSelected >= correctCount;
-        if (allCorrect) {
-        }
-        return allCorrect;
+        return correctSelected >= correctCount;
       }
       return correctSelected >= 1;
     })();
