@@ -98,6 +98,17 @@
                     </div>
                     <span class="progress-inline">({{ progressSig() }}% complete)</span>
                   </section>
+
+                  <!-- Row 3: Animated striped progress bar -->
+                  <div class="quiz-progress"
+                    role="progressbar"
+                    [attr.aria-valuenow]="progressSig()"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-label="Quiz progress"
+                    i18n-aria-label>
+                    <div class="quiz-progress__fill" [style.width.%]="progressSig()"></div>
+                  </div>
                 }
             </mat-card-footer>
           </mat-card>
