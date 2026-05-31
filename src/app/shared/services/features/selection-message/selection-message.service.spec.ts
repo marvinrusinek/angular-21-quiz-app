@@ -8,6 +8,22 @@ import { QuizService } from '../../../services/data/quiz.service';
 import { SelectedOptionService } from '../../../services/state/selectedoption.service';
 import { SelectionMessageService } from './selection-message.service';
 
+/**
+ * DESIGN NOTE — initial state is CONTINUE_MSG, not START_MSG
+ *
+ * Before the strict-computed refactor (P5), selectionMessageSig was a
+ * WritableSignal initialized to START_MSG. Tests asserted that. After the
+ * refactor it became a pure computed<string> derived from:
+ *   currentQuestionIndexSig() + _clickOverride() + _completedIdxSet
+ *
+ * For Q1 unanswered (idx=0, no completed flag, no click override yet) the
+ * computed returns CONTINUE_MSG via deriveNavMessageForIdx. START_MSG is
+ * only produced when idx < 0 (pre-init), which the mocks don't simulate.
+ *
+ * If you're updating an existing test that expects START_MSG and finding
+ * CONTINUE_MSG instead, this is why — it's not a regression, it's the
+ * post-P5 derivation rule.
+ */
 describe('SelectionMessageService', () => {
   let service: SelectionMessageService;
   let quizServiceMock: any;
