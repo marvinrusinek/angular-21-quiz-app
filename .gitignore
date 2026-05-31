@@ -3,3 +3,4 @@ dist
 node_modules
 .env
 CODE_REVIEW.md
+E6_FET_STATE_MACHINE_DESIGN.md

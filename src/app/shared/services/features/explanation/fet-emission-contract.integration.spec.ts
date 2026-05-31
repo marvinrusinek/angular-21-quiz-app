@@ -109,4 +109,97 @@ describe('FET emission contract', () => {
   it('emitFormatted does not throw on extreme indices', () => {
     expect(() => service.emitFormatted(9999, 'extreme', { bypassGuard: true })).not.toThrow();
   });
+
+  // ── tripwires for known bug surfaces (see E6_FET_STATE_MACHINE_DESIGN.md) ──
+  //
+  // These tests document two latent bugs found while writing the E6 state-
+  // machine design doc. Each bug surface has TWO tests:
+  //
+  //   1. A passing test that asserts the CURRENT (buggy) behavior. This
+  //      is a tripwire — if the behavior changes (someone "fixes" the
+  //      surface), this test fails and forces a deliberate update.
+  //
+  //   2. A skipped (xit) test that asserts the DESIRED behavior. When
+  //      the bug is fixed, un-skip + delete the documenting test above.
+
+  // ── BUG #1: emitFormatted empty-value lock-leak ──────────────────
+  //
+  // emitFormatted sets `_fetLocked = true` at line 736, then returns
+  // without unlocking when the trimmed value is empty (line 805). This
+  // means calling with null/empty/whitespace + bypassGuard:true leaves
+  // the gate locked indefinitely, blocking subsequent emissions until
+  // some external caller resets the lock.
+
+  it('DOCUMENTS BUG: emitFormatted with empty value leaks _fetLocked = true', () => {
+    // Reach into the underlying displayState (the facade delegates).
+    const displayState = (service as any).displayState;
+    displayState._fetLocked = false; // baseline
+
+    service.emitFormatted(0, '', { bypassGuard: true });
+    expect(displayState._fetLocked).toBe(true);
+
+    // Same for null and whitespace
+    displayState._fetLocked = false;
+    service.emitFormatted(0, null, { bypassGuard: true });
+    expect(displayState._fetLocked).toBe(true);
+
+    displayState._fetLocked = false;
+    service.emitFormatted(0, '   \n\t', { bypassGuard: true });
+    expect(displayState._fetLocked).toBe(true);
+  });
+
+  xit('DESIRED: emitFormatted with empty value should NOT leave _fetLocked stuck (un-skip when fixed)', () => {
+    const displayState = (service as any).displayState;
+    displayState._fetLocked = false;
+
+    service.emitFormatted(0, '', { bypassGuard: true });
+    expect(displayState._fetLocked).toBe(false); // currently FAILS — lock leaks
+
+    displayState._fetLocked = false;
+    service.emitFormatted(0, null, { bypassGuard: true });
+    expect(displayState._fetLocked).toBe(false);
+  });
+
+  // ── BUG #2: purgeAndDefer deferred-unlock watchdog gap ───────────
+  //
+  // purgeAndDefer schedules an unlock via rAF + setTimeout chain with a
+  // token-equality check. If the token changes mid-chain, the inner
+  // callback bails — leaving _fetLocked = true. The newer purgeAndDefer
+  // call that bumped the token also schedules its own unlock, so in
+  // practice the lock clears via the newer call. BUT: there's no
+  // watchdog on purgeAndDefer itself (unlike unlockFetGateAfterRender,
+  // which got the D3 watchdog).
+  //
+  // The current passing test asserts: after a normal purgeAndDefer +
+  // enough wall time for the rAF + setTimeout to complete, _fetLocked
+  // returns to false. If that ever stops being true, this tripwire
+  // fires.
+
+  it('purgeAndDefer eventually clears _fetLocked after the deferred-unlock window', (done) => {
+    const displayState = (service as any).displayState;
+    service.purgeAndDefer(2);
+    expect(displayState._fetLocked).toBe(true); // locked immediately
+
+    // FET_UNLOCK_SETTLE_DELAY_MS is the setTimeout delay. Wait long
+    // enough for rAF + setTimeout + buffer. Real timer used here so
+    // we exercise the actual rAF queue.
+    setTimeout(() => {
+      try {
+        expect(displayState._fetLocked).toBe(false);
+        done();
+      } catch (e) {
+        done(e as any);
+      }
+    }, 600); // FET_UNLOCK_SETTLE_DELAY_MS (~250-300ms) + headroom
+  });
+
+  xit('DESIRED: purgeAndDefer should have a watchdog identical to unlockFetGateAfterRender (un-skip if implemented)', () => {
+    // This test would assert that even if the deferred unlock chain is
+    // somehow disrupted (e.g., setTimeout cancelled, exception in
+    // intermediate callback), a watchdog at FET_UNLOCK_WATCHDOG_MS
+    // (~2s) force-clears _fetLocked. Currently no such watchdog exists
+    // for purgeAndDefer — only for unlockFetGateAfterRender (added in
+    // commit 9d479d43, D3).
+    expect(true).toBe(true);
+  });
 });
