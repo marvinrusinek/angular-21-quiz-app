@@ -373,15 +373,20 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
       null;
 
     if (!question) return false;
-    const selected = this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
-    if (selected.length > 0) return true;
 
-    // Authoritative in-session answered probe — same source as the selection
-    // message logic. External maps leak across sessions / collide in shuffled
-    // mode, so we don't consult them.
+    // Authoritative in-session answered probe. We deliberately do NOT use
+    // `selectedOptionService.getSelectedOptionsForQuestion(idx)` here:
+    // selectedOptionsMap + sessionStorage SK_SEL_Q are keyed by DISPLAY
+    // index, which leaks across shuffle reshuffles — a prior shuffle's
+    // selection at display idx 5 would appear as if the new shuffle's
+    // (different) question at display 5 was already answered, surfacing
+    // Show Results on a fresh page load. isCompletedInSession is the
+    // in-session set, fresh per session and only marked when pushMessage
+    // records a real completion (NEXT_BTN / SHOW_RESULTS / Answered ✓).
     if (this.selectionMessageService.isCompletedInSession(idx)) return true;
 
-    // Also show Results button when timer expired on last question without an answer
+    // Also show Results when timer expired this session on the last
+    // unanswered question.
     return this.dotStatusService.timerExpiredUnanswered.has(idx);
   }
 
