@@ -357,10 +357,15 @@ export class SharedOptionClickService {
           );
         }
 
+        console.log('[FB-DIAG] post-click idx:', index, 'key:', key, 'byKey?.showFeedback:', byKey?.showFeedback, 'byIdx:', !!byIdx, 'activeCfg?.showFeedback:', activeCfg?.showFeedback, 'cfg?.showFeedback:', cfg?.showFeedback, 'configKeys:', Object.keys(comp.feedbackConfigs || {}));
         if (cfg?.showFeedback) {
           comp._feedbackDisplay = { idx: index, config: cfg };
         }
+      } else {
+        console.log('[FB-DIAG] no clickedBinding at idx:', index, 'bindingsLen:', comp.optionBindings()?.length);
       }
+    } else {
+      console.log('[FB-DIAG] showFeedback() is false');
     }
 
     // Create NEW binding object references so OnPush option-item children
