@@ -933,6 +933,18 @@ export class ExplanationDisplayStateService {
     this.quietZoneUntilSig.set(until);
   }
 
+  /**
+   * On nav transitions, lock the FET pipeline immediately and clear visible
+   * state so a prior-question's explanation can't bleed into the new one.
+   *
+   * Race-safety: the lock is released asynchronously (RAF + setTimeout) to
+   * give downstream pipelines a frame to settle. To prevent a stale unlock
+   * from a prior cycle from clobbering a fresh lock, every unlock callback
+   * captures the gate token at schedule time and aborts via token mismatch
+   * if a newer `purgeAndDefer` (or `openExclusive`) has since bumped the
+   * token. `cancelPendingUnlock()` additionally hard-aborts both the RAF
+   * and the setTimeout on entry, so the token check is a defense in depth.
+   */
   public purgeAndDefer(newIndex: number): void {
     // Bump generation and lock everything immediately
     this._gateToken++;
