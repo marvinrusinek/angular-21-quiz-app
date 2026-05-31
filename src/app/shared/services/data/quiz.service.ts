@@ -117,7 +117,9 @@ export class QuizService {
   selectedOptionsMap: Map<number, SelectedOption[]> = new Map();
 
   answers: Option[] = [];
-  resources: Resource[] = [];
+  // Single source of truth: delegates to dataLoader so loadResourcesForQuiz()
+  // doesn't have to mirror the value into a separate field.
+  get resources(): Resource[] { return this.dataLoader.resources; }
 
   readonly totalQuestions = signal<number>(0);
   get correctCount(): number { return this.scoringService.correctCountSig(); }
@@ -335,10 +337,10 @@ export class QuizService {
     this.currentQuizSig.set(quiz);
   }
 
-  // Load resources for a specific quiz ID
+  // Load resources for a specific quiz ID. `resources` is a getter that
+  // delegates to dataLoader, so no mirror assignment is needed.
   loadResourcesForQuiz(quizId: string): void {
     this.dataLoader.loadResourcesForQuiz(quizId);
-    this.resources = this.dataLoader.resources;
   }
 
   getActiveQuiz(): Quiz | null {

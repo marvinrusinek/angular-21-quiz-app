@@ -27,7 +27,7 @@
               [shouldResetBackground]="shouldResetBackground()"
               [currentQuestionIndex]="getActiveQuestionIndex()"
               [feedbackConfig]="feedbackConfigs[keyOf(b.option, i)]"
-              [sharedOptionConfig]="getSharedOptionConfig(b, i)"
+              [sharedOptionConfig]="buildSharedOptionConfig(b, i)"
               [timerExpired]="timerExpiredForQuestion()"
               (optionUI)="onOptionUI($event)"
             />
@@ -47,7 +47,7 @@
               [shouldResetBackground]="shouldResetBackground()"
               [currentQuestionIndex]="getActiveQuestionIndex()"
               [feedbackConfig]="feedbackConfigs[keyOf(b.option, i)]"
-              [sharedOptionConfig]="getSharedOptionConfig(b, i)"
+              [sharedOptionConfig]="buildSharedOptionConfig(b, i)"
               [timerExpired]="timerExpiredForQuestion()"
               (optionUI)="onOptionUI($event)"
             />

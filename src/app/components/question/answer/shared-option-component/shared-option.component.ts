@@ -627,13 +627,6 @@ export class SharedOptionComponent
     return this.bindingService.buildSharedOptionConfig(this, b, i);
   }
 
-  public getSharedOptionConfig(
-      b: OptionBindings,
-      i: number
-  ): SharedOptionConfig {
-    return this.buildSharedOptionConfig(b, i);
-  }
-
   preserveOptionHighlighting(): void {
     this.clickService.preserveOptionHighlighting(this);
   }
