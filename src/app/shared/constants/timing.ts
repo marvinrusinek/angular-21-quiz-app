@@ -27,3 +27,11 @@ export const VISIBILITY_RESTORE_REPLAY_CASCADE_MS: readonly number[] = [100, 500
 /** Generic 5-second timeout for `Promise.race` patterns where a stuck
  *  async operation should surface as a rejection rather than hang. */
 export const PROMISE_RACE_TIMEOUT_MS = 5000;
+
+/** Belt-and-suspenders watchdog for `unlockFetGateAfterRender`. The primary
+ *  unlock fires after ~240ms+1RAF and bails if the gate token changed. If
+ *  the unlock chain ever fails to complete (e.g. an exception in the
+ *  intermediate `markForCheck()` call), `_fetLocked` would stay true
+ *  indefinitely. This watchdog fires ~2s after the lock and force-unlocks
+ *  ONLY if the same token is still active — newer locks are left alone. */
+export const FET_UNLOCK_WATCHDOG_MS = 2000;

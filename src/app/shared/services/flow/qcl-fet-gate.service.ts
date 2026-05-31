@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { FET_UNLOCK_WATCHDOG_MS } from '../../constants/timing';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
 import { ExplanationTextService } from '../features/explanation/explanation-text.service';
@@ -48,6 +49,10 @@ export class QclFetGateService {
     ets.setIsExplanationTextDisplayed(false);
     ets.latestExplanation = '';
 
+    // Capture the token we set with this lock — both the primary unlock
+    // chain and the watchdog use it to verify the lock is still ours.
+    const lockedToken = ets._gateToken;
+
     setTimeout(() => {
       markForCheck();
       requestAnimationFrame(() => {
@@ -60,6 +65,17 @@ export class QclFetGateService {
         }, 100);
       });
     }, 140);
+
+    // Watchdog: if the primary unlock chain above ever fails to complete
+    // (exception in markForCheck, etc.), `_fetLocked` would stay true
+    // indefinitely. Force-unlock at FET_UNLOCK_WATCHDOG_MS but only if the
+    // same token is still active — a newer lock means someone else owns
+    // the gate and must manage their own unlock.
+    setTimeout(() => {
+      if (!ets._fetLocked) return;
+      if (ets._currentGateToken !== lockedToken) return;
+      ets._fetLocked = false;
+    }, FET_UNLOCK_WATCHDOG_MS);
   }
 
   prepareExplanationForQuestion(params: {
