@@ -36,25 +36,18 @@
  * Light-mode color override lives here; the dark-mode color override
  * lives in styles.scss (alongside the global dark-mode span.scoreboard
  * rule it must out-specify). The animation here applies in BOTH modes
- * — no global rule overrides the `animation` property. */
+ * — no global rule overrides the `animation` property. Opacity-only
+ * pulse avoids scale/layout issues caused by the global
+ * `display: block !important` on span.scoreboard. */
 @keyframes timer-low-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.65;
-    transform: scale(1.08);
-  }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
 }
 
 span.scoreboard.low-time {
   color: vars.$red !important;
-  animation: timer-low-pulse 1s ease-in-out infinite;
-  /* keep transform-origin centered so scale doesn't shift the digits sideways */
-  transform-origin: center center;
-  /* hint for smoother animation */
-  will-change: opacity, transform;
+  animation: timer-low-pulse 0.8s ease-in-out infinite;
+  will-change: opacity;
 }
 
 /* Remove the MDC focus/selection 1px border from all mat-button */
