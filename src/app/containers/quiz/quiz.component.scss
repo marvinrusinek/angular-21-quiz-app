@@ -380,5 +380,14 @@ mat-card {
         animation: none;
       }
     }
+
+    /* TEMP: progress readout for verification — remove later */
+    .quiz-progress-debug {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: vars.$green-angular-leaf;
+      margin: -6px 0 10px 0;
+    }
   }
 }
