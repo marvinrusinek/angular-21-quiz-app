@@ -86,7 +86,21 @@ export class OptionInteractionService {
     const liveIdx = this.quizService?.getCurrentQuestionIndex?.();
     let qIdx = (typeof liveIdx === 'number' && Number.isFinite(liveIdx) && liveIdx >= 0)
       ? liveIdx : state.currentQuestionIndex;
-    qIdx = this.selfHealQIdxByQuestionText(qIdx, state);
+    // Self-heal: quizService.getCurrentQuestionIndex() can be stuck at 0
+    // even when the user is on Q2/Q3. Correct qIdx by matching the live
+    // currentQuestion text against quizService.questions, so confirmed
+    // clicks get recorded under the right question slot.
+    try {
+      const liveQText = norm(state.currentQuestion?.questionText);
+      const allQs: any[] = (this.quizService as any)?.questions ?? [];
+      if (liveQText && allQs.length) {
+        const atQIdx = norm(allQs[qIdx]?.questionText);
+        if (liveQText !== atQIdx) {
+          const fixed = allQs.findIndex((q: any) => norm(q?.questionText) === liveQText);
+          if (fixed >= 0) qIdx = fixed;
+        }
+      }
+    } catch { /* ignore */ }
     const isCorrectHelper = isOptionCorrect;
 
     // PRISTINE CORRECTNESS RESOLVER: Resolve whether the clicked option is
@@ -584,29 +598,6 @@ export class OptionInteractionService {
 
     // MESSAGE UPDATE
     this.syncMessageAfterClick(state, qIdx, isMultipleMode, futureKeys);
-  }
-
-  /**
-   * Self-heal stale `qIdx`. `quizService.getCurrentQuestionIndex()` can be
-   * stuck at 0 even when the user is physically on Q2/Q3 (a known timing
-   * issue during rapid Q1→Q2 navigation). Match the live `state.currentQuestion`
-   * text against `quizService.questions` and correct `qIdx` so confirmed
-   * clicks get recorded under the right question slot. Returns the original
-   * `qIdx` on any failure or when the text already matches.
-   */
-  private selfHealQIdxByQuestionText(qIdx: number, state: OptionInteractionState): number {
-    try {
-      const liveQText = norm(state.currentQuestion?.questionText);
-      const allQs: any[] = (this.quizService as any)?.questions ?? [];
-      if (liveQText && allQs.length) {
-        const atQIdx = norm(allQs[qIdx]?.questionText);
-        if (liveQText !== atQIdx) {
-          const fixed = allQs.findIndex((q: any) => norm(q?.questionText) === liveQText);
-          if (fixed >= 0) return fixed;
-        }
-      }
-    } catch { /* ignore */ }
-    return qIdx;
   }
 
   /**
