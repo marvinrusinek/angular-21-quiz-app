@@ -417,6 +417,44 @@ mat-card {
       }
     }
 
+    // 100% reached — subtle "complete!" flourish: a soft green glow on
+    // the bar, the stripes settle, and a light shimmer sweeps across.
+    .quiz-progress.is-complete {
+      animation: quiz-progress-complete-glow 1.8s ease-in-out infinite;
+
+      .quiz-progress__fill {
+        position: relative;
+        overflow: hidden;
+        background-color: vars.$green;  // brighter green
+        animation: none;  // settle the scrolling stripes
+
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 45%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.5),
+            transparent
+          );
+          animation: quiz-progress-shimmer 2.4s ease-in-out infinite;
+        }
+      }
+    }
+
+    .progress-inline.is-complete {
+      color: vars.$green-angular-leaf;
+      font-weight: 700;
+
+      &::before {
+        content: '\2713\00a0';  // checkmark + non-breaking space
+      }
+    }
+
     @keyframes quiz-progress-stripes {
       from {
         background-position: 1rem 0;
@@ -426,8 +464,32 @@ mat-card {
       }
     }
 
+    @keyframes quiz-progress-complete-glow {
+      0%,
+      100% {
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15),
+          0 0 0 rgba(67, 231, 86, 0);
+      }
+      50% {
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15),
+          0 0 9px 2px rgba(67, 231, 86, 0.55);
+      }
+    }
+
+    @keyframes quiz-progress-shimmer {
+      0% {
+        transform: translateX(-120%);
+      }
+      60%,
+      100% {
+        transform: translateX(260%);
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      .quiz-progress .quiz-progress__fill {
+      .quiz-progress .quiz-progress__fill,
+      .quiz-progress.is-complete,
+      .quiz-progress.is-complete .quiz-progress__fill::after {
         animation: none;
       }
     }

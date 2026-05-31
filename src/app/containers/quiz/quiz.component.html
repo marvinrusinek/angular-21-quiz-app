@@ -103,11 +103,12 @@
                         </div>
                       }
                     </div>
-                    <span class="progress-inline">({{ progressSig() }}% complete)</span>
+                    <span class="progress-inline" [class.is-complete]="progressSig() >= 100">({{ progressSig() }}% complete)</span>
                   </section>
 
                   <!-- Row 3: Animated striped progress bar -->
                   <div class="quiz-progress"
+                    [class.is-complete]="progressSig() >= 100"
                     role="progressbar"
                     [attr.aria-valuenow]="progressSig()"
                     aria-valuemin="0"
