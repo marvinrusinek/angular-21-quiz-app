@@ -231,7 +231,7 @@ export class OptionInteractionService {
     // Check if ALREADY selected using composite (id + displayIndex) matching.
     // See targetCompositeKey comment above — optionId alone can collide.
     const existingIdx = simulatedSelection.findIndex(o => {
-      const sIdx = (o as any).displayIndex ?? (o as any).index ?? (o as any).idx;
+      const sIdx = o.displayIndex ?? o.index ?? o.idx ?? -1;
       const sKey = `${getEffectiveId(o, sIdx)}|${sIdx}`;
       return sKey === targetCompositeKey;
     });
@@ -266,9 +266,9 @@ export class OptionInteractionService {
     }
     const futureKeys = new Set<number>();
     for (const s of futureSelection) {
-      const sId = (s as any).optionId;
-      const sText = norm((s as any).text);
-      let idx = (s as any).displayIndex ?? (s as any).index ?? (s as any).idx;
+      const sId = s.optionId;
+      const sText = norm(s.text);
+      let idx = s.displayIndex ?? s.index ?? s.idx;
 
       if (idx === undefined || idx === null || idx === -1 || isNaN(Number(idx))) {
         const foundIdx = state.optionBindings.findIndex(b => {
@@ -351,7 +351,7 @@ export class OptionInteractionService {
         this.quizService.getPristineCorrectTextsForQuestion(qTextForLookup);
       if (pristineCorrectTexts.size > 0) {
         for (const [i, o] of questionOptions.entries()) {
-          if (pristineCorrectTexts.has(norm((o as any)?.text))) {
+          if (pristineCorrectTexts.has(norm(o?.text))) {
             correctIndicesSet.add(i);
           }
         }
@@ -426,8 +426,8 @@ export class OptionInteractionService {
       try {
         const saved = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
         for (const s of saved) {
-          const sText = norm((s as any)?.text);
-          const sId = (s as any)?.optionId;
+          const sText = norm(s?.text);
+          const sId = s?.optionId;
           let pos = -1;
           if (sText) {
             pos = state.optionBindings.findIndex((b: OptionBindings) =>
@@ -440,7 +440,7 @@ export class OptionInteractionService {
             );
           }
           if (pos === -1) {
-            const sIdx = (s as any)?.displayIndex ?? (s as any)?.index;
+            const sIdx = s?.displayIndex ?? s?.index;
             if (sIdx != null && Number.isFinite(Number(sIdx))) pos = Number(sIdx);
           }
           if (pos !== -1) {
