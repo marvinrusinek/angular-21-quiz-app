@@ -213,7 +213,21 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
     const baseText = (view?.question?.questionText ?? this.questionToDisplaySig() ?? '').trim();
     if (!baseText) return '';
 
-    const opts = view?.options ?? [];
+    let opts = view?.options ?? [];
+
+    // The view's options can be empty on the initial render of a shuffled
+    // question (before the first selection), which would suppress the
+    // "(N answers are correct)" banner. Fall back to the canonical
+    // question matched by text so the banner still shows. Banner-only —
+    // this does NOT change which question text renders.
+    if (opts.length === 0) {
+      const canonical = this.quizService.questions ?? [];
+      const match = canonical.find(
+        (q: QuizQuestion) => norm(q?.questionText) === norm(baseText)
+      );
+      opts = match?.options ?? [];
+    }
+
     const numCorrect = opts.filter(
       (o: any) => isOptionCorrect(o)
     ).length;
