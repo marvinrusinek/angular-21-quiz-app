@@ -7,6 +7,8 @@ import {
   distinctUntilChanged, filter, map, take, timeout
 } from 'rxjs/operators';
 
+import { FET_UNLOCK_WATCHDOG_MS } from '../../../constants/timing';
+
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 import { ExplanationFormatterService } from './explanation-formatter.service';
@@ -103,6 +105,7 @@ export class ExplanationDisplayStateService {
   public _currentGateToken = 0;
   private _unlockRAFId: number | null = null;
   private _unlockTimeoutId: number | null = null;
+  private _unlockWatchdogId: number | null = null;
   public latestExplanationIndex: number | null = -1;
 
   get _activeIndex(): number | null {
@@ -1036,9 +1039,22 @@ export class ExplanationDisplayStateService {
         this._fetLocked = false;
       }, FET_UNLOCK_SETTLE_DELAY_MS);
     });
+
+    // Belt-and-suspenders watchdog: if the deferred unlock chain above ever
+    // fails to complete (rAF/timeout dropped, exception, token bumped with no
+    // follow-up unlock), the lock would stay true indefinitely. Force-unlock
+    // after the watchdog window — but ONLY if this cycle still owns the gate
+    // (token unchanged); a newer purge means someone else manages the unlock.
+    // Mirrors the watchdog already guarding unlockFetGateAfterRender.
+    this._unlockWatchdogId = window.setTimeout(() => {
+      this._unlockWatchdogId = null;
+      if (!this._fetLocked) return;
+      if (this._currentGateToken !== localToken) return;
+      this._fetLocked = false;
+    }, FET_UNLOCK_WATCHDOG_MS);
   }
 
-  /** Cancel any in-flight rAF + setTimeout unlock pair. */
+  /** Cancel any in-flight rAF + setTimeout unlock pair (and its watchdog). */
   private cancelPendingUnlock(): void {
     if (this._unlockRAFId != null) {
       cancelAnimationFrame(this._unlockRAFId);
@@ -1047,6 +1063,10 @@ export class ExplanationDisplayStateService {
     if (this._unlockTimeoutId != null) {
       clearTimeout(this._unlockTimeoutId);
       this._unlockTimeoutId = null;
+    }
+    if (this._unlockWatchdogId != null) {
+      clearTimeout(this._unlockWatchdogId);
+      this._unlockWatchdogId = null;
     }
   }
 }

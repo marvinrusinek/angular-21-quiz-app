@@ -33,6 +33,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
+import { FET_UNLOCK_WATCHDOG_MS } from '../../../constants/timing';
+
 import { ExplanationTextService } from './explanation-text.service';
 
 describe('FET emission contract', () => {
@@ -181,13 +183,35 @@ describe('FET emission contract', () => {
     }, 600); // FET_UNLOCK_SETTLE_DELAY_MS (~250-300ms) + headroom
   });
 
-  xit('DESIRED: purgeAndDefer should have a watchdog identical to unlockFetGateAfterRender (un-skip if implemented)', () => {
-    // This test would assert that even if the deferred unlock chain is
-    // somehow disrupted (e.g., setTimeout cancelled, exception in
-    // intermediate callback), a watchdog at FET_UNLOCK_WATCHDOG_MS
-    // (~2s) force-clears _fetLocked. Currently no such watchdog exists
-    // for purgeAndDefer — only for unlockFetGateAfterRender (added in
-    // commit 9d479d43, D3).
-    expect(true).toBe(true);
+  // FIXED: purgeAndDefer now has a watchdog mirroring the one guarding
+  // unlockFetGateAfterRender. Even if the primary deferred unlock chain is
+  // disrupted, the watchdog force-clears _fetLocked after the watchdog
+  // window — but only while the same token still owns the gate.
+  it('purgeAndDefer watchdog force-unlocks _fetLocked if the deferred unlock is disrupted', () => {
+    jest.useFakeTimers();
+    const displayState = (service as any).displayState;
+
+    // Disrupt the primary unlock: make rAF a no-op so the inner setTimeout
+    // that clears the lock is never scheduled. Only the watchdog (a direct
+    // setTimeout) remains to recover the gate.
+    const rafSpy = jest
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(() => 0 as any);
+
+    try {
+      service.purgeAndDefer(3);
+      expect(displayState._fetLocked).toBe(true);
+
+      // Just before the watchdog window — still locked.
+      jest.advanceTimersByTime(FET_UNLOCK_WATCHDOG_MS - 1);
+      expect(displayState._fetLocked).toBe(true);
+
+      // Past the watchdog window — force-unlocked (same token owns the gate).
+      jest.advanceTimersByTime(2);
+      expect(displayState._fetLocked).toBe(false);
+    } finally {
+      rafSpy.mockRestore();
+      jest.useRealTimers();
+    }
   });
 });
