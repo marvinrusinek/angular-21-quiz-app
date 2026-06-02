@@ -7,6 +7,8 @@
     "build": "ng build",
     "test": "jest",
     "test:watch": "jest --watch",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
     "deploy": "ng build --configuration=production && ngh --dir=dist/demo/browser --no-silent"
   },
   "dependencies": {
@@ -31,6 +33,7 @@
     "@angular/build": "20.3.8",
     "@angular/cli": "^20.3.8",
     "@angular/compiler-cli": "20.3.14",
+    "@playwright/test": "^1.60.0",
     "@types/howler": "^2.2.11",
     "@types/jest": "^30.0.0",
     "angular-cli-ghpages": "^3.0.3",

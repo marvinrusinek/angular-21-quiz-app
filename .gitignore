@@ -2,5 +2,9 @@
 dist
 node_modules
 .env
+test-results
+playwright-report
+.playwright
 CODE_REVIEW.md
 E6_FET_STATE_MACHINE_DESIGN.md
+E1_SELECTED_OPTION_SERVICE_SPLIT_DESIGN.md
