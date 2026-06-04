@@ -380,6 +380,47 @@ export class OptionInteractionService {
   }
 
   /**
+   * Compute the next selection list for a click. Deselecting an already-
+   * selected option drops it; otherwise build the new selection entry. In
+   * single-answer mode the result is just the new option (only one selected
+   * at a time); in multi-answer mode it is appended to the existing
+   * selections. Pure — no side effects. Extracted verbatim from
+   * handleOptionClick.
+   *
+   * NOTE (single-answer): we do NOT clearSelectionsForQuestion here — that
+   * would wipe _selectionHistory and sel_Q* in sessionStorage, erasing the
+   * "previously clicked" record for prior wrong clicks. `[newOpt]` already
+   * enforces single-answer "only one currently selected" semantics in the
+   * live map; history accumulation is handled downstream.
+   */
+  private buildFutureSelection(
+    isCurrentlySelected: boolean,
+    simulatedSelection: SelectedOption[],
+    existingIdx: number,
+    binding: OptionBindings,
+    targetKey: number | string,
+    qIdx: number,
+    index: number,
+    isMultipleMode: boolean
+  ): SelectedOption[] {
+    if (isCurrentlySelected) {
+      return simulatedSelection.filter((_, i) => i !== existingIdx);
+    }
+    const newOpt: SelectedOption = {
+      ...binding.option,
+      optionId: targetKey,
+      selected: true,
+      questionIndex: qIdx,
+      index: index,
+      displayIndex: index
+    } as SelectedOption;
+    if (!isMultipleMode) {
+      return [newOpt];
+    }
+    return [...simulatedSelection, newOpt];
+  }
+
+  /**
    * Resolve the display-index set for the future selection and mirror it onto
    * state.selectedOptionMap. Each selection entry's display index is taken
    * directly when present, else recovered by matching optionId/text against
