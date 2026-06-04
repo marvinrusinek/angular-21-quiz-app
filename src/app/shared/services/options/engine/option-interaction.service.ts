@@ -221,33 +221,9 @@ export class OptionInteractionService {
     });
     const isCurrentlySelected = (existingIdx !== -1);
 
-    let futureSelection: SelectedOption[] = [];
-    if (isCurrentlySelected) {
-      futureSelection = simulatedSelection.filter((_, i) => i !== existingIdx);
-    } else {
-      const newOpt: SelectedOption = {
-        ...binding.option,
-        optionId: targetKey,
-        selected: true,
-        questionIndex: qIdx,
-        index: index,
-        displayIndex: index
-      } as SelectedOption;
-      
-      if (!isMultipleMode) {
-        // Do NOT call clearSelectionsForQuestion here: it wipes
-        // _selectionHistory and sel_Q* in sessionStorage, which erases the
-        // "previously clicked" record for prior wrong clicks. We still
-        // want A to rehydrate on refresh (as previously-clicked, even if
-        // not currently selected). futureSelection = [newOpt] below
-        // already enforces single-answer "only one currently selected"
-        // semantics in the live map; history accumulation is handled by
-        // setSelectedOptionsForQuestion downstream.
-        futureSelection = [newOpt];
-      } else {
-        futureSelection = [...simulatedSelection, newOpt];
-      }
-    }
+    let futureSelection = this.buildFutureSelection(
+      isCurrentlySelected, simulatedSelection, existingIdx, binding, targetKey, qIdx, index, isMultipleMode
+    );
     const futureKeys = this.buildFutureKeysAndSyncMap(futureSelection, state);
 
     // Normalize displayIndex on EVERY futureSelection entry (not just the
