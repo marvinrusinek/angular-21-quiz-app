@@ -3,6 +3,8 @@ import { QuestionType } from '../../models/question-type.enum';
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
+import { Utils } from '../../utils/utils';
+
 import { QuizShuffleService } from './quiz-shuffle.service';
 
 describe('QuizShuffleService', () => {
@@ -177,6 +179,54 @@ describe('QuizShuffleService', () => {
     it('should return null for out-of-bounds index', () => {
       service.prepareShuffle('quiz-1', mockQuestions);
       expect(service.toOriginalIndex('quiz-1', 99)).toBeNull();
+    });
+  });
+
+  // ── toOriginalIndex — permutation contract (index-model rewrite) ─
+  // Pins the map's invariants under an ACTUAL (non-identity) shuffle, so the
+  // rewrite can treat the URL display index → original index mapping as a
+  // trustworthy bijection. Forces a known order by stubbing Utils.shuffleArray.
+  describe('toOriginalIndex — permutation contract', () => {
+    const fixedOrder = [2, 0, 1]; // display 0→orig 2, 1→orig 0, 2→orig 1
+
+    beforeEach(() => {
+      jest
+        .spyOn(Utils, 'shuffleArray')
+        .mockImplementation(() => [...fixedOrder]);
+    });
+
+    afterEach(() => {
+      (Utils.shuffleArray as jest.Mock).mockRestore?.();
+    });
+
+    it('maps each display index to the forced original index', () => {
+      service.prepareShuffle('quiz-perm', mockQuestions);
+      expect(service.toOriginalIndex('quiz-perm', 0)).toBe(2);
+      expect(service.toOriginalIndex('quiz-perm', 1)).toBe(0);
+      expect(service.toOriginalIndex('quiz-perm', 2)).toBe(1);
+    });
+
+    it('is a bijection — every display index maps to a distinct original index covering 0..n-1', () => {
+      service.prepareShuffle('quiz-perm', mockQuestions);
+      const n = mockQuestions.length;
+      const mapped = Array.from({ length: n }, (_, d) =>
+        service.toOriginalIndex('quiz-perm', d)
+      );
+      expect(mapped.every((v) => typeof v === 'number')).toBe(true);
+      expect([...mapped].sort()).toEqual([0, 1, 2]); // permutation of 0..n-1
+      expect(new Set(mapped).size).toBe(n); // all distinct
+    });
+
+    it('is stable across a persistence reload (new service instance reads localStorage)', () => {
+      service.prepareShuffle('quiz-perm', mockQuestions);
+      const before = [0, 1, 2].map((d) => service.toOriginalIndex('quiz-perm', d));
+
+      // Simulate a page reload: a fresh service must rehydrate from storage.
+      const reloaded = new QuizShuffleService();
+      const after = [0, 1, 2].map((d) => reloaded.toOriginalIndex('quiz-perm', d));
+
+      expect(after).toEqual(before);
+      expect(after).toEqual([2, 0, 1]);
     });
   });
 
