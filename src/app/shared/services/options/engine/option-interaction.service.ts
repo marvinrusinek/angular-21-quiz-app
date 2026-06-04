@@ -106,34 +106,11 @@ export class OptionInteractionService {
     // PRISTINE CORRECTNESS RESOLVER: Resolve whether the clicked option is
     // truly correct from quizInitialState, not from potentially-mutated binding data.
     // Uses question TEXT matching (not index) to handle shuffled mode correctly.
-    const isPristineCorrect = (o: any): boolean => {
-      if (!o) return false;
-      try {
-        const optText = norm(o?.text);
-        if (!optText) return false;
-        // Resolve the current question text for matching.
-        // CRITICAL: In shuffled mode, state.currentQuestion points to the
-        // WRONG question (original order). ALWAYS prefer display-order
-        // sources first in shuffled mode.
-        const isShuffledPC = (this.quizService as any)?.isShuffleEnabled?.()
-          && (this.quizService as any)?.shuffledQuestions?.length > 0;
-        let question: any;
-        if (isShuffledPC) {
-          question = this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx]
-            ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]
-            ?? state.currentQuestion
-            ?? (this.quizService as any)?.questions?.[qIdx];
-        } else {
-          question = state.currentQuestion
-            ?? (this.quizService as any)?.questions?.[qIdx]
-            ?? this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx];
-        }
-        const pristineCorrectTexts =
-          this.quizService.getPristineCorrectTextsForQuestion(question?.questionText);
-        return pristineCorrectTexts.has(optText);
-      } catch { /* ignore */ }
-      return false;
-    };
+    // Thin delegate: forwards to isPristineCorrectFor, capturing `qIdx` and
+    // `state` by reference so late reassignments of `qIdx` are still honored
+    // at call-time (identical to the original inline closure semantics).
+    const isPristineCorrect = (o: any): boolean =>
+      this.isPristineCorrectFor(o, qIdx, state);
 
     // Mark interaction immediately
     this.quizStateService.markUserInteracted(qIdx);
@@ -549,6 +526,47 @@ export class OptionInteractionService {
         console.error('OptionInteractionService.stopTimerIfAnswerCorrect timer stop failed:', e);
       }
     }
+  }
+
+  /**
+   * PRISTINE CORRECTNESS RESOLVER: resolve whether the clicked option is
+   * truly correct from quizInitialState, not from potentially-mutated binding
+   * data. Uses question TEXT matching (not index) to handle shuffled mode
+   * correctly. Extracted verbatim from handleOptionClick's inline closure;
+   * `qIdx`/`state` are passed by the thin delegate that captures them by
+   * reference so late `qIdx` reassignments are honored at call-time.
+   */
+  private isPristineCorrectFor(
+    o: any,
+    qIdx: number,
+    state: OptionInteractionState
+  ): boolean {
+    if (!o) return false;
+    try {
+      const optText = norm(o?.text);
+      if (!optText) return false;
+      // Resolve the current question text for matching.
+      // CRITICAL: In shuffled mode, state.currentQuestion points to the
+      // WRONG question (original order). ALWAYS prefer display-order
+      // sources first in shuffled mode.
+      const isShuffledPC = (this.quizService as any)?.isShuffleEnabled?.()
+        && (this.quizService as any)?.shuffledQuestions?.length > 0;
+      let question: any;
+      if (isShuffledPC) {
+        question = this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx]
+          ?? (this.quizService as any)?.shuffledQuestions?.[qIdx]
+          ?? state.currentQuestion
+          ?? (this.quizService as any)?.questions?.[qIdx];
+      } else {
+        question = state.currentQuestion
+          ?? (this.quizService as any)?.questions?.[qIdx]
+          ?? this.quizService.getQuestionsInDisplayOrder?.()?.[qIdx];
+      }
+      const pristineCorrectTexts =
+        this.quizService.getPristineCorrectTextsForQuestion(question?.questionText);
+      return pristineCorrectTexts.has(optText);
+    } catch { /* ignore */ }
+    return false;
   }
 
   /**
