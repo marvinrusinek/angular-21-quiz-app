@@ -73,26 +73,12 @@ export class OptionInteractionService {
     // downstream code (.entries, .findIndex, .map, .filter, .[idx]) works.
     // Extracted to normalizeStateOptionBindings; body unchanged.
     this.normalizeStateOptionBindings(state);
-    // INDEX-MODEL REWRITE (Phase 1): the caller (shared-option-click.service)
-    // seeds state.currentQuestionIndex from the URL-authoritative
-    // getActiveQuestionIndex() (the questionIndex() @Input). That is the single
-    // source of truth for the active DISPLAY position, so trust it first; fall
-    // back to the live service signal only when it's missing/invalid.
-    //
-    // The previous logic preferred quizService.getCurrentQuestionIndex() (which
-    // is documented to stick at 0 during init/hydration) and then ran a
-    // text-match "self-heal" against ORIGINAL-order questions[]. In shuffle,
-    // state.currentQuestion is itself wrong-order, so the self-heal collapsed
-    // every click onto the same original slot (the index-0 mis-keying behind
-    // the revisit bug). It also produced an original-order qIdx while every
-    // downstream consumer here (getQuestionAtDisplayIndex, isPristineCorrectFor)
-    // expects a DISPLAY index. Removed — qIdx is now the display index, end to
-    // end, matching the answered-state read path on revisit.
-    const stateIdx = state.currentQuestionIndex;
-    const liveIdx = this.quizService?.getCurrentQuestionIndex?.();
-    let qIdx = (typeof stateIdx === 'number' && Number.isFinite(stateIdx) && stateIdx >= 0)
-      ? stateIdx
-      : ((typeof liveIdx === 'number' && Number.isFinite(liveIdx) && liveIdx >= 0) ? liveIdx : 0);
+    // INDEX-MODEL REWRITE (Phase 1): resolve the active DISPLAY index from the
+    // caller-seeded, URL-authoritative state.currentQuestionIndex (extracted to
+    // resolveActiveDisplayIndex). `let` because the isPristineCorrect delegate
+    // below captures it by reference; it is no longer reassigned (the old
+    // self-heal that did so was removed).
+    let qIdx = this.resolveActiveDisplayIndex(state);
 
     // PRISTINE CORRECTNESS RESOLVER: Resolve whether the clicked option is
     // truly correct from quizInitialState, not from potentially-mutated binding data.
@@ -436,6 +422,29 @@ export class OptionInteractionService {
         console.error('OptionInteractionService.stopTimerIfAnswerCorrect timer stop failed:', e);
       }
     }
+  }
+
+  /**
+   * Resolve the active DISPLAY index for the click. The caller
+   * (shared-option-click.service) seeds state.currentQuestionIndex from the
+   * URL-authoritative getActiveQuestionIndex() (the questionIndex() @Input) —
+   * the single source of truth for the active display position — so trust it
+   * first and fall back to the live service signal only when it's invalid.
+   *
+   * The previous logic preferred quizService.getCurrentQuestionIndex() (which
+   * sticks at 0 during init/hydration) then ran a text-match "self-heal"
+   * against ORIGINAL-order questions[]; in shuffle, state.currentQuestion is
+   * itself wrong-order, so the self-heal collapsed every click onto the same
+   * original slot (the index-0 mis-keying behind the revisit bug) AND produced
+   * an original-order index while downstream consumers expect a DISPLAY index.
+   * Removed — qIdx is the display index end to end now.
+   */
+  private resolveActiveDisplayIndex(state: OptionInteractionState): number {
+    const stateIdx = state.currentQuestionIndex;
+    const liveIdx = this.quizService?.getCurrentQuestionIndex?.();
+    return (typeof stateIdx === 'number' && Number.isFinite(stateIdx) && stateIdx >= 0)
+      ? stateIdx
+      : ((typeof liveIdx === 'number' && Number.isFinite(liveIdx) && liveIdx >= 0) ? liveIdx : 0);
   }
 
   /**
