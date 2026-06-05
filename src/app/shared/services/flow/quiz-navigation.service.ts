@@ -217,6 +217,19 @@ export class QuizNavigationService {
       const fresh = await this.fetchAndEmitQuestion(index);
       if (!fresh) return false;
 
+      // INDEX-MODEL REWRITE (Phase 2): deterministically re-derive the answered
+      // state for the destination from the DURABLE per-display-index answered
+      // flag (markQuestionAnswered, written by handleOptionClick on completion).
+      // This flag survives the selection-store clear above, so it's the
+      // authoritative "was this question answered" signal on revisit — replacing
+      // the racy re-derivation stream that intermittently left Next disabled.
+      // Only ENABLE (never disable) so a genuinely-unanswered destination is
+      // unaffected.
+      if (this.quizStateService.isQuestionAnswered(index)) {
+        this.quizStateService.setAnswered(true);
+        this.selectedOptionService.setAnswered(true, true);
+      }
+
       // Finalize
       this.notifyNavigationSuccess();
       // Selection message is derived automatically via

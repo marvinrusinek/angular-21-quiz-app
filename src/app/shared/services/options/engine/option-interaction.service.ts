@@ -264,6 +264,18 @@ export class OptionInteractionService {
     // COMMIT STATE (extracted to commitSelectionState; body unchanged).
     this.commitSelectionState(qIdx, futureSelection, futureKeys, state);
 
+    // INDEX-MODEL REWRITE (Phase 2): record a DURABLE per-display-index answered
+    // flag the moment the question is complete (single-answer = any click;
+    // multi-answer = all correct selected). Navigation clears the selection
+    // stores on revisit ("clean on revisit"), so they can't tell the Next
+    // button a revisited question was already answered — leaving it to a racy
+    // re-derivation stream. This durable flag (not cleared on plain bounce
+    // navigation) is what the post-nav re-derivation reads to re-enable Next
+    // deterministically.
+    if (!isMultipleMode || allCorrectFound) {
+      this.quizStateService.markQuestionAnswered(qIdx);
+    }
+
     // UPDATE UI
 
     // AUTHORITATIVE HIGHLIGHT SYNC (single- vs multi-answer). Extracted to

@@ -55,19 +55,16 @@ test.describe('shuffle mode — explanation pipeline', () => {
       .toBe('question');
   });
 
-  // KNOWN PRE-EXISTING BUG (fixme): bouncing Q1<->Q2 repeatedly in shuffle,
-  // the Next button fails to re-enable on the 3rd visit to Q2 even though Q2
-  // was already answered. Next is [disabled]="!nextButtonEnabled()".
-  //
-  // This is NOT a clean regression from any one change — on a fresh build it
-  // fails intermittently (~40-60% of runs), so it's a timing/order race in
-  // the next-button-enable path tied to shuffle index resolution (the
-  // selection map is keyed differently from currentQuestionIndex() in
-  // shuffle mode). Marked fixme so the green suite stays a reliable gate;
-  // un-fixme once the shuffle index race is fixed. A reactive
-  // selectedOptionsMapSig fallback was tried and did NOT help (wrong index
-  // key in shuffle).
-  test.fixme('Next stays enabled on repeated revisits to position 2 (Q1<->Q2 x3)', async ({ page }) => {
+  // FIXED (index-model rewrite, Phases 1+2): bouncing Q1<->Q2 repeatedly in
+  // shuffle, the Next button used to fail to re-enable on the 3rd visit to Q2
+  // (a timing race — selection stores are cleared on revisit, leaving the
+  // answered state to a racy re-derivation stream). Phase 1 made handleOptionClick
+  // trust the URL display index (1/8 -> 4/8); Phase 2 added a DURABLE
+  // per-display-index answered flag (markQuestionAnswered on completion) that
+  // the post-navigation re-derivation reads to deterministically re-enable Next
+  // (4/8 -> 8/8, confirmed 16/16 across two batches). Now a permanent regression
+  // guard.
+  test('Next stays enabled on repeated revisits to position 2 (Q1<->Q2 x3)', async ({ page }) => {
     await enableShuffleAndStart(page);
     const next = page.locator(NEXT_BTN);
     const prev = page.locator(PREV_BTN);
