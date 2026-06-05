@@ -290,29 +290,8 @@ export class OptionInteractionService {
       qIdx, state, emitExplanation
     );
 
-    // UPDATE ANCHOR: If we just selected something, that's the new anchor.
-    // If we unselected, find the most recently selected option that's still selected.
-    if (!isCurrentlySelected) {
-      state.lastFeedbackOptionId = index;
-    } else {
-      // Robustly find the most recent in history that is STILL selected
-      const stillSelectedId = [...(state.selectedOptionHistory || [])]
-        .reverse()
-        .find(histId => {
-          // Find the option in optionsToDisplay that corresponds to this history entry
-          const oIdx = state.optionsToDisplay.findIndex((_, i) => i === histId || String(i) === String(histId));
-          const opt = oIdx !== -1 ? state.optionsToDisplay[oIdx] : state.optionsToDisplay.find(o => o.optionId != null && o.optionId !== -1 && o.optionId == histId);
-          return opt && futureKeys.has(getEffectiveId(opt, state.optionsToDisplay.indexOf(opt)));
-        });
-
-      if (stillSelectedId !== undefined) {
-        // Find its reliable index to use as the lastFeedbackOptionId
-        const finalIdx = state.optionsToDisplay.findIndex((_, i) => i === stillSelectedId || String(i) === String(stillSelectedId));
-        state.lastFeedbackOptionId = finalIdx !== -1 ? finalIdx : stillSelectedId;
-      } else {
-        state.lastFeedbackOptionId = -1;
-      }
-    }
+    // UPDATE ANCHOR (extracted to updateFeedbackAnchor; body unchanged).
+    this.updateFeedbackAnchor(state, isCurrentlySelected, index, futureKeys);
 
     // AUTHORITATIVE FEEDBACK ANCHORING (extracted to applyFeedbackAnchoring;
     // body unchanged). Retried in Phase 3 — previously worsened the shuffle
@@ -499,6 +478,43 @@ export class OptionInteractionService {
     if (shouldStopTimer) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch (e) {
         console.error('OptionInteractionService.stopTimerIfAnswerCorrect timer stop failed:', e);
+      }
+    }
+  }
+
+  /**
+   * UPDATE ANCHOR: if we just selected something, that's the new anchor; if we
+   * unselected, find the most recently selected option in history that is STILL
+   * selected and anchor on it (else -1). Side-effect on state.lastFeedbackOptionId;
+   * the only closure used (getEffectiveId) is capture-free and redefined inline.
+   * Extracted verbatim from handleOptionClick.
+   */
+  private updateFeedbackAnchor(
+    state: OptionInteractionState,
+    isCurrentlySelected: boolean,
+    index: number,
+    futureKeys: Set<number>
+  ): void {
+    const getEffectiveId = (o: any, i: number) => (o?.optionId != null && o.optionId !== -1) ? o.optionId : i;
+    if (!isCurrentlySelected) {
+      state.lastFeedbackOptionId = index;
+    } else {
+      // Robustly find the most recent in history that is STILL selected
+      const stillSelectedId = [...(state.selectedOptionHistory || [])]
+        .reverse()
+        .find(histId => {
+          // Find the option in optionsToDisplay that corresponds to this history entry
+          const oIdx = state.optionsToDisplay.findIndex((_, i) => i === histId || String(i) === String(histId));
+          const opt = oIdx !== -1 ? state.optionsToDisplay[oIdx] : state.optionsToDisplay.find(o => o.optionId != null && o.optionId !== -1 && o.optionId == histId);
+          return opt && futureKeys.has(getEffectiveId(opt, state.optionsToDisplay.indexOf(opt)));
+        });
+
+      if (stillSelectedId !== undefined) {
+        // Find its reliable index to use as the lastFeedbackOptionId
+        const finalIdx = state.optionsToDisplay.findIndex((_, i) => i === stillSelectedId || String(i) === String(stillSelectedId));
+        state.lastFeedbackOptionId = finalIdx !== -1 ? finalIdx : stillSelectedId;
+      } else {
+        state.lastFeedbackOptionId = -1;
       }
     }
   }
