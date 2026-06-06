@@ -230,18 +230,14 @@ export class SharedOptionClickService {
     } catch {}
   }
 
-  runOptionContentClick(comp: any, binding: any, index: number, event: any): void {
-    const now = Date.now();
-    if (comp._lastRunClickIndex === index && comp._lastRunClickTime && (now - comp._lastRunClickTime) < 200) {
-      return;
-    }
-    comp._lastRunClickIndex = index;
-    comp._lastRunClickTime = now;
-
-    this.quizStateService.markUserInteracted(comp.getActiveQuestionIndex());
-
+  /**
+   * Build the per-call `state` context passed to handleOptionClick (the option
+   * UI sync context plus the component's per-question maps, render trigger, and
+   * current-question/index). Extracted verbatim from runOptionContentClick.
+   */
+  private buildClickState(comp: any): any {
     const baseCtx = comp.buildOptionUiSyncContext();
-    const state: any = {
+    return {
       ...baseCtx,
       disabledOptionsPerQuestion: comp.disabledOptionsPerQuestion,
       correctClicksPerQuestion: comp.correctClicksPerQuestion,
@@ -252,7 +248,15 @@ export class SharedOptionClickService {
       showExplanationChange: comp.showExplanationChange,
       explanationToDisplayChange: comp.explanationToDisplayChange
     };
+  }
 
+  /**
+   * Invoke OptionInteractionService.handleOptionClick inside a freeze guard,
+   * wiring the UI-update callback (which re-syncs feedback fields onto `state`)
+   * and a shuffle-aware emitExplanation (no-op in shuffled mode, where the SOC
+   * owns FET). Extracted verbatim from runOptionContentClick.
+   */
+  private delegateToHandleOptionClick(comp: any, binding: any, index: number, event: any, state: any): void {
     comp.freezeOptionBindings.set(true);
     state.freezeOptionBindings = true;
 
@@ -284,7 +288,20 @@ export class SharedOptionClickService {
       comp.freezeOptionBindings.set(false);
       state.freezeOptionBindings = false;
     }
+  }
 
+  runOptionContentClick(comp: any, binding: any, index: number, event: any): void {
+    const now = Date.now();
+    if (comp._lastRunClickIndex === index && comp._lastRunClickTime && (now - comp._lastRunClickTime) < 200) {
+      return;
+    }
+    comp._lastRunClickIndex = index;
+    comp._lastRunClickTime = now;
+
+    this.quizStateService.markUserInteracted(comp.getActiveQuestionIndex());
+
+    const state: any = this.buildClickState(comp);
+    this.delegateToHandleOptionClick(comp, binding, index, event, state);
     this.syncClickStateToComp(comp, state);
 
     let qIdx = comp.getActiveQuestionIndex();
