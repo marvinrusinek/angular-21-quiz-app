@@ -87,6 +87,13 @@ export class OptionInteractionEffectsService {
     // question so a 2nd visit doesn't see "all incorrects already
     // clicked" and trigger autoreveal on the very first new click.
     h._multiSelectByQuestion?.delete(v);
+    // Clear the durable disabled set for the INCOMING question — disabling must
+    // not persist across navigation. Without this, a wrong option locked on the
+    // first visit (added to disabledOptionsPerQuestion) re-applies on binding
+    // regeneration and the option renders disabled-but-unhighlighted on revisit,
+    // so it can't be re-clicked. (b.disabled is reset above, but the durable map
+    // re-applies it.)
+    h.disabledOptionsPerQuestion?.delete(v);
     h.selectedOptionHistory = [];
     h.lastFeedbackOptionId = -1;
     h.lastFeedbackQuestionIndex = v;
