@@ -223,6 +223,7 @@ export class SharedOptionComponent
   public _lastRunClickIndex: number | null = null;
   public _lastRunClickTime: number | null = null;
 
+  // ── constructor ─────────────────────────────────────────────────
   constructor() {
     this.ui = this.sharedOptionStateAdapterService.createInitialUiState();
     this.form = this.fb.group({
@@ -250,6 +251,7 @@ export class SharedOptionComponent
     this.optionFeedbackEffects.registerFeedbackEffects(this);
   }
 
+  // ── lifecycle hooks ─────────────────────────────────────────────
   ngOnInit(): void {
     this.orchestrator.runOnInit(this);
   }
@@ -266,6 +268,7 @@ export class SharedOptionComponent
     this.updateBindingSnapshots();
   }
 
+  // ── methods (host-pattern delegators + template helpers) ─────────
   get isMultiMode(): boolean {
     return this.orchestrator.runIsMultiMode(this);
   }
