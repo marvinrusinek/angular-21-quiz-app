@@ -51,6 +51,64 @@ export class SocAnswerProcessingService {
    * Processes a multi-answer option click: updates disabled set, bindings,
    * feedback, selection message, and triggers FET when all correct are selected.
    */
+  /**
+   * Shared FET write for a resolved (correctly-answered) question: set the
+   * active-index/latest fields, cache the formatted explanation, push it through
+   * the explanation pipeline (display + lock), set the display state, and stamp
+   * the H3 heading. Used by BOTH processMultiAnswerClick (all-correct) and
+   * processSingleAnswerClick (correct) — the sequence was identical in both,
+   * only the source variable names differed. displayIdx keys all the
+   * display-pipeline calls. FET-pipeline code — keep byte-for-byte.
+   */
+  /**
+   * Shared post-score tail: mark the question perfect (display-index keyed +
+   * sessionStorage), clear the FET lock and unlock the explanation, then emit
+   * the show-explanation change. Identical in both process*AnswerClick paths.
+   */
+  private markPerfectAndUnlockFet(comp: any, displayIdx: number): void {
+    this.quizService._multiAnswerPerfect.set(displayIdx, true);
+    writeSessionString(SK_MULTI_PERFECT + displayIdx, 'true');
+    this.explanationTextService._fetLocked = false;
+    this.explanationTextService.unlockExplanation();
+    comp.showExplanationChange.emit(true);
+  }
+
+  /** Ensure the per-question disabled set exists and return it. Shared pattern. */
+  private ensureDisabledSet(comp: any, qIdx: number): Set<number> {
+    if (!comp.disabledOptionsPerQuestion.has(qIdx)) {
+      comp.disabledOptionsPerQuestion.set(qIdx, new Set<number>());
+    }
+    return comp.disabledOptionsPerQuestion.get(qIdx)!;
+  }
+
+  private writeResolvedFet(displayIdx: number, fetHtml: string, question: any): void {
+    this.explanationTextService._activeIndex = displayIdx;
+    this.explanationTextService.latestExplanation = fetHtml;
+    this.explanationTextService.latestExplanationIndex = displayIdx;
+    this.explanationTextService.storeFormattedExplanation(
+      displayIdx, fetHtml, question, question?.options ?? [], true
+    );
+    this.explanationTextService.setExplanationText(fetHtml, {
+      force: true,
+      context: `question:${displayIdx}`,
+      index: displayIdx
+    });
+    this.explanationTextService.emitFormatted(displayIdx, fetHtml, { bypassGuard: true });
+    this.explanationTextService.setShouldDisplayExplanation(true, {
+      context: `question:${displayIdx}`,
+      force: true
+    } as any);
+    this.explanationTextService.setIsExplanationTextDisplayed(true, {
+      context: `question:${displayIdx}`,
+      force: true
+    } as any);
+    this.explanationTextService.lockExplanation();
+    this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
+    if (fetHtml) {
+      this.questionHeadingService.setHtml(fetHtml);
+    }
+  }
+
   processMultiAnswerClick(params: {
     comp: any;
     index: number;
@@ -101,10 +159,7 @@ export class SocAnswerProcessingService {
       index, durableSet, effectiveCorrectIndices
     );
 
-    if (!comp.disabledOptionsPerQuestion.has(qIdx)) {
-      comp.disabledOptionsPerQuestion.set(qIdx, new Set<number>());
-    }
-    const disabledSetRef = comp.disabledOptionsPerQuestion.get(qIdx)!;
+    const disabledSetRef = this.ensureDisabledSet(comp, qIdx);
     this.clickHandler.updateDisabledSet(
       disabledSetRef, index, clickState.isClickedCorrect,
       clickState.remaining, comp.optionBindings().length, effectiveCorrectIndices
@@ -247,13 +302,7 @@ export class SocAnswerProcessingService {
 
       this.quizService.scoreDirectly(qIdx, true, true);
 
-      this.quizService._multiAnswerPerfect.set(displayIdx, true);
-      writeSessionString(SK_MULTI_PERFECT + displayIdx, 'true');
-
-      this.explanationTextService._fetLocked = false;
-      this.explanationTextService.unlockExplanation();
-
-      comp.showExplanationChange.emit(true);
+      this.markPerfectAndUnlockFet(comp, displayIdx);
 
       // Resolve explanation text from pristine data and write directly
       let fetText = '';
@@ -296,40 +345,13 @@ export class SocAnswerProcessingService {
           }
         } catch (e) { console.error('processMultiAnswerClick FET formatting failed:', e); }
 
-        // Write directly via explanationTextService — use displayIdx
-        // so the CQC display pipeline (which reads by display index) finds it.
-        this.explanationTextService._activeIndex = displayIdx;
-        this.explanationTextService.latestExplanation = formattedFET;
-        this.explanationTextService.latestExplanationIndex = displayIdx;
+        // Write directly via explanationTextService — use displayIdx so the
+        // CQC display pipeline (which reads by display index) finds it. Shared
+        // with the single-answer path via writeResolvedFet.
         const qForStore = comp.currentQuestion()
           ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
           ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
-        this.explanationTextService.storeFormattedExplanation(
-          displayIdx, formattedFET, qForStore, qForStore?.options ?? [], true
-        );
-        this.explanationTextService.setExplanationText(formattedFET, {
-          force: true,
-          context: `question:${displayIdx}`,
-          index: displayIdx
-        });
-        this.explanationTextService.emitFormatted(displayIdx, formattedFET, { bypassGuard: true });
-        this.explanationTextService.setShouldDisplayExplanation(true, {
-          context: `question:${displayIdx}`,
-          force: true
-        } as any);
-        this.explanationTextService.setIsExplanationTextDisplayed(true, {
-          context: `question:${displayIdx}`,
-          force: true
-        } as any);
-        this.explanationTextService.lockExplanation();
-        this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
-
-        // Signal-driven write via QuestionHeadingService — single owner of
-        // the H3 heading's content. The codelab-quiz-content component
-        // subscribes via effect() and applies to the DOM through Renderer2.
-        if (formattedFET) {
-          this.questionHeadingService.setHtml(formattedFET);
-        }
+        this.writeResolvedFet(displayIdx, formattedFET, qForStore);
       }
 
       // Also try the component path as backup
@@ -507,12 +529,7 @@ export class SocAnswerProcessingService {
       this.explanationTextService.fetBypassForQuestion.set(displayIdx, true);
       this.quizService.scoreDirectly(qIdx, true, false);
       this.nextButtonStateService.setNextButtonState(true);
-      this.quizService._multiAnswerPerfect.set(displayIdx, true);
-      writeSessionString(SK_MULTI_PERFECT + displayIdx, 'true');
-
-      this.explanationTextService._fetLocked = false;
-      this.explanationTextService.unlockExplanation();
-      comp.showExplanationChange.emit(true);
+      this.markPerfectAndUnlockFet(comp, displayIdx);
       const singleFetQuestion = comp.currentQuestion()
         ?? comp.getQuestionAtDisplayIndex?.(displayIdx)
         ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[displayIdx];
@@ -531,35 +548,8 @@ export class SocAnswerProcessingService {
         const fetText = this.sharedOptionExplanationService.resolveExplanationText(singleFetCtxSync as any)?.trim()
           || singleFetQuestion?.explanation || '';
         if (fetText) {
-          this.explanationTextService._activeIndex = displayIdx;
-          this.explanationTextService.latestExplanation = fetText;
-          this.explanationTextService.latestExplanationIndex = displayIdx;
-          // Populate per-index cache so resolveDisplayText finds the FET
-          // even if the reactive stream doesn't deliver it in time.
-          this.explanationTextService.storeFormattedExplanation(
-            displayIdx, fetText, singleFetQuestion, singleFetQuestion?.options ?? [], true
-          );
-          this.explanationTextService.setExplanationText(fetText, {
-            force: true,
-            context: `question:${displayIdx}`,
-            index: displayIdx
-          });
-          this.explanationTextService.emitFormatted(displayIdx, fetText, { bypassGuard: true });
-          this.explanationTextService.setShouldDisplayExplanation(true, {
-            context: `question:${displayIdx}`,
-            force: true
-          } as any);
-          this.explanationTextService.setIsExplanationTextDisplayed(true, {
-            context: `question:${displayIdx}`,
-            force: true
-          } as any);
-          this.explanationTextService.lockExplanation();
-          this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
-
-          // Signal-driven write via QuestionHeadingService.
-          if (fetText) {
-            this.questionHeadingService.setHtml(fetText);
-          }
+          // Shared FET write (same sequence as the multi-answer path).
+          this.writeResolvedFet(displayIdx, fetText, singleFetQuestion);
         }
       } catch (e) { console.error('processSingleAnswerClick FET-sync write failed:', e); }
 
@@ -582,10 +572,7 @@ export class SocAnswerProcessingService {
       }, 0);
 
 
-      if (!comp.disabledOptionsPerQuestion.has(qIdx)) {
-        comp.disabledOptionsPerQuestion.set(qIdx, new Set<number>());
-      }
-      const disabledSetRef = comp.disabledOptionsPerQuestion.get(qIdx)!;
+      const disabledSetRef = this.ensureDisabledSet(comp, qIdx);
       disabledSetRef.clear();
       const currentBindings: any[] = Array.isArray(comp.optionBindings())
         ? comp.optionBindings()
