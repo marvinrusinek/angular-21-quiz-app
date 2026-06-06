@@ -413,7 +413,22 @@ export class SharedOptionClickService {
       });
     }
 
-    // â”€â”€â”€ Post-click feedback display â”€â”€â”€
+    this.applyPostClickFeedbackDisplay(comp, index);
+
+    this.rebuildBindingsForRender(comp, index, isMultiFromQ, durableSet);
+
+    comp.cdRef.detectChanges();
+  }
+
+  /**
+   * Post-click feedback display: resolve the feedback config for the clicked
+   * option (by key, by idx, or the active config), apply the multi-answer
+   * override, and stamp comp._feedbackDisplay when it should show. Terminal
+   * side-effect. CLICK-FEEDBACK PIPELINE — the [FB-DIAG] console.logs are
+   * LOAD-BEARING (removing them previously broke multi-answer FET); body and
+   * logs are verbatim. Do not "clean up" the logging.
+   */
+  private applyPostClickFeedbackDisplay(comp: any, index: number): void {
     comp._feedbackDisplay = null;
     if (comp.showFeedback()) {
       const clickedBinding = comp.optionBindings()[index];
@@ -445,10 +460,6 @@ export class SharedOptionClickService {
     } else {
       console.log('[FB-DIAG] showFeedback() is false');
     }
-
-    this.rebuildBindingsForRender(comp, index, isMultiFromQ, durableSet);
-
-    comp.cdRef.detectChanges();
   }
 
   /**
