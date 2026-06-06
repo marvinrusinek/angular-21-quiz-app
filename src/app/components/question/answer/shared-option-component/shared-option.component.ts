@@ -1,6 +1,6 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef,
-  DoCheck, effect, inject, input, OnDestroy, OnInit, output, signal
+  DoCheck, inject, input, OnDestroy, OnInit, output, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { SelectedOption } from '../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../shared/models/SharedOptionConfig.model';
 
 import { OptionClickHandlerService } from '../../../../shared/services/options/engine/option-click-handler.service';
+import { OptionFeedbackEffectsService } from '../../../../shared/services/features/shared-option/option-feedback-effects.service';
 import { OptionInteractionEffectsService } from '../../../../shared/services/features/shared-option/option-interaction-effects.service';
 import { OptionLockService } from '../../../../shared/services/options/policy/option-lock.service';
 import { OptionSelectionUiService } from '../../../../shared/services/options/engine/option-selection-ui.service';
@@ -38,7 +39,6 @@ import { SharedOptionStateAdapterService, SharedOptionUiState } from '../../../.
 import { SoundService } from '../../../../shared/services/ui/sound.service';
 import { TimerService } from '../../../../shared/services/features/timer/timer.service';
 
-import { isOptionCorrect } from '../../../../shared/utils/is-option-correct';
 
 import { FeedbackComponent } from '../feedback/feedback.component';
 import { OptionItemComponent } from './option-item/option-item.component';
@@ -46,7 +46,6 @@ import type { OptionUIEvent } from './option-item/option-item.component';
 
 import { correctAnswerAnim } from '../../../../animations/animations';
 import { SharedOptionConfigDirective } from '../../../../directives/shared-option-config.directive';
-import { norm } from '../../../../shared/utils/text-norm';
 
 @Component({
   selector: 'app-shared-option',
@@ -81,6 +80,7 @@ export class SharedOptionComponent
   public readonly explanationHandler = inject(SharedOptionExplanationService);
   public readonly feedbackManager = inject(SharedOptionFeedbackService);
   private readonly initService = inject(SharedOptionInitService);
+  private readonly optionFeedbackEffects = inject(OptionFeedbackEffectsService);
   private readonly optionInteractionEffects = inject(OptionInteractionEffectsService);
   private readonly optionLockService = inject(OptionLockService);
   public readonly optionSelectionUiService = inject(OptionSelectionUiService);
@@ -242,127 +242,10 @@ export class SharedOptionComponent
     // interaction cleanup effect above — to preserve the original creation order.
     this.optionUiSyncEffects.registerInputAndRenderSync(this);
 
-    // Multi-answer auto-disable. Reactively watches the selections signal
-    // and rebuilds optionBindings with fresh refs the moment every pristine-
-    // correct option for THIS rendered question is selected. Pure Angular
-    // reactivity — OnPush option-item children pick up new `b` refs via
-    // ngOnChanges, no DOM, no detectChanges hacks.
-    //
-    // Identifies the rendered question by option-text fingerprint
-    // (matching the bindings against pristine quizInitialState) instead
-    // of trusting currentQuestionIndex, which can lag during click flow.
-    effect(() => {
-      const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
-      if (!this.optionBindings() || this.optionBindings().length === 0) return;
-
-      // Resolve pristine correct texts for the current question.
-      const qIdx = this.currentQuestionIndex ?? this.quizService.currentQuestionIndex ?? 0;
-      const qText = (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
-        ?? (this.quizService as any)?.questions?.[qIdx]?.questionText;
-      const pristineCorrectTexts = this.quizService.getPristineCorrectTextsForQuestion(qText);
-      if (pristineCorrectTexts.size < 2) return;
-
-      // Find selections (across any question slot) whose texts cover every
-      // pristine correct text. Avoids dependence on currentQuestionIndex.
-      let allCorrectSelected = false;
-      for (const sels of selectionsMap.values()) {
-        const selectedTexts = new Set(
-          (sels ?? []).map((s: SelectedOption) => norm(s?.text)).filter((t: string) => !!t)
-        );
-        if ([...pristineCorrectTexts].every(t => selectedTexts.has(t))) {
-          allCorrectSelected = true;
-          break;
-        }
-      }
-      if (!allCorrectSelected) return;
-
-      // If auto-reveal already stamped _autoRevealedCorrect on the
-      // bindings, do not overwrite — auto-reveal's highlight + disable
-      // state is authoritative for exhausted-incorrect scenarios.
-      if (this.optionBindings().some((b: OptionBindings) => b?._autoRevealedCorrect)) return;
-
-      // Rebuild every binding with fresh refs so OnPush option-items pick
-      // up the new disabled state via ngOnChanges.
-      const correctTexts = pristineCorrectTexts;
-      let mutated = false;
-      const next = this.optionBindings().map((b: OptionBindings) => {
-        const myText = norm(b?.option?.text);
-        const isCorrect = correctTexts.has(myText);
-        const targetDisabled = !isCorrect;
-        if (b.disabled !== targetDisabled) mutated = true;
-        return {
-          ...b,
-          disabled: targetDisabled,
-          isCorrect,
-          option: b.option ? {
-            ...b.option,
-            active: isCorrect
-          } : b.option
-        };
-      });
-      if (mutated) {
-        this.optionBindings.set(next);
-        this.cdRef.markForCheck();
-      }
-    });
-
-    // Independent timer-expiry watcher: triggers when the timer service
-    // authoritatively reports the CURRENT question as expired. Updates
-    // bindings via cssClasses so Angular's ngClass paints correctly —
-    // no direct DOM manipulation (which bypassed reactive cleanup and
-    // left .correct-option leaked on revisited questions).
-    effect(() => {
-      // Track BOTH signals so the effect re-fires when either changes —
-      // but gate on the authoritative expired-index check below.
-      const elapsed = this.timerService.elapsedTimeSig();
-      const expiredForIdx = this.timerService.expiredForQuestionIndexSig();
-      const duration = this.timerService.timePerQuestion;
-      const qIdx = this.currentQuestionIndex ?? this.quizService.currentQuestionIndex ?? 0;
-      // Authoritative gate: only fire when the timer service explicitly
-      // marks THIS question as expired. The old `elapsed >= duration`
-      // check could fire on stale elapsed reads during Q→Q transitions,
-      // stamping the next question's bindings as expired.
-      if (expiredForIdx !== qIdx) return;
-      if (!(elapsed > 0 && elapsed >= duration)) return;
-      if (this._timerExpiryHandled) return;
-
-      this._timerExpiryHandled = true;
-      this.timerExpiredForQuestion.set(true);
-
-      // Get correct answer texts from canonical question data
-      const question = this.quizService.questions?.[qIdx] ?? this.currentQuestion();
-      const displayOpts = this.optionsToDisplay?.length
-        ? this.optionsToDisplay
-        : question?.options ?? [];
-      const correctTexts = new Set<string>();
-      for (const opt of displayOpts) {
-        if (isOptionCorrect(opt)) {
-          correctTexts.add(norm(opt.text));
-        }
-      }
-
-      // Stamp bindings via cssClasses + new ref so OnPush option-items
-      // re-render. ngClass will apply correct-option/incorrect-option
-      // classes through the normal Angular pipeline.
-      const updated = (this.optionBindings() ?? []).map((b: OptionBindings) => {
-        if (!b) return b;
-        const optText = norm(b.option?.text);
-        const isCorrect = correctTexts.has(optText);
-        return {
-          ...b,
-          cssClasses: {
-            ...(b.cssClasses || {}),
-            'correct-option': isCorrect,
-            'incorrect-option': !isCorrect && !!b.isSelected
-          },
-          _timerExpiredStamped: true,
-          _timerExpiredStampedForIndex: qIdx,
-          disabled: true
-        };
-      });
-      this.optionBindings.set(updated);
-      this.cdRef.markForCheck();
-    });
+    // Effects #10–#11 (multi-answer auto-disable + timer-expiry watcher),
+    // owned by OptionFeedbackEffectsService. Registered LAST so overall
+    // effect-creation order is preserved.
+    this.optionFeedbackEffects.registerFeedbackEffects(this);
   }
 
   ngOnInit(): void {
