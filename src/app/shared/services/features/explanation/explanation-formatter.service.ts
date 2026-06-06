@@ -355,8 +355,38 @@ export class ExplanationFormatterService {
     options?: Option[],
     displayIndex?: number
   ): number[] {
-    // Prefer the raw, untouched questions array as source of truth — upstream
-    // services may OR-merge stale correct flags into the in-memory question.
+    const opts = this.resolveOptionsForCorrectness(question, options, displayIndex);
+    const targetQuestionText = question?.questionText || '';
+    const qIdx = this.resolveCorrectIndicesQIdx(displayIndex);
+    const qTextNormFull = (question?.questionText || targetQuestionText || '').toLowerCase();
+    const isSingleChoice = this.computeIsSingleChoice(question, opts, qTextNormFull);
+    const lowerExpContent = (question?.explanation || '').toLowerCase();
+
+    return this.tryInternalCorrectFlags(opts, isSingleChoice, lowerExpContent)
+      ?? this.tryExplanationKeywordScan(opts, lowerExpContent)
+      ?? this.tryVisualCorrectFlags(opts)
+      ?? this.resolveByCorrectSets(question, opts, qIdx, targetQuestionText, isSingleChoice, lowerExpContent, qTextNormFull)
+      ?? this.tryQuickVisualScan(opts);
+  }
+
+  /** HTML/entity-stripping normalizer used by the correct-index matchers. Extracted verbatim. */
+  private normalizeLocalText(s: any): string {
+    if (typeof s !== 'string') return '';
+    return s
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\u00A0/g, ' ')
+      .replace(/<[^>]*>/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Resolve the options to evaluate: prefer the raw, untouched quizService
+   * questions array (in-memory questions may carry OR-merged stale correct
+   * flags). Extracted verbatim.
+   */
+  private resolveOptionsForCorrectness(question: QuizQuestion, options?: Option[], displayIndex?: number): Option[] {
     let opts = options || question?.options || [];
     try {
       const quizSvc = this.injector.get(QuizService, null);
@@ -370,23 +400,12 @@ export class ExplanationFormatterService {
     } catch (e) {
       console.error('ExplanationFormatterService.formatExplanation options fallback lookup failed:', e);
     }
+    return opts;
+  }
 
-    const normalizeLocal = (s: any) => {
-      if (typeof s !== 'string') return '';
-      return s
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/\u00A0/g, ' ')
-        .replace(/<[^>]*>/g, ' ')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, ' ');
-    };
-
-    const targetQuestionText = question?.questionText || '';
-
+  /** Resolve the question index (displayIndex, then latestExplanationIndex, then QuizService). Extracted verbatim. */
+  private resolveCorrectIndicesQIdx(displayIndex?: number): number {
     let qIdx = Number.isFinite(displayIndex) ? (displayIndex as number) : this.latestExplanationIndex;
-
-    // Final fallback for qIdx: check QuizService
     if (!Number.isFinite(qIdx) || qIdx === -1) {
       try {
         const quizSvc = this.injector.get(QuizService, null);
@@ -398,209 +417,247 @@ export class ExplanationFormatterService {
         console.error('ExplanationFormatterService.formatExplanation QuizService index fallback failed:', e);
       }
     }
+    return qIdx ?? 0;
+  }
 
-    qIdx = qIdx ?? 0;
-    const qTextNormFull = (question?.questionText || targetQuestionText || '').toLowerCase();
+  /** Single-choice detection: <=1 correct flag and a single/true-false (non-explicit-multi) type. Extracted verbatim. */
+  private computeIsSingleChoice(question: QuizQuestion, opts: Option[], qTextNormFull: string): boolean {
     const isExplicitMulti = qTextNormFull.includes('apply') || qTextNormFull.includes('multiple');
-
-    // Robust type check: raw data might use 'single_answer' or 'SingleAnswer'
     const qTypeRaw = String(question?.type || '').toLowerCase();
-
-    // Count correct options from the actual data — this is the most reliable signal.
-    const correctFlagCount = opts.filter(o =>
-      isOptionCorrect(o)
-    ).length;
-
-    const isSingleChoice = correctFlagCount <= 1 &&
+    const correctFlagCount = opts.filter(o => isOptionCorrect(o)).length;
+    return correctFlagCount <= 1 &&
       (qTypeRaw === 'single_answer' || qTypeRaw === 'true_false' ||
       (!isExplicitMulti && qTypeRaw !== 'multiple_answer'));
+  }
 
-    const lowerExpContent = (question?.explanation || '').toLowerCase();
-
-    // Attempt 0: Trust the internal correct flags FIRST — they are the most
-    // reliable signal and should take priority over text-matching heuristics.
+  /**
+   * Attempt 0: trust the internal correct flags first (most reliable signal);
+   * for single-choice with multiple flags, refine by explanation keyword.
+   * Returns null to fall through. Extracted verbatim.
+   */
+  private tryInternalCorrectFlags(opts: Option[], isSingleChoice: boolean, lowerExpContent: string): number[] | null {
     const internalCorrectIndices = opts
       .map((opt, i) => (isOptionCorrect(opt) ? i + 1 : null))
       .filter((n): n is number => n !== null);
+    if (internalCorrectIndices.length === 0) return null;
 
-    if (internalCorrectIndices.length > 0) {
-      let result = Array.from(new Set(internalCorrectIndices)).sort((a, b) => a - b);
-
-      // Safeguard: If multiple flags for single-choice, refine by explanation keyword
-      if (result.length > 1 && isSingleChoice && lowerExpContent.length > 5) {
-        const matchingExp = result.filter(idx => {
-           const t = (opts[idx - 1]?.text || '').toLowerCase();
-           return t.length > 2 && lowerExpContent.includes(t);
-        });
-        if (matchingExp.length === 1) result = matchingExp;
-      }
-      return result;
+    let result = Array.from(new Set(internalCorrectIndices)).sort((a, b) => a - b);
+    // Safeguard: multiple flags for single-choice -> refine by explanation keyword.
+    if (result.length > 1 && isSingleChoice && lowerExpContent.length > 5) {
+      const matchingExp = result.filter(idx => {
+        const t = (opts[idx - 1]?.text || '').toLowerCase();
+        return t.length > 2 && lowerExpContent.includes(t);
+      });
+      if (matchingExp.length === 1) result = matchingExp;
     }
+    return result;
+  }
 
-    // TRUTH LAYER 0: EXPLANATION KEYWORD SCAN (fallback only when correct flags are absent)
-    if (lowerExpContent.length > 5) {
-      // HARD-LOCK for Constructor Question (Q5)
-      if (lowerExpContent.includes('constructor') && lowerExpContent.includes('instantiation')) {
-        const found = opts.findIndex(o => (o.text || '').toLowerCase().includes('constructor'));
-        if (found !== -1) return [found + 1];
-      }
-
-      const uniqueMention = opts
-        .map((o, i) => {
-          const t = norm(o.text);
-          if (t.length < 3) return null;
-          return lowerExpContent.includes(t) ? i + 1 : null;
-        })
-        .filter((n): n is number => n !== null);
-
-      if (uniqueMention.length === 1) return uniqueMention;
+  /**
+   * Truth layer 0: explanation keyword scan (only when correct flags are absent).
+   * Constructor hard-lock for Q5, else a single unique option mention. Returns
+   * null to fall through. Extracted verbatim.
+   */
+  private tryExplanationKeywordScan(opts: Option[], lowerExpContent: string): number[] | null {
+    if (lowerExpContent.length <= 5) return null;
+    // HARD-LOCK for Constructor Question (Q5).
+    if (lowerExpContent.includes('constructor') && lowerExpContent.includes('instantiation')) {
+      const found = opts.findIndex(o => (o.text || '').toLowerCase().includes('constructor'));
+      if (found !== -1) return [found + 1];
     }
+    const uniqueMention = opts
+      .map((o, i) => {
+        const t = norm(o.text);
+        if (t.length < 3) return null;
+        return lowerExpContent.includes(t) ? i + 1 : null;
+      })
+      .filter((n): n is number => n !== null);
+    if (uniqueMention.length === 1) return uniqueMention;
+    return null;
+  }
 
-    // 1. TRUST THE VISUAL OPTIONS FIRST
-    // The user sees these on screen. If one is marked `correct: true` (Green),
-    // the text MUST match that index, or the UI is lying.
+  /** Attempt 1: trust the visual options' correct flags. Returns null to fall through. Extracted verbatim. */
+  private tryVisualCorrectFlags(opts: Option[]): number[] | null {
     const visualCorrectIndices = opts
       .map((opt, i) => (isOptionCorrect(opt) ? i + 1 : null))
       .filter((n): n is number => n !== null);
+    if (visualCorrectIndices.length === 0) return null;
+    return Array.from(new Set(visualCorrectIndices)).sort((a, b) => a - b);
+  }
 
-    if (visualCorrectIndices.length > 0) {
-      const result = Array.from(new Set(visualCorrectIndices)).sort((a, b) => a - b);
-      return result;
+  /**
+   * Pristine/answer correct-set resolution: gather correct texts/IDs from the
+   * pristine question (then the provided question.answer), and match the live
+   * options against them. Returns null to fall through. Extracted verbatim.
+   */
+  private resolveByCorrectSets(
+    question: QuizQuestion, opts: Option[], qIdx: number, targetQuestionText: string,
+    isSingleChoice: boolean, lowerExpContent: string, qTextNormFull: string
+  ): number[] | null {
+    let { correctTexts, correctIds } = this.resolvePristineCorrectSets(question, qIdx, targetQuestionText);
+    if (correctTexts.size === 0 && correctIds.size === 0) {
+      ({ correctTexts, correctIds } = this.collectAnswerCorrectSets(question));
     }
+    return this.matchOptionsToCorrectSets(opts, correctTexts, correctIds, isSingleChoice, lowerExpContent, qTextNormFull);
+  }
 
-    // ATTEMPT 1: Get PRISTINE correct texts/IDs from QuizService
-    let correctTexts = new Set<string>();
-    let correctIds = new Set<string | number>();
-
-    let pristine: QuizQuestion | null = null;
-
+  /**
+   * Attempt 1: pristine correct texts/IDs from QuizService (shuffle-mapped, with
+   * a question-text fallback and a strict text-match verification to avoid
+   * cross-question mixups). Extracted verbatim.
+   */
+  private resolvePristineCorrectSets(question: QuizQuestion, qIdx: number, targetQuestionText: string): {
+    correctTexts: Set<string>; correctIds: Set<string | number>;
+  } {
     try {
       const quizSvc = this.injector.get(QuizService, null);
       const shuffleSvc = this.injector.get(QuizShuffleService, null);
-
-      const resolvedQuizId = quizSvc?.quizId || this.activatedRoute.snapshot.paramMap.get('quizId') || 'dependency-injection';      if (quizSvc && shuffleSvc && typeof qIdx === 'number' && resolvedQuizId) {
-        let origIdx = shuffleSvc.toOriginalIndex(resolvedQuizId, qIdx);
-        pristine = (origIdx !== null) ? quizSvc.getPristineQuestion(origIdx) : null;
-
-
-        // ROBUSTNESS FIX: Try to find origIdx by question text if mapping fails
-        if (!pristine && targetQuestionText) {
-          const canonical = quizSvc.quizDataLoader.getCanonicalQuestions(resolvedQuizId);
-          const foundIdx = canonical.findIndex(q => normalizeLocal(q.questionText) === normalizeLocal(targetQuestionText));
-          if (foundIdx !== -1) {
-            origIdx = foundIdx;
-            pristine = canonical[foundIdx];
-          }
-        }
-
+      const resolvedQuizId = quizSvc?.quizId || this.activatedRoute.snapshot.paramMap.get('quizId') || 'dependency-injection';
+      if (quizSvc && shuffleSvc && typeof qIdx === 'number' && resolvedQuizId) {
+        const pristine = this.findPristineQuestion(quizSvc, shuffleSvc, resolvedQuizId, qIdx, targetQuestionText);
         if (pristine) {
-          // CRITICAL VERIFICATION: Ensure the pristine question text matches our question!
-          // This prevents using correct answers from one question (e.g. Q6) for another (e.g. Q5)
-          // due to mapping errors or race conditions.
-          const pristineText = normalizeLocal(pristine.questionText);
-          const currentText = normalizeLocal(question?.questionText || targetQuestionText);
-
-          // CRITICAL: Strict equality check. Loose .includes() was mixing Q5 and Q6 results.
-          const isExactMatch = pristineText === currentText;
-
-          if (!isExactMatch) {
-            pristine = null;
-          } else {            // Check both answer (if populated) and options (standard raw data)
-            const correctPristine = [
-              ...(Array.isArray(pristine.answer) ? (pristine.answer as any[]) : []),
-              ...(Array.isArray(pristine.options) ? (pristine.options as any[]).filter((o: any) => o.correct) : [])
-            ];
-
-            if (correctPristine.length > 0) {
-              for (const a of correctPristine) {
-                if (a) {
-                  const norm = normalizeLocal(a.text);
-                  if (norm) correctTexts.add(norm);
-                  if (a.optionId !== undefined) {
-                    correctIds.add(a.optionId);
-                    correctIds.add(Number(a.optionId));
-                  }
-                }
-              }            }
-          }
+          return this.extractPristineCorrectSets(pristine, question, targetQuestionText);
         }
       }
     } catch (e) {
       console.error('ExplanationFormatterService.formatExplanation pristine correct-answer lookup failed:', e);
     }
+    return { correctTexts: new Set<string>(), correctIds: new Set<string | number>() };
+  }
 
-    // ATTEMPT 2: Use provided question.answer
-    if (correctTexts.size === 0 && correctIds.size === 0) {
-      const answers = question?.answer || [];
-      if (Array.isArray(answers) && answers.length > 0) {
-        for (const a of answers) {
-          if (a) {
-            const norm = normalizeLocal(a.text);
-            if (norm) correctTexts.add(norm);
-            if (a.optionId !== undefined) {
-              correctIds.add(a.optionId);
-              correctIds.add(Number(a.optionId));
-            }
-          }
-        }      }
+  /** Resolve the pristine question via the shuffle map, then a question-text fallback. Extracted verbatim. */
+  private findPristineQuestion(
+    quizSvc: any, shuffleSvc: any, resolvedQuizId: string, qIdx: number, targetQuestionText: string
+  ): QuizQuestion | null {
+    const origIdx = shuffleSvc.toOriginalIndex(resolvedQuizId, qIdx);
+    let pristine: QuizQuestion | null = (origIdx !== null) ? quizSvc.getPristineQuestion(origIdx) : null;
+    // ROBUSTNESS FIX: find origIdx by question text if mapping fails.
+    if (!pristine && targetQuestionText) {
+      const canonical = quizSvc.quizDataLoader.getCanonicalQuestions(resolvedQuizId);
+      const foundIdx = canonical.findIndex((q: QuizQuestion) => this.normalizeLocalText(q.questionText) === this.normalizeLocalText(targetQuestionText));
+      if (foundIdx !== -1) pristine = canonical[foundIdx];
     }
+    return pristine;
+  }
 
-    if (correctTexts.size > 0 || correctIds.size > 0) {
-      const indices = opts
-        .map((option, idx) => {
-          if (!option) return null;
-          const normalizedInput = normalizeLocal(option.text);
-          // PRIORITY 1: Match by TEXT (stable across ID reassignments)
-          if (correctTexts.size > 0 && normalizedInput && correctTexts.has(normalizedInput)) {
-            return idx + 1;
-          }
+  /**
+   * Extract correct texts/IDs from a pristine question, but only after a strict
+   * question-text match (loose .includes() mixed Q5/Q6). Extracted verbatim.
+   */
+  private extractPristineCorrectSets(pristine: QuizQuestion, question: QuizQuestion, targetQuestionText: string): {
+    correctTexts: Set<string>; correctIds: Set<string | number>;
+  } {
+    const correctTexts = new Set<string>();
+    const correctIds = new Set<string | number>();
+    const pristineText = this.normalizeLocalText(pristine.questionText);
+    const currentText = this.normalizeLocalText(question?.questionText || targetQuestionText);
+    if (pristineText !== currentText) return { correctTexts, correctIds };
 
-          // PRIORITY 2: Match by ID (only if text matching didn't find anything)
-          if (correctTexts.size === 0) {
-            const oid = option.optionId !== undefined ? Number(option.optionId) : null;
-            if (oid !== null && correctIds.has(oid)) return idx + 1;
-          }
+    // Check both answer (if populated) and options (standard raw data).
+    const correctPristine = [
+      ...(Array.isArray(pristine.answer) ? (pristine.answer as any[]) : []),
+      ...(Array.isArray(pristine.options) ? (pristine.options as any[]).filter((o: any) => o.correct) : [])
+    ];
+    for (const a of correctPristine) {
+      if (a) this.addCorrectEntry(a, correctTexts, correctIds);
+    }
+    return { correctTexts, correctIds };
+  }
 
-          return null;
-        })
-        .filter((n): n is number => n !== null);
-
-      if (indices.length > 0) {
-        let result = Array.from(new Set(indices)).sort((a, b) => a - b);
-
-        if (isSingleChoice && result.length > 1) {
-          // Priority 1: Pick the one that appears in the explanation
-          const matchingExplanation = result.filter(idx => {
-            const text = (opts[idx - 1]?.text ?? '').toLowerCase();
-            return text.length > 2 && lowerExpContent.includes(text);
-          });
-
-          if (matchingExplanation.length === 1) {
-            result = matchingExplanation;
-          } else {
-            // Priority 2: Filter by visual 'correct' flags
-            const verified = result.filter(idx => {
-              const opt = opts[idx - 1];
-              return isOptionCorrect(opt);
-            });
-
-            if (verified.length === 1) {              result = verified;
-            } else if (result.includes(2) && qTextNormFull.includes('injection occur')) {
-              // Specific Q5 Hotfix: Option 2 (constructor) is the truth   result = [2];
-            } else {
-              result = [result[0]];
-            }
-          }
-        }
-        return result;
+  /** Attempt 2: correct texts/IDs from the provided question.answer. Extracted verbatim. */
+  private collectAnswerCorrectSets(question: QuizQuestion): { correctTexts: Set<string>; correctIds: Set<string | number> } {
+    const correctTexts = new Set<string>();
+    const correctIds = new Set<string | number>();
+    const answers = question?.answer || [];
+    if (Array.isArray(answers) && answers.length > 0) {
+      for (const a of answers) {
+        if (a) this.addCorrectEntry(a, correctTexts, correctIds);
       }
     }
+    return { correctTexts, correctIds };
+  }
 
-    // ATTEMPT 4: Simple Visual Scanning of provided opts (Green Flag)
+  /** Add one correct entry's normalized text and optionId(s) into the sets. Extracted verbatim. */
+  private addCorrectEntry(a: any, correctTexts: Set<string>, correctIds: Set<string | number>): void {
+    const normd = this.normalizeLocalText(a.text);
+    if (normd) correctTexts.add(normd);
+    if (a.optionId !== undefined) {
+      correctIds.add(a.optionId);
+      correctIds.add(Number(a.optionId));
+    }
+  }
+
+  /**
+   * Match the live options against the correct texts/IDs (text first, then ID),
+   * then for single-choice with multiple matches narrow by explanation keyword,
+   * visual flag, or the first index. Returns null to fall through. Extracted verbatim.
+   */
+  private matchOptionsToCorrectSets(
+    opts: Option[], correctTexts: Set<string>, correctIds: Set<string | number>,
+    isSingleChoice: boolean, lowerExpContent: string, qTextNormFull: string
+  ): number[] | null {
+    if (correctTexts.size === 0 && correctIds.size === 0) return null;
+    const indices = this.mapOptionsToCorrectIndices(opts, correctTexts, correctIds);
+    if (indices.length === 0) return null;
+
+    let result = Array.from(new Set(indices)).sort((a, b) => a - b);
+    if (isSingleChoice && result.length > 1) {
+      result = this.narrowSingleChoiceResult(result, opts, lowerExpContent, qTextNormFull);
+    }
+    return result;
+  }
+
+  /** Map options to 1-based indices by correct text (priority 1), then correct ID (priority 2). Extracted verbatim. */
+  private mapOptionsToCorrectIndices(opts: Option[], correctTexts: Set<string>, correctIds: Set<string | number>): number[] {
+    return opts
+      .map((option, idx) => {
+        if (!option) return null;
+        const normalizedInput = this.normalizeLocalText(option.text);
+        // PRIORITY 1: Match by TEXT (stable across ID reassignments).
+        if (correctTexts.size > 0 && normalizedInput && correctTexts.has(normalizedInput)) {
+          return idx + 1;
+        }
+        // PRIORITY 2: Match by ID (only if text matching didn't find anything).
+        if (correctTexts.size === 0) {
+          const oid = option.optionId !== undefined ? Number(option.optionId) : null;
+          if (oid !== null && correctIds.has(oid)) return idx + 1;
+        }
+        return null;
+      })
+      .filter((n): n is number => n !== null);
+  }
+
+  /**
+   * Narrow a multi-index single-choice result to one: explanation-keyword match,
+   * then visual correct flag, then the first index (with the parked Q5 hotfix).
+   * Extracted verbatim.
+   */
+  private narrowSingleChoiceResult(result: number[], opts: Option[], lowerExpContent: string, qTextNormFull: string): number[] {
+    // Priority 1: pick the one that appears in the explanation.
+    const matchingExplanation = result.filter(idx => {
+      const text = (opts[idx - 1]?.text ?? '').toLowerCase();
+      return text.length > 2 && lowerExpContent.includes(text);
+    });
+    if (matchingExplanation.length === 1) {
+      return matchingExplanation;
+    }
+    // Priority 2: filter by visual 'correct' flags.
+    const verified = result.filter(idx => isOptionCorrect(opts[idx - 1]));
+    if (verified.length === 1) {
+      return verified;
+    }
+    if (result.includes(2) && qTextNormFull.includes('injection occur')) {
+      // Specific Q5 Hotfix: Option 2 (constructor) is the truth   result = [2];
+      return result;
+    }
+    return [result[0]];
+  }
+
+  /** Attempt 4: simple visual scan of the provided options. Always returns (possibly empty). Extracted verbatim. */
+  private tryQuickVisualScan(opts: Option[]): number[] {
     const quickVisual = opts
       .map((o, idx) => (isOptionCorrect(o) ? idx + 1 : null))
       .filter((n): n is number => n !== null);
-
     if (quickVisual.length > 0) {
       return Array.from(new Set(quickVisual)).sort((a, b) => a - b);
     }
