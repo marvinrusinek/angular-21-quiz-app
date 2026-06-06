@@ -44,25 +44,18 @@ export class CqcFetGuardService {
     try {
       let safe = html ?? '';
 
-      // URL-AUTHORITATIVE GUARD — impose the URL question as the source of
-      // truth for any non-FET content (returns null to drop a stale write).
+      // URL-AUTHORITATIVE GUARD — URL question is the source of truth (null = drop stale write).
       const _urlGuarded = this.applyUrlAuthoritativeGuard(host, safe);
       if (_urlGuarded === null) return;
       safe = _urlGuarded;
 
-      // Live index — prefer the URL pathname, then the input signal, then
-      // host.currentIndex (the URL is the only sync-correct source on
-      // multi-step URL navigation).
+      // Live index — URL pathname first (only sync-correct source on multi-step URL nav).
       const _liveIdx = this.resolveLiveIdx(host);
 
-      // TIMER-EXPIRY BYPASS: when the timer has expired for this question,
-      // skip ALL FET gates — the explanation must display regardless of
-      // whether the question is "scored correct" or "resolved".
+      // TIMER-EXPIRY BYPASS — expired timer must show the explanation regardless of scoring.
       if (this.applyTimerExpiryBypass(host, safe, _liveIdx)) return;
 
-      // SOC-CONFIRMED phases: preserve a cached FET when SOC has confirmed
-      // the question correct, or bypass all gates when the incoming text is
-      // itself a FET and SOC has confirmed it.
+      // SOC-CONFIRMED — preserve cached FET, or bypass all gates when SOC confirmed correct.
       const _safeIsFetEarly = (safe ?? '').toLowerCase().includes('correct because');
       if (this.applySocConfirmedFetPreservation(host, safe, _liveIdx, _safeIsFetEarly)) return;
       if (this.applySocConfirmedFetBypass(host, safe, _liveIdx, _safeIsFetEarly)) return;
@@ -70,33 +63,24 @@ export class CqcFetGuardService {
       const rawQs: any[] = host.quizService?.questions ?? [];
       const safeNorm = norm(safe);
 
-      // NUCLEAR GATE — if the outgoing HTML looks like FET, refuse to write
-      // unless the live UI shows every correct option selected (returns null
-      // to short-circuit after writing the rebuilt question text).
+      // NUCLEAR GATE — FET-looking text refused unless the live UI shows all correct selected.
       const _nuclear = this.applyNuclearGate(host, safe, _liveIdx, safeNorm);
       if (_nuclear === null) return;
       safe = _nuclear;
 
-      // HARD FINAL GATE — across every pristine source, if the outgoing text
-      // signals a multi-answer FET that isn't fully resolved, rebuild it back
-      // to the question display text.
+      // HARD FINAL GATE — unresolved multi-answer FET across pristine sources → question text.
       safe = this.applyHardFinalGate(host, safe, safeNorm, rawQs);
 
-      // ABSOLUTE LAST-LINE GUARD — for a multi-answer question whose outgoing
-      // text isn't the question text and isn't fully resolved, rebuild it.
+      // ABSOLUTE LAST-LINE GUARD — unresolved multi-answer, non-question text → rebuild.
       safe = this.applyAbsoluteLastLineGuard(host, safe);
 
-      // FINAL PRISTINE GATE (cannot fail silently) — same resolved-check
-      // against quizInitialState, no outer try/catch.
+      // FINAL PRISTINE GATE — same resolved-check vs quizInitialState, no outer try/catch.
       safe = this.applyFinalPristineGate(host, safe);
 
-      // UNIVERSAL BACKSTOP — if the outgoing text matches the pristine
-      // explanation or otherwise mismatches the expected question display
-      // (with interaction evidence) and isn't scored correct, restore it.
+      // UNIVERSAL BACKSTOP — pristine-explanation / expected-text mismatch (with evidence) → restore.
       safe = this.applyUniversalBackstop(host, safe);
 
-      // BANNER PRESERVATION — re-attach the "N answers are correct" banner
-      // when the outgoing text is plain question text (URL-first index).
+      // BANNER PRESERVATION — re-attach "N answers are correct" banner to plain question text.
       safe = this.applyBannerPreservation(host, safe, _liveIdx);
 
       host.qTextHtmlSig?.set(safe);
@@ -125,32 +109,7 @@ export class CqcFetGuardService {
                           safeText.includes('correct answers are options');
         if (!safeIsFet) {
           if (urlQ?.questionText) {
-            // Use pristine quizInitialState for correct count — live
-            // options can be mutated by option-lock-policy.
-            let correctCount = 0;
-            let totalOpts = (urlQ?.options ?? []).length;
-            try {
-              const _pq = host.quizService?.getPristineQuestionByText(urlQ.questionText);
-              if (_pq) {
-                correctCount = (_pq.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
-                totalOpts = (_pq.options ?? []).length;
-              }
-            } catch { /* ignore */ }
-            if (correctCount === 0) {
-              correctCount = (urlQ?.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
-            }
-            if (correctCount > 1 && totalOpts > 0) {
-              try {
-                const banner = host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
-                  correctCount, totalOpts
-                );
-                safe = `${urlQ.questionText} <span class="correct-count">${banner}</span>`;
-              } catch {
-                safe = `${urlQ.questionText} <span class="correct-count">(${correctCount} answers are correct)</span>`;
-              }
-            } else {
-              safe = urlQ.questionText;
-            }
+            safe = this.buildUrlQuestionHtml(host, urlQ);
           } else if (urlIdx >= 0 && safeText) {
             // URL question hasn't loaded yet — drop the stale write so
             // the heading doesn't show whatever Q1-ish text was passed.
@@ -278,38 +237,14 @@ export class CqcFetGuardService {
    */
   private applyNuclearGate(host: Host, safe: string, _liveIdx: number, safeNorm: string): string | null {
     try {
-      const qsEarly: any = host.quizService;
-      const activeIdxEarly: number = (_liveIdx >= 0)
-        ? _liveIdx
-        : (Number.isFinite(qsEarly?.currentQuestionIndex)
-          ? qsEarly.currentQuestionIndex
-          : (qsEarly?.getCurrentQuestionIndex?.() ?? 0));
-      const isShuffledEarly = qsEarly?.isShuffleEnabled?.()
-        && Array.isArray(qsEarly?.shuffledQuestions)
-        && qsEarly.shuffledQuestions.length > 0;
-      const liveQEarly: any = isShuffledEarly
-        ? qsEarly?.shuffledQuestions?.[activeIdxEarly]
-        : qsEarly?.questions?.[activeIdxEarly];
-
-      let pristineExplanation = '';
-      try {
-        const pq = host.quizService?.getPristineQuestionByText(liveQEarly?.questionText);
-        if (pq) pristineExplanation = norm(pq.explanation ?? '');
-      } catch { /* ignore */ }
-
-      const rawExplNorm = norm(liveQEarly?.explanation ?? '');
-      const containsRawExpl =
-        (!!rawExplNorm && safeNorm.includes(rawExplNorm))
-        || (!!pristineExplanation && safeNorm.includes(pristineExplanation));
-      const looksLikeFet = safeNorm.includes('are correct because')
-        || safeNorm.includes('is correct because')
-        || containsRawExpl;
+      const { activeIdx, liveQ } = this.resolveActiveLiveQuestion(host, _liveIdx);
+      const looksLikeFet = this.nuclearLooksLikeFet(host, liveQ, safeNorm);
 
       if (!looksLikeFet) {
-        const displayedQTextEarly = norm(liveQEarly?.questionText ?? '');
-        if (displayedQTextEarly && safeNorm !== displayedQTextEarly && !safeNorm.startsWith(displayedQTextEarly)) {
-          if (!this.isScoredCorrectAtDisplay(host, activeIdxEarly)) {
-            return this.rebuildAndStampQuestionText(host, activeIdxEarly, liveQEarly);
+        const displayedQText = norm(liveQ?.questionText ?? '');
+        if (displayedQText && safeNorm !== displayedQText && !safeNorm.startsWith(displayedQText)) {
+          if (!this.isScoredCorrectAtDisplay(host, activeIdx)) {
+            return this.rebuildAndStampQuestionText(host, activeIdx, liveQ);
           }
         }
       }
@@ -331,18 +266,7 @@ export class CqcFetGuardService {
    * null after stamping). Extracted verbatim.
    */
   private applyNuclearFetResolution(host: Host, safe: string, _liveIdx: number): string | null {
-    const qs: any = host.quizService;
-    const activeIdx: number = (_liveIdx >= 0)
-      ? _liveIdx
-      : (Number.isFinite(qs?.currentQuestionIndex)
-        ? qs.currentQuestionIndex
-        : (qs?.getCurrentQuestionIndex?.() ?? 0));
-    const isShuffled = qs?.isShuffleEnabled?.()
-      && Array.isArray(qs?.shuffledQuestions)
-      && qs.shuffledQuestions.length > 0;
-    const liveQ: any = isShuffled
-      ? qs?.shuffledQuestions?.[activeIdx]
-      : qs?.questions?.[activeIdx];
+    const { activeIdx, liveQ } = this.resolveActiveLiveQuestion(host, _liveIdx);
     let pristineCorrectTexts = new Set<string>();
     try {
       pristineCorrectTexts = new Set(
@@ -388,7 +312,15 @@ export class CqcFetGuardService {
    */
   private collectNuclearSelectedTexts(host: Host, liveQ: any, activeIdx: number, pristineCorrectTexts: Set<string>): Set<string> {
     const selectedTexts = new Set<string>();
+    this.gatherLiveOptionSelections(liveQ, selectedTexts);
+    this.gatherSelectionMapSelections(host, activeIdx, selectedTexts);
+    this.gatherSessionStorageSelections(activeIdx, selectedTexts);
+    this.gatherDomHighlightedSelections(pristineCorrectTexts, selectedTexts);
+    return selectedTexts;
+  }
 
+  /** Add selected option texts read from the live question's option flags. */
+  private gatherLiveOptionSelections(liveQ: any, selectedTexts: Set<string>): void {
     const liveOpts: any[] = Array.isArray(liveQ?.options) ? liveQ.options : [];
     for (const o of liveOpts) {
       const isSel = o?.selected === true
@@ -398,11 +330,14 @@ export class CqcFetGuardService {
       const t = norm(o?.text);
       if (t) selectedTexts.add(t);
     }
+  }
 
+  /** Add selected option texts from SelectedOptionService.selectedOptionsMap. */
+  private gatherSelectionMapSelections(host: Host, idx: number, selectedTexts: Set<string>): void {
     try {
       const rawMap = host.selectedOptionService?.selectedOptionsMap;
       if (rawMap && typeof rawMap.get === 'function') {
-        const mapSel: any[] = rawMap.get(activeIdx) ?? [];
+        const mapSel: any[] = rawMap.get(idx) ?? [];
         for (const o of mapSel) {
           if (o?.selected === false) continue;
           const t = norm(o?.text);
@@ -410,9 +345,12 @@ export class CqcFetGuardService {
         }
       }
     } catch { /* ignore */ }
+  }
 
+  /** Add selected option texts from the durable sel_Q* sessionStorage entry. */
+  private gatherSessionStorageSelections(idx: number, selectedTexts: Set<string>): void {
     try {
-      const raw = sessionStorage.getItem(SK_SEL_Q + activeIdx);
+      const raw = sessionStorage.getItem(SK_SEL_Q + idx);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -424,7 +362,10 @@ export class CqcFetGuardService {
         }
       }
     } catch { /* ignore */ }
+  }
 
+  /** Add pristine correct texts whose option row is highlighted in the live DOM. */
+  private gatherDomHighlightedSelections(pristineCorrectTexts: Set<string>, selectedTexts: Set<string>): void {
     try {
       const rows: NodeListOf<Element> | Element[] = typeof document !== 'undefined'
         ? document.querySelectorAll(
@@ -447,8 +388,6 @@ export class CqcFetGuardService {
         }
       }
     } catch { /* ignore */ }
-
-    return selectedTexts;
   }
 
   /**
@@ -530,19 +469,7 @@ export class CqcFetGuardService {
       (o: any) => isOptionCorrect(o)
     );
     if (correctOpts.length < 2) return null;
-    const explNorm = norm(pristineQ?.explanation);
-    const correctTextsForSignal = correctOpts
-      .map((o: any) => norm(o?.text))
-      .filter((t: string) => !!t);
-    const containsAnyCorrectText = correctTextsForSignal.some(
-      (t: string) => !!t && safeNorm.includes(t)
-    );
-    const containsExpl = !!explNorm && safeNorm.includes(explNorm);
-    const looksLikeFetLocal = safeNorm.includes('are correct because')
-      || safeNorm.includes('is correct because');
-    const fetSignal = containsExpl
-      || (looksLikeFetLocal && containsAnyCorrectText);
-    if (!fetSignal) return null;
+    if (!this.isHardGateFetSignal(safeNorm, correctOpts, pristineQ)) return null;
     const rawCorrectTexts = correctOpts
       .map((o: any) => norm(o?.text))
       .filter((t: string) => !!t);
@@ -558,25 +485,7 @@ export class CqcFetGuardService {
       rawCorrectTexts.length > 0
       && selectedCorrectTexts.size === rawCorrectTexts.length;
     if (!resolved) {
-      let hardGateOverride = false;
-      try {
-        const qs2 = host.quizService;
-        const displayIdx = host.currentIndex ?? (
-          Number.isFinite(qs2?.currentQuestionIndex)
-            ? qs2.currentQuestionIndex
-            : (qs2?.getCurrentQuestionIndex?.() ?? -1)
-        );
-        hardGateOverride = this.isScoredCorrectAtDisplay(host, displayIdx);
-      } catch { /* ignore */ }
-      if (hardGateOverride) {
-        // overridden by questionCorrectness
-      } else {
-        const replacement = qIdx >= 0
-          ? this.buildQuestionDisplayHTML(host, qIdx)
-          : '';
-        const fallback = pristineQ?.questionText ?? '';
-        safe = replacement || fallback || '';
-      }
+      safe = this.rebuildIfHardGateUnresolved(host, safe, qIdx, pristineQ);
     }
     return safe;
   }
@@ -656,27 +565,7 @@ export class CqcFetGuardService {
           host.quizService?.getPristineCorrectTextsForQuestion(liveQ_ll?.questionText) ?? []
         );
         if (pristineCorrect_ll.length >= 2) {
-          const selNow_ll = new Set<string>();
-          try {
-            const rawMap_ll = host.selectedOptionService?.selectedOptionsMap;
-            if (rawMap_ll && typeof rawMap_ll.get === 'function') {
-              for (const o of (rawMap_ll.get(idx_ll) ?? [])) {
-                if (o?.selected === false) continue;
-                const t = norm(o?.text);
-                if (t) selNow_ll.add(t);
-              }
-            }
-          } catch { /* ignore */ }
-          try {
-            const stored_ll = sessionStorage.getItem(SK_SEL_Q + idx_ll);
-            if (stored_ll) {
-              for (const o of JSON.parse(stored_ll)) {
-                if (o?.selected !== true) continue;
-                const t = norm(o?.text);
-                if (t) selNow_ll.add(t);
-              }
-            }
-          } catch { /* ignore */ }
+          const selNow_ll = this.collectSelectedTextsForIndex(host, idx_ll);
           const allResolved_ll = pristineCorrect_ll.every(t => selNow_ll.has(t));
           if (!allResolved_ll) {
             const llOverride = this.isScoredCorrectAtDisplay(host, idx_ll);
@@ -705,43 +594,9 @@ export class CqcFetGuardService {
     const _liveQ: any = _isShuf ? _qs?.shuffledQuestions?.[_idx] : _qs?.questions?.[_idx];
     const _qTextNorm = norm(_liveQ?.questionText);
     if (_qTextNorm && _safeStripped !== _qTextNorm && !_safeStripped.startsWith(_qTextNorm)) {
-      let _pCorrect: string[] = [];
-      const _bundle: any[] = _qs?.quizInitialState ?? [];
-      for (let qi = 0; qi < _bundle.length; qi++) {
-        const _questions = _bundle[qi]?.questions ?? [];
-        for (let pi = 0; pi < _questions.length; pi++) {
-          if (norm(_questions[pi]?.questionText) === _qTextNorm) {
-            _pCorrect = (_questions[pi]?.options ?? [])
-              .filter((o: any) => isOptionCorrect(o))
-              .map((o: any) => norm(o?.text))
-              .filter((t: string) => !!t);
-            break;
-          }
-        }
-        if (_pCorrect.length > 0) break;
-      }
+      const _pCorrect = this.findPristineCorrectTexts(host, _qTextNorm);
       if (_pCorrect.length >= 2) {
-        const _selNow = new Set<string>();
-        try {
-          const _map = host.selectedOptionService?.selectedOptionsMap;
-          if (_map && typeof _map.get === 'function') {
-            for (const _o of (_map.get(_idx) ?? [])) {
-              if (_o?.selected === false) continue;
-              const _t = norm(_o?.text);
-              if (_t) _selNow.add(_t);
-            }
-          }
-        } catch { }
-        try {
-          const _stored = sessionStorage.getItem(SK_SEL_Q + _idx);
-          if (_stored) {
-            for (const _o of JSON.parse(_stored)) {
-              if (_o?.selected !== true) continue;
-              const _t = norm(_o?.text);
-              if (_t) _selNow.add(_t);
-            }
-          }
-        } catch { }
+        const _selNow = this.collectSelectedTextsForIndex(host, _idx);
         const _allOk = _pCorrect.every(t => _selNow.has(t));
         if (!_allOk) {
           const _fgOverride = this.isScoredCorrectAtDisplay(host, _idx);
@@ -772,27 +627,7 @@ export class CqcFetGuardService {
       );
       const normBs = (t: any) => String(t ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
       const safeNormBs = normBs(safe);
-      let pristineExplBs = '';
-      try {
-        const isShufBs = qsBs?.isShuffleEnabled?.() && qsBs?.shuffledQuestions?.length > 0;
-        const qObjBs = isShufBs
-          ? qsBs?.shuffledQuestions?.[bsIdx]
-          : qsBs?.questions?.[bsIdx];
-        const qTextBs = normBs(qObjBs?.questionText ?? '');
-        if (qTextBs) {
-          for (const quiz of qsBs?.quizInitialState ?? []) {
-            for (const pq of quiz?.questions ?? []) {
-              if (normBs(pq?.questionText) !== qTextBs) continue;
-              pristineExplBs = normBs(pq?.explanation ?? '');
-              break;
-            }
-            if (pristineExplBs) break;
-          }
-        }
-        if (!pristineExplBs) {
-          pristineExplBs = normBs(qObjBs?.explanation ?? '');
-        }
-      } catch { /* ignore */ }
+      const pristineExplBs = this.findPristineExplanation(host, bsIdx, normBs);
       const explMatch = pristineExplBs && pristineExplBs.length > 5 && safeNormBs.includes(pristineExplBs);
       const expectedQBs = this.buildQuestionDisplayHTML(host, bsIdx);
       const expectedNormBs = expectedQBs ? normBs(expectedQBs) : '';
@@ -837,6 +672,195 @@ export class CqcFetGuardService {
       }
     } catch { /* ignore */ }
     return safe;
+  }
+
+  /**
+   * Resolve the active question index (URL-first, then quizService) and the
+   * live question object (shuffle-aware). Shared by the NUCLEAR GATE phases.
+   * Extracted verbatim.
+   */
+  private resolveActiveLiveQuestion(host: Host, _liveIdx: number): { activeIdx: number; liveQ: any } {
+    const qs: any = host.quizService;
+    const activeIdx: number = (_liveIdx >= 0)
+      ? _liveIdx
+      : (Number.isFinite(qs?.currentQuestionIndex)
+        ? qs.currentQuestionIndex
+        : (qs?.getCurrentQuestionIndex?.() ?? 0));
+    const isShuffled = qs?.isShuffleEnabled?.()
+      && Array.isArray(qs?.shuffledQuestions)
+      && qs.shuffledQuestions.length > 0;
+    const liveQ: any = isShuffled
+      ? qs?.shuffledQuestions?.[activeIdx]
+      : qs?.questions?.[activeIdx];
+    return { activeIdx, liveQ };
+  }
+
+  /**
+   * NUCLEAR-GATE FET detection: does the outgoing text contain the live or
+   * pristine explanation, or the "is/are correct because" markers? Extracted
+   * verbatim.
+   */
+  private nuclearLooksLikeFet(host: Host, liveQ: any, safeNorm: string): boolean {
+    let pristineExplanation = '';
+    try {
+      const pq = host.quizService?.getPristineQuestionByText(liveQ?.questionText);
+      if (pq) pristineExplanation = norm(pq.explanation ?? '');
+    } catch { /* ignore */ }
+
+    const rawExplNorm = norm(liveQ?.explanation ?? '');
+    const containsRawExpl =
+      (!!rawExplNorm && safeNorm.includes(rawExplNorm))
+      || (!!pristineExplanation && safeNorm.includes(pristineExplanation));
+    return safeNorm.includes('are correct because')
+      || safeNorm.includes('is correct because')
+      || containsRawExpl;
+  }
+
+  /**
+   * Build the URL question's heading HTML, appending the "N answers are correct"
+   * banner for multi-answer questions (pristine correct-count, with a fallback
+   * banner string). Extracted verbatim from the URL-AUTHORITATIVE GUARD.
+   */
+  private buildUrlQuestionHtml(host: Host, urlQ: any): string {
+    // Use pristine quizInitialState for correct count — live
+    // options can be mutated by option-lock-policy.
+    let correctCount = 0;
+    let totalOpts = (urlQ?.options ?? []).length;
+    try {
+      const _pq = host.quizService?.getPristineQuestionByText(urlQ.questionText);
+      if (_pq) {
+        correctCount = (_pq.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
+        totalOpts = (_pq.options ?? []).length;
+      }
+    } catch { /* ignore */ }
+    if (correctCount === 0) {
+      correctCount = (urlQ?.options ?? []).filter((o: any) => isOptionCorrect(o)).length;
+    }
+    if (correctCount > 1 && totalOpts > 0) {
+      try {
+        const banner = host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
+          correctCount, totalOpts
+        );
+        return `${urlQ.questionText} <span class="correct-count">${banner}</span>`;
+      } catch {
+        return `${urlQ.questionText} <span class="correct-count">(${correctCount} answers are correct)</span>`;
+      }
+    }
+    return urlQ.questionText;
+  }
+
+  /**
+   * Gather selected option texts for an index from the selection map and the
+   * durable sel_Q* sessionStorage entry. Shared by the LAST-LINE and FINAL
+   * PRISTINE gates. Extracted verbatim.
+   */
+  private collectSelectedTextsForIndex(host: Host, idx: number): Set<string> {
+    const out = new Set<string>();
+    this.gatherSelectionMapSelections(host, idx, out);
+    this.gatherSessionStorageSelections(idx, out);
+    return out;
+  }
+
+  /**
+   * Look up the pristine correct-option texts for a question (by normalized
+   * text) in quizInitialState. Extracted verbatim from the FINAL PRISTINE GATE.
+   */
+  private findPristineCorrectTexts(host: Host, qTextNorm: string): string[] {
+    let _pCorrect: string[] = [];
+    const _bundle: any[] = (host.quizService as any)?.quizInitialState ?? [];
+    for (let qi = 0; qi < _bundle.length; qi++) {
+      const _questions = _bundle[qi]?.questions ?? [];
+      for (let pi = 0; pi < _questions.length; pi++) {
+        if (norm(_questions[pi]?.questionText) === qTextNorm) {
+          _pCorrect = (_questions[pi]?.options ?? [])
+            .filter((o: any) => isOptionCorrect(o))
+            .map((o: any) => norm(o?.text))
+            .filter((t: string) => !!t);
+          break;
+        }
+      }
+      if (_pCorrect.length > 0) break;
+    }
+    return _pCorrect;
+  }
+
+  /**
+   * HARD-GATE FET detection for one pristine entry: explanation match, or the
+   * "is/are correct because" markers combined with any correct-text match.
+   * Extracted verbatim.
+   */
+  private isHardGateFetSignal(safeNorm: string, correctOpts: any[], pristineQ: any): boolean {
+    const explNorm = norm(pristineQ?.explanation);
+    const correctTextsForSignal = correctOpts
+      .map((o: any) => norm(o?.text))
+      .filter((t: string) => !!t);
+    const containsAnyCorrectText = correctTextsForSignal.some(
+      (t: string) => !!t && safeNorm.includes(t)
+    );
+    const containsExpl = !!explNorm && safeNorm.includes(explNorm);
+    const looksLikeFetLocal = safeNorm.includes('are correct because')
+      || safeNorm.includes('is correct because');
+    return containsExpl
+      || (looksLikeFetLocal && containsAnyCorrectText);
+  }
+
+  /**
+   * HARD-GATE unresolved replacement: unless the question is scored correct,
+   * rebuild the heading back to the question display text (or pristine
+   * fallback). Extracted verbatim.
+   */
+  private rebuildIfHardGateUnresolved(host: Host, safe: string, qIdx: number, pristineQ: any): string {
+    let hardGateOverride = false;
+    try {
+      const qs2 = host.quizService;
+      const displayIdx = host.currentIndex ?? (
+        Number.isFinite(qs2?.currentQuestionIndex)
+          ? qs2.currentQuestionIndex
+          : (qs2?.getCurrentQuestionIndex?.() ?? -1)
+      );
+      hardGateOverride = this.isScoredCorrectAtDisplay(host, displayIdx);
+    } catch { /* ignore */ }
+    if (hardGateOverride) {
+      // overridden by questionCorrectness
+    } else {
+      const replacement = qIdx >= 0
+        ? this.buildQuestionDisplayHTML(host, qIdx)
+        : '';
+      const fallback = pristineQ?.questionText ?? '';
+      safe = replacement || fallback || '';
+    }
+    return safe;
+  }
+
+  /**
+   * Look up the pristine explanation text for the question at an index, checked
+   * against quizInitialState then the live question. Extracted verbatim from the
+   * UNIVERSAL BACKSTOP.
+   */
+  private findPristineExplanation(host: Host, bsIdx: number, normBs: (t: any) => string): string {
+    let pristineExplBs = '';
+    try {
+      const qsBs: any = host.quizService;
+      const isShufBs = qsBs?.isShuffleEnabled?.() && qsBs?.shuffledQuestions?.length > 0;
+      const qObjBs = isShufBs
+        ? qsBs?.shuffledQuestions?.[bsIdx]
+        : qsBs?.questions?.[bsIdx];
+      const qTextBs = normBs(qObjBs?.questionText ?? '');
+      if (qTextBs) {
+        for (const quiz of qsBs?.quizInitialState ?? []) {
+          for (const pq of quiz?.questions ?? []) {
+            if (normBs(pq?.questionText) !== qTextBs) continue;
+            pristineExplBs = normBs(pq?.explanation ?? '');
+            break;
+          }
+          if (pristineExplBs) break;
+        }
+      }
+      if (!pristineExplBs) {
+        pristineExplBs = normBs(qObjBs?.explanation ?? '');
+      }
+    } catch { /* ignore */ }
+    return pristineExplBs;
   }
 
   /**
