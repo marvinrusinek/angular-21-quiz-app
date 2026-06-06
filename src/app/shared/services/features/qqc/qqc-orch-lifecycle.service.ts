@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿﻿import { Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -366,15 +366,23 @@ export class QqcOrchLifecycleService {
     const idx = host.fixedQuestionIndex() ?? host.currentQuestionIndex() ?? 0;
     host.resetForQuestion(idx);
 
+    this.wireDeferredRenderReady(host);
+    await this.runAfterViewQuestionSetup(host);
+  }
+
+  /**
+   * Defer a render-ready subscription on the shared-option component: poll once
+   * on the next microtask and, if not ready, back off via requestAnimationFrame
+   * until it is, then markForCheck. Preserves the "wait for next true" semantic
+   * without a reactive context inside this callback.
+   */
+  private wireDeferredRenderReady(host: Host): void {
     host.lifecycle.deferRenderReadySubscription({
       sharedOptionComponent: host.sharedOptionComponent?.(),
       subscribeToRenderReady: () => {
         const soc = host.sharedOptionComponent?.();
         if (!soc) return;
         // soc.renderReady is now a WritableSignal (was a Subject pre-migration).
-        // Poll once on next microtask â€” if already ready, fire markForCheck; else
-        // back off via rAF until ready. Preserves the "wait for next true" semantic
-        // without needing a reactive context inside this service callback.
         const check = (): void => {
           if (soc.renderReady()) {
             host.cdRef.markForCheck();
@@ -385,7 +393,13 @@ export class QqcOrchLifecycleService {
         queueMicrotask(check);
       }
     });
+  }
 
+  /**
+   * Wire the options-loader subscription and run the after-view-init question
+   * setup; if setup hasn't resolved yet, retry ngAfterViewInit after a tick.
+   */
+  private async runAfterViewQuestionSetup(host: Host): Promise<void> {
     host.lifecycle.createOptionsLoaderSubscription({
       options$: host.quizQuestionLoaderService.options$,
       setCurrentOptions: (opts: Option[]) => { host.currentOptions = opts; }
