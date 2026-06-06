@@ -18,6 +18,175 @@ type Host = QuizQuestionComponent;
 export class QqcOrchLifecycleService {
 
   async runOnInit(host: Host): Promise<void> {
+    this.wireQuestionStateSubscriptions(host);
+    this.wireNavigationSubscriptions(host);
+
+    const initialIdx = host.lifecycle.computeInitialQuestionIndex(host.activatedRoute);
+    host.currentQuestionIndex.set(initialIdx.currentQuestionIndex);
+    host.fixedQuestionIndex.set(initialIdx.fixedQuestionIndex);
+
+    const loaded = await host.loadQuestion();
+    if (!loaded) return;
+
+    this.wireTimerSubscriptions(host);
+
+    try {
+      Object.getPrototypeOf(Object.getPrototypeOf(host)).ngOnInit?.call(host);
+
+      host.populateOptionsToDisplay();
+
+      this.setupRenderReadyStream(host);
+      this.bootstrapComponentState(host);
+      this.bootstrapQuestionData(host);
+      this.setupFirstQuestionData(host);
+
+      await host.initializeQuiz();
+      await host.initializeQuizDataAndRouting();
+
+      this.applyFirstQuestion(host);
+      this.pushInitialSelectionMessage(host);
+
+      this.wirePostLoadSubscriptions(host);
+    } catch (error) {
+    }
+  }
+
+  // ── runOnInit bootstrap phases (extracted verbatim) ──────────────
+
+  /**
+   * Wire the render-ready observable (mirrors the question payload into the
+   * display signals and toggles renderReady) and register the visibilitychange
+   * handler.
+   */
+  private setupRenderReadyStream(host: Host): void {
+    const renderReady$ = host.lifecycle.createRenderReadyObservable({
+      questionPayload$: host.questionPayload$,
+      setCurrentQuestion: (q: QuizQuestion | null) => { host.currentQuestion.set(q); },
+      setOptionsToDisplay: (opts: Option[]) => { host.optionsToDisplay.set(opts); },
+      setExplanationToDisplay: (text: string) => { host.explanationToDisplay.set(text); },
+      setRenderReady: (val: boolean) => { host.renderReady.set(val); },
+      // renderReadySubject was replaced with the renderReady signal
+      // in commit 2e084f59; .set() drives both the signal and any
+      // toObservable-derived stream consumers.
+      emitRenderReady: (val: boolean) => host.renderReady.set(val)
+    });
+    renderReady$.pipe(takeUntilDestroyed(host.destroyRef)).subscribe();
+
+    document.addEventListener('visibilitychange', host.onVisibilityChange.bind(host));
+  }
+
+  /**
+   * Kick off the questionLoader component-state init; on resolve, mirror the
+   * loaded question/index into the signals and generate its feedback text.
+   * Fire-and-forget (matches the original inline .then).
+   */
+  private bootstrapComponentState(host: Host): void {
+    host.questionLoader.initializeComponentState({
+      questionsArray: host.questionsArray(),
+      currentQuestionIndex: host.currentQuestionIndex(),
+    }).then((result: any) => {
+      if (!result) return;
+      host.questionsArray.set(result.questionsArray);
+      host.currentQuestionIndex.set(result.currentQuestionIndex);
+      host.currentQuestion.set(result.currentQuestion);
+      const cq = host.currentQuestion();
+      if (cq) {
+        host.generateFeedbackText(cq).then(
+          (text: string) => { host.feedbackText.set(text); },
+          () => { host.feedbackText.set('Unable to generate feedback.'); }
+        );
+      }
+    });
+  }
+
+  /**
+   * Kick off the questionLoader data wait; on resolve, set the question/options,
+   * apply prior-selection feedback, and (re)initialize the form. Fire-and-forget.
+   */
+  private bootstrapQuestionData(host: Host): void {
+    host.questionLoader.waitForQuestionData({
+      currentQuestionIndex: host.currentQuestionIndex(),
+      quizId: host.quizService.quizId,
+    }).then((waitResult: any) => {
+      if (!waitResult.currentQuestion) return;
+      host.currentQuestionIndex.set(waitResult.currentQuestionIndex);
+      host.currentQuestion.set(waitResult.currentQuestion);
+      host.optionsToDisplay.set(waitResult.optionsToDisplay);
+      host.quizService.getCurrentOptions(host.currentQuestionIndex()).pipe(take(1)).subscribe((options: Option[]) => {
+        host.optionsToDisplay.set(Array.isArray(options) ? options : []);
+        const previouslySelectedOption = host.optionsToDisplay().find((opt: Option) => opt.selected);
+        if (previouslySelectedOption) {
+          host.applyOptionFeedback(previouslySelectedOption);
+        }
+      });
+      host.initializeForm();
+      host.questionForm.updateValueAndValidity();
+      window.scrollTo(0, 0);
+    });
+  }
+
+  /** Seed the initial data model from the current question and start loading. */
+  private setupFirstQuestionData(host: Host): void {
+    const qInit = host.question();
+    if (qInit) {
+      host.data.set(host.questionLoader.buildInitialData(qInit, host.options() ?? []));
+    }
+    host.initializeForm();
+    host.quizStateService.setLoading(true);
+  }
+
+  /**
+   * Resolve and apply the first question from the route param: register the
+   * quiz-question initializer, set the question/options, and schedule the
+   * answered-explanation update.
+   */
+  private applyFirstQuestion(host: Host): void {
+    host.initializer.initializeQuizQuestion({
+      destroyRef: host.destroyRef,
+      onQuestionsLoaded: (_questions: QuizQuestion[]) => {}
+    });
+
+    const questionIndexParam = host.activatedRoute.snapshot.paramMap.get('questionIndex');
+    const firstQuestionIndex = host.initializer.parseQuestionIndexFromRoute(questionIndexParam);
+    const firstQResult = host.initializer.setQuestionFirst({
+      index: firstQuestionIndex,
+      questionsArray: host.questionsArray()
+    });
+    if (firstQResult) {
+      host.currentQuestion.set(firstQResult.currentQuestion);
+      host.optionsToDisplay.set(firstQResult.optionsToDisplay);
+      if (host.lastProcessedQuestionIndex !== firstQResult.questionIndex || firstQResult.questionIndex === 0) {
+        host.lastProcessedQuestionIndex = firstQResult.questionIndex;
+      }
+      setTimeout(() => {
+        host.updateExplanationIfAnswered(firstQResult.questionIndex, firstQResult.currentQuestion!);
+      }, 50);
+    }
+  }
+
+  /**
+   * On the first question show the start prompt (idx 0); otherwise clear the
+   * prior selection for the landed question.
+   */
+  private pushInitialSelectionMessage(host: Host): void {
+    if (host.currentQuestionIndex() === 0) {
+      const initialMessage = 'Please start the quiz by selecting an option.';
+      if (host.selectionMessage() !== initialMessage) {
+        host.selectionMessageService.pushMessage(initialMessage, 0);
+      }
+    } else {
+      host.resetManager.clearSelection(host.correctAnswers, host.currentQuestion());
+    }
+  }
+
+  // ── subscription-wiring groups (extracted verbatim from runOnInit) ──
+
+  /**
+   * Wire the core question-state subscriptions: the index/timer subscription,
+   * the current-question-index mirror, the question-payload handler (sets
+   * currentQuestion/options/explanation), and the shuffle-preference watcher.
+   */
+  private wireQuestionStateSubscriptions(host: Host): void {
     host.lifecycle.createIndexTimerSubscription({
       destroyRef: host.destroyRef,
       currentQuestionIndex$: host.quizService.currentQuestionIndex$,
@@ -52,7 +221,14 @@ export class QqcOrchLifecycleService {
       destroyRef: host.destroyRef,
       onShuffle: (shouldShuffle: boolean) => { host.shuffleOptions = shouldShuffle; }
     });
+  }
 
+  /**
+   * Wire the navigation/route subscriptions: navigation events (success, back,
+   * to-question, explanation/render resets), the pre-reset subscription, and the
+   * route-param subscription.
+   */
+  private wireNavigationSubscriptions(host: Host): void {
     const navSubs = host.subscriptionWiring.createNavigationEventSubscriptions({
       onNavigationSuccess: () => host.resetUIForNewQuestion(),
       onNavigatingBack: () => {
@@ -95,14 +271,10 @@ export class QqcOrchLifecycleService {
         } catch {}
       }
     });
+  }
 
-    const initialIdx = host.lifecycle.computeInitialQuestionIndex(host.activatedRoute);
-    host.currentQuestionIndex.set(initialIdx.currentQuestionIndex);
-    host.fixedQuestionIndex.set(initialIdx.fixedQuestionIndex);
-
-    const loaded = await host.loadQuestion();
-    if (!loaded) return;
-
+  /** Wire the timer-expired and timer-stop subscriptions. */
+  private wireTimerSubscriptions(host: Host): void {
     host.subscriptionWiring.createTimerExpiredSubscription({
       destroyRef: host.destroyRef,
       timerExpired$: host.timerService.expired$,
@@ -120,133 +292,39 @@ export class QqcOrchLifecycleService {
         host.handleTimerStoppedForActiveQuestion(reason);
       }
     });
+  }
 
-    try {
-      Object.getPrototypeOf(Object.getPrototypeOf(host)).ngOnInit?.call(host);
+  /**
+   * Wire the post-load subscriptions: page-visibility, route listener (drives
+   * explanation fetch on route change), feedback/state reset, and total-questions.
+   */
+  private wirePostLoadSubscriptions(host: Host): void {
+    host.subscriptionWiring.createVisibilitySubscription({
+      destroyRef: host.destroyRef,
+      onHidden: () => host.handlePageVisibilityChange(true),
+      onVisible: () => host.handlePageVisibilityChange(false)
+    });
 
-      host.populateOptionsToDisplay();
-
-      const renderReady$ = host.lifecycle.createRenderReadyObservable({
-        questionPayload$: host.questionPayload$,
-        setCurrentQuestion: (q: QuizQuestion | null) => { host.currentQuestion.set(q); },
-        setOptionsToDisplay: (opts: Option[]) => { host.optionsToDisplay.set(opts); },
-        setExplanationToDisplay: (text: string) => { host.explanationToDisplay.set(text); },
-        setRenderReady: (val: boolean) => { host.renderReady.set(val); },
-        // renderReadySubject was replaced with the renderReady signal
-        // in commit 2e084f59; .set() drives both the signal and any
-        // toObservable-derived stream consumers.
-        emitRenderReady: (val: boolean) => host.renderReady.set(val)
-      });
-      renderReady$.pipe(takeUntilDestroyed(host.destroyRef)).subscribe();
-
-      document.addEventListener('visibilitychange', host.onVisibilityChange.bind(host));
-
-      host.questionLoader.initializeComponentState({
-        questionsArray: host.questionsArray(),
-        currentQuestionIndex: host.currentQuestionIndex(),
-      }).then((result: any) => {
-        if (!result) return;
-        host.questionsArray.set(result.questionsArray);
-        host.currentQuestionIndex.set(result.currentQuestionIndex);
-        host.currentQuestion.set(result.currentQuestion);
-        const cq = host.currentQuestion();
-        if (cq) {
-          host.generateFeedbackText(cq).then(
-            (text: string) => { host.feedbackText.set(text); },
-            () => { host.feedbackText.set('Unable to generate feedback.'); }
-          );
-        }
-      });
-
-      host.questionLoader.waitForQuestionData({
-        currentQuestionIndex: host.currentQuestionIndex(),
-        quizId: host.quizService.quizId,
-      }).then((waitResult: any) => {
-        if (!waitResult.currentQuestion) return;
-        host.currentQuestionIndex.set(waitResult.currentQuestionIndex);
-        host.currentQuestion.set(waitResult.currentQuestion);
-        host.optionsToDisplay.set(waitResult.optionsToDisplay);
-        host.quizService.getCurrentOptions(host.currentQuestionIndex()).pipe(take(1)).subscribe((options: Option[]) => {
-          host.optionsToDisplay.set(Array.isArray(options) ? options : []);
-          const previouslySelectedOption = host.optionsToDisplay().find((opt: Option) => opt.selected);
-          if (previouslySelectedOption) {
-            host.applyOptionFeedback(previouslySelectedOption);
-          }
-        });
-        host.initializeForm();
-        host.questionForm.updateValueAndValidity();
-        window.scrollTo(0, 0);
-      });
-
-      const qInit = host.question();
-      if (qInit) {
-        host.data.set(host.questionLoader.buildInitialData(qInit, host.options() ?? []));
+    host.subscriptionWiring.createRouteListener({
+      activatedRoute: host.activatedRoute,
+      getQuestionsLength: () => host.questions()?.length ?? 0,
+      onRouteChange: (adjustedIndex: number) => {
+        host.quizService.updateCurrentQuestionIndex(adjustedIndex);
+        host.fetchAndSetExplanationText(adjustedIndex);
       }
-      host.initializeForm();
-      host.quizStateService.setLoading(true);
+    });
 
-      await host.initializeQuiz();
-      await host.initializeQuizDataAndRouting();
+    host.subscriptionWiring.createResetSubscriptions({
+      destroyRef: host.destroyRef,
+      onResetFeedback: () => host.resetFeedback(),
+      onResetState: () => host.resetState()
+    });
 
-      host.initializer.initializeQuizQuestion({
-        destroyRef: host.destroyRef,
-        onQuestionsLoaded: (_questions: QuizQuestion[]) => {}
-      });
-
-      const questionIndexParam = host.activatedRoute.snapshot.paramMap.get('questionIndex');
-      const firstQuestionIndex = host.initializer.parseQuestionIndexFromRoute(questionIndexParam);
-      const firstQResult = host.initializer.setQuestionFirst({
-        index: firstQuestionIndex,
-        questionsArray: host.questionsArray()
-      });
-      if (firstQResult) {
-        host.currentQuestion.set(firstQResult.currentQuestion);
-        host.optionsToDisplay.set(firstQResult.optionsToDisplay);
-        if (host.lastProcessedQuestionIndex !== firstQResult.questionIndex || firstQResult.questionIndex === 0) {
-          host.lastProcessedQuestionIndex = firstQResult.questionIndex;
-        }
-        setTimeout(() => {
-          host.updateExplanationIfAnswered(firstQResult.questionIndex, firstQResult.currentQuestion!);
-        }, 50);
-      }
-
-      if (host.currentQuestionIndex() === 0) {
-        const initialMessage = 'Please start the quiz by selecting an option.';
-        if (host.selectionMessage() !== initialMessage) {
-          host.selectionMessageService.pushMessage(initialMessage, 0);
-        }
-      } else {
-        host.resetManager.clearSelection(host.correctAnswers, host.currentQuestion());
-      }
-
-      host.subscriptionWiring.createVisibilitySubscription({
-        destroyRef: host.destroyRef,
-        onHidden: () => host.handlePageVisibilityChange(true),
-        onVisible: () => host.handlePageVisibilityChange(false)
-      });
-
-      host.subscriptionWiring.createRouteListener({
-        activatedRoute: host.activatedRoute,
-        getQuestionsLength: () => host.questions()?.length ?? 0,
-        onRouteChange: (adjustedIndex: number) => {
-          host.quizService.updateCurrentQuestionIndex(adjustedIndex);
-          host.fetchAndSetExplanationText(adjustedIndex);
-        }
-      });
-
-      host.subscriptionWiring.createResetSubscriptions({
-        destroyRef: host.destroyRef,
-        onResetFeedback: () => host.resetFeedback(),
-        onResetState: () => host.resetState()
-      });
-
-      host.subscriptionWiring.createTotalQuestionsSubscription({
-        quizId: host.quizId()!,
-        destroyRef: host.destroyRef,
-        onTotal: (totalQuestions: number) => { host.totalQuestions.set(totalQuestions); }
-      });
-    } catch (error) {
-    }
+    host.subscriptionWiring.createTotalQuestionsSubscription({
+      quizId: host.quizId()!,
+      destroyRef: host.destroyRef,
+      onTotal: (totalQuestions: number) => { host.totalQuestions.set(totalQuestions); }
+    });
   }
 
   async runAfterViewInit(host: Host): Promise<void> {
