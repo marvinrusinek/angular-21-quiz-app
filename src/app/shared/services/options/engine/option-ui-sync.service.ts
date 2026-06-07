@@ -363,76 +363,8 @@ export class OptionUiSyncService {
     checked: boolean,
     ctx: OptionUiSyncContext
   ): void {
-    const getEffectiveId = (o: any, i: number) => (o?.optionId != null && o.optionId !== -1) ? o.optionId : i;
-
     if (checked) {
-      // Build the FULL list of selections PRESERVING TIME ORDER via history
-      const fullSelections: any[] = [];
-      const seenIndices = new Set<number>();
-
-      // 1. Process history (known order)
-      // selectedOptionMap is keyed by effectiveId (optionId when real,
-      // else position index). selectedOptionHistory stores position
-      // indices. Resolve each history entry to its binding's effectiveId
-      // before checking the map, so a 1-based optionId that collides
-      // with another option's position index doesn't cause a false match.
-      for (const hIdx of ctx.selectedOptionHistory || []) {
-        const numIdx = Number(hIdx);
-        const hBinding = ctx.optionBindings[numIdx];
-        const hEffId = hBinding ? getEffectiveId(hBinding.option, numIdx) : numIdx;
-        if (ctx.selectedOptionMap.has(hEffId) && !seenIndices.has(numIdx)) {
-          if (hBinding) {
-            fullSelections.push({
-              ...hBinding.option,
-              optionId: hEffId,
-              index: numIdx,
-              displayIndex: numIdx,
-              questionIndex: currentIndex,
-              selected: true
-            });
-            seenIndices.add(numIdx);
-          }
-        }
-      }
-
-      // 2. Catch any selected options not in history (redundancy)
-      // Use the binding's effectiveId for the map lookup — the map
-      // key is effectiveId (optionId), not position index. Using the
-      // raw position idx would false-positive when a 1-based optionId
-      // from another option collides with this binding's array index.
-      // Collision guard: when a binding has no real optionId, getEffectiveId
-      // falls back to the array index, which can collide with another
-      // binding's real optionId. Build a set of real IDs to detect this.
-      const realIdOwnerForSelect = new Map<number | string, number>();
-      for (const [idx, b] of ctx.optionBindings.entries()) {
-        const id = b.option?.optionId;
-        if (id != null && id !== -1) {
-          realIdOwnerForSelect.set(id, idx);
-        }
-      }
-      for (const [idx, b] of ctx.optionBindings.entries()) {
-        const bEffId = getEffectiveId(b.option, idx);
-        if (ctx.selectedOptionMap.has(bEffId) && !seenIndices.has(idx)) {
-          // Reject false-positive: fallback index collides with another binding's real optionId
-          const hasRealId = b.option?.optionId != null && b.option.optionId !== -1;
-          if (!hasRealId) {
-            const owner = realIdOwnerForSelect.get(bEffId);
-            if (owner !== undefined && owner !== idx) {
-              continue; // skip — this binding doesn't actually match the map entry
-            }
-          }
-          fullSelections.push({
-            ...b.option,
-            optionId: bEffId,
-            index: idx,
-            displayIndex: idx,
-            questionIndex: currentIndex,
-            selected: true
-          });
-          seenIndices.add(idx);
-        }
-      }
-
+      const fullSelections = this.buildFullSelections(ctx, currentIndex);
       // Selection: Store the COMPLETE set in service
       this.selectedOptionService.setSelectedOptionsForQuestion(currentIndex, fullSelections);
     } else {
@@ -440,58 +372,148 @@ export class OptionUiSyncService {
       this.selectedOptionService.removeOption(currentIndex, index as any, index);
     }
 
-    // Only set answered=true and emit FET for single-answer when the
-    // clicked option is actually correct (pristine check). After Restart Quiz,
-    // binding correct flags can be stale, so resolve from quizInitialState.
-    // In SHUFFLED mode, skip entirely — SOC handles all scoring/FET.
+    this.maybeEmitSingleAnswerFet(optionBinding, currentIndex, ctx);
+
+    // Update Next Button State based on ACTUAL selection count
+    const hasSelection = ctx.selectedOptionMap.size > 0;
+    this.nextButtonStateService.setNextButtonState(hasSelection);
+  }
+
+  // Build the FULL list of selections PRESERVING TIME ORDER via history,
+  // then catching any selected options not present in history.
+  private buildFullSelections(ctx: OptionUiSyncContext, currentIndex: number): any[] {
+    const getEffectiveId = (o: any, i: number) => (o?.optionId != null && o.optionId !== -1) ? o.optionId : i;
+
+    const fullSelections: any[] = [];
+    const seenIndices = new Set<number>();
+
+    // 1. Process history (known order)
+    // selectedOptionMap is keyed by effectiveId (optionId when real,
+    // else position index). selectedOptionHistory stores position
+    // indices. Resolve each history entry to its binding's effectiveId
+    // before checking the map, so a 1-based optionId that collides
+    // with another option's position index doesn't cause a false match.
+    for (const hIdx of ctx.selectedOptionHistory || []) {
+      const numIdx = Number(hIdx);
+      const hBinding = ctx.optionBindings[numIdx];
+      const hEffId = hBinding ? getEffectiveId(hBinding.option, numIdx) : numIdx;
+      if (ctx.selectedOptionMap.has(hEffId) && !seenIndices.has(numIdx)) {
+        if (hBinding) {
+          fullSelections.push({
+            ...hBinding.option,
+            optionId: hEffId,
+            index: numIdx,
+            displayIndex: numIdx,
+            questionIndex: currentIndex,
+            selected: true
+          });
+          seenIndices.add(numIdx);
+        }
+      }
+    }
+
+    // 2. Catch any selected options not in history (redundancy)
+    // Use the binding's effectiveId for the map lookup — the map
+    // key is effectiveId (optionId), not position index. Using the
+    // raw position idx would false-positive when a 1-based optionId
+    // from another option collides with this binding's array index.
+    // Collision guard: when a binding has no real optionId, getEffectiveId
+    // falls back to the array index, which can collide with another
+    // binding's real optionId. Build a set of real IDs to detect this.
+    const realIdOwnerForSelect = new Map<number | string, number>();
+    for (const [idx, b] of ctx.optionBindings.entries()) {
+      const id = b.option?.optionId;
+      if (id != null && id !== -1) {
+        realIdOwnerForSelect.set(id, idx);
+      }
+    }
+    for (const [idx, b] of ctx.optionBindings.entries()) {
+      const bEffId = getEffectiveId(b.option, idx);
+      if (ctx.selectedOptionMap.has(bEffId) && !seenIndices.has(idx)) {
+        // Reject false-positive: fallback index collides with another binding's real optionId
+        const hasRealId = b.option?.optionId != null && b.option.optionId !== -1;
+        if (!hasRealId) {
+          const owner = realIdOwnerForSelect.get(bEffId);
+          if (owner !== undefined && owner !== idx) {
+            continue; // skip — this binding doesn't actually match the map entry
+          }
+        }
+        fullSelections.push({
+          ...b.option,
+          optionId: bEffId,
+          index: idx,
+          displayIndex: idx,
+          questionIndex: currentIndex,
+          selected: true
+        });
+        seenIndices.add(idx);
+      }
+    }
+
+    return fullSelections;
+  }
+
+  // Single-answer only: set answered + emit FET when the clicked option is
+  // pristine-correct. Skipped in shuffled mode (SOC handles scoring/FET).
+  private maybeEmitSingleAnswerFet(
+    optionBinding: OptionBindings,
+    currentIndex: number,
+    ctx: OptionUiSyncContext
+  ): void {
     const isShufForFET = this.quizService?.isShuffleEnabled?.()
       && this.quizService?.shuffledQuestions?.length > 0;
     if (ctx.type === 'single' && !isShufForFET) {
-      let clickedIsCorrect = false;
-      try {
-        const clickedText = norm(optionBinding?.option?.text);
-        const bundle = this.quizService?.quizInitialState ?? [];
-        if (clickedText && bundle.length > 0) {
-          // Use TEXT-BASED question matching — index-based lookup fails in
-          // shuffled mode because pristineQuiz.questions[displayIndex] is
-          // the WRONG question (original order).
-          const isShuf = this.quizService?.isShuffleEnabled?.()
-            && this.quizService?.shuffledQuestions?.length > 0;
-          const displayQ = isShuf
-            ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[currentIndex]
-              ?? this.quizService?.shuffledQuestions?.[currentIndex])
-            : (ctx.getQuestionAtDisplayIndex?.(currentIndex)
-              ?? this.quizService?.questions?.[currentIndex]);
-          const qText = norm(displayQ?.questionText);
-          if (qText) {
-            let matched = false;
-            for (const quiz of bundle) {
-              for (const pq of (quiz?.questions ?? [])) {
-                if (norm(pq?.questionText) !== qText) continue;
-                matched = true;
-                const matchedOpt = (pq?.options ?? []).find((o: any) => norm(o?.text) === clickedText);
-                if (matchedOpt) {
-                  clickedIsCorrect = isOptionCorrect(matchedOpt);
-                }
-                break;
-              }
-              if (matched) break;
-            }
-          }
-        }
-      } catch (e) {
-        console.error('OptionUiSyncService.forceSelectIntoServices pristine-correctness check failed:', e);
-      }
-
+      const clickedIsCorrect = this.resolveClickedIsCorrectPristine(optionBinding, currentIndex, ctx);
       if (clickedIsCorrect) {
         this.selectedOptionService.setAnswered(true, true);
         ctx.emitExplanation(currentIndex);
       }
     }
+  }
 
-    // Update Next Button State based on ACTUAL selection count
-    const hasSelection = ctx.selectedOptionMap.size > 0;
-    this.nextButtonStateService.setNextButtonState(hasSelection);
+  // Resolve whether the clicked option is correct against pristine quizInitialState.
+  // After Restart Quiz, binding correct flags can be stale, so resolve from pristine.
+  private resolveClickedIsCorrectPristine(
+    optionBinding: OptionBindings,
+    currentIndex: number,
+    ctx: OptionUiSyncContext
+  ): boolean {
+    let clickedIsCorrect = false;
+    try {
+      const clickedText = norm(optionBinding?.option?.text);
+      const bundle = this.quizService?.quizInitialState ?? [];
+      if (clickedText && bundle.length > 0) {
+        // Use TEXT-BASED question matching — index-based lookup fails in
+        // shuffled mode because pristineQuiz.questions[displayIndex] is
+        // the WRONG question (original order).
+        const isShuf = this.quizService?.isShuffleEnabled?.()
+          && this.quizService?.shuffledQuestions?.length > 0;
+        const displayQ = isShuf
+          ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[currentIndex]
+            ?? this.quizService?.shuffledQuestions?.[currentIndex])
+          : (ctx.getQuestionAtDisplayIndex?.(currentIndex)
+            ?? this.quizService?.questions?.[currentIndex]);
+        const qText = norm(displayQ?.questionText);
+        if (qText) {
+          let matched = false;
+          for (const quiz of bundle) {
+            for (const pq of (quiz?.questions ?? [])) {
+              if (norm(pq?.questionText) !== qText) continue;
+              matched = true;
+              const matchedOpt = (pq?.options ?? []).find((o: any) => norm(o?.text) === clickedText);
+              if (matchedOpt) {
+                clickedIsCorrect = isOptionCorrect(matchedOpt);
+              }
+              break;
+            }
+            if (matched) break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('OptionUiSyncService.forceSelectIntoServices pristine-correctness check failed:', e);
+    }
+    return clickedIsCorrect;
   }
 
   private applySingleSelectionPainting(
