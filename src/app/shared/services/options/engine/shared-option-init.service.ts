@@ -648,17 +648,7 @@ export class SharedOptionInitService {
   initializeFromConfig(comp: SharedOptionComponentLike): void {
     if (comp.freezeOptionBindings() || comp.hasUserClicked()) return;
 
-    // Full reset
-    comp.optionBindings.set([]);
-    comp.selectedOption.set(null);
-    comp.selectedOptionIndex.set(-1);
-    comp.showFeedbackForOption = {};
-    comp.correctMessage.set('');
-    comp.showFeedback.set(false);
-    comp.shouldResetBackground.set(false);
-    comp.optionsRestored = false;
-    comp.currentQuestion.set(null);
-    comp.optionsToDisplay = [];
+    this.resetComponentStateForInit(comp);
 
     // Guard: Config or options missing
     const cfg2 = comp.config();
@@ -673,8 +663,37 @@ export class SharedOptionInitService {
       return;
     }
 
-    // Populate optionsToDisplay with structured data
-    comp.optionsToDisplay = cqAfterAssign.options.map((opt, idx) => {
+    comp.optionsToDisplay = this.buildInitialOptionsToDisplay(cqAfterAssign);
+    if (!comp.optionsToDisplay.length) return;
+
+    const qIndex = this.resolveQuestionIndexByContent(comp);
+    this.rehydrateSavedSelections(comp, qIndex);
+    this.applyAuthoritativeQuestionType(comp, qIndex);
+
+    // Initialize bindings and feedback maps
+    comp.setOptionBindingsIfChanged(comp.optionsToDisplay);
+    comp.initializeFeedbackBindings();
+
+    comp.finalizeOptionPopulation();
+  }
+
+  // Full reset of the component's option/selection state.
+  private resetComponentStateForInit(comp: SharedOptionComponentLike): void {
+    comp.optionBindings.set([]);
+    comp.selectedOption.set(null);
+    comp.selectedOptionIndex.set(-1);
+    comp.showFeedbackForOption = {};
+    comp.correctMessage.set('');
+    comp.showFeedback.set(false);
+    comp.shouldResetBackground.set(false);
+    comp.optionsRestored = false;
+    comp.currentQuestion.set(null);
+    comp.optionsToDisplay = [];
+  }
+
+  // Populate optionsToDisplay with structured data from the question options.
+  private buildInitialOptionsToDisplay(cqAfterAssign: QuizQuestion): Option[] {
+    return cqAfterAssign.options.map((opt, idx) => {
       // Ensure we have a unique and valid numeric optionId
       // Fallback to index if source is missing ID or has placeholder -1
       const rawId = opt.optionId;
@@ -690,14 +709,12 @@ export class SharedOptionInitService {
         showIcon: false
       };
     });
+  }
 
-    if (!comp.optionsToDisplay.length) return;
-
-    // Rehydrate selection state from Service (persistence)
-    // This ensures that when navigating back, the options show as selected
-    // (Green/Red).
-    // Resolve index via content matching to avoid race conditions between Service and Input
-    // We search the QuizService for the question that actually contains these options.
+  // Resolve index via content matching to avoid race conditions between Service
+  // and Input. We search the QuizService for the question that actually contains
+  // these options, falling back to the input index.
+  private resolveQuestionIndexByContent(comp: SharedOptionComponentLike): number {
     let qIndex = this.quizService.currentQuestionIndex ?? 0;
     const inputIndex = comp.resolveCurrentQuestionIndex();
 
@@ -718,79 +735,80 @@ export class SharedOptionInitService {
         }
       }
     }
+    return qIndex;
+  }
 
+  // Rehydrate selection state from the Service (persistence) so options show as
+  // selected (Green/Red) when navigating back.
+  private rehydrateSavedSelections(comp: SharedOptionComponentLike, qIndex: number): void {
     const saved = this.selectedOptionService.getSelectedOptionsForQuestion(qIndex);
-    if (saved?.length > 0) {
-      // Match saved selections to options by optionId/text FIRST (stable),
-      // falling back to displayIndex only when no id/text match is found.
-      // Pure displayIndex matching caused false positives when stale data
-      // from a different question had the same index.
-      for (let idx = 0; idx < comp.optionsToDisplay.length; idx++) {
-        const opt = comp.optionsToDisplay[idx];
-        const optText = norm(opt.text);
-        const optId = opt.optionId;
-        const optIdReal = optId != null && optId !== -1 && String(optId) !== '-1';
+    if (!(saved?.length > 0)) return;
 
-        let matchedSaved: any = null;
-        const isSaved = saved.some(s => {
-          // Skip unselect traces that lack visual flags
-          if ((s as any)?.selected === false && !(s as any)?.showIcon && !(s as any)?.highlight) {
-            return false;
-          }
-          const sId = (s as any).optionId;
-          const sIdReal = sId != null && sId !== -1 && String(sId) !== '-1';
-          const sText = norm((s as any).text);
-          // Match by optionId
-          if (optIdReal && sIdReal && String(optId) === String(sId)) {
-            matchedSaved = s;
-            return true;
-          }
-          // Match by text
-          if (optText && sText && optText === sText) {
-            matchedSaved = s;
-            return true;
-          }
-          // Fallback: displayIndex only when id/text didn't match
-          // AND when text is unavailable on either side. If both sides
-          // have text but it didn't match above, the position coincidence
-          // is a false positive (e.g. options shuffled on refresh).
-          const sIdx = (s as any).displayIndex ?? (s as any).index;
-          if (sIdx !== idx) return false;
-          // Position matches - only accept if we can't verify by text
-          const sText2 = norm((s as any).text);
-          if (optText && sText2 && optText !== sText2) return false;
+    // Match saved selections to options by optionId/text FIRST (stable),
+    // falling back to displayIndex only when no id/text match is found.
+    // Pure displayIndex matching caused false positives when stale data
+    // from a different question had the same index.
+    for (let idx = 0; idx < comp.optionsToDisplay.length; idx++) {
+      const opt = comp.optionsToDisplay[idx];
+      const optText = norm(opt.text);
+      const optId = opt.optionId;
+      const optIdReal = optId != null && optId !== -1 && String(optId) !== '-1';
+
+      let matchedSaved: any = null;
+      const isSaved = saved.some(s => {
+        // Skip unselect traces that lack visual flags
+        if ((s as any)?.selected === false && !(s as any)?.showIcon && !(s as any)?.highlight) {
+          return false;
+        }
+        const sId = (s as any).optionId;
+        const sIdReal = sId != null && sId !== -1 && String(sId) !== '-1';
+        const sText = norm((s as any).text);
+        // Match by optionId
+        if (optIdReal && sIdReal && String(optId) === String(sId)) {
           matchedSaved = s;
           return true;
-        });
+        }
+        // Match by text
+        if (optText && sText && optText === sText) {
+          matchedSaved = s;
+          return true;
+        }
+        // Fallback: displayIndex only when id/text didn't match
+        // AND when text is unavailable on either side. If both sides
+        // have text but it didn't match above, the position coincidence
+        // is a false positive (e.g. options shuffled on refresh).
+        const sIdx = (s as any).displayIndex ?? (s as any).index;
+        if (sIdx !== idx) return false;
+        // Position matches - only accept if we can't verify by text
+        const sText2 = norm((s as any).text);
+        if (optText && sText2 && optText !== sText2) return false;
+        matchedSaved = s;
+        return true;
+      });
 
-        if (isSaved) {
-          // Honor saved `selected` flag: prev-clicked entries (selected:false
-          // + highlight:true + showIcon:true) must render dark gray, not white.
-          // Unconditionally setting opt.selected=true promoted them to the
-          // currently-selected semantic.
-          const savedSelected = (matchedSaved as any)?.selected;
-          opt.selected = savedSelected === false ? false : true;
-          opt.showIcon = true;
-          (opt as any).highlight = true;
-          if (opt.selected) {
-            const effectiveId = (opt.optionId != null && opt.optionId !== -1) ? opt.optionId : idx;
-            comp.selectedOptions.add(Number(effectiveId));
-          }
+      if (isSaved) {
+        // Honor saved `selected` flag: prev-clicked entries (selected:false
+        // + highlight:true + showIcon:true) must render dark gray, not white.
+        // Unconditionally setting opt.selected=true promoted them to the
+        // currently-selected semantic.
+        const savedSelected = (matchedSaved as any)?.selected;
+        opt.selected = savedSelected === false ? false : true;
+        opt.showIcon = true;
+        (opt as any).highlight = true;
+        if (opt.selected) {
+          const effectiveId = (opt.optionId != null && opt.optionId !== -1) ? opt.optionId : idx;
+          comp.selectedOptions.add(Number(effectiveId));
         }
       }
     }
+  }
 
-    // Determine question type based on options, but Respect explicit input first!
-    // Use authoritative question from service to ensure 'correct' flags are present for type determination
+  // Determine question type based on options, but respect explicit input first.
+  // Use authoritative question from service to ensure 'correct' flags are present.
+  private applyAuthoritativeQuestionType(comp: SharedOptionComponentLike, qIndex: number): void {
     const authoritativeQuestion = this.quizService.questions[qIndex] || comp.currentQuestion();
     if (comp.type !== 'multiple' && authoritativeQuestion) {
       comp.type = comp.determineQuestionType(authoritativeQuestion);
     }
-
-    // Initialize bindings and feedback maps
-    comp.setOptionBindingsIfChanged(comp.optionsToDisplay);
-    comp.initializeFeedbackBindings();
-    
-    comp.finalizeOptionPopulation();
   }
 }
