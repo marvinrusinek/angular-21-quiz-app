@@ -649,26 +649,10 @@ subscribeToTimerExpiry(host: Host): void {
   }
 
   async runOnInit(host: Host): Promise<void> {
-    host.questions$ = this.quizService.questions$;
-    this.subscribeToRouteEvents(host);
-
-    const quizId = await host.initializeQuizId();
+    const quizId = await this.initializeQuizSession(host);
     if (!quizId) return;
-    host.quizId.set(quizId);
 
-    try { localStorage.setItem('lastQuizId', quizId); } catch {}
-
-    host.initializeQuestionIndex();
-
-    const freshFromResults = this.readFreshFromResults();
-    if (freshFromResults) {
-      this.performFreshStartReset(host);
-    }
-
-    const cleared = this.quizResetService.clearStaleProgressAndDotStateForFreshStart(
-      host.currentQuestionIndex(), host.quizId(), host.totalQuestions()
-    );
-    if (cleared) host.progressSig.set(0);
+    const freshFromResults = this.applyFreshStartHandling(host);
 
     this.fetchTotalQuestions(host);
     this.subscribeToQuestionIndex(host);
@@ -690,6 +674,36 @@ subscribeToTimerExpiry(host: Host): void {
     if (freshFromResults) {
       this.scheduleFreshStartClear(host);
     }
+  }
+
+  // Wire questions stream + route events, resolve the quizId (null = abort),
+  // then persist it and initialize the starting question index.
+  private async initializeQuizSession(host: Host): Promise<string | null> {
+    host.questions$ = this.quizService.questions$;
+    this.subscribeToRouteEvents(host);
+
+    const quizId = await host.initializeQuizId();
+    if (!quizId) return null;
+    host.quizId.set(quizId);
+
+    try { localStorage.setItem('lastQuizId', quizId); } catch {}
+
+    host.initializeQuestionIndex();
+    return quizId;
+  }
+
+  // Consume the fresh-start flag, reset on fresh start, and clear stale progress.
+  private applyFreshStartHandling(host: Host): boolean {
+    const freshFromResults = this.readFreshFromResults();
+    if (freshFromResults) {
+      this.performFreshStartReset(host);
+    }
+
+    const cleared = this.quizResetService.clearStaleProgressAndDotStateForFreshStart(
+      host.currentQuestionIndex(), host.quizId(), host.totalQuestions()
+    );
+    if (cleared) host.progressSig.set(0);
+    return freshFromResults;
   }
 
   // Read-and-consume the one-shot "fresh start from results" session flag.
