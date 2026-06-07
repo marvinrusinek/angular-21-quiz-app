@@ -130,41 +130,50 @@ export class QclQuestionFetchService {
 
       const fetched = await this.fetchQuestionAndOptions(questionIndex);
       if (!fetched) return empty;
-      const { fetchedQuestion, fetchedOptions } = fetched;
 
-      this.explanationTextService.setResetComplete(false);
-      this.explanationTextService.setShouldDisplayExplanation(false);
-
-      const trimmedText = (fetchedQuestion?.questionText ?? '').trim() || 'No question available';
-      const { finalOptions, clonedOptions } = this.buildPreparedOptions(fetchedOptions);
-
-      const isAnswered = this.resolveIsAnswered(quizId, questionIndex, clonedOptions);
-      this.quizStateService.setDisplayState({
-        mode: isAnswered ? 'explanation' : 'question',
-        answered: isAnswered
-      });
-
-      const question = this.buildQuestion(fetchedQuestion, clonedOptions);
-      const currentQuestion = { ...question };
-      this.emitPreparedQuestion(currentQuestion, clonedOptions, questionIndex);
-
-      const explanationText = await this.resolvePreparedExplanation(isAnswered, fetchedQuestion, finalOptions, questionIndex);
-
-      this.quizService.setCurrentQuestion(currentQuestion);
-      this.quizService.setCurrentQuestionIndex(questionIndex);
-      this.quizStateService.updateCurrentQuestion(currentQuestion);
-
-      await this.applyAnswerednessCheck(questionIndex);
-
-      const questionPayload: QuestionPayload = { question: currentQuestion, options: clonedOptions, explanation: explanationText };
-
-      return {
-        success: true, question, currentQuestion, trimmedText, clonedOptions,
-        finalOptions, explanationText, isAnswered, questionPayload, shouldStartTimer: !isAnswered
-      };
+      return await this.prepareQuestion(quizId, questionIndex, fetched.fetchedQuestion, fetched.fetchedOptions);
     } catch (error: any) {
       return empty;
     }
+  }
+
+  /**
+   * Prepare the fetched question: reset FET flags, build/clone options, resolve
+   * answered state + display, build/emit the question, resolve the explanation,
+   * set it current, re-check answeredness, and assemble the success result.
+   * Extracted verbatim.
+   */
+  private async prepareQuestion(quizId: string, questionIndex: number, fetchedQuestion: any, fetchedOptions: any[]): Promise<FetchQuestionResult> {
+    this.explanationTextService.setResetComplete(false);
+    this.explanationTextService.setShouldDisplayExplanation(false);
+
+    const trimmedText = (fetchedQuestion?.questionText ?? '').trim() || 'No question available';
+    const { finalOptions, clonedOptions } = this.buildPreparedOptions(fetchedOptions);
+
+    const isAnswered = this.resolveIsAnswered(quizId, questionIndex, clonedOptions);
+    this.quizStateService.setDisplayState({
+      mode: isAnswered ? 'explanation' : 'question',
+      answered: isAnswered
+    });
+
+    const question = this.buildQuestion(fetchedQuestion, clonedOptions);
+    const currentQuestion = { ...question };
+    this.emitPreparedQuestion(currentQuestion, clonedOptions, questionIndex);
+
+    const explanationText = await this.resolvePreparedExplanation(isAnswered, fetchedQuestion, finalOptions, questionIndex);
+
+    this.quizService.setCurrentQuestion(currentQuestion);
+    this.quizService.setCurrentQuestionIndex(questionIndex);
+    this.quizStateService.updateCurrentQuestion(currentQuestion);
+
+    await this.applyAnswerednessCheck(questionIndex);
+
+    const questionPayload: QuestionPayload = { question: currentQuestion, options: clonedOptions, explanation: explanationText };
+
+    return {
+      success: true, question, currentQuestion, trimmedText, clonedOptions,
+      finalOptions, explanationText, isAnswered, questionPayload, shouldStartTimer: !isAnswered
+    };
   }
 
   /** Fetch the question details + current options in parallel; null if either is missing/empty. */
