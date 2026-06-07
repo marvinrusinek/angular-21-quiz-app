@@ -580,7 +580,10 @@ export class QqcQlStreamService {
         mode: 'explanation',
         answered: true
       });
-      this.timerService.isTimerRunning = false;
+      // Freeze the countdown at the seconds remaining when this question was
+      // answered (timePerQuestion − recorded elapsed), instead of leaving it
+      // reset to a full countdown.
+      this.timerService.freezeAtRecordedTime(idx);
     } else {
       this.timerService.startTimer(
         this.timerService.timePerQuestion,
