@@ -77,9 +77,9 @@ export class OptionClickHandlerService {
 
   // ── public methods ──────────────────────────────────────────────
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Correct Indices Resolution
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Resolves the correct option indices for a question, cross-referencing
@@ -116,7 +116,7 @@ export class OptionClickHandlerService {
       }
     }
 
-    // SOURCE 3: Pristine quizInitialState â€” most reliable, never mutated
+    // SOURCE 3: Pristine quizInitialState — most reliable, never mutated
     let fromPristine: number[] = [];
     if (qText) {
       try {
@@ -146,9 +146,9 @@ export class OptionClickHandlerService {
     return { correctIndices, correctCount, isMultiMode };
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Multi-Answer Click State
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Computes the multi-answer state after a click, given the durable
@@ -182,9 +182,9 @@ export class OptionClickHandlerService {
     };
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Multi-Answer Feedback Text
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Generates the feedback text for a multi-answer click.
@@ -207,9 +207,9 @@ export class OptionClickHandlerService {
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Multi-Answer Binding Updates
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Computes what each binding should look like after a multi-answer click.
@@ -284,7 +284,7 @@ export class OptionClickHandlerService {
               ).length;
               if (pristineCorrectCount > correctIndices.length) {
                 // Pristine has more correct than passed-in correctIndices.
-                // This is the undercounted case â€” bail without locking.
+                // This is the undercounted case — bail without locking.
                 return;
               }
               break;
@@ -299,9 +299,9 @@ export class OptionClickHandlerService {
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Single-Answer Feedback Override
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * For single-answer mode, verifies and potentially overrides the feedback
@@ -360,13 +360,13 @@ export class OptionClickHandlerService {
     return cfg;
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Disabled State Computation
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Computes whether an option should be disabled, given the component's
-   * current state context. Pure decision logic â€” no side effects.
+   * current state context. Pure decision logic — no side effects.
    */
   computeDisabledState(
     option: Option,
@@ -374,12 +374,32 @@ export class OptionClickHandlerService {
     ctx: DisabledStateContext
   ): boolean {
     const { currentQuestionIndex: qIndex, isMultiMode, forceDisableAll,
-            disabledOptionsPerQuestion, lockedIncorrectOptionIds, flashDisabledSet } = ctx;
+            disabledOptionsPerQuestion } = ctx;
     const lockId = (option?.optionId != null && Number(option.optionId) !== -1)
       ? option.optionId : index;
 
-    // Detect multi-answer from data as well as the context flag â€” isMultiMode
-    // can be stale/false during initialization before runIsMultiMode computes.
+    const effectiveMulti = this.resolveEffectiveMulti(isMultiMode, qIndex);
+
+    // Multi-answer: only use the explicit disabledOptionsPerQuestion set
+    // and forceDisableAll. Lock services can cross-contaminate.
+    if (effectiveMulti) {
+      if (forceDisableAll) return true;
+      const disabledSet = disabledOptionsPerQuestion.get(qIndex);
+      return !!(disabledSet && disabledSet.has(index));
+    }
+
+    const correctEnabled = this.correctOptionStaysEnabled(option, qIndex, forceDisableAll);
+    if (correctEnabled !== undefined) return correctEnabled;
+
+    const singleClickable = this.singleAnswerStaysClickable(qIndex, forceDisableAll);
+    if (singleClickable !== undefined) return singleClickable;
+
+    return this.computeLegacyLockDisabled(option, index, lockId, qIndex, ctx);
+  }
+
+  // Detect multi-answer from data as well as the context flag — isMultiMode
+  // can be stale/false during initialization before runIsMultiMode computes.
+  private resolveEffectiveMulti(isMultiMode: boolean, qIndex: number): boolean {
     let effectiveMulti = isMultiMode;
     if (!effectiveMulti) {
       try {
@@ -395,16 +415,16 @@ export class OptionClickHandlerService {
         if (chkCorrectCount > 1) effectiveMulti = true;
       } catch { /* ignore */ }
     }
+    return effectiveMulti;
+  }
 
-    // Multi-answer: only use the explicit disabledOptionsPerQuestion set
-    // and forceDisableAll. Lock services can cross-contaminate.
-    if (effectiveMulti) {
-      if (forceDisableAll) return true;
-      const disabledSet = disabledOptionsPerQuestion.get(qIndex);
-      return !!(disabledSet && disabledSet.has(index));
-    }
-
-    // Correct options should NOT be disabled while the user is still selecting.
+  // Correct options should NOT be disabled while the user is still selecting.
+  // Returns false (stay enabled) or undefined (continue to lock checks).
+  private correctOptionStaysEnabled(
+    option: Option,
+    qIndex: number,
+    forceDisableAll: boolean
+  ): boolean | undefined {
     const isCorrectOpt = isOptionCorrect(option);
     if (isCorrectOpt && !forceDisableAll) {
       const isShuffled = this.quizService?.isShuffleEnabled?.() &&
@@ -425,19 +445,22 @@ export class OptionClickHandlerService {
         return false;
       }
     }
+    return undefined;
+  }
 
-    // SINGLE-ANSWER GUARD: while no correct option has been selected for this
-    // question, every option must remain clickable so the user can recover
-    // from a wrong pick. The downstream lock signals (disabledBySet,
-    // optionLocked, lockedIncorrectOptionIds, flashDisabled) occasionally
-    // leak true on incorrect-only single-answer clicks; bypass them here
-    // until the user actually picks the correct answer.
-    //
-    // PRISTINE-FIRST: read correct flags from quizInitialState (the
-    // immutable structuredClone of QUIZ_DATA) since live quizService
-    // .questions[].options[].correct can get mutated during gameplay,
-    // making the size===1 gate fail on Q3/Q5+ even though pristine
-    // clearly shows one correct option.
+  // SINGLE-ANSWER GUARD: while no correct option has been selected for this
+  // question, every option must remain clickable so the user can recover
+  // from a wrong pick. The downstream lock signals (disabledBySet,
+  // optionLocked, lockedIncorrectOptionIds, flashDisabled) occasionally
+  // leak true on incorrect-only single-answer clicks; bypass them here
+  // until the user actually picks the correct answer.
+  //
+  // PRISTINE-FIRST: read correct flags from quizInitialState (the
+  // immutable structuredClone of QUIZ_DATA) since live quizService
+  // .questions[].options[].correct can get mutated during gameplay,
+  // making the size===1 gate fail on Q3/Q5+ even though pristine
+  // clearly shows one correct option.
+  private singleAnswerStaysClickable(qIndex: number, forceDisableAll: boolean): boolean | undefined {
     if (!forceDisableAll) {
       try {
         const saSelections =
@@ -452,7 +475,7 @@ export class OptionClickHandlerService {
           this.quizService.getPristineCorrectTextsForQuestion(liveSAQ?.questionText);
         // anyCorrectSelected: trust the selection's own `correct` flag
         // (spread from the canonical binding option) as a fallback when
-        // the cache misses â€” stale questionText on Q3+ would otherwise
+        // the cache misses — stale questionText on Q3+ would otherwise
         // wrongly leave siblings clickable after a real correct pick.
         const anyCorrectSelected = saSelections.some((s: any) => {
           if (isOptionCorrect(s)) {
@@ -463,7 +486,18 @@ export class OptionClickHandlerService {
         if (!anyCorrectSelected && correctTextsSA.size <= 1) return false;
       } catch { /* ignore — fall through to legacy lock checks */ }
     }
+    return undefined;
+  }
 
+  // Legacy lock aggregation: disabled if any lock signal fires.
+  private computeLegacyLockDisabled(
+    option: Option,
+    index: number,
+    lockId: number,
+    qIndex: number,
+    ctx: DisabledStateContext
+  ): boolean {
+    const { disabledOptionsPerQuestion, lockedIncorrectOptionIds, flashDisabledSet, forceDisableAll } = ctx;
     const disabledSet = disabledOptionsPerQuestion.get(qIndex);
     const disabledBySet = disabledSet && (disabledSet.has(index) || disabledSet.has(lockId));
     const forceDisabled = forceDisableAll;
@@ -486,13 +520,12 @@ export class OptionClickHandlerService {
     const lockedIncorrect = lockedIncorrectOptionIds.has(index) || lockedIncorrectOptionIds.has(lockId);
     const flashDisabled = flashDisabledSet.has(index) || flashDisabledSet.has(lockId);
 
-    const result = !!(disabledBySet || forceDisabled || questionLocked || optionLocked || lockedIncorrect || flashDisabled);
-    return result;
+    return !!(disabledBySet || forceDisabled || questionLocked || optionLocked || lockedIncorrect || flashDisabled);
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
   // Question Type Detection
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════════════════════════════
 
   /**
    * Determines if a question is single or multiple answer.
