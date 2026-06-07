@@ -251,7 +251,12 @@ export class QuizSetupRouteService {
         setTimeout(writeH3, 300);
       }
 
-      if (!result.hasValidSelections) this.timerService.restartForQuestion(index);
+      if (!result.hasValidSelections) {
+        this.timerService.restartForQuestion(index);
+      } else {
+        // Answered question on revisit: freeze at the recorded time taken.
+        this.timerService.freezeAtRecordedTime(index);
+      }
       localStorage.setItem(SK_SAVED_QUESTION_INDEX, index.toString());
     } catch (error: any) {
       console.error('QuizSetupRouteService.subscribeToRouteParams param map change handling failed:', error);

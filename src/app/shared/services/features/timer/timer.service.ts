@@ -434,6 +434,15 @@ export class TimerService implements OnDestroy {
     ) {
       return;
     }
+
+    // Answered (interacted) questions don't re-run their timer — freeze at the
+    // recorded time taken so a revisit shows where the countdown stopped,
+    // not a fresh full countdown.
+    if (this.selectedOptionService?.isQuestionAnswered?.(questionIndex)) {
+      this.freezeAtRecordedTime(questionIndex);
+      return;
+    }
+
     this._runningForQuestion = questionIndex;
     // Clear expiry/start guards so this fresh question can run
     this.hasExpiredForRun = false;
@@ -443,6 +452,23 @@ export class TimerService implements OnDestroy {
     this.resetTimer();
     this.resetTimerFlagsFor(questionIndex);
     this.startTimer(this.timePerQuestion, this.isCountdown(), true);
+  }
+
+  // Freeze the timer at the time recorded when the question was answered, so a
+  // revisited answered question shows the (frozen) time taken rather than a
+  // fresh countdown. Falls back to 0-remaining (elapsed = full) when no time
+  // was captured (e.g. after a hard refresh that clears in-memory elapsedTimes).
+  public freezeAtRecordedTime(questionIndex: number): void {
+    if (questionIndex == null || questionIndex < 0) return;
+
+    this.stopTimer?.(undefined, { force: true });
+    this.isTimerRunning = false;
+    this.isTimerStoppedForCurrentQuestion = true;
+    this._runningForQuestion = questionIndex;
+    this.stoppedForQuestion.add(questionIndex);
+
+    const taken = this.elapsedTimes[questionIndex];
+    this.elapsedTimeSig.set(typeof taken === 'number' && taken > 0 ? taken : this.timePerQuestion);
   }
 
   public resetTimerFlagsFor(questionIndex: number): void {
