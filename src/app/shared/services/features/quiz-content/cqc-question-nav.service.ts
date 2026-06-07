@@ -270,126 +270,160 @@ export class CqcQuestionNavService {
         zeroBasedIndex >= 0 &&
         zeroBasedIndex < questions.length
       ) {
-        let question = questions[zeroBasedIndex];
-        if (host.quizService.isShuffleEnabled() &&
-          host.quizService.shuffledQuestions?.length > zeroBasedIndex) {
-          question = host.quizService.shuffledQuestions[zeroBasedIndex];
-        }
-
-        host.currentQuestionSig.set(question);
-
-        host.explanationTextService.resetExplanationState();
-        host.explanationTextService.resetExplanationText();
-
-        host.quizService.setCurrentQuestion(question);
-
-        if (Array.isArray(host._eagerFetRetryTimers)) {
-          for (const t of host._eagerFetRetryTimers) clearTimeout(t);
-        }
-        host._eagerFetRetryTimers = [];
-        host._fetLockedForIndex = -1;
-
-        try {
-          let isPageRefresh = false;
-          try {
-            const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-            isPageRefresh = navEntries.length > 0 && navEntries[0].type === 'reload';
-          } catch { /* ignore */ }
-          if (host._refreshInitialLoadConsumed == null) {
-            host._refreshInitialLoadConsumed = false;
-          }
-          const isInitialLoadAfterRefresh = isPageRefresh && !host._refreshInitialLoadConsumed;
-          if (isInitialLoadAfterRefresh) {
-            host._refreshInitialIdx = zeroBasedIndex;
-          }
-          host._refreshInitialLoadConsumed = true;
-
-          const isPostRefreshNavToDifferentIdx =
-            isPageRefresh
-            && typeof host._refreshInitialIdx === 'number'
-            && host._refreshInitialIdx !== zeroBasedIndex;
-          if (isPostRefreshNavToDifferentIdx) {
-            try {
-              host.quizStateService._hasUserInteracted?.delete(zeroBasedIndex);
-              host.quizStateService._answeredQuestionIndices?.delete(zeroBasedIndex);
-              host.quizStateService.persistInteractionState?.();
-            } catch { /* ignore */ }
-            try {
-              host.selectedOptionService.selectedOptionsMap?.delete(zeroBasedIndex);
-            } catch { /* ignore */ }
-            try {
-              sessionStorage.removeItem(SK_SEL_Q + zeroBasedIndex);
-            } catch { /* ignore */ }
-            try {
-              host.explanationTextService.fetByIndex?.delete(zeroBasedIndex);
-              delete (host.explanationTextService.formattedExplanations as any)[zeroBasedIndex];
-            } catch { /* ignore */ }
-          }
-
-          const ets = host.explanationTextService;
-          const hasClicked = host.quizStateService.hasClickedInSession?.(zeroBasedIndex) ?? false;
-
-          let isResolvedFromPersistence = false;
-          try {
-            let storedSelections: any[] = [];
-            try {
-              const raw = sessionStorage.getItem(SK_SEL_Q + zeroBasedIndex);
-              if (raw) {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) storedSelections = parsed;
-              }
-            } catch { /* ignore */ }
-            if (storedSelections.length === 0) {
-              storedSelections =
-                host.selectedOptionService.getSelectedOptionsForQuestion?.(zeroBasedIndex)
-                ?? [];
-            }
-            if (storedSelections.length > 0 && question) {
-              isResolvedFromPersistence =
-                host.selectedOptionService.isQuestionResolvedLeniently?.(question, storedSelections)
-                ?? false;
-            }
-          } catch { /* ignore */ }
-
-          const shouldInject = hasClicked && !!question?.explanation && isResolvedFromPersistence;
-          if (shouldInject) {
-            const correctIndices = ets.getCorrectOptionIndices(question, question.options, zeroBasedIndex);
-            if (correctIndices.length > 0) {
-              const formattedFet = ets.formatExplanation(question, correctIndices, question.explanation);
-              if (formattedFet) {
-                host._fetLockedForIndex = zeroBasedIndex;
-                const injectNow = () => {
-                  if (host.currentIndex !== zeroBasedIndex) return;
-                  try {
-                    ets.storeFormattedExplanation(zeroBasedIndex, question.explanation, question, question.options, true);
-                  } catch { /* ignore */ }
-                  this.fetGuard.writeQText(host, formattedFet);
-                };
-                injectNow();
-                if (!Array.isArray(host._eagerFetRetryTimers)) {
-                  host._eagerFetRetryTimers = [];
-                }
-                host._eagerFetRetryTimers.push(setTimeout(injectNow, 0));
-                for (const delay of FET_WRITE_RETRY_LONG_CASCADE_MS) {
-                  host._eagerFetRetryTimers.push(setTimeout(injectNow, delay));
-                }
-              }
-            } else {
-              // No correct indices found — cannot format FET
-            }
-          }
-
-          if (hasClicked && !isResolvedFromPersistence) {
-            const display = this.fetGuard.buildQuestionDisplayHTML(host, zeroBasedIndex);
-            if (display && host.currentIndex === zeroBasedIndex) {
-              this.fetGuard.writeQText(host, display);
-            }
-          }
-        } catch (err) {
-          // Eager FET regeneration failed
-        }
+        const question = this.resolveQuestionForIndex(host, questions, zeroBasedIndex);
+        this.applyQuestionLoad(host, question);
+        this.runEagerFetRegeneration(host, question, zeroBasedIndex);
       }
     } catch (error: any) {
+    }
+  }
+
+  // Pick the question for this index, preferring the shuffled array when active.
+  private resolveQuestionForIndex(host: Host, questions: QuizQuestion[], zeroBasedIndex: number): QuizQuestion {
+    let question = questions[zeroBasedIndex];
+    if (host.quizService.isShuffleEnabled() &&
+      host.quizService.shuffledQuestions?.length > zeroBasedIndex) {
+      question = host.quizService.shuffledQuestions[zeroBasedIndex];
+    }
+    return question;
+  }
+
+  // Commit the question to state, reset explanation, and clear eager-FET timers/locks.
+  private applyQuestionLoad(host: Host, question: QuizQuestion): void {
+    host.currentQuestionSig.set(question);
+
+    host.explanationTextService.resetExplanationState();
+    host.explanationTextService.resetExplanationText();
+
+    host.quizService.setCurrentQuestion(question);
+
+    if (Array.isArray(host._eagerFetRetryTimers)) {
+      for (const t of host._eagerFetRetryTimers) clearTimeout(t);
+    }
+    host._eagerFetRetryTimers = [];
+    host._fetLockedForIndex = -1;
+  }
+
+  private runEagerFetRegeneration(host: Host, question: QuizQuestion, zeroBasedIndex: number): void {
+    try {
+      this.applyPostRefreshCleanup(host, zeroBasedIndex);
+
+      const hasClicked = host.quizStateService.hasClickedInSession?.(zeroBasedIndex) ?? false;
+
+      const isResolvedFromPersistence =
+        this.resolveIsResolvedFromPersistence(host, question, zeroBasedIndex);
+
+      const shouldInject = hasClicked && !!question?.explanation && isResolvedFromPersistence;
+      if (shouldInject) {
+        this.injectEagerFet(host, question, zeroBasedIndex);
+      }
+
+      if (hasClicked && !isResolvedFromPersistence) {
+        const display = this.fetGuard.buildQuestionDisplayHTML(host, zeroBasedIndex);
+        if (display && host.currentIndex === zeroBasedIndex) {
+          this.fetGuard.writeQText(host, display);
+        }
+      }
+    } catch (err) {
+      // Eager FET regeneration failed
+    }
+  }
+
+  // After a page refresh, when navigating to a different index than the initial
+  // load, wipe stale interaction/selection/explanation state for that index.
+  private applyPostRefreshCleanup(host: Host, zeroBasedIndex: number): void {
+    let isPageRefresh = false;
+    try {
+      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      isPageRefresh = navEntries.length > 0 && navEntries[0].type === 'reload';
+    } catch { /* ignore */ }
+    if (host._refreshInitialLoadConsumed == null) {
+      host._refreshInitialLoadConsumed = false;
+    }
+    const isInitialLoadAfterRefresh = isPageRefresh && !host._refreshInitialLoadConsumed;
+    if (isInitialLoadAfterRefresh) {
+      host._refreshInitialIdx = zeroBasedIndex;
+    }
+    host._refreshInitialLoadConsumed = true;
+
+    const isPostRefreshNavToDifferentIdx =
+      isPageRefresh
+      && typeof host._refreshInitialIdx === 'number'
+      && host._refreshInitialIdx !== zeroBasedIndex;
+    if (isPostRefreshNavToDifferentIdx) {
+      this.wipeStaleIndexState(host, zeroBasedIndex);
+    }
+  }
+
+  // Wipe interaction, selection, and explanation state for a single index.
+  private wipeStaleIndexState(host: Host, zeroBasedIndex: number): void {
+    try {
+      host.quizStateService._hasUserInteracted?.delete(zeroBasedIndex);
+      host.quizStateService._answeredQuestionIndices?.delete(zeroBasedIndex);
+      host.quizStateService.persistInteractionState?.();
+    } catch { /* ignore */ }
+    try {
+      host.selectedOptionService.selectedOptionsMap?.delete(zeroBasedIndex);
+    } catch { /* ignore */ }
+    try {
+      sessionStorage.removeItem(SK_SEL_Q + zeroBasedIndex);
+    } catch { /* ignore */ }
+    try {
+      host.explanationTextService.fetByIndex?.delete(zeroBasedIndex);
+      delete (host.explanationTextService.formattedExplanations as any)[zeroBasedIndex];
+    } catch { /* ignore */ }
+  }
+
+  private resolveIsResolvedFromPersistence(host: Host, question: QuizQuestion, zeroBasedIndex: number): boolean {
+    let isResolvedFromPersistence = false;
+    try {
+      let storedSelections: any[] = [];
+      try {
+        const raw = sessionStorage.getItem(SK_SEL_Q + zeroBasedIndex);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) storedSelections = parsed;
+        }
+      } catch { /* ignore */ }
+      if (storedSelections.length === 0) {
+        storedSelections =
+          host.selectedOptionService.getSelectedOptionsForQuestion?.(zeroBasedIndex)
+          ?? [];
+      }
+      if (storedSelections.length > 0 && question) {
+        isResolvedFromPersistence =
+          host.selectedOptionService.isQuestionResolvedLeniently?.(question, storedSelections)
+          ?? false;
+      }
+    } catch { /* ignore */ }
+    return isResolvedFromPersistence;
+  }
+
+  private injectEagerFet(host: Host, question: QuizQuestion, zeroBasedIndex: number): void {
+    const ets = host.explanationTextService;
+    const correctIndices = ets.getCorrectOptionIndices(question, question.options, zeroBasedIndex);
+    if (correctIndices.length > 0) {
+      const formattedFet = ets.formatExplanation(question, correctIndices, question.explanation);
+      if (formattedFet) {
+        host._fetLockedForIndex = zeroBasedIndex;
+        const injectNow = () => {
+          if (host.currentIndex !== zeroBasedIndex) return;
+          try {
+            ets.storeFormattedExplanation(zeroBasedIndex, question.explanation, question, question.options, true);
+          } catch { /* ignore */ }
+          this.fetGuard.writeQText(host, formattedFet);
+        };
+        injectNow();
+        if (!Array.isArray(host._eagerFetRetryTimers)) {
+          host._eagerFetRetryTimers = [];
+        }
+        host._eagerFetRetryTimers.push(setTimeout(injectNow, 0));
+        for (const delay of FET_WRITE_RETRY_LONG_CASCADE_MS) {
+          host._eagerFetRetryTimers.push(setTimeout(injectNow, delay));
+        }
+      }
+    } else {
+      // No correct indices found — cannot format FET
     }
   }
 }
