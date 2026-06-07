@@ -96,107 +96,121 @@ export class QuizScoringService {
   ): void {
     const qIndex = questionIndex >= 0 ? questionIndex : 0;
 
-    // Scoring Key Resolution
-    let scoringKey = qIndex;
+    const scoringKey = this.resolveScoringKey(qIndex, shouldShuffle, quizId);
+    const wasCorrect = this.resolveWasCorrect(scoringKey);
+    const isNowCorrect = this.applyPristineMultiAnswerGate(
+      correctAnswerFound, quizId, isMultipleAnswer, qIndex, scoringKey
+    );
 
-    // Strict Shuffle Guard
-    // Only use the shuffle service mapping if shuffle is explicitly ENABLED.
-    // If we rely on valid ID checks alone, a stale map in QuizShuffleService (from a prev session)
-    // might incorrectly remap an unshuffled question (0->3), updating the wrong score key.
+    this.applyCorrectnessUpdate(scoringKey, isNowCorrect, wasCorrect);
+    this.saveQuestionCorrectness();
+  }
+
+  // Scoring Key Resolution — Strict Shuffle Guard: only use the shuffle-service
+  // mapping when shuffle is explicitly ENABLED. A stale QuizShuffleService map
+  // (from a prev session) could otherwise remap an unshuffled question (0->3)
+  // and update the wrong score key.
+  private resolveScoringKey(qIndex: number, shouldShuffle: boolean, quizId: string): number {
+    let scoringKey = qIndex;
     if (shouldShuffle) {
       // Try to get quizId from various sources if it's empty
       let effectiveQuizId = quizId;
       if (!effectiveQuizId) {
-        // Try localStorage
         try {
           effectiveQuizId = localStorage.getItem('lastQuizId') || '';
         } catch { }
       }
       if (!effectiveQuizId) {
-        // Try to find any active shuffle state
         const shuffleKeys = Object.keys(localStorage).filter(k => k.startsWith('shuffleState:'));
         if (shuffleKeys.length > 0) {
-          effectiveQuizId = shuffleKeys[0].replace('shuffleState:', '');        }
+          effectiveQuizId = shuffleKeys[0].replace('shuffleState:', '');
+        }
       }
 
       if (effectiveQuizId) {
         const originalIndex = this.quizShuffleService.toOriginalIndex(effectiveQuizId, qIndex);
-
-        // Valid original index is >= 0
         if (typeof originalIndex === 'number' && originalIndex >= 0) {
           scoringKey = originalIndex;
         }
       }
     }
+    return scoringKey;
+  }
 
-    // IMPORTANT: Only use scoringKey for questionCorrectness lookups.
-    // Previously we also stored/checked by qIndex (display index), but in shuffled mode
-    // one question's qIndex can collide with another question's scoringKey, causing
-    // false "already scored" hits that block increments.
+  // Read prior correctness (keyed by scoringKey only). Self-heal a stale
+  // "already correct" entry when correctCount is 0 so scoring can proceed.
+  private resolveWasCorrect(scoringKey: number): boolean {
     let wasCorrect = this.questionCorrectness.get(scoringKey) || false;
-
-    // Self-heal: if questionCorrectness says "already correct" but correctCount is 0,
-    // the map entry is stale (e.g. from a previous localStorage session that wasn't
-    // fully cleared). Reset so scoring can proceed.
     if (wasCorrect && this.correctCountSig() === 0) {
       wasCorrect = false;
       this.questionCorrectness.set(scoringKey, false);
     }
+    return wasCorrect;
+  }
+
+  // PRISTINE GATE: block a multi-answer increment unless ALL pristine correct
+  // answers have been confirmed clicked. Safety net for non-OIS callers.
+  private applyPristineMultiAnswerGate(
+    correctAnswerFound: boolean,
+    quizId: string,
+    isMultipleAnswer: boolean,
+    qIndex: number,
+    scoringKey: number
+  ): boolean {
     let isNowCorrect = correctAnswerFound;  // simplified
-
-    // PRISTINE GATE (incrementScore): Block increment for multi-answer questions
-    // unless ALL pristine correct answers have been confirmed clicked.
-    // SKIP this gate when the caller already verified correctness upstream
-    // (handleOptionClick does its own pristine multi-answer check via
-    // _confirmedCorrectClicks before calling scoreDirectly).
-    // The gate is kept as a safety net for non-OIS callers.
-    if (isNowCorrect && quizId && !isMultipleAnswer) {
-      // For single-answer, no gate needed — single correct click = score.
-    } else if (isNowCorrect && quizId && isMultipleAnswer) {
-      const confirmed = this._confirmedCorrectClicks.get(qIndex) ?? new Set();
-
-      // Find pristine question by BOTH index-based and text-based matching.
-      // In shuffled mode, scoringKey (original index) may not correspond to
-      // the right position in QUIZ_DATA. Use confirmed click texts to
-      // cross-validate: the right pristine question's correct texts will
-      // ALL appear in confirmed clicks.
-      let pristineCorrectTexts: string[] = [];
-      const pristineQuiz = getQuizData().find((qz: any) => qz?.quizId === quizId);
-
-      // PRIMARY: index-based lookup
-      const pristineQ = pristineQuiz?.questions?.[scoringKey];
-      if (pristineQ) {
-        pristineCorrectTexts = (pristineQ.options ?? [])
-          .filter((o: any) => isOptionCorrect(o))
-          .map((o: any) => norm(o?.text))
-          .filter((t: string) => !!t);
-      }
-
-      // CROSS-VALIDATE: if index-based lookup found correct texts but they
-      // DON'T match confirmed clicks, the lookup hit the wrong question.
-      // Scan ALL questions in the quiz to find one whose correct texts
-      // match the confirmed clicks.
-      if (pristineCorrectTexts.length > 1 && confirmed.size > 0) {
-        const allMatch = pristineCorrectTexts.every((t: string) => confirmed.has(t));
-        if (!allMatch && pristineQuiz?.questions) {
-          for (const pq of pristineQuiz.questions) {
-            const pqCorrect = (pq?.options ?? [])
-              .filter((o: any) => isOptionCorrect(o))
-              .map((o: any) => norm(o?.text))
-              .filter((t: string) => !!t);
-            if (pqCorrect.length > 1 && pqCorrect.every((t: string) => confirmed.has(t))) {
-              pristineCorrectTexts = pqCorrect;
-              break;
-            }
-          }
-        }
-      }
-
+    if (isNowCorrect && quizId && isMultipleAnswer) {
+      const confirmed = this._confirmedCorrectClicks.get(qIndex) ?? new Set<string>();
+      const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, confirmed);
       if (pristineCorrectTexts.length > 1) {
         const allConfirmed = pristineCorrectTexts.every((t: string) => confirmed.has(t));
         if (!allConfirmed) isNowCorrect = false;
       }
     }
+    return isNowCorrect;
+  }
+
+  // Resolve pristine correct texts by index lookup, then cross-validate against
+  // confirmed clicks (in shuffled mode the index lookup can hit the wrong
+  // question; the right one's correct texts ALL appear in confirmed clicks).
+  private resolvePristineCorrectTexts(
+    quizId: string,
+    scoringKey: number,
+    confirmed: Set<string>
+  ): string[] {
+    let pristineCorrectTexts: string[] = [];
+    const pristineQuiz = getQuizData().find((qz: any) => qz?.quizId === quizId);
+
+    // PRIMARY: index-based lookup
+    const pristineQ = pristineQuiz?.questions?.[scoringKey];
+    if (pristineQ) {
+      pristineCorrectTexts = (pristineQ.options ?? [])
+        .filter((o: any) => isOptionCorrect(o))
+        .map((o: any) => norm(o?.text))
+        .filter((t: string) => !!t);
+    }
+
+    // CROSS-VALIDATE: if index-based texts don't match confirmed clicks, scan
+    // all questions for one whose correct texts match the confirmed clicks.
+    if (pristineCorrectTexts.length > 1 && confirmed.size > 0) {
+      const allMatch = pristineCorrectTexts.every((t: string) => confirmed.has(t));
+      if (!allMatch && pristineQuiz?.questions) {
+        for (const pq of pristineQuiz.questions) {
+          const pqCorrect = (pq?.options ?? [])
+            .filter((o: any) => isOptionCorrect(o))
+            .map((o: any) => norm(o?.text))
+            .filter((t: string) => !!t);
+          if (pqCorrect.length > 1 && pqCorrect.every((t: string) => confirmed.has(t))) {
+            pristineCorrectTexts = pqCorrect;
+            break;
+          }
+        }
+      }
+    }
+    return pristineCorrectTexts;
+  }
+
+  // Update the correctness map + running count based on now-vs-was correctness.
+  private applyCorrectnessUpdate(scoringKey: number, isNowCorrect: boolean, wasCorrect: boolean): void {
     if (isNowCorrect && !wasCorrect) {
       this.questionCorrectness.set(scoringKey, true);
       this.updateCorrectCountForResults(this.correctCountSig() + 1);
@@ -208,8 +222,6 @@ export class QuizScoringService {
       // value that was set directly by the SOC's display-index path.
       this.questionCorrectness.set(scoringKey, false);
     }
-
-    this.saveQuestionCorrectness();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
