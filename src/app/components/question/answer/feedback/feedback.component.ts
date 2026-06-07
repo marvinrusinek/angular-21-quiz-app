@@ -66,81 +66,93 @@ export class FeedbackComponent {
   }
 
   private updateDisplayMessage(): void {
-    // Cache the signal value once — TypeScript can't narrow null/undefined
-    // across separate signal calls, and re-reading risks a different value
-    // mid-method anyway.
+    // Cache the signal value once — re-reading risks a different value mid-method.
     const cfg = this.feedbackConfig();
     if (!cfg) {
       this.displayMessage.set('');
       return;
     }
 
-    // Prioritize the feedback message already computed by the Parent
-    // (SharedOptionComponent) — but ONLY if the cached "Option N" matches
-    // the live URL question's actual correct option index. Without this
-    // gate, a Q1-built feedback string ("The correct answer is Option 1.")
-    // displays verbatim on Q3 even after navigation.
+    // Prefer the parent-computed feedback, but only if its cached "Option N"
+    // still matches the live URL question (see cachedFeedbackMatchesUrl).
     const cachedFeedback = cfg.feedback?.trim();
     if (cachedFeedback) {
-      let cacheMatchesUrl = true;
-      try {
-        const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
-        if (m) {
-          const urlIdx = Number(m[1]) - 1;
-          const liveQ = this.quizService.questions?.[urlIdx];
-          const correctIdxs: number[] = (liveQ?.options ?? [])
-            .map((o: Option, i: number) => o?.correct ? i + 1 : null)
-            .filter((n: number | null): n is number => n !== null);
-          // If the cached string says "Option N" but the live question's
-          // actual correct option isn't N, fall through and regenerate.
-          const optionMatch = cachedFeedback.match(/Option\s+(\d+)/i);
-          if (optionMatch && correctIdxs.length > 0) {
-            const cachedOptN = Number(optionMatch[1]);
-            cacheMatchesUrl = correctIdxs.includes(cachedOptN);
-          }
-
-          // ALSO reject a cached "Not this one, try again!" when the user
-          // actually clicked an option whose text matches a correct option
-          // in the live URL question. Single-answer questions on the last
-          // index were cementing the negative message because the upstream
-          // click handler couldn't see the canonical correct flag.
-          if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
-            const candidates: string[] = [];
-            const sel: any = cfg.selectedOption;
-            if (sel?.text) candidates.push(norm(sel.text));
-
-            // Also look at the selectedOptionService — it carries the
-            // authoritative committed click for this question, which can
-            // be more current than feedbackConfig.selectedOption when the
-            // upstream click handler hasn't refreshed the config yet.
-            try {
-              const liveSelections =
-                this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
-              for (const s of liveSelections) {
-                if (s?.text) candidates.push(norm(s.text));
-              }
-            } catch { /* ignore */ }
-
-            if (candidates.length && Array.isArray(liveQ?.options)) {
-              for (const candidateText of candidates) {
-                const match = liveQ.options.find(
-                  (o: Option) => norm(o?.text) === candidateText
-                );
-                if (isOptionCorrect(match)) {
-                  cacheMatchesUrl = false;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      } catch {}
-      if (cacheMatchesUrl && cfg.feedback) {
+      if (this.cachedFeedbackMatchesUrl(cfg, cachedFeedback) && cfg.feedback) {
         this.displayMessage.set(cfg.feedback);
         return;
       }
     }
 
+    const msg = this.regenerateFeedbackMessage(cfg);
+    if (msg && msg.trim()) {
+      this.displayMessage.set(msg);
+      return;
+    }
+
+    this.displayMessage.set('');
+  }
+
+  // Prioritize the parent-computed message ONLY if the cached "Option N" matches
+  // the live URL question's correct option — otherwise a Q1 string ("The correct
+  // answer is Option 1.") would display verbatim on Q3 after navigation.
+  private cachedFeedbackMatchesUrl(cfg: FeedbackProps, cachedFeedback: string): boolean {
+    let cacheMatchesUrl = true;
+    try {
+      const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
+      if (m) {
+        const urlIdx = Number(m[1]) - 1;
+        const liveQ = this.quizService.questions?.[urlIdx];
+        const correctIdxs: number[] = (liveQ?.options ?? [])
+          .map((o: Option, i: number) => o?.correct ? i + 1 : null)
+          .filter((n: number | null): n is number => n !== null);
+        // If the cached string says "Option N" but the live question's
+        // actual correct option isn't N, fall through and regenerate.
+        const optionMatch = cachedFeedback.match(/Option\s+(\d+)/i);
+        if (optionMatch && correctIdxs.length > 0) {
+          const cachedOptN = Number(optionMatch[1]);
+          cacheMatchesUrl = correctIdxs.includes(cachedOptN);
+        }
+
+        // ALSO reject a cached "Not this one, try again!" when the user
+        // actually clicked an option whose text matches a correct option
+        // in the live URL question. Single-answer questions on the last
+        // index were cementing the negative message because the upstream
+        // click handler couldn't see the canonical correct flag.
+        if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
+          const candidates: string[] = [];
+          const sel: any = cfg.selectedOption;
+          if (sel?.text) candidates.push(norm(sel.text));
+
+          // Also look at the selectedOptionService — it carries the
+          // authoritative committed click for this question, which can
+          // be more current than feedbackConfig.selectedOption when the
+          // upstream click handler hasn't refreshed the config yet.
+          try {
+            const liveSelections =
+              this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
+            for (const s of liveSelections) {
+              if (s?.text) candidates.push(norm(s.text));
+            }
+          } catch { /* ignore */ }
+
+          if (candidates.length && Array.isArray(liveQ?.options)) {
+            for (const candidateText of candidates) {
+              const match = liveQ.options.find(
+                (o: Option) => norm(o?.text) === candidateText
+              );
+              if (isOptionCorrect(match)) {
+                cacheMatchesUrl = false;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+    return cacheMatchesUrl;
+  }
+
+  private regenerateFeedbackMessage(cfg: FeedbackProps): string {
     const fallbackIndex = Number.isFinite(cfg.idx) ? cfg.idx : 0;
     const selectedQuestionIndex = Number.isFinite(
       (cfg.selectedOption as { questionIndex?: number } | null)?.questionIndex
@@ -182,7 +194,7 @@ export class FeedbackComponent {
     const selected =
       selectedFromMap.length > 0 ? selectedFromMap : fallbackSelected;
 
-    const msg = question
+    return question
       ? this.feedbackService.buildFeedbackMessage(
         question,
         selected,
@@ -191,13 +203,5 @@ export class FeedbackComponent {
         idx
       )
       : '';
-
-    // If feedbackService decided on a message, USE IT and STOP
-    if (msg && msg.trim()) {
-      this.displayMessage.set(msg);
-      return;
-    }
-
-    this.displayMessage.set('');
   }
 }
