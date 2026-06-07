@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { FeedbackProps } from '../../../../shared/models/FeedbackProps.model';
 import { Option } from '../../../../shared/models/Option.model';
+import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 
 import { FeedbackService } from '../../../../shared/services/features/feedback/feedback.service';
 import { QuizService } from '../../../../shared/services/data/quiz.service';
@@ -118,38 +119,49 @@ export class FeedbackComponent {
         // in the live URL question. Single-answer questions on the last
         // index were cementing the negative message because the upstream
         // click handler couldn't see the canonical correct flag.
-        if (cacheMatchesUrl && /not this one/i.test(cachedFeedback)) {
-          const candidates: string[] = [];
-          const sel: any = cfg.selectedOption;
-          if (sel?.text) candidates.push(norm(sel.text));
-
-          // Also look at the selectedOptionService — it carries the
-          // authoritative committed click for this question, which can
-          // be more current than feedbackConfig.selectedOption when the
-          // upstream click handler hasn't refreshed the config yet.
-          try {
-            const liveSelections =
-              this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
-            for (const s of liveSelections) {
-              if (s?.text) candidates.push(norm(s.text));
-            }
-          } catch { /* ignore */ }
-
-          if (candidates.length && Array.isArray(liveQ?.options)) {
-            for (const candidateText of candidates) {
-              const match = liveQ.options.find(
-                (o: Option) => norm(o?.text) === candidateText
-              );
-              if (isOptionCorrect(match)) {
-                cacheMatchesUrl = false;
-                break;
-              }
-            }
-          }
+        if (cacheMatchesUrl && /not this one/i.test(cachedFeedback) &&
+            this.clickedTextMatchesCorrectOption(cfg, urlIdx, liveQ)) {
+          cacheMatchesUrl = false;
         }
       }
     } catch {}
     return cacheMatchesUrl;
+  }
+
+  // True when the user's clicked option text matches a correct option in the
+  // live URL question — used to reject a stale "Not this one" cached message.
+  private clickedTextMatchesCorrectOption(
+    cfg: FeedbackProps,
+    urlIdx: number,
+    liveQ: QuizQuestion | undefined
+  ): boolean {
+    const candidates: string[] = [];
+    const sel: any = cfg.selectedOption;
+    if (sel?.text) candidates.push(norm(sel.text));
+
+    // Also look at the selectedOptionService — it carries the
+    // authoritative committed click for this question, which can
+    // be more current than feedbackConfig.selectedOption when the
+    // upstream click handler hasn't refreshed the config yet.
+    try {
+      const liveSelections =
+        this.selectedOptionService?.getSelectedOptionsForQuestion?.(urlIdx) ?? [];
+      for (const s of liveSelections) {
+        if (s?.text) candidates.push(norm(s.text));
+      }
+    } catch { /* ignore */ }
+
+    if (candidates.length && Array.isArray(liveQ?.options)) {
+      for (const candidateText of candidates) {
+        const match = liveQ.options.find(
+          (o: Option) => norm(o?.text) === candidateText
+        );
+        if (isOptionCorrect(match)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private regenerateFeedbackMessage(cfg: FeedbackProps): string {
