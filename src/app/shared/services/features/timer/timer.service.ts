@@ -461,9 +461,16 @@ export class TimerService implements OnDestroy {
   public freezeAtRecordedTime(questionIndex: number): void {
     if (questionIndex == null || questionIndex < 0) return;
 
-    this.stopTimer?.(undefined, { force: true });
+    // Tear down any active tick subscription DIRECTLY — stopTimer's authority
+    // and anti-thrash guards can no-op here (e.g. right after a fresh start),
+    // which would leave the countdown ticking past the frozen value.
+    if (this.timerSubscription) {
+      this.timerSubscription.unsubscribe();
+      this.timerSubscription = null;
+    }
     this.isTimerRunning = false;
-    this.isTimerStoppedForCurrentQuestion = true;
+    this.isTimerStoppedForCurrentQuestion = true;  // prevent non-forced restart
+    this.hasExpiredForRun = false;
     this._runningForQuestion = questionIndex;
     this.stoppedForQuestion.add(questionIndex);
 
