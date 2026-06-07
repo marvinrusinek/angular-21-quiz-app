@@ -404,186 +404,178 @@ export class SharedOptionInitService {
    * Corresponds to SharedOptionComponent.setupSubscriptions().
    */
   setupSubscriptions(comp: SharedOptionComponentLike): void {
-    const finalReady$ = comp.finalRenderReady$();
-    if (finalReady$) {
-      finalReady$
-        .pipe(takeUntilDestroyed(comp.destroyRef))
-        .subscribe((ready: boolean) => {
-          comp.finalRenderReady = ready;
-        });
-    }
+    this.wireFinalRenderReady(comp);
+    this.wireIndexOptionsFeedback(comp);
+  }
 
-    // Regenerate feedback when quizService index changes
-    // Combine index + latest @Input options to avoid race conditions
+  /** Mirror finalRenderReady$ into comp.finalRenderReady. */
+  private wireFinalRenderReady(comp: SharedOptionComponentLike): void {
+    const finalReady$ = comp.finalRenderReady$();
+    if (!finalReady$) return;
+    finalReady$
+      .pipe(takeUntilDestroyed(comp.destroyRef))
+      .subscribe((ready: boolean) => {
+        comp.finalRenderReady = ready;
+      });
+  }
+
+  /** Regenerate feedback when the question index or latest options change (combined to avoid races). */
+  private wireIndexOptionsFeedback(comp: SharedOptionComponentLike): void {
     const optionsToDisplay$ = comp.optionsToDisplay$ ?? of([] as Option[]);
     combineLatest([
       this.quizService.currentQuestionIndex$.pipe(distinctUntilChanged()),
       optionsToDisplay$
     ])
       .pipe(takeUntilDestroyed(comp.destroyRef))
-      .subscribe(([idx, opts]: [number, Option[]]) => {
-        // Use opts (synced latest options) for logging/logic
+      .subscribe(([idx, opts]: [number, Option[]]) => this.handleIndexOptionsChange(comp, idx, opts));
+  }
 
-        // Reset all state when question index changes
-        // This fixes highlighting/disabled state persisting from previous questions
-        // Use lastProcessedQuestionIndex (internal tracker) instead of @Input currentQuestionIndex
-        // because the @Input might not have been updated yet when this subscription fires
-        if (comp.lastProcessedQuestionIndex !== idx) {
+  private handleIndexOptionsChange(comp: SharedOptionComponentLike, idx: number, opts: Option[]): void {
+    // lastProcessedQuestionIndex is the internal tracker; the @Input may lag this emission.
+    if (comp.lastProcessedQuestionIndex !== idx) {
+      this.applyQuestionChangeReset(comp, idx, opts);
+    }
+    this.regenerateFeedbackForIndex(comp, idx, opts);
+    comp.cdRef.markForCheck();
+  }
 
-          // On Q2+ refresh the quizService.currentQuestionIndex$ is a
-          // BehaviorSubject(0), so this subscription fires twice: once
-          // with the stale idx=0 and once with the real idx from the URL.
-          // The stale emission must NEVER touch component state â€” updating
-          // lastProcessedQuestionIndex or currentQuestionIndex to the wrong
-          // value causes rehydrateUiFromState to resolve the wrong question,
-          // run a clean-slate on Q3's bindings, find no saved state for Q1,
-          // and return â€” blanking the icons. When the real idx arrives and
-          // restores them, the user sees a flash.
-          let urlQuestionIdx = -1;
-          try {
-            const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
-            if (m) urlQuestionIdx = Number(m[1]) - 1;  // URL is 1-based
-          } catch { /* ignore */ }
-          const isStaleIdx = urlQuestionIdx >= 0 && idx !== urlQuestionIdx;
+  /**
+   * On question change: ignore the stale BehaviorSubject(0) emission, else reset
+   * interaction flags + (when bindings don't already align and nothing persisted)
+   * clear visual state, then advance the trackers. Extracted verbatim.
+   */
+  private applyQuestionChangeReset(comp: SharedOptionComponentLike, idx: number, opts: Option[]): void {
+    if (this.isStaleBehaviorSubjectIdx(idx)) return;
 
-          if (isStaleIdx) {
-            // Completely ignore the stale BehaviorSubject(0) emission.
-            // Do NOT update trackers â€” the real idx will arrive shortly.
-          } else {
-            // Skip the state clear when the current bindings are already
-            // aligned with the NEW question's options (same optionIds).
-            const bindingIds = (comp.optionBindings() ?? [])
-              .map((b: any) => b?.option?.optionId)
-              .filter((id: any) => id != null && id !== -1);
-            const optsIds = (opts ?? [])
-              .map((o: Option) => o?.optionId)
-              .filter((id: any) => id != null && id !== -1);
-            const bindingsAlignWithOpts =
-              bindingIds.length > 0 &&
-              optsIds.length > 0 &&
-              bindingIds.length === optsIds.length &&
-              bindingIds.every((id: any) => optsIds.includes(id));
+    const bindingsAlignWithOpts = this.bindingsAlignWithOptions(comp, opts);
+    let hasPersistedForIdx = false;
+    try {
+      const persisted = this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
+      hasPersistedForIdx = persisted.length > 0;
+    } catch { /* ignore */ }
 
-            // Also skip when the target question has persisted selections
-            // that the rehydrate path just applied. Clearing them here would
-            // just force rehydrate to re-apply them, producing the flash.
-            let hasPersistedForIdx = false;
-            try {
-              const persisted = this.selectedOptionService.getSelectedOptionsForQuestion(idx) ?? [];
-              hasPersistedForIdx = persisted.length > 0;
-            } catch { /* ignore */ }
+    // Always reset interaction flags so generateOptionBindings doesn't early-return.
+    comp.hasUserClicked.set(false);
+    comp.optionBindingsInitialized.set(false);
 
-            // Always reset interaction flags on question change so that
-            // generateOptionBindings doesn't early-return with stale bindings.
-            comp.hasUserClicked.set(false);
-            comp.optionBindingsInitialized.set(false);
+    if (!bindingsAlignWithOpts && !hasPersistedForIdx) {
+      this.resetStateForNewQuestion(comp);
+      this.clearOptionVisualState(comp);
+    }
 
-            if (!bindingsAlignWithOpts && !hasPersistedForIdx) {
-              this.resetStateForNewQuestion(comp);
+    comp.lastProcessedQuestionIndex = idx;
+    if (comp.currentQuestionIndex !== idx) {
+      comp.currentQuestionIndex = idx;
+    }
+    comp.cdRef.markForCheck();
+  }
 
-              // Clear highlighting state
-              comp.highlightedOptionIds.clear();
-              comp.selectedOptions.clear();
-              comp.feedbackConfigs = {};
-              comp.showFeedback.set(false);
-              comp.showFeedbackForOption = {};
+  /** The index emission is the stale BehaviorSubject(0) when it disagrees with the URL index. */
+  private isStaleBehaviorSubjectIdx(idx: number): boolean {
+    let urlQuestionIdx = -1;
+    try {
+      const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
+      if (m) urlQuestionIdx = Number(m[1]) - 1;
+    } catch { /* ignore */ }
+    return urlQuestionIdx >= 0 && idx !== urlQuestionIdx;
+  }
 
-              // Reset option bindings to clear visual state
-              for (const b of comp.optionBindings() ?? []) {
-                b.isSelected = false;
-                b.showFeedback = false;
-                b.highlightCorrect = false;
-                b.highlightIncorrect = false;
-                b.highlightCorrectAfterIncorrect = false;
-                b.disabled = false;
-                if (b.option) {
-                  b.option.selected = false;
-                  b.option.showIcon = false;
-                }
-              }
-            }
+  /** Do the current bindings' optionIds already match the new question's options? */
+  private bindingsAlignWithOptions(comp: SharedOptionComponentLike, opts: Option[]): boolean {
+    const bindingIds = (comp.optionBindings() ?? [])
+      .map((b: any) => b?.option?.optionId)
+      .filter((id: any) => id != null && id !== -1);
+    const optsIds = (opts ?? [])
+      .map((o: Option) => o?.optionId)
+      .filter((id: any) => id != null && id !== -1);
+    return bindingIds.length > 0 &&
+      optsIds.length > 0 &&
+      bindingIds.length === optsIds.length &&
+      bindingIds.every((id: any) => optsIds.includes(id));
+  }
 
-            // Update the internal tracker
-            comp.lastProcessedQuestionIndex = idx;
-            // Also update currentQuestionIndex if it's stale
-            if (comp.currentQuestionIndex !== idx) {
-              comp.currentQuestionIndex = idx;
-            }
+  /** Clear highlight/feedback state and reset every binding's visual flags. Extracted verbatim. */
+  private clearOptionVisualState(comp: SharedOptionComponentLike): void {
+    comp.highlightedOptionIds.clear();
+    comp.selectedOptions.clear();
+    comp.feedbackConfigs = {};
+    comp.showFeedback.set(false);
+    comp.showFeedbackForOption = {};
+    for (const b of comp.optionBindings() ?? []) {
+      b.isSelected = false;
+      b.showFeedback = false;
+      b.highlightCorrect = false;
+      b.highlightIncorrect = false;
+      b.highlightCorrectAfterIncorrect = false;
+      b.disabled = false;
+      if (b.option) {
+        b.option.selected = false;
+        b.option.showIcon = false;
+      }
+    }
+  }
 
-            comp.cdRef.markForCheck();
-          }
-        }
+  /** Rebuild feedback configs for the question at idx and keep feedback on the last-selected option. */
+  private regenerateFeedbackForIndex(comp: SharedOptionComponentLike, idx: number, opts: Option[]): void {
+    if (!(idx >= 0 && Array.isArray(opts) && opts.length > 0)) return;
+    const question = comp.getQuestionAtDisplayIndex(idx);
+    if (!question?.options) return;
 
-        // Use opts (synced) instead of this.optionsToDisplay (may be stale)
-        if (idx >= 0 && Array.isArray(opts) && opts.length > 0) {
-          //  Use helper method that respects shuffle state
-          const question = comp.getQuestionAtDisplayIndex(idx);
+    const selections = this.selectedOptionService.getSelectedOptionsForQuestion(idx) || [];
+    const freshFeedback = this.feedbackService.buildFeedbackMessage(
+      question, selections, false, false, idx, comp.optionsToDisplay
+    );
 
-          if (question?.options) {
-            const selections = this.selectedOptionService.getSelectedOptionsForQuestion(idx) || [];
-            const freshFeedback = this.feedbackService.buildFeedbackMessage(
-              question,
-              selections,
-              false,
-              false,
-              idx,
-              comp.optionsToDisplay
-            );
+    comp.feedbackConfigs = {};
+    comp.activeFeedbackConfig.set(null);
 
-            comp.feedbackConfigs = {};
-            comp.activeFeedbackConfig.set(null);
+    const { lastSelectedId, hasSelection } = this.applyFeedbackConfigsToBindings(comp, opts, question, freshFeedback);
 
-            let lastSelectedId = -1;
-            let hasSelection = false;
+    if (hasSelection) {
+      comp.showFeedback.set(true);
+      // Keep feedback on the most recently clicked option unless it's still valid.
+      const isCurrentFeedbackSelected =
+        comp.lastFeedbackOptionId !== -1 &&
+        comp.selectedOptions.has(comp.lastFeedbackOptionId);
+      if (!isCurrentFeedbackSelected) {
+        comp.lastFeedbackOptionId = lastSelectedId;
+      }
+    }
+  }
 
-            for (const [i, b] of (comp.optionBindings() ?? []).entries()) {
-              if (!b.option) continue;
+  /** Write fresh feedback into every binding + its feedback config; return the last-selected id. Extracted verbatim. */
+  private applyFeedbackConfigsToBindings(comp: SharedOptionComponentLike, opts: Option[], question: any, freshFeedback: string): { lastSelectedId: number; hasSelection: boolean } {
+    let lastSelectedId = -1;
+    let hasSelection = false;
+    for (const [i, b] of (comp.optionBindings() ?? []).entries()) {
+      if (!b.option) continue;
 
-              b.option.feedback = freshFeedback;
-              b.feedback = freshFeedback;
+      b.option.feedback = freshFeedback;
+      b.feedback = freshFeedback;
 
-              const key = comp.keyOf(b.option, i);
-              const optId = (b.option.optionId != null && b.option.optionId > -1) ? b.option.optionId : i;
+      const key = comp.keyOf(b.option, i);
+      const optId = (b.option.optionId != null && b.option.optionId > -1) ? b.option.optionId : i;
 
-              if (b.isSelected) {
-                lastSelectedId = optId;
-                hasSelection = true;
-              }
+      if (b.isSelected) {
+        lastSelectedId = optId;
+        hasSelection = true;
+      }
 
-              comp.feedbackConfigs[key] = {
-                feedback: freshFeedback,
-                showFeedback: true,
-                options: opts,
-                question: question,
-                selectedOption: b.option,
-                correctMessage: freshFeedback,
-                idx: b.index
-              };
+      comp.feedbackConfigs[key] = {
+        feedback: freshFeedback,
+        showFeedback: true,
+        options: opts,
+        question: question,
+        selectedOption: b.option,
+        correctMessage: freshFeedback,
+        idx: b.index
+      };
 
-              if (comp.feedbackConfigs[key].showFeedback) {
-                comp.activeFeedbackConfig.set(comp.feedbackConfigs[key]);
-              }
-            }
-
-            if (hasSelection) {
-              comp.showFeedback.set(true);
-
-              // Only overwrite lastFeedbackOptionId if it's invalid or no longer selected.
-              // This ensures feedback stays with the most recently clicked option (which
-              // displayFeedbackForOption sets) rather than jumping to the last option in the list.
-              const isCurrentFeedbackSelected =
-                comp.lastFeedbackOptionId !== -1 &&
-                comp.selectedOptions.has(comp.lastFeedbackOptionId);
-
-              if (!isCurrentFeedbackSelected) {
-                comp.lastFeedbackOptionId = lastSelectedId;
-              }
-            }
-          }
-        }
-
-        comp.cdRef.markForCheck();
-      });
+      if (comp.feedbackConfigs[key].showFeedback) {
+        comp.activeFeedbackConfig.set(comp.feedbackConfigs[key]);
+      }
+    }
+    return { lastSelectedId, hasSelection };
   }
 
   /**
@@ -764,7 +756,7 @@ export class SharedOptionInitService {
           // is a false positive (e.g. options shuffled on refresh).
           const sIdx = (s as any).displayIndex ?? (s as any).index;
           if (sIdx !== idx) return false;
-          // Position matches â€” only accept if we can't verify by text
+          // Position matches - only accept if we can't verify by text
           const sText2 = norm((s as any).text);
           if (optText && sText2 && optText !== sText2) return false;
           matchedSaved = s;
