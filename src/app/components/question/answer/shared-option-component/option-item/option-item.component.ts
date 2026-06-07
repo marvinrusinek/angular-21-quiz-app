@@ -517,17 +517,44 @@ export class OptionItemComponent implements OnInit {
   }
 
   getOptionBackgroundColor(): string | null {
-    // AUTO-REVEAL: persistent flag wins over all other guards.
-    // Must be checked FIRST — the revisit guard below would return null
-    // for unclicked correct options on unresolved multi-answer questions,
-    // suppressing the green highlight that auto-reveal set.
+    const auto = this.autoRevealColor();
+    if (auto !== undefined) return auto;
+
+    const fullyResolved = this.fullyResolvedRevisitColor();
+    if (fullyResolved !== undefined) return fullyResolved;
+
+    const partial = this.partialMultiSuppressColor();
+    if (partial !== undefined) return partial;
+
+    const timer = this.timerColor();
+    if (timer !== undefined) return timer;
+
+    const correctPerfect = this.correctPerfectColor();
+    if (correctPerfect !== undefined) return correctPerfect;
+
+    if (!this.shouldHighlightOption()) {
+      return this.suppressedHighlightColor();
+    }
+
+    // Green if correct, red if incorrect
+    return this.isCurrentOptionCorrect() ? CORRECT_COLOR : INCORRECT_COLOR;
+  }
+
+  // AUTO-REVEAL: persistent flag wins over all other guards.
+  // Must be checked FIRST — the revisit guard below would return null
+  // for unclicked correct options on unresolved multi-answer questions,
+  // suppressing the green highlight that auto-reveal set.
+  private autoRevealColor(): string | undefined {
     if (this.binding()?._autoRevealedCorrect === true ||
         this.binding()?.option?._autoRevealedCorrect === true) {
       return CORRECT_COLOR;
     }
+    return undefined;
+  }
 
-    // Previous-revisit: on a fully-resolved correct question, correct
-    // options must be green and incorrect must be dark gray.
+  // Previous-revisit: on a fully-resolved correct question, correct
+  // options must be green and incorrect must be dark gray.
+  private fullyResolvedRevisitColor(): string | undefined {
     try {
       const _qIdxFR = this.resolveQuestionIndex();
       const resFR = this.questionResolution.resolveQuestionState(_qIdxFR, { includeDot: false });
@@ -538,9 +565,12 @@ export class OptionItemComponent implements OnInit {
         return isCanonCorrect ? CORRECT_COLOR : DISABLED_COLOR;
       }
     } catch (e) { console.error('getOptionBackgroundColor fullyResolved check failed:', e); }
+    return undefined;
+  }
 
-    // Imperfect-revisit / partial-multi guard: suppress green for unpicked
-    // correct options on partial multi-answer states.
+  // Imperfect-revisit / partial-multi guard: suppress green for unpicked
+  // correct options on partial multi-answer states.
+  private partialMultiSuppressColor(): null | undefined {
     try {
       if (!this._userHasClicked && !this.binding()?.isSelected) {
         const _qIdxRev = this.resolveQuestionIndex();
@@ -551,8 +581,11 @@ export class OptionItemComponent implements OnInit {
         }
       }
     } catch (e) { console.error('getOptionBackgroundColor revisit-guard failed:', e); }
+    return undefined;
+  }
 
-    // Timer-expiry handler stamped this binding — use stamped classes for color
+  // Timer-expiry handler stamped this binding — use stamped classes for color
+  private timerColor(): string | null | undefined {
     if (this.isTimerStamped()) {
       if (this.isStampedCorrect()) return CORRECT_COLOR;
       const wasSelected = this.binding()?.isSelected || this._wasSelected;
@@ -567,7 +600,10 @@ export class OptionItemComponent implements OnInit {
         || this.isSelectedForCurrentQuestion();
       return wasSelected && !this.isCurrentOptionCorrect() ? INCORRECT_COLOR : null;
     }
+    return undefined;
+  }
 
+  private correctPerfectColor(): string | undefined {
     if (this.isCurrentOptionCorrect()) {
       const _qIdxARBg = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
       const perfectMapARBg =
@@ -577,100 +613,116 @@ export class OptionItemComponent implements OnInit {
         return CORRECT_COLOR;
       }
     }
+    return undefined;
+  }
 
-    const _sh = this.shouldHighlightOption();
-    if (!_sh) {
-      // Single-answer suppression: while no correct option has been selected
-      // for this question, never gray any non-selected option. Upstream
-      // pipelines occasionally leak b.disabled=true onto previously-clicked
-      // and never-clicked single-answer bindings, which would otherwise
-      // paint them gray after the user picks a 2nd incorrect option. The
-      // user must remain free to keep trying with a clear visual state.
-      const _qIdxSA = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-      if (this.type() === 'single' && !this.binding()?.isSelected) {
-        const liveQTSA =
-          (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdxSA]?.questionText
-          ?? (this.quizService as any)?.questions?.[_qIdxSA]?.questionText;
-        const pristineCorrectTextsSA =
-          this.quizService.getPristineCorrectTextsForQuestion(liveQTSA);
-        if (pristineCorrectTextsSA.size === 1) {
-          const selectionsMapSA = this.selectedOptionService.selectedOptionsMapSig();
-          const selectionsSA = selectionsMapSA.get(_qIdxSA) ?? [];
-          const noCorrectSelectedSA = !selectionsSA.some((s: SelectedOption) => {
-            const txt = norm(s?.text);
-            return !!txt && pristineCorrectTextsSA.has(txt);
-          });
-          if (noCorrectSelectedSA) return null;
-        }
+  // Color when shouldHighlightOption() is false (suppressed-highlight path).
+  private suppressedHighlightColor(): string | null {
+    const saSuppress = this.singleAnswerNoCorrectSuppress();
+    if (saSuppress !== undefined) return saSuppress;
+
+    const saIncorrect = this.singleAnswerIncorrectRed();
+    if (saIncorrect !== undefined) return saIncorrect;
+
+    // Dark gray for disabled unselected options (e.g. remaining
+    // incorrect after all correct answers selected in multi-answer).
+    // Gate on isDisabled() (authoritative) instead of the raw
+    // binding.disabled flag — the flag can linger as true from a
+    // prior question's timer-expiry stamping while isDisabled()
+    // correctly returns false, producing a gray-but-enabled option.
+    if (this.isDisabled() && !this.binding()?.isSelected) return DISABLED_COLOR;
+
+    const maGray = this.multiAnswerGray();
+    if (maGray !== undefined) return maGray;
+
+    return null;
+  }
+
+  // Single-answer suppression: while no correct option has been selected
+  // for this question, never gray any non-selected option. Upstream
+  // pipelines occasionally leak b.disabled=true onto previously-clicked
+  // and never-clicked single-answer bindings, which would otherwise
+  // paint them gray after the user picks a 2nd incorrect option. The
+  // user must remain free to keep trying with a clear visual state.
+  private singleAnswerNoCorrectSuppress(): null | undefined {
+    const _qIdxSA = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+    if (this.type() === 'single' && !this.binding()?.isSelected) {
+      const liveQTSA =
+        (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdxSA]?.questionText
+        ?? (this.quizService as any)?.questions?.[_qIdxSA]?.questionText;
+      const pristineCorrectTextsSA =
+        this.quizService.getPristineCorrectTextsForQuestion(liveQTSA);
+      if (pristineCorrectTextsSA.size === 1) {
+        const selectionsMapSA = this.selectedOptionService.selectedOptionsMapSig();
+        const selectionsSA = selectionsMapSA.get(_qIdxSA) ?? [];
+        const noCorrectSelectedSA = !selectionsSA.some((s: SelectedOption) => {
+          const txt = norm(s?.text);
+          return !!txt && pristineCorrectTextsSA.has(txt);
+        });
+        if (noCorrectSelectedSA) return null;
       }
+    }
+    return undefined;
+  }
 
-      // Single-answer: previously-clicked incorrect options should show
-      // red (not gray) once the correct answer has been found. Check
-      // binding flags first, then fall back to _selectionHistory
-      // (accumulative — unlike selectedOptionsMapSig which only keeps
-      // the latest pick for single-answer questions).
-      if (this.type() === 'single' && !this.binding()?.isSelected && !this.isCurrentOptionCorrect()) {
-        const b = this.binding();
-        const wasClickedByFlags = b?.option?.showIcon || b?.option?.highlight || b?.highlightIncorrect;
-        if (wasClickedByFlags) {
-          return INCORRECT_COLOR;
-        }
-        // Fallback: check accumulative selection history
-        const _qIdxHist = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-        const selHistory = this.selectedOptionService._selectionHistory.get(_qIdxHist) ?? [];
-        const optText = norm(b?.option?.text);
-        if (optText && selHistory.some((s: SelectedOption) => norm(s?.text) === optText)) {
-          return INCORRECT_COLOR;
-        }
+  // Single-answer: previously-clicked incorrect options should show
+  // red (not gray) once the correct answer has been found. Check
+  // binding flags first, then fall back to _selectionHistory
+  // (accumulative — unlike selectedOptionsMapSig which only keeps
+  // the latest pick for single-answer questions).
+  private singleAnswerIncorrectRed(): string | undefined {
+    if (this.type() === 'single' && !this.binding()?.isSelected && !this.isCurrentOptionCorrect()) {
+      const b = this.binding();
+      const wasClickedByFlags = b?.option?.showIcon || b?.option?.highlight || b?.highlightIncorrect;
+      if (wasClickedByFlags) {
+        return INCORRECT_COLOR;
       }
+      // Fallback: check accumulative selection history
+      const _qIdxHist = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+      const selHistory = this.selectedOptionService._selectionHistory.get(_qIdxHist) ?? [];
+      const optText = norm(b?.option?.text);
+      if (optText && selHistory.some((s: SelectedOption) => norm(s?.text) === optText)) {
+        return INCORRECT_COLOR;
+      }
+    }
+    return undefined;
+  }
 
-      // Dark gray for disabled unselected options (e.g. remaining
-      // incorrect after all correct answers selected in multi-answer).
-      // Gate on isDisabled() (authoritative) instead of the raw
-      // binding.disabled flag — the flag can linger as true from a
-      // prior question's timer-expiry stamping while isDisabled()
-      // correctly returns false, producing a gray-but-enabled option.
-      if (this.isDisabled() && !this.binding()?.isSelected) return DISABLED_COLOR;
-
-      // Multi-answer data-driven gray: when the user has selected every
-      // pristine-correct option for this question, every unselected
-      // (incorrect) option goes gray. Mirrors the isDisabled() check so
-      // visuals stay in lockstep without depending on _multiAnswerPerfect
-      // or b.disabled flags being set in sync.
-      if (this.type() === 'multiple' && !this.binding()?.isSelected) {
-        const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-        const liveQTBg =
-          (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
-          ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText;
-        const pristineCorrectTextsBg =
-          this.quizService.getPristineCorrectTextsForQuestion(liveQTBg);
-        if (pristineCorrectTextsBg.size > 0) {
-          // Read the signal directly so OnPush auto-tracks selection changes.
-          const selectionsMapBg = this.selectedOptionService.selectedOptionsMapSig();
-          const selectionsBg = selectionsMapBg.get(_qIdx) ?? [];
-          const selectedTextsBg = new Set(
-            selectionsBg.map((s: SelectedOption) => norm(s?.text)).filter((t: string) => !!t)
-          );
-          const allPristineCorrectSelectedBg =
-            [...pristineCorrectTextsBg].every(t => selectedTextsBg.has(t));
-          const myTextBg = norm(this.binding()?.option?.text);
-          if (allPristineCorrectSelectedBg && !selectedTextsBg.has(myTextBg)) {
-            return DISABLED_COLOR;
-          }
-        }
-        // Legacy flag fallback
-        const perfectMap =
-          this.quizService._multiAnswerPerfect;
-        if (perfectMap?.get(_qIdx) === true && !this.isCurrentOptionCorrect()) {
+  // Multi-answer data-driven gray: when the user has selected every
+  // pristine-correct option for this question, every unselected
+  // (incorrect) option goes gray. Mirrors the isDisabled() check so
+  // visuals stay in lockstep without depending on _multiAnswerPerfect
+  // or b.disabled flags being set in sync.
+  private multiAnswerGray(): string | undefined {
+    if (this.type() === 'multiple' && !this.binding()?.isSelected) {
+      const _qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+      const liveQTBg =
+        (this.quizService as any)?.getQuestionsInDisplayOrder?.()?.[_qIdx]?.questionText
+        ?? (this.quizService as any)?.questions?.[_qIdx]?.questionText;
+      const pristineCorrectTextsBg =
+        this.quizService.getPristineCorrectTextsForQuestion(liveQTBg);
+      if (pristineCorrectTextsBg.size > 0) {
+        // Read the signal directly so OnPush auto-tracks selection changes.
+        const selectionsMapBg = this.selectedOptionService.selectedOptionsMapSig();
+        const selectionsBg = selectionsMapBg.get(_qIdx) ?? [];
+        const selectedTextsBg = new Set(
+          selectionsBg.map((s: SelectedOption) => norm(s?.text)).filter((t: string) => !!t)
+        );
+        const allPristineCorrectSelectedBg =
+          [...pristineCorrectTextsBg].every(t => selectedTextsBg.has(t));
+        const myTextBg = norm(this.binding()?.option?.text);
+        if (allPristineCorrectSelectedBg && !selectedTextsBg.has(myTextBg)) {
           return DISABLED_COLOR;
         }
       }
-      return null;
+      // Legacy flag fallback
+      const perfectMap =
+        this.quizService._multiAnswerPerfect;
+      if (perfectMap?.get(_qIdx) === true && !this.isCurrentOptionCorrect()) {
+        return DISABLED_COLOR;
+      }
     }
-
-    // Green if correct, red if incorrect
-    const result = this.isCurrentOptionCorrect() ? CORRECT_COLOR : INCORRECT_COLOR;
-    return result;
+    return undefined;
   }
 
   shouldShowFeedback(): boolean {
