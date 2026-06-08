@@ -388,7 +388,13 @@ export class QuizSetupService {
     this.quizStateService.resetInteraction();
     if (direction === 'next') {
       const destIndex = host.currentQuestionIndex() + 1;
-      if (destIndex < host.totalQuestions()) {
+      // Only reset a genuinely FRESH destination to a blue/unanswered dot.
+      // When advancing forward onto an already-answered question (revisit via
+      // Next), preserve its dot status so it stays correct/wrong and its timer
+      // stays frozen — deleting it here was re-arming the countdown.
+      const destAlreadyAnswered =
+        this.selectedOptionService.clickConfirmedDotStatus.has(destIndex);
+      if (destIndex < host.totalQuestions() && !destAlreadyAnswered) {
         this.dotStatusService.clearForIndex(destIndex);
         this.selectedOptionService.lastClickedCorrectByQuestion.delete(destIndex);
         this.selectedOptionService.clickConfirmedDotStatus.delete(destIndex);
