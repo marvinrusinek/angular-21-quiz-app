@@ -436,12 +436,10 @@ export class TimerService implements OnDestroy {
     }
 
     // Correctly-answered questions don't re-run their timer — freeze at the
-    // recorded time so a revisit shows the seconds remaining, not a fresh
-    // countdown. Use the durable dot-status (survives selection-clearing on
-    // navigation) plus the live selection check for the current question.
-    const answeredCorrectly =
-      this.selectedOptionService?.clickConfirmedDotStatus?.get?.(questionIndex) === 'correct';
-    if (answeredCorrectly || this.selectedOptionService?.isQuestionAnswered?.(questionIndex)) {
+    // recorded seconds-remaining instead. Gate ONLY on the durable dot-status
+    // (a selection-based check falsely fires for unanswered questions that
+    // hold stale selections, freezing them at a bogus value).
+    if (this.selectedOptionService?.clickConfirmedDotStatus?.get?.(questionIndex) === 'correct') {
       this.freezeAtRecordedTime(questionIndex);
       return;
     }
@@ -477,8 +475,13 @@ export class TimerService implements OnDestroy {
     this._runningForQuestion = questionIndex;
     this.stoppedForQuestion.add(questionIndex);
 
+    // Only paint the recorded seconds-remaining when we actually have a
+    // positive recorded time. No bogus 0:00 fallback — leave the current
+    // display untouched if nothing was captured (the timer is still stopped).
     const taken = this.elapsedTimes[questionIndex];
-    this.elapsedTimeSig.set(typeof taken === 'number' && taken > 0 ? taken : this.timePerQuestion);
+    if (typeof taken === 'number' && taken > 0) {
+      this.elapsedTimeSig.set(taken);
+    }
   }
 
   public resetTimerFlagsFor(questionIndex: number): void {

@@ -218,11 +218,10 @@ export class QuizNavigationService {
       if (!fresh) return false;
 
       // Correctly-answered destination on revisit: freeze the timer at the
-      // recorded time (seconds remaining) instead of a fresh countdown. Use the
-      // durable dot-status since selections may have been cleared on navigation.
-      const answeredCorrectly =
-        this.selectedOptionService.clickConfirmedDotStatus?.get?.(index) === 'correct';
-      if (answeredCorrectly || this.selectedOptionService.isQuestionAnswered(index)) {
+      // recorded seconds-remaining. Gate ONLY on the durable dot-status — a
+      // selection-based check falsely fires for unanswered questions holding
+      // stale selections, flashing them to a bogus 0:00.
+      if (this.selectedOptionService.clickConfirmedDotStatus?.get?.(index) === 'correct') {
         this.timerService.freezeAtRecordedTime(index);
       }
 
