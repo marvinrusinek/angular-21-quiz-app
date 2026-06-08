@@ -23,6 +23,7 @@ import { SelectionMessageService } from '../features/selection-message/selection
 import { TimerService } from '../features/timer/timer.service';
 import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 
+import { withCorrectCountBanner } from '../../utils/correct-count-banner';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 
@@ -610,7 +611,7 @@ export class QuizNavigationService {
       }
       if (numCorrect > 1 && totalOpts > 0) {
         const banner = this.quizQuestionManagerService.getNumberOfCorrectAnswersText(numCorrect, totalOpts);
-        targetQText = `${rawQText} <span class="correct-count">${banner}</span>`;
+        targetQText = withCorrectCountBanner(rawQText, banner);
       }
     } catch { }
     return targetQText;

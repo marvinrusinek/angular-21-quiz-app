@@ -13,6 +13,7 @@ import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+import { withCorrectCountBanner } from '../../../utils/correct-count-banner';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
@@ -208,7 +209,7 @@ export class QuizContentDisplayService {
     } catch { /* ignore */ }
     if (numCorrect > 1 && sourceOpts.length) {
       const banner = this.quizQuestionManagerService.getNumberOfCorrectAnswersText(numCorrect, sourceOpts.length);
-      qDisplay = `${qDisplay} <span class="correct-count">${banner}</span>`;
+      qDisplay = withCorrectCountBanner(qDisplay, banner);
     }
     return { qDisplay, numCorrect };
   }

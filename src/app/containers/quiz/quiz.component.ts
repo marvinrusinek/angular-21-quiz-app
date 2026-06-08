@@ -57,6 +57,7 @@ import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle
 import { QUESTION_ROUTE_REGEX } from '../../shared/constants/route-patterns';
 
 import { ChangeRouteAnimation } from '../../animations/animations';
+import { withCorrectCountBanner } from '../../shared/utils/correct-count-banner';
 import { isOptionCorrect } from '../../shared/utils/is-option-correct';
 import { norm } from '../../shared/utils/text-norm';
 
@@ -235,7 +236,7 @@ export class QuizComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const suffix = numCorrect === 1 ? 'answer is' : 'answers are';
     const banner = `(${numCorrect} ${suffix} correct)`;
-    return `${baseText} <span class="correct-count">${banner}</span>`;
+    return withCorrectCountBanner(baseText, banner);
   });
 
   // ── Template getters ──────────────────────────────────────────

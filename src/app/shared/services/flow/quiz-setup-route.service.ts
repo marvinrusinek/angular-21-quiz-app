@@ -23,6 +23,7 @@ import { SelectionMessageService } from '../features/selection-message/selection
 import { TimerService } from '../features/timer/timer.service';
 
 import type { QuizComponent } from '../../../containers/quiz/quiz.component';
+import { withCorrectCountBanner } from '../../utils/correct-count-banner';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 
@@ -404,7 +405,7 @@ export class QuizSetupRouteService {
     if (numCorrect > 1 && opts.length > 0) {
       const pluralSuffix = numCorrect === 1 ? 'answer is' : 'answers are';
       const banner = `(${numCorrect} ${pluralSuffix} correct)`;
-      return `${rawQ} <span class="correct-count">${banner}</span>`;
+      return withCorrectCountBanner(rawQ, banner);
     }
     return rawQ;
   }

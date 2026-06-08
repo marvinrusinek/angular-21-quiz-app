@@ -9,6 +9,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 
 import type { CodelabQuizContentComponent } from '../../../../containers/quiz/quiz-content/codelab-quiz-content.component';
+import { withCorrectCountBanner } from '../../../utils/correct-count-banner';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
@@ -741,9 +742,9 @@ export class CqcFetGuardService {
         const banner = host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
           correctCount, totalOpts
         );
-        return `${urlQ.questionText} <span class="correct-count">${banner}</span>`;
+        return withCorrectCountBanner(urlQ.questionText, banner);
       } catch {
-        return `${urlQ.questionText} <span class="correct-count">(${correctCount} answers are correct)</span>`;
+        return withCorrectCountBanner(urlQ.questionText, `(${correctCount} answers are correct)`);
       }
     }
     return urlQ.questionText;
@@ -900,7 +901,7 @@ export class CqcFetGuardService {
           const banner = host.quizQuestionManagerService.getNumberOfCorrectAnswersText(
             numCorrect, totalOpts
           );
-          display = `${rawQ} <span class="correct-count">${banner}</span>`;
+          display = withCorrectCountBanner(rawQ, banner);
         } catch { /* ignore */ }
       }
       return display;
