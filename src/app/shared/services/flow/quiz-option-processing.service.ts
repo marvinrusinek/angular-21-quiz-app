@@ -305,6 +305,7 @@ export class QuizOptionProcessingService {
     const clickedIsCorrect = payloadSaysCorrect || matchedCorrectOption || indexMatchedCorrect || liveCorrectness === true;
 
     if (clickedIsCorrect) {
+      console.log('[TIMER-DIAG] markedCorrect idx=', idx);
       this.quizPersistence.setPersistedDotStatus(quizId, idx, 'correct');
       this.dotStatusService.pendingDotStatusOverrides.set(idx, 'correct');
       this.dotStatusService.dotStatusCache.set(idx, 'correct');
