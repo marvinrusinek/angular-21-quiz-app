@@ -435,10 +435,13 @@ export class TimerService implements OnDestroy {
       return;
     }
 
-    // Answered (interacted) questions don't re-run their timer — freeze at the
-    // recorded time taken so a revisit shows where the countdown stopped,
-    // not a fresh full countdown.
-    if (this.selectedOptionService?.isQuestionAnswered?.(questionIndex)) {
+    // Correctly-answered questions don't re-run their timer — freeze at the
+    // recorded time so a revisit shows the seconds remaining, not a fresh
+    // countdown. Use the durable dot-status (survives selection-clearing on
+    // navigation) plus the live selection check for the current question.
+    const answeredCorrectly =
+      this.selectedOptionService?.clickConfirmedDotStatus?.get?.(questionIndex) === 'correct';
+    if (answeredCorrectly || this.selectedOptionService?.isQuestionAnswered?.(questionIndex)) {
       this.freezeAtRecordedTime(questionIndex);
       return;
     }

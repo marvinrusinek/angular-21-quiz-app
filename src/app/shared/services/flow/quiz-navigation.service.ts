@@ -217,10 +217,12 @@ export class QuizNavigationService {
       const fresh = await this.fetchAndEmitQuestion(index);
       if (!fresh) return false;
 
-      // Answered destination (selections preserved on revisit, e.g. a
-      // correctly-answered/locked question): freeze the timer at the recorded
-      // time taken instead of leaving it reset to a full countdown.
-      if (this.selectedOptionService.isQuestionAnswered(index)) {
+      // Correctly-answered destination on revisit: freeze the timer at the
+      // recorded time (seconds remaining) instead of a fresh countdown. Use the
+      // durable dot-status since selections may have been cleared on navigation.
+      const answeredCorrectly =
+        this.selectedOptionService.clickConfirmedDotStatus?.get?.(index) === 'correct';
+      if (answeredCorrectly || this.selectedOptionService.isQuestionAnswered(index)) {
         this.timerService.freezeAtRecordedTime(index);
       }
 
