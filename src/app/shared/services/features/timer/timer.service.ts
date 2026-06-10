@@ -496,11 +496,7 @@ export class TimerService implements OnDestroy {
     // when nothing was captured (the timer is still stopped either way).
     const activeIdx = this.normalizeQuestionIndex(this.quizService?.currentQuestionIndex);
     const taken = this.elapsedTimes[questionIndex];
-    const willPaint = questionIndex === activeIdx && typeof taken === 'number' && taken > 0;
-    console.log('[TIMER-DIAG3] freeze idx=', questionIndex, 'activeIdx(currentQ)=', activeIdx,
-      'elapsedTimes[idx]=', taken, 'willPaint=', willPaint,
-      'elapsedTimes=', JSON.stringify(this.elapsedTimes), 'displaySig=', this.elapsedTimeSig());
-    if (willPaint) {
+    if (questionIndex === activeIdx && typeof taken === 'number' && taken > 0) {
       this.elapsedTimeSig.set(taken);
     }
   }
