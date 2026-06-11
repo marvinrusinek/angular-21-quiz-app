@@ -67,7 +67,7 @@ export class QuizSetupService {
 
   // ── public methods ──────────────────────────────────────────────
 
-  // â”€â”€â”€ Route (delegated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Route (delegated) ───────────────────────────────────────
 
   subscribeToRouteEvents(host: Host): void {
     this.routeService.subscribeToRouteEvents(
@@ -118,7 +118,7 @@ export class QuizSetupService {
     return this.routeService.loadQuestionByRouteIndex(host, routeIndex);
   }
 
-  // â”€â”€â”€ Data (delegated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Data (delegated) ────────────────────────────────────────
 
   async loadQuestions(host: Host): Promise<void> {
     return this.dataService.loadQuestions(host);
@@ -170,7 +170,7 @@ export class QuizSetupService {
         // Seed the question text against the question the URL is targeting,
         // not always questions[0]. Direct navigation to /question/.../3
         // would otherwise display Q1's text until a downstream emission
-        // overrides it â€” visible to the user as a "Q1 then Q3" flash, or
+        // overrides it — visible to the user as a "Q1 then Q3" flash, or
         // worse, as Q1 stuck if the override never lands.
         const currentIdx = host.currentQuestionIndex();
         const seedIdx = Number.isFinite(currentIdx) && currentIdx >= 0
@@ -206,9 +206,9 @@ export class QuizSetupService {
     this.dataService.selectedAnswer(host, optionIndex);
   }
 
-  // â”€â”€â”€ Remaining inline: lifecycle + option/explanation handlers â”€â”€â”€
+  // ─── Remaining inline: lifecycle + option/explanation handlers ───
 
-  // â”€â”€ Constructor wiring (subscriptions + observables) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Constructor wiring (subscriptions + observables) ──────────
   wireConstructor(host: Host): void {
     const qqc = host.quizQuestionComponent?.();
     if (qqc) qqc.renderReady.set(false);
@@ -283,7 +283,7 @@ export class QuizSetupService {
     });
   }
 
-  // â”€â”€ onOptionSelected â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── onOptionSelected ──────────────────────────────────────────
   async onOptionSelected(host: Host, option: any, isUserAction: boolean = true): Promise<void> {
     if (!isUserAction) return;
     const id = option?.optionId ?? option?.id ?? option?.displayOrder ?? -1;
@@ -335,7 +335,7 @@ export class QuizSetupService {
     });
 
     // Always mark progress against the authoritative current-question
-    // index from quizService â€” host.currentQuestionIndex and the derived
+    // index from quizService — host.currentQuestionIndex and the derived
     // `idx` from option.questionIndex can both be stale on Q2+, leaving
     // markQuestionAnswered called with 0 on every question (already in
     // the set, early-returns, progress freezes).
@@ -371,7 +371,7 @@ export class QuizSetupService {
     }, 150);
   }
 
-  // â”€â”€ advanceQuestion / restartQuiz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── advanceQuestion / restartQuiz ─────────────────────────────
   async advanceQuestion(host: Host, direction: 'next' | 'previous'): Promise<void> {
     const leavingIdx = host.currentQuestionIndex();
     this.quizContentLoaderService.snapshotLeavingQuestion({
@@ -519,101 +519,18 @@ subscribeToTimerExpiry(host: Host): void {
 
     const qIdx = resolved.index ?? this.quizService.getCurrentQuestionIndex?.() ?? 0;
 
-    const _isShufEC = this.quizService?.isShuffleEnabled?.()
-      && this.quizService?.shuffledQuestions?.length > 0;
-    const rawQ = _isShufEC
-      ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]
-        ?? this.quizService?.shuffledQuestions?.[qIdx]
-        ?? this.quizService?.questions?.[qIdx])
-      : this.quizService?.questions?.[qIdx];
+    const rawQ = this.resolveDisplayQuestion(qIdx);
+    const { correctCount, correctTexts } = this.resolveCorrectInfo(rawQ);
+    const isMultiAnswer = correctCount > 1;
 
-    let correctCountEC = 0;
-    let correctTextsEC: string[] = [];
-    try {
-      const pq = this.quizService?.getPristineQuestionByText(rawQ?.questionText);
-      if (pq) {
-        const pOpts = (pq.options ?? []).filter(
-          (o: any) => isOptionCorrect(o)
-        );
-        correctCountEC = pOpts.length;
-        correctTextsEC = pOpts.map((o: any) => norm(o?.text)).filter((t: string) => !!t);
-      }
-    } catch { /* ignore */ }
-    if (correctCountEC === 0) {
-      const rawOpts: any[] = rawQ?.options ?? [];
-      correctCountEC = rawOpts.filter(
-        (o: any) => isOptionCorrect(o)
-      ).length;
-      correctTextsEC = rawOpts
-        .filter((o: any) => isOptionCorrect(o))
-        .map((o: any) => norm(o?.text))
-        .filter((t: string) => !!t);
-    }
-    const isMultiAnswer = correctCountEC > 1;
-
-    if (!isMultiAnswer) {
-      let scoredCorrect = false;
-      try {
-        const scoringSvc = this.quizService?.scoringService;
-        const isShuf = this.quizService?.isShuffleEnabled?.() && this.quizService?.shuffledQuestions?.length > 0;
-        if (isShuf && scoringSvc?.questionCorrectness) {
-          let effectiveQuizId = this.quizService?.quizId || '';
-          if (!effectiveQuizId) {
-            try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
-          }
-          if (effectiveQuizId) {
-            const origIdx = scoringSvc.quizShuffleService?.toOriginalIndex?.(effectiveQuizId, qIdx);
-            if (typeof origIdx === 'number' && origIdx >= 0) {
-              scoredCorrect = scoringSvc.questionCorrectness.get(origIdx) === true;
-            }
-          }
-        } else {
-          scoredCorrect = scoringSvc?.questionCorrectness?.get(qIdx) === true;
-        }
-        if (!scoredCorrect) {
-          scoredCorrect = this.explanationTextService.fetBypassForQuestion?.get(qIdx) === true;
-        }
-      } catch { /* ignore */ }
-      if (!scoredCorrect) {
-        return;
-      }
+    // Single-answer: only show the FET once the question is scored correct.
+    if (!isMultiAnswer && !this.resolveScoredCorrect(qIdx)) {
+      return;
     }
 
-    if (isMultiAnswer) {
-      const selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
-      const selTexts = new Set(
-        selections
-          .filter((s: any) => s?.selected !== false)
-          .map((s: any) => norm(s?.text))
-          .filter((t: string) => !!t)
-      );
-      const allCorrectSelected = correctTextsEC.length > 0
-        && correctTextsEC.every((t: string) => selTexts.has(t));
-      if (!allCorrectSelected) {
-        let scoredCorrect = false;
-        try {
-          const scoringSvc = this.quizService?.scoringService;
-          const isShuf = this.quizService?.isShuffleEnabled?.() && this.quizService?.shuffledQuestions?.length > 0;
-          if (isShuf && scoringSvc?.questionCorrectness) {
-            let effectiveQuizId = this.quizService?.quizId || '';
-            if (!effectiveQuizId) {
-              try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
-            }
-            if (effectiveQuizId) {
-              const origIdx = scoringSvc.quizShuffleService?.toOriginalIndex?.(effectiveQuizId, qIdx);
-              if (typeof origIdx === 'number' && origIdx >= 0) {
-                scoredCorrect = scoringSvc.questionCorrectness.get(origIdx) === true;
-              }
-            }
-          } else {
-            scoredCorrect = scoringSvc?.questionCorrectness?.get(qIdx) === true;
-          }
-          if (!scoredCorrect) {
-            scoredCorrect = this.explanationTextService.fetBypassForQuestion?.get(qIdx) === true;
-          }
-        } catch { /* ignore */ }
-        if (!scoredCorrect) return;
-      }
+    // Multi-answer: only show the FET once all correct are selected (or scored).
+    if (isMultiAnswer && !this.isMultiAnswerReadyForExplanation(qIdx, correctTexts)) {
+      return;
     }
 
     host.explanationToDisplay.set(resolved.text);
@@ -621,7 +538,89 @@ subscribeToTimerExpiry(host: Host): void {
     this.explanationTextService.setShouldDisplayExplanation(true);
   }
 
-  // â”€â”€â”€ Lifecycle / event wrappers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Resolve the display-order question (shuffle-aware) for an index.
+  private resolveDisplayQuestion(qIdx: number): any {
+    const _isShufEC = this.quizService?.isShuffleEnabled?.()
+      && this.quizService?.shuffledQuestions?.length > 0;
+    return _isShufEC
+      ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]
+        ?? this.quizService?.shuffledQuestions?.[qIdx]
+        ?? this.quizService?.questions?.[qIdx])
+      : this.quizService?.questions?.[qIdx];
+  }
+
+  // Resolve correct count + texts from pristine quizInitialState, falling back
+  // to the raw question's options.
+  private resolveCorrectInfo(rawQ: any): { correctCount: number; correctTexts: string[] } {
+    let correctCount = 0;
+    let correctTexts: string[] = [];
+    try {
+      const pq = this.quizService?.getPristineQuestionByText(rawQ?.questionText);
+      if (pq) {
+        const pOpts = (pq.options ?? []).filter(
+          (o: any) => isOptionCorrect(o)
+        );
+        correctCount = pOpts.length;
+        correctTexts = pOpts.map((o: any) => norm(o?.text)).filter((t: string) => !!t);
+      }
+    } catch { /* ignore */ }
+    if (correctCount === 0) {
+      const rawOpts: any[] = rawQ?.options ?? [];
+      correctCount = rawOpts.filter(
+        (o: any) => isOptionCorrect(o)
+      ).length;
+      correctTexts = rawOpts
+        .filter((o: any) => isOptionCorrect(o))
+        .map((o: any) => norm(o?.text))
+        .filter((t: string) => !!t);
+    }
+    return { correctCount, correctTexts };
+  }
+
+  // Whether the question is scored correct (shuffle-aware) or FET-bypassed.
+  private resolveScoredCorrect(qIdx: number): boolean {
+    let scoredCorrect = false;
+    try {
+      const scoringSvc = this.quizService?.scoringService;
+      const isShuf = this.quizService?.isShuffleEnabled?.() && this.quizService?.shuffledQuestions?.length > 0;
+      if (isShuf && scoringSvc?.questionCorrectness) {
+        let effectiveQuizId = this.quizService?.quizId || '';
+        if (!effectiveQuizId) {
+          try { effectiveQuizId = localStorage.getItem('lastQuizId') || ''; } catch {}
+        }
+        if (effectiveQuizId) {
+          const origIdx = scoringSvc.quizShuffleService?.toOriginalIndex?.(effectiveQuizId, qIdx);
+          if (typeof origIdx === 'number' && origIdx >= 0) {
+            scoredCorrect = scoringSvc.questionCorrectness.get(origIdx) === true;
+          }
+        }
+      } else {
+        scoredCorrect = scoringSvc?.questionCorrectness?.get(qIdx) === true;
+      }
+      if (!scoredCorrect) {
+        scoredCorrect = this.explanationTextService.fetBypassForQuestion?.get(qIdx) === true;
+      }
+    } catch { /* ignore */ }
+    return scoredCorrect;
+  }
+
+  // Multi-answer FET gate: ready once all pristine-correct texts are selected,
+  // or the question is otherwise scored correct.
+  private isMultiAnswerReadyForExplanation(qIdx: number, correctTexts: string[]): boolean {
+    const selections = this.selectedOptionService.getSelectedOptionsForQuestion(qIdx) ?? [];
+    const selTexts = new Set(
+      selections
+        .filter((s: any) => s?.selected !== false)
+        .map((s: any) => norm(s?.text))
+        .filter((t: string) => !!t)
+    );
+    const allCorrectSelected = correctTexts.length > 0
+      && correctTexts.every((t: string) => selTexts.has(t));
+    if (allCorrectSelected) return true;
+    return this.resolveScoredCorrect(qIdx);
+  }
+
+  // ─── Lifecycle / event wrappers ──────────────────────────────
 
   private bridgeQuestionPayload(host: Host): void {
     this.quizService.questionPayload$
