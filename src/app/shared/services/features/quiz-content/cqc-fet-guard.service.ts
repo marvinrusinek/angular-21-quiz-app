@@ -1065,11 +1065,39 @@ export class CqcFetGuardService {
   private enforceFetGuard(host: Host, el: HTMLElement): void {
     try {
       const html = el.innerHTML ?? '';
-      if (!this.looksLikeFet(host, html)) return;
+      if (!this.looksLikeFet(host, html)) {
+        // MIRROR GUARD: the heading is NOT showing a FET, but the question is
+        // resolved (all correct selected / SOC-confirmed). The #qText element
+        // is written imperatively by several racing writers, so a question-text
+        // write can land after the all-correct FET write and stick. Re-assert
+        // the FET so a completed multi-answer always shows its explanation.
+        this.restoreFetIfResolved(host, el);
+        return;
+      }
       if (this.isMultiAnswerResolvedNow(host) === false) {
         this.revertQTextToQuestion(host, el);
       }
     } catch { /* ignore */ }
+  }
+
+  /**
+   * When the active multi-answer question is resolved (all correct selected and
+   * SOC-confirmed via fetBypass/_multiAnswerPerfect) but the heading lost its
+   * FET to a racing question-text write, restore the cached FET. Gated hard:
+   * only multi-answer + resolved + a real cached FET that looks like a FET.
+   */
+  private restoreFetIfResolved(host: Host, el: HTMLElement): void {
+    if (this.isMultiAnswerResolvedNow(host) !== true) return;
+    const idx = this.getActiveIdx(host);
+    const confirmed =
+      host.explanationTextService?.fetBypassForQuestion?.get?.(idx) === true
+      || host.quizService?._multiAnswerPerfect?.get?.(idx) === true;
+    if (!confirmed) return;
+    const fet = (host.explanationTextService?.formattedExplanations?.[idx]?.explanation ?? '').trim()
+      || ((host.explanationTextService as any)?.fetByIndex?.get?.(idx) ?? '').trim();
+    if (fet && this.looksLikeFet(host, fet)) {
+      el.innerHTML = fet;
+    }
   }
 
   private revertQTextToQuestion(host: Host, el: HTMLElement): void {
