@@ -33,6 +33,7 @@ import { removeSessionKey } from '../../utils/session-storage';
 
 import { QUESTION_ROUTE_REGEX } from '../../constants/route-patterns';
 import { isOptionCorrect } from '../../utils/is-option-correct';
+import { reportError } from '../../utils/error-logging';
 import { norm } from '../../utils/text-norm';
 
 type Host = QuizComponent;
@@ -471,7 +472,7 @@ export class QuizSetupService {
           }
         }
       })
-      .catch(() => { });
+      .catch((err: unknown) => reportError('restartQuiz navigation', err));
   }
 
 subscribeToTimerExpiry(host: Host): void {

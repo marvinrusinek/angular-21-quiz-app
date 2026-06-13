@@ -6,6 +6,7 @@ import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 import { isOptionCorrect } from '../../../utils/is-option-correct';
+import { reportError } from '../../../utils/error-logging';
 
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
@@ -59,10 +60,12 @@ export class QqcOrchQuestionLoadService {
           isMultipleAnswer,
           host.onOptionClicked.bind(host)
         );
-      } catch {
+      } catch (err: unknown) {
         // Creation failed — unlatch so the reactive effect retries on the next
         // signal change instead of being permanently stuck (the latch was set
-        // by the caller when this was invoked, not when it succeeded).
+        // by the caller when this was invoked, not when it succeeded). Log it:
+        // this is the catch that hid the StackBlitz cold-load chunk-fetch throw.
+        reportError('loadDynamicComponent.loadComponent', err);
         host.containerInitialized = false;
         return;
       }
@@ -95,8 +98,9 @@ export class QqcOrchQuestionLoadService {
         host.shouldRenderOptions.set(true);
       }
       try { componentRef.changeDetectorRef.markForCheck(); } catch {}
-    } catch {
+    } catch (err: unknown) {
       // Any failure after entry — unlatch so the effect can retry.
+      reportError('loadDynamicComponent', err);
       host.containerInitialized = false;
     }
   }
@@ -105,7 +109,8 @@ export class QqcOrchQuestionLoadService {
     const prep = this.prepareForLoad(host);
     try {
       return await this.performLoad(host, prep, signal);
-    } catch {
+    } catch (err: unknown) {
+      reportError('runLoadQuestion', err);
       this.applyLoadError(host);
       return false;
     } finally {

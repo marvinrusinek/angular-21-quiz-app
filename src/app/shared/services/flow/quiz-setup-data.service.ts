@@ -19,6 +19,8 @@ import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { TimerService } from '../features/timer/timer.service';
 
+import { reportError } from '../../utils/error-logging';
+
 import type { QuizComponent } from '../../../containers/quiz/quiz.component';
 
 type Host = QuizComponent;
@@ -141,7 +143,7 @@ export class QuizSetupDataService {
         this.quizService.setCurrentQuestion(question);
         this.loadCurrentQuestion(host);
       })
-      .catch(() => { });
+      .catch((err: unknown) => reportError('quiz-setup-data: load first question', err));
   }
 
   async getQuestion(host: Host): Promise<void | null> {
