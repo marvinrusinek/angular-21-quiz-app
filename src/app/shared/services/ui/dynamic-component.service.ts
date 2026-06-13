@@ -1,19 +1,22 @@
 import { Injectable, ViewContainerRef, ComponentRef, Type } from '@angular/core';
 
+import { AnswerComponent } from '../../../components/question/answer/answer-component/answer.component';
+
 @Injectable({ providedIn: 'root' })
 export class DynamicComponentService {
-  // ── properties ──────────────────────────────────────────────────
-  private cachedAnswerComponent: Type<any> | null = null;
-  private loadingPromise: Promise<Type<any>> | null = null;
-
   // ── public methods ──────────────────────────────────────────────
+  // AnswerComponent is imported STATICALLY (bundled into the main chunk)
+  // rather than via a dynamic import(). The lazy import produced a separate
+  // hashed chunk (answer.component-*.js) whose fetch could fail on a cold load
+  // ("Failed to fetch dynamically imported module" — observed in StackBlitz's
+  // WebContainer), and a failed import() is cached as a rejected promise, so
+  // retries could never recover. Eager-loading removes the chunk entirely so
+  // the answer component can always be created. Method stays async for callers.
   public async loadComponent<T>(
     container: ViewContainerRef,
     multipleAnswer: boolean,
     onOptionClicked: (event: any) => void
   ): Promise<ComponentRef<T>> {
-    const AnswerComponent = await this.importComponent();
-
     container.clear();
 
     const componentRef = container.createComponent(AnswerComponent as Type<T>);
@@ -29,31 +32,5 @@ export class DynamicComponentService {
     }
 
     return componentRef;
-  }
-
-  // ── private methods ─────────────────────────────────────────────
-  private async importComponent(): Promise<Type<any>> {
-    // Already cached → instant
-    if (this.cachedAnswerComponent) return this.cachedAnswerComponent;
-
-    // Already loading → wait for same promise
-    if (this.loadingPromise) return this.loadingPromise;
-
-    // First load (real one)
-    this.loadingPromise =
-      import('../../../components/question/answer/answer-component/answer.component').then(
-        (module) => {
-          if (!module?.AnswerComponent) {
-            throw new Error(
-              '[DynamicComponentService] AnswerComponent missing from module'
-            );
-          }
-
-          this.cachedAnswerComponent = module.AnswerComponent;
-          return module.AnswerComponent;
-        }
-      );
-
-    return this.loadingPromise;
   }
 }
