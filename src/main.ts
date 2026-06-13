@@ -17,6 +17,7 @@ import { AppComponent } from './app/app.component';
 import { AnswerComponent } from './app/components/question/answer/answer-component/answer.component';
 import { ANSWER_COMPONENT } from './app/shared/tokens/answer-component.token';
 import { GlobalErrorHandler, installGlobalErrorLogging } from './app/shared/utils/error-logging';
+import { installHeadingShadow } from './app/shared/utils/heading-shadow';
 import { installGlobalFetWatchdog } from './app/shared/utils/fet-watchdog';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
 import { Quiz } from './app/shared/models/Quiz.model';
@@ -59,4 +60,6 @@ bootstrapApplication(AppComponent, {
       registrationStrategy: 'registerWhenStable:30000'
     })
   ]
-}).catch((err: any) => console.error(err));
+})
+  .then((appRef) => { installHeadingShadow(appRef.injector); })
+  .catch((err: any) => console.error(err));
