@@ -426,6 +426,17 @@ export class QuizService {
       ? shuffled : (this.questions ?? []);
   }
 
+  /**
+   * The single question shown at a display index — shuffle-aware. Prefer this
+   * over indexing a raw array by a display index: it states the intent ("the
+   * question the user sees at position i") and resolves through
+   * getQuestionsInDisplayOrder, so shuffled and unshuffled both land on the
+   * right question. Returns undefined when out of range / no questions.
+   */
+  getDisplayedQuestion(index: number): QuizQuestion | undefined {
+    return this.getQuestionsInDisplayOrder()?.[index];
+  }
+
   async fetchQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
     const questions = await this.dataLoader.fetchQuizQuestions(
       quizId,
