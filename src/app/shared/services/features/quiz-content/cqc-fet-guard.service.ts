@@ -1064,6 +1064,13 @@ export class CqcFetGuardService {
 
   private enforceFetGuard(host: Host, el: HTMLElement): void {
     try {
+      // STAGE 3 PROBE (reversible): runtime kill-switch for the heading
+      // watchdog's corrective writes. Default OFF = current behavior. Set
+      // window.__fetWatchdogDisabled = true in the console to test whether the
+      // watchdog is still load-bearing before removing it in Stage 3.
+      if ((globalThis as any).__fetWatchdogDisabled === true) {
+        return;
+      }
       const html = el.innerHTML ?? '';
       if (!this.looksLikeFet(host, html)) {
         // MIRROR GUARD: the heading is NOT showing a FET, but the question is
