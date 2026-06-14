@@ -1,15 +1,6 @@
 import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  computed,
-  DestroyRef,
-  inject,
-  OnInit,
-  signal,
-  viewChild,
-  ViewEncapsulation,
+  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, 
+  computed, DestroyRef, inject, OnInit, signal, viewChild, ViewEncapsulation
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -77,7 +68,7 @@ type AnimationState = 'animationStarted' | 'none';
     CodelabQuizHeaderComponent,
     CodelabQuizContentComponent,
     ScoreboardComponent,
-    ThemeToggleComponent,
+    ThemeToggleComponent
   ],
   templateUrl: './quiz.component.html',
   styleUrls: ['./quiz.component.scss'],
@@ -179,7 +170,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
             return {
               question: urlQ,
               options: urlQ.options,
-              explanation: urlQ.explanation ?? '',
+              explanation: urlQ.explanation ?? ''
             };
           }
         }
@@ -198,7 +189,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
         return {
           question: correctQ,
           options: correctQ.options ?? [],
-          explanation: correctQ.explanation ?? '',
+          explanation: correctQ.explanation ?? ''
         };
       }
     }
@@ -489,8 +480,8 @@ export class QuizComponent implements OnInit, AfterViewInit {
         message: 'Your progress will be lost.',
         confirmText: 'Restart',
         cancelText: 'Cancel',
-        confirmColor: 'warn',
-      },
+        confirmColor: 'warn'
+      }
     });
 
     ref.afterClosed().subscribe((confirmed) => {
@@ -557,7 +548,9 @@ export class QuizComponent implements OnInit, AfterViewInit {
     index: number,
     options?: { forceRecompute?: boolean }
   ): 'correct' | 'wrong' | 'pending' {
-    return this.dotStatusService.getQuestionStatusSimple({ index, ...this._dotParams, options });
+    return this.dotStatusService.getQuestionStatusSimple(
+      { index, ...this._dotParams, options }
+    );
   }
 
   updateDotStatus(index: number): void {
@@ -573,7 +566,6 @@ export class QuizComponent implements OnInit, AfterViewInit {
     }
 
     this.dotStatusService.dotStatusCache.set(index, status);
-
     this.cdRef.markForCheck();
   }
 
@@ -647,7 +639,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
       currentQuestionIndex: this.currentQuestionIndex(),
       optionsToDisplay: this.optionsToDisplaySig(),
       currentQuestion: this.currentQuestion(),
-      questionsArray: this.questionsArray(),
+      questionsArray: this.questionsArray()
     };
   }
 }
