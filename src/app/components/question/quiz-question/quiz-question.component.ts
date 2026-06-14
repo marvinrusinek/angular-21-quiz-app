@@ -194,9 +194,26 @@ export class QuizQuestionComponent extends BaseQuestion
   _visibilityRestoreInProgress = false;
   _suppressDisplayStateUntil = 0;
 
+  // NOTE: all effect-registration methods below MUST be invoked synchronously
+  // from the constructor — effect() requires an injection context, which is
+  // active during construction but not in later lifecycle hooks.
   constructor() {
     super();
 
+    this.registerQuestionIndexEffect();
+    this.registerQuestionPayloadEffect();
+    this.registerColdLoadSelfHealEffect();
+
+    // (Removed signal→handleQuestionAndOptionsChange bridge — was interfering
+    // with init flow. The inline <codelab-question-answer> in the template
+    // now drives options directly via signal bindings.)
+
+    this.scheduleExplanationPurge();
+    this.registerDestroyCleanup();
+  }
+
+  /** Load the question whenever the questionIndex input changes (aborting any in-flight load). */
+  private registerQuestionIndexEffect(): void {
     effect(() => {
       const value = this.questionIndex();
       if (value === undefined || value === null) return;
@@ -206,7 +223,10 @@ export class QuizQuestionComponent extends BaseQuestion
       this.currentQuestionIndex.set(value);
       this.loadQuestion(signal);
     });
+  }
 
+  /** Hydrate the component from a pushed questionPayload input. */
+  private registerQuestionPayloadEffect(): void {
     effect(() => {
       const value = this.questionPayload();
       if (!value) return;
@@ -217,14 +237,18 @@ export class QuizQuestionComponent extends BaseQuestion
         console.error('QuizQuestionComponent questionPayload hydration failed:', err);
       }
     });
+  }
 
-    // COLD-LOAD SELF-HEAL: create the dynamic answer component as soon as BOTH
-    // the options and the #dynamicAnswerContainer are available, in whatever
-    // order they arrive. The payload/nav paths that normally create it can fire
-    // before the container exists (or with empty options) and then never retry,
-    // leaving the options unrendered until a manual refresh (intermittent, worse
-    // on slow envs). This effect tracks only signals loadDynamicComponent does
-    // not mutate, and containerInitialized is a plain field, so it can't loop.
+  /**
+   * COLD-LOAD SELF-HEAL: create the dynamic answer component as soon as BOTH
+   * the options and the #dynamicAnswerContainer are available, in whatever
+   * order they arrive. The payload/nav paths that normally create it can fire
+   * before the container exists (or with empty options) and then never retry,
+   * leaving the options unrendered until a manual refresh (intermittent, worse
+   * on slow envs). This effect tracks only signals loadDynamicComponent does
+   * not mutate, and containerInitialized is a plain field, so it can't loop.
+   */
+  private registerColdLoadSelfHealEffect(): void {
     effect(() => {
       const container = this.dynamicAnswerContainer();
       const opts = this.optionsToDisplay();
@@ -234,15 +258,17 @@ export class QuizQuestionComponent extends BaseQuestion
       this.loadDynamicComponent(cq, opts);
       this.containerInitialized = true;
     });
+  }
 
-    // (Removed signal→handleQuestionAndOptionsChange bridge — was interfering
-    // with init flow. The inline <codelab-question-answer> in the template
-    // now drives options directly via signal bindings.)
-
+  /** Deferred one-shot explanation purge (post-construction). */
+  private scheduleExplanationPurge(): void {
     setTimeout(() => {
       this.explanationTextService.purgeAndDefer(99);
     }, EXPLANATION_PURGE_DELAY_MS);
+  }
 
+  /** Tear-down: abort loads and run the orchestrator's destroy hook. */
+  private registerDestroyCleanup(): void {
     this.destroyRef.onDestroy(() => {
       this._isDestroyed = true;
       this._abortController?.abort();
