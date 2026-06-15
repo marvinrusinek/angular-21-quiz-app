@@ -77,9 +77,9 @@ type AnimationState = 'animationStarted' | 'none';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(window:keydown)': 'onGlobalKey($event)',
-    '(window:focus)': 'onTabFocus()',
-    '(window:scroll)': 'onScroll()',
-    '(window:resize)': 'onResize()'
+    '(window:focus)': 'onWindowFocus()',
+    '(window:scroll)': 'onWindowScroll()',
+    '(window:resize)': 'onWindowResize()'
   }
 })
 export class QuizComponent implements OnInit, AfterViewInit {
@@ -287,7 +287,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
     return this.quizSetupService.runOnGlobalKey(this, event);
   }
 
-  onTabFocus(): void {
+  onWindowFocus(): void {
     if (!this.quizStateService.isLoading()) {
       const idx = this.quizService.getCurrentQuestionIndex();
       const total = this.totalQuestions();
@@ -298,11 +298,11 @@ export class QuizComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onScroll(): void {
+  onWindowScroll(): void {
     this.checkScrollIndicator();
   }
 
-  onResize(): void {
+  onWindowResize(): void {
     this.checkScrollIndicator();
   }
 
