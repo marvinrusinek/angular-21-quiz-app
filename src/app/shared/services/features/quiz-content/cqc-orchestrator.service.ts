@@ -1,4 +1,4 @@
-﻿﻿import { inject, Injectable, isDevMode } from '@angular/core';
+﻿﻿import { inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParamMap } from '@angular/router';
 import {
@@ -298,9 +298,6 @@ export class CqcOrchestratorService {
       intended = this.resolveCachedFet(host, idx);
       // No (valid) cached FET — try on-the-fly if quiz data is available.
       if (!intended) intended = this.computeOnTheFlyFet(host, idx);
-      if (timedOut && intended && isDevMode()) {
-        console.warn(`[TIMEOUT-FET] computeIntendedQText -> FET for idx=${idx}`);
-      }
     }
     if (!intended) {
       intended = this.fetGuard.buildQuestionDisplayHTML(host, idx);

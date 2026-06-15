@@ -1,4 +1,4 @@
-import { inject, Injectable, isDevMode } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CqcFetGuardService } from './cqc-fet-guard.service';
@@ -173,9 +173,6 @@ export class CqcDisplayTextService {
     if (lowerText.includes('correct because')) return false;  // already a FET — let normal flow run
     const fet = this.resolveTimeoutFet(host, currentIdx);
     if (!fet || !fet.toLowerCase().includes('correct because')) return false;
-    if (isDevMode()) {
-      console.warn(`[TIMEOUT-FET] re-asserting FET on revisit for idx=${currentIdx}`);
-    }
     this.stampFastPathFet(host, fet, currentIdx);
     return true;
   }
