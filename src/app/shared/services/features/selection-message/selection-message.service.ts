@@ -13,6 +13,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
+import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -64,6 +65,7 @@ export class SelectionMessageService {
 
   private _pendingMsgTokens = new Map<number, number>();
 
+  private dotStatusService = inject(QuizDotStatusService);
   private explanationTextService = inject(ExplanationTextService);
   private quizService = inject(QuizService);
   private quizStateService = inject(QuizStateService);
@@ -144,12 +146,29 @@ export class SelectionMessageService {
     // already recorded a real completion message for this idx. No reliance on
     // external maps that leak across sessions or collide in shuffled mode.
     void isShuf; void origIdx; void qs;
-    const answered = this._completedIdxSet.has(idx);
+    // A question that only TIMED OUT (no genuine selection) was force-marked
+    // completed so its Next/Show-Results button stays enabled — but it is not
+    // truly answered, so on revisit prompt the user to select rather than
+    // claim "Answered ✓".
+    const answered = this._completedIdxSet.has(idx) && !this.isTimedOutUnanswered(idx);
 
     const isLast = total > 0 && idx === total - 1;
     return answered
       ? (isLast ? 'Answered ✓ Click Show Results...' : 'Answered ✓ Click Next to continue...')
       : 'Please select an option to continue...';
+  }
+
+  // True when the question was force-completed purely by a timer expiry and the
+  // user never made a genuine selection (no durable answered/correct record).
+  // Selections are cleared on revisit, so this relies on durable signals only.
+  private isTimedOutUnanswered(idx: number): boolean {
+    if (this.dotStatusService?.timedOutFetForced?.has(idx) !== true) return false;
+    const qs: any = this.quizService;
+    const genuinelyAnswered =
+      this.quizStateService.isQuestionAnswered?.(idx) === true
+      || qs?.questionCorrectness?.get?.(idx) === true
+      || qs?._multiAnswerPerfect?.get?.(idx) === true;
+    return !genuinelyAnswered;
   }
 
   // Cheap check used by enforceBaselineAtInit to skip pushing the baseline
@@ -351,8 +370,10 @@ export class SelectionMessageService {
   public enforceBaselineAtInit(i0: number, qType: QuestionType, totalCorrect: number): void {
     if (this._baselineReleased.has(i0)) return;
     // Skip baseline for already-answered questions — pushing "Select N..."
-    // would overwrite the nav-driven Answered ✓ message on revisit.
-    if (this._completedIdxSet.has(i0)) {
+    // would overwrite the nav-driven Answered ✓ message on revisit. A
+    // timed-out-but-unanswered question is NOT genuinely answered, so let it
+    // fall through to the select-prompt baseline below.
+    if (this._completedIdxSet.has(i0) && !this.isTimedOutUnanswered(i0)) {
       const total = this.quizService.totalQuestions();
       const isLast = total > 0 && i0 === total - 1;
       const navMsg = isLast

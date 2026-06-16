@@ -21,6 +21,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 
+import { QuizDotStatusService } from '../../../services/flow/quiz-dot-status.service';
 import { QuizService } from '../../../services/data/quiz.service';
 import { SelectedOptionService } from '../../../services/state/selectedoption.service';
 import { SelectionMessageService } from './selection-message.service';
@@ -58,6 +59,7 @@ describe('SelectionMessageService integration', () => {
         SelectionMessageService,
         { provide: QuizService, useValue: quizServiceMock },
         { provide: SelectedOptionService, useValue: { selectedOptionsMap: new Map() } },
+        { provide: QuizDotStatusService, useValue: { timedOutFetForced: new Set<number>() } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } }, params: of({}) } },
       ],
     });

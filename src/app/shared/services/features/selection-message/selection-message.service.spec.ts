@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
+import { QuizDotStatusService } from '../../../services/flow/quiz-dot-status.service';
 import { QuizService } from '../../../services/data/quiz.service';
 import { SelectedOptionService } from '../../../services/state/selectedoption.service';
 import { SelectionMessageService } from './selection-message.service';
@@ -58,6 +59,7 @@ describe('SelectionMessageService', () => {
         SelectionMessageService,
         { provide: QuizService, useValue: quizServiceMock },
         { provide: SelectedOptionService, useValue: selectedOptionServiceMock },
+        { provide: QuizDotStatusService, useValue: { timedOutFetForced: new Set<number>() } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } }, params: of({}) } },
       ],
     });
