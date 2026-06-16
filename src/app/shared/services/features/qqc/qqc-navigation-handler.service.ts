@@ -6,7 +6,9 @@ import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 import { ExplanationTextService } from '../explanation/explanation-text.service';
+import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QqcStatePersistenceService } from '../../state/qqc-state-persistence.service';
+import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -26,7 +28,9 @@ import { delay } from '../../../utils/delay';
 @Injectable({ providedIn: 'root' })
 export class QqcNavigationHandlerService {
   // ── injects ─────────────────────────────────────────────────────
+  private readonly dotStatusService = inject(QuizDotStatusService);
   private readonly explanationTextService = inject(ExplanationTextService);
+  private readonly nextButtonStateService = inject(NextButtonStateService);
   private readonly quizService = inject(QuizService);
   private readonly quizStateService = inject(QuizStateService);
   private readonly selectedOptionService = inject(SelectedOptionService);
@@ -241,18 +245,41 @@ export class QqcNavigationHandlerService {
       const thisQHasOwnFet = qState?.explanationDisplayed === true
         && ownFetText.length > 0;
 
-      if (thisQHasOwnFet) {
+      // A durably timed-out question always shows its FET on tab return —
+      // and counts as answered so the Next button stays enabled — even when
+      // the persisted state didn't capture the explanation text. Mirrors the
+      // heading FET re-assertion gated on the same durable timeout flag.
+      const durablyTimedOut = this.dotStatusService?.timedOutFetForced?.has(qIdx) === true;
+      const fallbackFetText = durablyTimedOut
+        ? (ownFetText
+            || this.explanationTextService.fetByIndex?.get(qIdx)?.trim()
+            || (this.explanationTextService.formattedExplanations?.[qIdx]?.explanation ?? '').trim())
+        : '';
+
+      const showFet = thisQHasOwnFet || durablyTimedOut;
+      const fetText = thisQHasOwnFet ? ownFetText : fallbackFetText;
+
+      if (showFet) {
         this.explanationTextService.setShouldDisplayExplanation(true, { force: true });
         this.explanationTextService.setIsExplanationTextDisplayed(true, { force: true });
-        this.explanationTextService.setExplanationText(ownFetText, { force: true });
+        if (fetText) {
+          this.explanationTextService.setExplanationText(fetText, { force: true });
+        }
+        // A timed-out question is answered — re-assert so the Next-button
+        // stream (driven by selectedOptionService.isAnswered$) stays enabled
+        // on tab return, even with no options selected.
+        if (durablyTimedOut) {
+          try { this.selectedOptionService.setAnswered(true, true); } catch { }
+          try { this.nextButtonStateService.setNextButtonState(true); } catch { }
+        }
       } else {
         this.explanationTextService.setShouldDisplayExplanation(false, { force: true });
         this.explanationTextService.setIsExplanationTextDisplayed(false, { force: true });
       }
 
       return {
-        shouldShowExplanation: thisQHasOwnFet,
-        explanationText: thisQHasOwnFet ? ownFetText : ''
+        shouldShowExplanation: showFet,
+        explanationText: fetText
       };
     } catch {
       return { shouldShowExplanation: false, explanationText: '' };
