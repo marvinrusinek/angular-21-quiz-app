@@ -879,18 +879,21 @@ subscribeToTimerExpiry(host: Host): void {
     }
 
     const currentIdx = this.quizService.getCurrentQuestionIndex();
-    const hasSelectionForCurrent =
-      (this.selectedOptionService.getSelectedOptionsForQuestion?.(currentIdx) ?? []).length > 0;
 
     switch (event.key) {
       case 'ArrowRight':
       case 'Enter': {
-        if (!hasSelectionForCurrent) return;
+        // Mirror the on-screen Next button, which is gated by nextButtonEnabled()
+        // (durable answered state) — NOT live selections, which are cleared on
+        // navigate-away/back, so a revisited-but-answered question can still advance.
         if (host.shouldShowNextButton()) {
+          if (!host.nextButtonEnabled()) return;
           event.preventDefault();
           await host.advanceToNextQuestion();
           return;
         }
+        // Show Results is already self-gated by shouldShowResultsButton
+        // (isCompletedInSession / _hasUserInteracted / timerExpiredUnanswered).
         if (host.shouldShowResultsButton) {
           event.preventDefault();
           host.advanceToResults();
