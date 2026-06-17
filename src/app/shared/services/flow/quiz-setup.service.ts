@@ -899,7 +899,9 @@ subscribeToTimerExpiry(host: Host): void {
         break;
       }
       case 'ArrowLeft': {
-        if (!hasSelectionForCurrent) return;
+        // Backward navigation is always allowed (matches the Previous button,
+        // which has no selection gate) — unlike ArrowRight/Enter above, which
+        // require an answer to advance.
         if (currentIdx > 0) {
           event.preventDefault();
           await host.advanceToPreviousQuestion();
