@@ -187,6 +187,13 @@ export class CqcFetGuardService {
    * the user has answered correctly. Returns true when handled. Extracted verbatim.
    */
   private applySocConfirmedFetPreservation(host: Host, safe: string, _liveIdx: number, _safeIsFetEarly: boolean): boolean {
+    // On a REVISIT, do NOT preserve the cached FET over an incoming question-text
+    // write — the heading must revert to the question text. questionFresh is
+    // restored to true on every navigation/per-question reset and flipped to
+    // false only by a genuine click this visit, so it cleanly distinguishes the
+    // current answer view (preserve FET) from a revisit (let question text through).
+    const fresh = host.quizQuestionComponent?.()?.questionFresh?.() ?? true;
+    if (fresh) return false;
     if (!_safeIsFetEarly && _liveIdx >= 0) {
       const _socConfirmedNow =
         host.explanationTextService?.fetBypassForQuestion?.get(_liveIdx) === true
