@@ -303,7 +303,7 @@ export class SharedOptionClickService {
     index: number
   ): { qIdx: number; displayIdx: number; durableSet: Set<number> } {
     let qIdx = comp.getActiveQuestionIndex();
-    const displayIdx = qIdx; // Preserve display index before self-heal corrects to original
+    let displayIdx = qIdx; // Display position; self-healed below against display order
     try {
       const liveQText = norm(comp.currentQuestion()?.questionText);
       const allQs: any[] = this.quizService?.questions ?? [];
@@ -312,6 +312,23 @@ export class SharedOptionClickService {
         if (liveQText !== atQIdx) {
           const fixed = allQs.findIndex((q: any) => norm(q?.questionText) === liveQText);
           if (fixed >= 0) qIdx = fixed;
+        }
+      }
+      // Self-heal the DISPLAY index against the display-order array (mirrors the
+      // qIdx self-heal against the original array above). getActiveQuestionIndex()
+      // can be stale in shuffled mode, which would key the FET bypass / perfect
+      // flags under the wrong display position — and the CQC reads by display
+      // position, so the FET never shows (e.g. Q5-shuffled regardless of which
+      // original question lands there). Text-fingerprint the live question into
+      // the display order to recover the true position.
+      if (liveQText) {
+        const displayQs: any[] = this.quizService?.getQuestionsInDisplayOrder?.() ?? [];
+        if (displayQs.length) {
+          const atDisplayIdx = norm(displayQs[displayIdx]?.questionText);
+          if (liveQText !== atDisplayIdx) {
+            const fixedDisplay = displayQs.findIndex((q: any) => norm(q?.questionText) === liveQText);
+            if (fixedDisplay >= 0) displayIdx = fixedDisplay;
+          }
         }
       }
     } catch { /* ignore */ }
@@ -350,8 +367,14 @@ export class SharedOptionClickService {
 
     let pristineCorrectCount = correctCountFromQ;
     try {
+      // Prefer the live displayed question — it is shuffle-correct without any
+      // index. Indexing display-order arrays by qIdx is WRONG here: qIdx is the
+      // self-healed ORIGINAL index, so in shuffled mode it resolves a different
+      // question, poisoning the pristine-correct count and the single/multi
+      // routing.
       const qTextForLookup = isShuffled
-        ? (this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
+        ? (comp.currentQuestion()?.questionText
+          ?? this.quizService?.getQuestionsInDisplayOrder?.()?.[qIdx]?.questionText
           ?? this.quizService?.shuffledQuestions?.[qIdx]?.questionText
           ?? comp.getQuestionAtDisplayIndex?.(qIdx)?.questionText)
         : (comp.currentQuestion()?.questionText

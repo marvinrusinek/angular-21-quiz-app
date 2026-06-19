@@ -52,14 +52,6 @@ export class CqcFetGuardService {
   writeQText(host: Host, html: string): void {
     try {
       let safe = html ?? '';
-      // TEMP DIAGNOSTIC — who calls writeQText with FET. Remove after.
-      try {
-        if ((safe ?? '').toLowerCase().includes('correct because')) {
-          console.log('[QT-WQT] incoming FET into writeQText');
-          console.log('[QT-WQT-STACK]', new Error().stack);
-        }
-      } catch { /* ignore */ }
-
       // URL-AUTHORITATIVE GUARD — URL question is the source of truth (null = drop stale write).
       const _urlGuarded = this.applyUrlAuthoritativeGuard(host, safe);
       if (_urlGuarded === null) return;
@@ -1253,6 +1245,32 @@ export class CqcFetGuardService {
         if (t) selectedNow.add(t);
       }
     }
+
+    // Additional sources so a shuffled-mode display-index lag in one map doesn't
+    // hide the user's picks from the watchdog: the quizService selection map and
+    // the per-question sessionStorage snapshot (same sources isQuestionResolved-
+    // FromStorage consults).
+    const qsMap: any = host.quizService?.selectedOptionsMap;
+    if (qsMap && typeof qsMap.get === 'function') {
+      for (const o of (qsMap.get(idx) ?? [])) {
+        if (o?.selected === false) continue;
+        const t = norm(o?.text);
+        if (t) selectedNow.add(t);
+      }
+    }
+    try {
+      const raw = sessionStorage.getItem(SK_SEL_Q + idx);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const o of parsed) {
+            if (o?.selected === false) continue;
+            const t = norm(o?.text);
+            if (t) selectedNow.add(t);
+          }
+        }
+      }
+    } catch { /* ignore */ }
 
     return selectedNow;
   }

@@ -114,6 +114,14 @@ export class CqcDisplayTextService {
   private shouldForceQuestionOnRevisit(host: Host, early: EarlyDisplayFlags): boolean {
     if (early.currentIdx < 0) return false;
     if (early.isTimedOutForIdx) return false;
+    // A question the user has actually answered in-session shows its FET — the
+    // revisit suppression must never hide the FET on the live answer view. This
+    // is index-specific and durable (clicks, SOC-confirm, timer-expiry). Without
+    // it, when quizQuestionComponent() is undefined (the CQC template has no
+    // QuizQuestionComponent child) questionFresh defaults true and the FET is
+    // forced back to question text for Q2+ even right after a correct click —
+    // the "FET only shows on Q1" regression.
+    if (this.fetGuard.hasInteractionEvidence(host, early.currentIdx)) return false;
     const fresh = host.quizQuestionComponent?.()?.questionFresh?.() ?? true;
     return fresh === true;
   }
@@ -247,13 +255,12 @@ export class CqcDisplayTextService {
     ).toString().trim();
     const _incomingMatchesCachedFet =
       !!_cachedFetForCurr && (text ?? '').trim() === _cachedFetForCurr;
-    let _hasCorrectSelected = false;
-    try {
-      const _selOpts = host.selectedOptionService?.getSelectedOptionsForQuestion?.(currentIdx) ?? [];
-      _hasCorrectSelected = Array.isArray(_selOpts) && _selOpts.some(
-        (s: any) => isOptionCorrect(s) && s?.selected !== false
-      );
-    } catch { /* ignore */ }
+    // The cached-FET race fallback must require ALL correct options selected, not
+    // just one — otherwise a multi-answer question shows its all-correct FET on
+    // the FIRST correct click. For single-answer the one correct option IS all of
+    // them, so behavior is unchanged. The durable bypass/perfect flags above stay
+    // the authoritative resolved-signal once the SOC confirms.
+    const _allCorrectSelected = this.allCorrectOptionsSelected(host, currentIdx);
     const _latestExpMatchesCurr = latestExpIdx === currentIdx;
     return host.explanationTextService?.fetBypassForQuestion?.get(currentIdx) === true
       || host.quizService?._multiAnswerPerfect?.get(currentIdx) === true
@@ -261,7 +268,40 @@ export class CqcDisplayTextService {
           host.explanationTextService?.fetBypassForQuestion?.get(latestExpIdx) === true
           || host.quizService?._multiAnswerPerfect?.get(latestExpIdx) === true
       ))
-      || (_incomingMatchesCachedFet && _hasCorrectSelected);
+      || (_incomingMatchesCachedFet && _allCorrectSelected);
+  }
+
+  /**
+   * Whether EVERY pristine-correct option for the displayed question is currently
+   * selected. Multi-answer needs all; single-answer needs its one. Falls back to
+   * "any correct selected" only when pristine correct texts are unavailable, so a
+   * missing pristine lookup never hard-blocks a legitimate single-answer FET.
+   */
+  private allCorrectOptionsSelected(host: Host, currentIdx: number): boolean {
+    try {
+      const selOpts = host.selectedOptionService?.getSelectedOptionsForQuestion?.(currentIdx) ?? [];
+      const sel = Array.isArray(selOpts) ? selOpts : [];
+      const selectedCorrect = new Set(
+        sel
+          .filter((s: any) => isOptionCorrect(s) && s?.selected !== false)
+          .map((s: any) => norm(s?.text))
+          .filter((t: string) => !!t)
+      );
+      const anyCorrectSelected = selectedCorrect.size > 0;
+
+      const q = host.quizService?.getDisplayedQuestion?.(currentIdx)
+        ?? host.quizService?.questions?.[currentIdx];
+      const pristineCorrect = Array.from(
+        host.quizService?.getPristineCorrectTextsForQuestion?.(q?.questionText) ?? []
+      ) as string[];
+
+      if (pristineCorrect.length > 1) {
+        return pristineCorrect.every((t) => selectedCorrect.has(t));
+      }
+      return anyCorrectSelected;
+    } catch {
+      return false;
+    }
   }
 
   /**
