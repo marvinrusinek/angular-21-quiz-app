@@ -3,7 +3,7 @@ import { QuestionType } from '../../models/question-type.enum';
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
-import { Utils } from '../../utils/utils';
+import { ArrayUtils } from '../../utils/array-utils';
 
 import { QuizShuffleService } from './quiz-shuffle.service';
 
@@ -185,18 +185,18 @@ describe('QuizShuffleService', () => {
   // ── toOriginalIndex — permutation contract (index-model rewrite) ─
   // Pins the map's invariants under an ACTUAL (non-identity) shuffle, so the
   // rewrite can treat the URL display index → original index mapping as a
-  // trustworthy bijection. Forces a known order by stubbing Utils.shuffleArray.
+  // trustworthy bijection. Forces a known order by stubbing ArrayUtils.shuffleArray.
   describe('toOriginalIndex — permutation contract', () => {
     const fixedOrder = [2, 0, 1]; // display 0→orig 2, 1→orig 0, 2→orig 1
 
     beforeEach(() => {
       jest
-        .spyOn(Utils, 'shuffleArray')
+        .spyOn(ArrayUtils, 'shuffleArray')
         .mockImplementation(() => [...fixedOrder]);
     });
 
     afterEach(() => {
-      (Utils.shuffleArray as jest.Mock).mockRestore?.();
+      (ArrayUtils.shuffleArray as jest.Mock).mockRestore?.();
     });
 
     it('maps each display index to the forced original index', () => {

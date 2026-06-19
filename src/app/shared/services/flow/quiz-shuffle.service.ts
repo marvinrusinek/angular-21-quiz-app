@@ -6,7 +6,7 @@ import { ShuffleState } from '../../models/ShuffleState.model';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
-import { Utils } from '../../utils/utils';
+import { ArrayUtils } from '../../utils/array-utils';
 
 export interface PrepareShuffleOpts {
   shuffleQuestions?: boolean,
@@ -53,7 +53,7 @@ export class QuizShuffleService {
     const { shuffleQuestions = true, shuffleOptions = true } = opts;
 
     const qIdx = questions.map((_, i) => i);
-    const questionOrder = shuffleQuestions ? Utils.shuffleArray(qIdx) : qIdx;
+    const questionOrder = shuffleQuestions ? ArrayUtils.shuffleArray(qIdx) : qIdx;
 
     const optionOrder = new Map<number, number[]>();
     for (const origIdx of questionOrder) {
@@ -61,7 +61,7 @@ export class QuizShuffleService {
       const base = Array.from({ length: len }, (_, i) => i);
       optionOrder.set(
         origIdx,
-        shuffleOptions ? Utils.shuffleArray(base) : base
+        shuffleOptions ? ArrayUtils.shuffleArray(base) : base
       );
     }
 

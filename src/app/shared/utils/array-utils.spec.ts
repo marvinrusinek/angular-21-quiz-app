@@ -1,10 +1,10 @@
-import { Utils } from './utils';
+import { ArrayUtils } from './array-utils';
 
-describe('Utils', () => {
+describe('ArrayUtils', () => {
   describe('shuffleArray', () => {
     it('should return the same array reference (in-place)', () => {
       const arr = [1, 2, 3, 4, 5];
-      const result = Utils.shuffleArray(arr);
+      const result = ArrayUtils.shuffleArray(arr);
       expect(result).toBe(arr);
     });
 
@@ -15,25 +15,25 @@ describe('Utils', () => {
 
     it('should preserve array length', () => {
       const arr = [10, 20, 30];
-      Utils.shuffleArray(arr);
+      ArrayUtils.shuffleArray(arr);
       expect(arr.length).toBe(3);
     });
 
     it('should handle empty array', () => {
       const arr: number[] = [];
-      const result = Utils.shuffleArray(arr);
+      const result = ArrayUtils.shuffleArray(arr);
       expect(result).toEqual([]);
     });
 
     it('should handle single element array', () => {
       const arr = [42];
-      const result = Utils.shuffleArray(arr);
+      const result = ArrayUtils.shuffleArray(arr);
       expect(result).toEqual([42]);
     });
 
     it('should handle array of strings', () => {
       const arr = ['a', 'b', 'c', 'd'];
-      Utils.shuffleArray(arr);
+      ArrayUtils.shuffleArray(arr);
       expect(arr.sort()).toEqual(['a', 'b', 'c', 'd']);
     });
 
@@ -43,7 +43,7 @@ describe('Utils', () => {
 
       for (let attempt = 0; attempt < 20; attempt++) {
         const copy = [...original];
-        Utils.shuffleArray(copy);
+        ArrayUtils.shuffleArray(copy);
         if (copy.some((val, idx) => val !== original[idx])) {
           differentOrderSeen = true;
           break;

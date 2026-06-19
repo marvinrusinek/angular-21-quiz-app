@@ -15,12 +15,12 @@
  *   (C) Correctness travels with the option — the correct option stays flagged
  *       correct at its new position, so scoring/resolution still works.
  *
- * Utils.shuffleArray is stubbed to REVERSE, giving a deterministic non-identity
+ * ArrayUtils.shuffleArray is stubbed to REVERSE, giving a deterministic non-identity
  * permutation so we can assert exact positions.
  */
 import { QuizShuffleService } from './quiz-shuffle.service';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
-import { Utils } from '../../utils/utils';
+import { ArrayUtils } from '../../utils/array-utils';
 
 function makeQuestions(): QuizQuestion[] {
   return [
@@ -45,11 +45,11 @@ describe('Option-shuffle rework — invariants', () => {
     localStorage.clear();
     svc = new QuizShuffleService();
     // Deterministic, non-identity permutation: reverse.
-    jest.spyOn(Utils, 'shuffleArray').mockImplementation((a: any[]) => [...a].reverse());
+    jest.spyOn(ArrayUtils, 'shuffleArray').mockImplementation((a: any[]) => [...a].reverse());
   });
 
   afterEach(() => {
-    (Utils.shuffleArray as jest.Mock).mockRestore?.();
+    (ArrayUtils.shuffleArray as jest.Mock).mockRestore?.();
     localStorage.clear();
   });
 

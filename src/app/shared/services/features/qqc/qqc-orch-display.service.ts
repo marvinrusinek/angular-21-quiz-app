@@ -6,7 +6,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
-import { Utils } from '../../../utils/utils';
+import { ArrayUtils } from '../../../utils/array-utils';
 
 type Host = QuizQuestionComponent;
 
@@ -105,7 +105,7 @@ export class QqcOrchDisplayService {
       host.currentQuestion.set(currentQuestion);
       host.currentOptions = host.displayStateManager.buildOptionsWithCorrectness(currentQuestion);
       if (host.currentOptions.length === 0) return;
-      if (host.shuffleOptions) Utils.shuffleArray(host.currentOptions);
+      if (host.shuffleOptions) ArrayUtils.shuffleArray(host.currentOptions);
       host.currentOptions = host.displayStateManager.applyDisplayOrder(host.currentOptions);
       host.optionsToDisplay.set(host.currentOptions.map((o: any) => ({ ...o })));
       host.updateShouldRenderOptions(host.optionsToDisplay());

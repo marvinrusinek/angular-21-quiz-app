@@ -16,7 +16,7 @@ import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 import { getQuizData, getQuizResources } from '../../quiz-data-cache';
 import { isOptionCorrect } from '../../utils/is-option-correct';
-import { Utils } from '../../utils/utils';
+import { ArrayUtils } from '../../utils/array-utils';
 import { swallow } from '../../utils/error-logging';
 
 @Injectable({ providedIn: 'root' })
@@ -399,7 +399,7 @@ export class QuizDataLoaderService {
 
   shuffleQuestions(questions: QuizQuestion[]): QuizQuestion[] {
     if (this.shouldShuffle() && questions && questions.length > 0) {
-      return Utils.shuffleArray([...questions]);
+      return ArrayUtils.shuffleArray([...questions]);
     }
     return questions;
   }
