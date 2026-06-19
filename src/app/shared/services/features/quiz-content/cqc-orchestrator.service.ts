@@ -191,6 +191,19 @@ export class CqcOrchestratorService {
           ? host.currentIndex
           : (host.quizService.getCurrentQuestionIndex?.() ?? host.currentQuestionIndexValue ?? 0));
 
+    // A previously-answered question being revisited keeps its question text
+    // even if its timer expires again — only a first-time (unanswered) expiry
+    // stamps the FET. A genuine answer sets clickConfirmedDotStatus
+    // ('correct'/'wrong'); skip the entire timeout-FET machinery (durable flag +
+    // direct DOM write) so the heading stays the question text on revisit.
+    const _dot = host.selectedOptionService?.clickConfirmedDotStatus?.get?.(idx);
+    const alreadyAnswered = _dot === 'correct' || _dot === 'wrong'
+      || host.quizService?.questionCorrectness?.get?.(idx) === true;
+    if (alreadyAnswered) {
+      host.cdRef.markForCheck();
+      return;
+    }
+
     host.timedOutIdxSig.set(idx);
     host.timedOutIdxSubject.next(idx);
     // DURABLE timeout record (same idx as timedOutIdxSubject) — survives nav so
