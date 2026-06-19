@@ -73,7 +73,15 @@ export class QqcOrchTimerService {
       (window as any).__quizTimerExpired = true;
       const i0 = host.normalizeIndex(targetIndex ?? host.currentQuestionIndex() ?? 0);
       const q = host.questions()?.[i0] ?? host.currentQuestion();
-      if (q) {
+      // On a REVISIT — the question was already answered before this timeout —
+      // the heading must stay the question text; only a first-time timeout
+      // stamps the FET. A genuine answer sets clickConfirmedDotStatus
+      // ('correct'/'wrong'); a never-answered question's first expiry still
+      // shows the FET as before.
+      const _dot = this.selectedOptionService?.clickConfirmedDotStatus?.get?.(i0);
+      const alreadyAnswered = _dot === 'correct' || _dot === 'wrong'
+        || (host as any).quizService?.questionCorrectness?.get?.(i0) === true;
+      if (q && !alreadyAnswered) {
         const opts = q.options ?? host.optionsToDisplay() ?? [];
         const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, opts, i0);
         let fetHtml = '';
