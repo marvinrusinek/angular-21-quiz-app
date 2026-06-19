@@ -14,13 +14,6 @@ export class QuestionHeadingService {
   setHtml(html: string): void {
     const safe = html ?? '';
     if (this.htmlSig() === safe) return;
-    // TEMP DIAGNOSTIC — identify which writer stamps a FET. Remove after.
-    try {
-      const isFet = safe.toLowerCase().includes('correct because');
-      const plain = safe.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 50);
-      console.log('[QT-SET] isFet=' + isFet + ' "' + plain + '"');
-      if (isFet) console.log('[QT-SET-STACK]', new Error().stack);
-    } catch { /* ignore */ }
     this.htmlSig.set(safe);
   }
 

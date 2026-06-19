@@ -197,12 +197,6 @@ export class CodelabQuizContentComponent implements OnInit {
       const html = this.questionHeadingService.htmlSig();
       if (!el) return;
       if ((el.innerHTML ?? '') === html) return;
-      // TEMP DIAGNOSTIC — actual value reaching the <h3>. Remove after.
-      try {
-        const isFet = (html ?? '').toLowerCase().includes('correct because');
-        const plain = (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 45);
-        console.log('[QT-DOM] isFet=' + isFet + ' "' + plain + '"');
-      } catch { /* ignore */ }
       this.renderer.setProperty(el, 'innerHTML', html);
     });
 
