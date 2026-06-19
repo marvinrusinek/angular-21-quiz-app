@@ -668,24 +668,6 @@ export class QuizService {
     );
   }
 
-  handleQuestionChange(
-    question: QuizQuestion | null,
-    selectedOptions: Array<string | number> | null | undefined,
-    options: Option[]
-  ): {
-    updatedOptions: Option[];
-    nextQuestion: QuizQuestion | null;
-    questionText: string;
-    correctAnswersText: string;
-  } {
-    const result = this.sessionManager.handleQuestionChange(
-      this, question, selectedOptions, options,
-      this._questions, this.questionsSig, this.questionsQuizId
-    );
-    this.questionsQuizId = result.restoredQuestionsQuizId;
-    return result;
-  }
-
   getCorrectAnswersAsString(): string {
     return Array.from(this.correctAnswers.values())
       .map((a) => a.join(','))
@@ -914,15 +896,6 @@ export class QuizService {
         this.currentQuizSig.set(this.activeQuiz);
       }
     }
-  }
-
-  findQuestionIndex(question: QuizQuestion | null): number {
-    if (!question || !Array.isArray(this.selectedQuiz?.questions) || this.selectedQuiz.questions.length === 0) {
-      return -1;
-    }
-    return this.selectedQuiz.questions.findIndex(
-      (q) => q.questionText === question.questionText
-    );
   }
 
   resetQuestions(): void {
