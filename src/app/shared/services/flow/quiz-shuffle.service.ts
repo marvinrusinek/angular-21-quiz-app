@@ -7,6 +7,7 @@ import { ShuffleState } from '../../models/ShuffleState.model';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 import { ArrayUtils } from '../../utils/array-utils';
+import { swallow } from '../../utils/error-logging';
 
 export interface PrepareShuffleOpts {
   shuffleQuestions?: boolean,
@@ -250,8 +251,8 @@ export class QuizShuffleService {
           localStorage.removeItem(key);
         }
       }
-    } catch {
-      // clear failed — non-critical
+    } catch (err) {
+      swallow('quiz-shuffle.service#1', err);
     }
   }
 
@@ -294,8 +295,8 @@ export class QuizShuffleService {
         optionOrder: Array.from(state.optionOrder.entries())
       };
       localStorage.setItem(`shuffleState:${quizId}`, JSON.stringify(serializedState));
-    } catch {
-      // persist failed — non-critical
+    } catch (err) {
+      swallow('quiz-shuffle.service#2', err);
     }
   }
 

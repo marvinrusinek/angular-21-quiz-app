@@ -22,6 +22,7 @@ import { TimerService } from '../features/timer/timer.service';
 import { reportError } from '../../utils/error-logging';
 
 import type { QuizComponent } from '../../../containers/quiz/quiz.component';
+import { swallow } from '../../utils/error-logging';
 
 type Host = QuizComponent;
 
@@ -55,8 +56,8 @@ export class QuizSetupDataService {
       host.totalQuestions.set(questions.length);
       host.isQuizDataLoaded.set(true);
       host.cdRef.markForCheck();
-    } catch {
-      // question loading failed
+    } catch (err) {
+      swallow('quiz-setup-data.service#1', err);
     }
     this.pushInitialQuestionPayload(host);
   }

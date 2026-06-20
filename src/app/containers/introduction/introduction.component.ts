@@ -25,6 +25,7 @@ import { QuizPersistenceService } from '../../shared/services/state/quiz-persist
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { QuizShuffleService } from '../../shared/services/flow/quiz-shuffle.service';
 import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
+import { swallow } from '../../shared/utils/error-logging';
 
 @Component({
   selector: 'codelab-quiz-intro',
@@ -282,8 +283,8 @@ export class IntroductionComponent implements OnInit {
       if (viaService) return true;  // if the service explicitly succeeded, we’re done
 
       // Service returned false/undefined/non-boolean – fall back to direct navigation
-    } catch {
-      // error handled silently
+    } catch (err) {
+      swallow('introduction.component#1', err);
     }
 
     // Fallback to direct router navigation

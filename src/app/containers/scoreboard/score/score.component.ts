@@ -10,6 +10,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 
 import { QuizService } from '../../../shared/services/data/quiz.service';
+import { swallow } from '../../../shared/utils/error-logging';
 
 @Component({
   selector: 'codelab-scoreboard-score',
@@ -88,8 +89,8 @@ export class ScoreComponent implements OnInit {
         this.scoreDisplayStorageKey,
         this.isPercentage() ? 'percentage' : 'numerical'
       );
-    } catch {
-      // ignore storage failures
+    } catch (err) {
+      swallow('score.component#1', err);
     }
   }
 }

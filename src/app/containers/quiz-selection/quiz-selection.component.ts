@@ -122,8 +122,8 @@ export class QuizSelectionComponent implements OnInit {
       }
 
       await this.router.navigate([QuizRoutes.INTRO, quizId]);
-    } catch {
-      // error handled silently
+    } catch (err) {
+      swallow('quiz-selection.component#1', err);
     }
   }
 

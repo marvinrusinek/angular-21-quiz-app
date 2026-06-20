@@ -11,6 +11,7 @@ import { QuizService } from '../data/quiz.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 import { SessionSnapshotResult } from './quiz-content-loader.service';
+import { swallow } from '../../utils/error-logging';
 
 /**
  * Handles session restore, hydration, and selection persistence.
@@ -117,8 +118,8 @@ export class QclSessionRestoreService {
               questionIndex
             );
           }
-        } catch {
-          // failed to restore selections
+        } catch (err) {
+          swallow('qcl-session-restore.service#1', err);
         }
       }
     }
@@ -136,8 +137,8 @@ export class QclSessionRestoreService {
             if (Array.isArray(ids)) {
               selectedOptions = ids;
             }
-          } catch {
-            // failed to parse stored selections
+          } catch (err) {
+            swallow('qcl-session-restore.service#2', err);
           }
         }
       }
@@ -149,8 +150,8 @@ export class QclSessionRestoreService {
       const questionOptions =
         this.selectedOptionService.selectedOptionsMap.get(currentQuestionIndex) || [];
       this.selectedOptionService.updateAnsweredState(questionOptions, currentQuestionIndex);
-    } catch {
-      // selection restore failed
+    } catch (err) {
+      swallow('qcl-session-restore.service#3', err);
     }
   }
 
@@ -171,8 +172,8 @@ export class QclSessionRestoreService {
 
         if (restoredOption) restoredOption.selected = true;
       }
-    } catch {
-      // failed to parse selected options
+    } catch (err) {
+      swallow('qcl-session-restore.service#4', err);
     }
   }
 
@@ -255,8 +256,8 @@ export class QclSessionRestoreService {
       } else {
         this.quizStateService.applyDefaultStates(params.quizId, questions);
       }
-    } catch {
-      // quiz session preparation failed
+    } catch (err) {
+      swallow('qcl-session-restore.service#5', err);
     }
   }
 }

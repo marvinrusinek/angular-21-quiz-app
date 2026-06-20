@@ -19,6 +19,7 @@ import { QuizService } from './quiz.service';
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
+import { swallow } from '../../utils/error-logging';
 
 @Injectable({ providedIn: 'root' })
 export class QuizDataService {
@@ -714,8 +715,8 @@ export class QuizDataService {
 
       const question = await firstValueFrom(observable);
       this.question = question ?? null;
-    } catch {
-      // Error setting question
+    } catch (err) {
+      swallow('quizdata.service#1', err);
     }
   }
 

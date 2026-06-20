@@ -487,8 +487,8 @@ export class QuizNavigationService {
         this.quizService.setQuizId(stored);
         return stored;
       }
-    } catch {
-      // Ignore storage access issues – we'll fall through to null.
+    } catch (err) {
+      swallow('quiz-navigation.service#1', err);
     }
 
     return null;

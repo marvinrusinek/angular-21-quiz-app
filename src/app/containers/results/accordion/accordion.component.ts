@@ -21,6 +21,7 @@ import { SelectedOptionService } from '../../../shared/services/state/selectedop
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
 
 import { norm } from '../../../shared/utils/text-norm';
+import { swallow } from '../../../shared/utils/error-logging';
 
 @Component({
   selector: 'codelab-results-accordion',
@@ -245,8 +246,8 @@ export class AccordionComponent implements OnInit {
     try {
       const stored = localStorage.getItem(SK_USER_ANSWERS);
       storedAnswers = stored ? JSON.parse(stored) : [];
-    } catch {
-      // error handled silently
+    } catch (err) {
+      swallow('accordion.component#1', err);
     }
 
     return storedAnswers.length > 0 ? storedAnswers : this.quizService.userAnswers;

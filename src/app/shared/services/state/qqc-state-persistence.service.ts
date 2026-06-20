@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
+import { swallow } from '../../utils/error-logging';
 
 /**
  * Parameters for saving QQC state to sessionStorage.
@@ -69,8 +70,8 @@ export class QqcStatePersistenceService {
       if (params.feedbackText) {
         sessionStorage.setItem(`feedbackText_${questionIndex}`, params.feedbackText);
       }
-    } catch {
-      // Error saving quiz state
+    } catch (err) {
+      swallow('qqc-state-persistence.service#1', err);
     }
   }
 
@@ -107,8 +108,8 @@ export class QqcStatePersistenceService {
       try {
         const parsed = JSON.parse(optionsData);
         if (Array.isArray(parsed) && parsed.length > 0) parsedOptions = parsed;
-      } catch {
-        // Error parsing options data
+      } catch (err) {
+        swallow('qqc-state-persistence.service#2', err);
       }
     }
 
@@ -121,8 +122,8 @@ export class QqcStatePersistenceService {
         if (Array.isArray(parsed) && parsed.length > 0) {
           selectedOptions = parsed.filter((o: any) => o.optionId !== undefined);
         }
-      } catch {
-        // Error parsing selected options data
+      } catch (err) {
+        swallow('qqc-state-persistence.service#3', err);
       }
     }
 
