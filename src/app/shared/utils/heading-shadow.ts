@@ -7,8 +7,8 @@ import { QuizNavigationService } from '../services/flow/quiz-navigation.service'
 import { SelectedOptionService } from '../services/state/selectedoption.service';
 import { QuizStateService } from '../services/state/quizstate.service';
 
+import { buildHeadingInputs } from './heading-inputs';
 import { shouldShowFet, HeadingInputs } from './heading-model';
-import { norm } from './text-norm';
 
 /**
  * Stage 2 shadow validator (heading/FET refactor). DEV-ONLY, READ-ONLY,
@@ -44,36 +44,16 @@ export function installHeadingShadow(injector: Injector): void {
 
   let lastKey = '';
 
-  const buildInputs = (idx: number): HeadingInputs | null => {
-    const dq = quiz.getQuestionsInDisplayOrder?.()?.[idx];   // shuffle-aware displayed question
-    if (!dq) return null;
-    const qText = dq.questionText ?? '';
-    const pristine = Array.from(quiz.getPristineCorrectTextsForQuestion?.(qText) ?? [])
-      .map((t: any) => norm(t));
-    const selectedTexts = new Set<string>(
-      ((((sel as any).selectedOptionsMap?.get?.(idx)) ?? []) as any[])
-        .filter((o) => o?.selected !== false)
-        .map((o) => norm(o?.text))
-    );
-    const isMultiAnswer = pristine.length > 1;
-    const selectedCorrect = pristine.filter((t) => selectedTexts.has(t));
-    return {
-      questionHtml: qText,          // exact markup not needed for the decision compare
-      fetHtml: (ets.formattedExplanations?.[idx]?.explanation ?? '')
-            || (ets.fetByIndex?.get?.(idx) ?? ''),
-      isMultiAnswer,
-      isMultiAnswerComplete:
-        (pristine.length > 0 && selectedCorrect.length >= pristine.length)
-        || quiz._multiAnswerPerfect?.get?.(idx) === true
-        || ets.fetBypassForQuestion?.get?.(idx) === true,
-      isSingleAnswered: !isMultiAnswer && selectedCorrect.length > 0,
-      isTimedOut: timer.expiredForQuestionIndexSig?.() === idx,
-      hasInteracted: state.hasUserInteracted?.(idx) === true,
-      optionsReady: document.querySelectorAll('.option-row').length > 0,
-      isNavigatingToPrevious: nav.isNavigatingToPreviousSig?.() === true,
-      interactedThisVisit: state.wasInteractedThisVisit?.(idx) === true,
-    };
-  };
+  const buildInputs = (idx: number): HeadingInputs | null =>
+    buildHeadingInputs({
+      idx,
+      quizService: quiz,
+      explanationTextService: ets,
+      timerService: timer,
+      selectedOptionService: sel,
+      quizStateService: state,
+      quizNavigationService: nav,
+    });
 
   setInterval(() => {
     try {

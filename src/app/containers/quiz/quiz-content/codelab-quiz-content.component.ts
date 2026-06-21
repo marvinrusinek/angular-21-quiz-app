@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, effect,
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef, effect,
   ElementRef, inject, input, OnInit, output, Renderer2, signal, untracked, viewChild
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
@@ -27,6 +27,9 @@ import { TimerService } from '../../../shared/services/features/timer/timer.serv
 
 import { QuizQuestionComponent } from
   '../../../components/question/quiz-question/quiz-question.component';
+
+import { buildHeadingInputs } from '../../../shared/utils/heading-inputs';
+import { deriveHeadingHtml } from '../../../shared/utils/heading-model';
 
 @Component({
   selector: 'codelab-quiz-content',
@@ -120,6 +123,25 @@ export class CodelabQuizContentComponent implements OnInit {
   // legacy callers (`host.qTextHtmlSig?.set(x)`) keep working unchanged while
   // new code can inject QuestionHeadingService directly and call setHtml().
   readonly qTextHtmlSig = this.questionHeadingService.htmlSig;
+
+  // PHASE 3 (DARK — not bound, not read): the single-source heading decision as
+  // one reactive computed. Angular computeds are lazy, so this never evaluates
+  // in production until something reads it; nothing does yet. It uses the same
+  // gatherer the dev shadow validates (heading-inputs.ts), so once we flip the
+  // qTextHtmlSig->innerHTML binding to read this (a later step), it inherits the
+  // shadow's proven agreement with the live heading. Intentionally inert for now.
+  readonly headingHtml = computed<string>(() => {
+    const inputs = buildHeadingInputs({
+      idx: this.quizService.currentQuestionIndex,
+      quizService: this.quizService,
+      explanationTextService: this.explanationTextService,
+      timerService: this.timerService,
+      selectedOptionService: this.selectedOptionService,
+      quizStateService: this.quizStateService,
+      quizNavigationService: this.quizNavigationService
+    });
+    return inputs ? deriveHeadingHtml(inputs) : '';
+  });
 
   // Signal source of truth + sync BS mirror. The TIMER-EXPIRY FAST PATH
   // in cqc-display-text and the displayText$ pipeline both read .getValue()
