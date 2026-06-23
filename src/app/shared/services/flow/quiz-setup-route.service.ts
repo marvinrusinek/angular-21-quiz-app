@@ -92,19 +92,9 @@ export class QuizSetupRouteService {
           host.questionToDisplaySig.set(question.questionText?.trim() ?? '');
           host.cdRef.markForCheck();
 
-          // Force question text (with multi-answer banner) into <h3 #qText>
-          const displayHTML = this.buildQuestionDisplayHTML(question);
-          if (displayHTML) {
-            const writeH3 = () => {
-              if (!this.questionHeadingService.get().trim()) {
-                this.questionHeadingService.setHtml(displayHTML);
-              }
-            };
-            setTimeout(writeH3, 0);
-            setTimeout(writeH3, 100);
-            setTimeout(writeH3, 300);
-            setTimeout(writeH3, 600);
-          }
+          // Heading is rendered by the single-source headingHtml computed; the
+          // setTimeout cascade that stamped question text into <h3> is no longer
+          // needed (the computed renders the question from state).
 
           // Retry after microtask to ensure child components have rendered
           Promise.resolve().then(() => {
@@ -240,18 +230,9 @@ export class QuizSetupRouteService {
       host.shouldRenderOptions.set(true);
       host.cdRef.markForCheck();
 
-      // Force question text (with multi-answer banner) into <h3 #qText>
-      const displayHTML = this.buildQuestionDisplayHTML(result.question);
-      if (displayHTML) {
-        const writeH3 = () => {
-          if (!this.questionHeadingService.get().trim()) {
-            this.questionHeadingService.setHtml(displayHTML);
-          }
-        };
-        setTimeout(writeH3, 0);
-        setTimeout(writeH3, 100);
-        setTimeout(writeH3, 300);
-      }
+      // Heading is rendered by the single-source headingHtml computed; the
+      // setTimeout cascade that stamped question text into <h3> is no longer
+      // needed (the computed renders the question from state).
 
       if (!result.hasValidSelections) {
         this.timerService.restartForQuestion(index);

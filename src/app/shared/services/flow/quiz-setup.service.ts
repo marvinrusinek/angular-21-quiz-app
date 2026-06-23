@@ -234,15 +234,9 @@ export class QuizSetupService {
         const question = this.quizService.questions?.[idx]
           ?? host.questionsArray()?.[idx] ?? null;
         if (question) {
-          const displayHTML = this.routeService.buildQuestionDisplayHTML(question);
-          if (displayHTML) {
-            const writeH3 = () => {
-              if (!this.questionHeadingService.get().trim()) {
-                this.questionHeadingService.setHtml(displayHTML);
-              }
-            };
-            for (const delay of FET_WRITE_RETRY_LONG_CASCADE_MS) setTimeout(writeH3, delay);
-          }
+          // Heading is rendered by the single-source headingHtml computed; the
+          // setTimeout cascade that stamped question text into <h3> is no longer
+          // needed (the computed renders the question from state).
         }
       }
     });
@@ -461,15 +455,9 @@ export class QuizSetupService {
           ?? host.questionsArray()?.[0]
           ?? null;
         if (question) {
-          const displayHTML = this.routeService.buildQuestionDisplayHTML(question);
-          if (displayHTML) {
-            const writeH3 = () => {
-              if (!this.questionHeadingService.get().trim()) {
-                this.questionHeadingService.setHtml(displayHTML);
-              }
-            };
-            for (const delay of FET_WRITE_RETRY_CASCADE_MS) setTimeout(writeH3, delay);
-          }
+          // Heading is rendered by the single-source headingHtml computed; the
+          // setTimeout cascade that stamped question text into <h3> is no longer
+          // needed (the computed renders the question from state).
         }
       })
       .catch((err: unknown) => reportError('restartQuiz navigation', err));

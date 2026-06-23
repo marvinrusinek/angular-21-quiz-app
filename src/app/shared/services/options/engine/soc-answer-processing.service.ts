@@ -357,9 +357,9 @@ export class SocAnswerProcessingService {
     } as any);
     this.explanationTextService.lockExplanation();
     this.quizStateService.setDisplayState({ mode: 'explanation', answered: true });
-    if (fetHtml) {
-      this.questionHeadingService.setHtml(fetHtml);
-    }
+    // Heading is rendered by the single-source headingHtml computed, which reads
+    // the FET text stored above (storeFormattedExplanation/setExplanationText).
+    // No direct setHtml needed.
   }
 
   /**
