@@ -21,7 +21,6 @@ type Host = CodelabQuizContentComponent;
  * Extracted from CqcOrchestratorService.
  *
  * Responsible for:
- * - stampQuestionTextNow: immediate question text stamping
  * - cleanupStaleStateForIndex: post-refresh stale state cleanup
  * - runQuestionIndexSet: question index change handling
  * - runLoadQuizDataFromRoute: route-based quiz data loading
@@ -32,32 +31,6 @@ export class CqcQuestionNavService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly fetGuard = inject(CqcFetGuardService);
 
-  /**
-   * Unconditionally stamp the question text for idx into qText. Used by
-   * runQuestionIndexSet on every navigation to guarantee the user sees
-   * the question text before any FET / pipeline emission arrives. Safe
-   * to retry — idempotent for a given idx+currentIndex.
-   *
-   * Returns true if the stamp was written, false otherwise.
-   */
-  stampQuestionTextNow(host: Host, idx: number): boolean {
-    try {
-      if (host.currentIndex !== idx) return false;
-      if (this.fetGuard.hasInteractionEvidence(host, idx)) return false;
-      
-      const el = host.qText?.()?.nativeElement;
-      if (!el) return false;  // qText element not found
-        
-      const display = this.fetGuard.buildQuestionDisplayHTML(host, idx);
-      if (!display) {
-        // buildQuestionDisplayHTML returned empty
-        return false;
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
 
   /**
    * If the current browser nav is a page refresh AND the target idx
@@ -131,28 +104,12 @@ export class CqcQuestionNavService {
 
     if (!this.fetGuard.hasInteractionEvidence(host, idx)) {
       host._lastDisplayedText = '';
-      host.qTextHtmlSig?.set('');
     }
 
     this.cleanupStaleStateForIndex(host, idx);
 
-    const stamped = this.stampQuestionTextNow(host, idx);
-    if (!stamped && host.qText?.()?.nativeElement && 
-      !this.fetGuard.hasInteractionEvidence(host, idx)
-    ) {
-    }
-
-    if (!Array.isArray(host._questionStampRetryTimers)) {
-      host._questionStampRetryTimers = [];
-    }
-    for (const t of host._questionStampRetryTimers) clearTimeout(t);
-    host._questionStampRetryTimers = [];
-    const delays = [0, 50, 150, 400, 900];
-    for (const d of delays) {
-      host._questionStampRetryTimers.push(
-        setTimeout(() => this.stampQuestionTextNow(host, idx), d)
-      );
-    }
+    // Heading is rendered by the single-source headingHtml computed; the
+    // stamp-question-text-into-<h3> retry cascade is no longer needed.
 
     host.questionIndexSig.set(idx);
     host.questionIndexSubject.next(idx);
@@ -226,18 +183,8 @@ export class CqcQuestionNavService {
 
         this.cleanupStaleStateForIndex(host, zeroBasedIndex);
 
-        this.stampQuestionTextNow(host, zeroBasedIndex);
-        if (!Array.isArray(host._questionStampRetryTimers)) {
-          host._questionStampRetryTimers = [];
-        }
-        for (const t of host._questionStampRetryTimers) clearTimeout(t);
-        host._questionStampRetryTimers = [];
-        const routeDelays = [0, 50, 150, 400, 900];
-        for (const d of routeDelays) {
-          host._questionStampRetryTimers.push(
-            setTimeout(() => this.stampQuestionTextNow(host, zeroBasedIndex), d)
-          );
-        }
+        // Heading is rendered by the single-source headingHtml computed; the
+        // stamp-question-text-into-<h3> retry cascade is no longer needed.
 
         host.questionIndexSig.set(zeroBasedIndex);
         host.questionIndexSubject.next(zeroBasedIndex);
