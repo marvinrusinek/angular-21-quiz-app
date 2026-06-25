@@ -263,28 +263,12 @@ export class CodelabQuizContentComponent implements OnInit {
   get _lockedForIndex(): number { return this.displayService._lockedForIndexSig(); }
   set _lockedForIndex(v: number) { this.displayService._lockedForIndexSig.set(v); }
 
-  get displayText$(): Observable<string> { return this.displayService.displayText$; }
-  set displayText$(v: Observable<string>) { this.displayService.displayText$ = v; }
-
-  get shouldShowFet$(): Observable<boolean> { return this.displayService.shouldShowFet$; }
-  set shouldShowFet$(v: Observable<boolean>) { this.displayService.shouldShowFet$ = v; }
-  get fetToDisplay$(): Observable<string> { return this.displayService.fetToDisplay$; }
-  set fetToDisplay$(v: Observable<string>) { this.displayService.fetToDisplay$ = v; }
-
   resetInitialState(): void {
     this.explanationTextService.setIsExplanationTextDisplayed(false);
   }
 
   setupQuestionResetSubscription(): void {
     this.orchestrator.runSetupQuestionResetSubscription(this);
-  }
-
-  initDisplayTextPipeline(): void {
-    this.displayService.initDisplayTextPipeline(
-      this.currentIndex$,
-      this.timedOutIdx$,
-      this.displayState$() ?? this.quizStateService.displayState$
-    );
   }
 
   resetExplanationService(): void {
@@ -365,18 +349,6 @@ export class CodelabQuizContentComponent implements OnInit {
     return this.orchestrator.runCalculateCombinedQuestionData(this, currentQuizData, numberOfCorrectAnswers, isExplanationDisplayed, formattedExplanation);
   }
 
-  setupShouldShowFet(): void {
-    this.displayService.setupShouldShowFet(this.currentIndex$);
-  }
-
-  setupFetToDisplay(): void {
-    this.displayService.setupFetToDisplay(
-      this.currentIndex$,
-      this.timedOutIdx$,
-      this.activeFetText$,
-      this.currentQuestion$
-    );
-  }
 
   // Prime synchronously with the initial input value so runOnInit's
   // downstream setup sees the correct currentIndex / FET state.

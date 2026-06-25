@@ -67,10 +67,9 @@ export class CqcOrchestratorService {
     host.setupQuestionResetSubscription();
     host.resetExplanationService();
 
-    host.setupShouldShowFet();
-    host.setupFetToDisplay();
-
-    host.initDisplayTextPipeline();
+    // (Removed: setupShouldShowFet / setupFetToDisplay / initDisplayTextPipeline —
+    // those built the displayText$/shouldShowFet$/fetToDisplay$ streams, which no
+    // longer have any consumers since the heading became single-source.)
     host.setupContentAvailability();
 
     host.emitContentAvailableState();
