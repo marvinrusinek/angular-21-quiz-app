@@ -39,7 +39,6 @@ export class CqcOrchestratorService {
 
   async runOnInit(host: Host): Promise<void> {
     await this.runInitialSetup(host);
-    this.setupFetSafetyNets(host);
     this.subscribeToTimerExpiryFetWrite(host);
   }
 
@@ -84,37 +83,6 @@ export class CqcOrchestratorService {
       .subscribe(() => {});
   }
 
-  /**
-   * Wire the FET-display safety nets: the intended-qText/forceStamp delegates
-   * (kept as closures so host._cqcComputeIntendedQText + the callers below stay
-   * intact), the qText MutationObserver, and the visibility-replay handler.
-   */
-  private setupFetSafetyNets(host: Host): void {
-    const computeIntendedQText = (): string => this.computeIntendedQText(host);
-    host._cqcComputeIntendedQText = computeIntendedQText;
-    const forceStampIfBlank = (_reason: string): void => this.forceStampIfBlank(host);
-
-    this.setupVisibilityReplayHandler(host, forceStampIfBlank);
-  }
-
-  /**
-   * Register the visibilitychange handler that replays forceStampIfBlank at a
-   * cascade of delays to win races with the QQC visibility-restore flow.
-   * Extracted verbatim from runOnInit.
-   */
-  private setupVisibilityReplayHandler(host: Host, forceStampIfBlank: (reason: string) => void): void {
-    host._cqcVisibilityHandler = () => {
-      if (document.visibilityState !== 'visible') return;
-      // Replay at several points to win races with the QQC visibility-restore
-      // flow (which runs async with ~350ms + 400ms setTimeouts and may
-      // overwrite or clear the qText DOM).
-      forceStampIfBlank('visibility:0');
-      for (const delay of VISIBILITY_RESTORE_REPLAY_CASCADE_MS) {
-        setTimeout(() => forceStampIfBlank('visibility:' + delay), delay);
-      }
-    };
-    document.addEventListener('visibilitychange', host._cqcVisibilityHandler);
-  }
 
   /**
    * On timer expiry, resolve the LIVE question index (signal-first to avoid
@@ -183,181 +151,8 @@ export class CqcOrchestratorService {
     host.cdRef.markForCheck();
   }
 
-  /**
-   * Build the intended qText HTML for the LIVE question index (signal-first, so
-   * replays compute for the current question, never the prior one): prefer a
-   * validated cached FET, else compute on-the-fly (FET if resolved, else the
-   * question text), with fallbacks to the builder / last-displayed / raw
-   * question text. Extracted verbatim from runOnInit's closure — FET-display
-   * pipeline, keep byte-for-byte.
-   */
-  private computeIntendedQText(host: Host): string {
-    // Read from the input signal — host.currentIndex lags by a microtask
-    // because it's a plain field updated by an effect. Using the signal
-    // means the MutationObserver and visibility-restore replays compute
-    // the intended HTML for the LIVE question, never the prior one.
-    const sigIdx = host.questionIndex?.();
-    const idx = (typeof sigIdx === 'number' && sigIdx >= 0)
-      ? sigIdx
-      : (host.currentIndex >= 0
-        ? host.currentIndex
-        : (host.quizService.getCurrentQuestionIndex?.() ?? 0));
-
-    // MULTI-ANSWER heading rule: show the question text + "(N answers are
-    // correct)" banner UNLESS the question was answered correctly (all correct
-    // selected). Only an all-correct multi-answer falls through to the FET;
-    // incorrect / in-progress / expired-without-getting-it-right keep the
-    // banner. buildQuestionDisplayHTML emits the `correct-count` banner only
-    // for multi-answer, so single-answer is untouched (FET-in-heading below).
-    // FET shows ONLY on the CURRENT view: a genuine answer this visit
-    // (questionFresh === false, flipped to false by the click orchestrator) or a
-    // live timer expiry (the TRANSIENT timedOutIdxSubject for this idx, which is
-    // reset on navigation). On a REVISIT the per-question reset restores
-    // questionFresh=true and the transient timeout is cleared, so the heading
-    // reverts to the question text (+ banner) — while the cached FET, selections,
-    // scoring and explanation state are all preserved untouched.
-    const fresh = host.quizQuestionComponent?.()?.questionFresh?.() ?? true;
-    const transientTimedOut =
-      host.timedOutIdxSubject?.getValue?.() === idx && idx >= 0;
-    const fetActive = !fresh || transientTimedOut;
-
-    const banneredQ = this.fetGuard.buildQuestionDisplayHTML(host, idx);
-    if (banneredQ && banneredQ.includes('correct-count')) {
-      const answeredCorrectly = host.quizService?._multiAnswerPerfect?.get?.(idx) === true;
-      if (!answeredCorrectly && !fetActive) {
-        return banneredQ;
-      }
-    }
-
-    let intended = '';
-    if (fetActive) {
-      intended = this.resolveCachedFet(host, idx);
-      // No (valid) cached FET — try on-the-fly if quiz data is available.
-      if (!intended) intended = this.computeOnTheFlyFet(host, idx);
-    }
-    if (!intended) {
-      intended = this.fetGuard.buildQuestionDisplayHTML(host, idx);
-    }
-    if (!intended) {
-      intended = (host._lastDisplayedText ?? '').trim();
-    }
-    if (!intended) {
-      try {
-        const q = host.quizService.questions?.[idx];
-        intended = (q?.questionText ?? '').trim();
-      } catch {}
-    }
-    return intended;
-  }
-
-  /**
-   * Resolve the cached FET for idx (only when the question is resolved in
-   * storage), then validate it against the LIVE display-order question's raw
-   * explanation — a shuffle mismatch (cache from a different question at this
-   * numeric index) is treated as stale and returns ''. Extracted verbatim.
-   */
-  private resolveCachedFet(host: Host, idx: number): string {
-    // Check FET caches first — but only if the question is resolved.
-    // For multi-answer questions, the cache may have been populated by
-    // an upstream path before all correct answers were selected.
-    const isResolvedForCache = this.isResolvedOrConfirmed(host, idx);
-    let cachedFet = isResolvedForCache
-      ? ((host.explanationTextService.formattedExplanations?.[idx]?.explanation ?? '').trim()
-        || (host.explanationTextService.fetByIndex?.get(idx) ?? '').trim())
-      : '';
-    if (cachedFet) {
-      try {
-        const displayQs = host.quizService.getQuestionsInDisplayOrder?.()
-          ?? host.quizService.questions;
-        const liveQ = displayQs?.[idx];
-        const liveExpl = (liveQ?.explanation ?? '').toString().trim();
-        if (liveExpl) {
-          const cachedLower = cachedFet.toLowerCase();
-          const liveLower = liveExpl.toLowerCase();
-          // Cached FET should include the live explanation as substring.
-          // If not, it's a stale cache from a different question at this
-          // index (likely a shuffle mismatch).
-          if (cachedLower.indexOf(liveLower) === -1) {
-            cachedFet = '';
-          }
-        }
-      } catch { /* ignore */ }
-    }
-    return cachedFet;
-  }
-
-  /**
-   * Compute the FET on-the-fly from live quiz data: when the question is
-   * resolved, format the explanation from its correct indices; when unresolved
-   * (partial multi-answer), return the question display HTML. Returns '' when
-   * no quiz data / no FET resolved (caller falls through to its fallbacks).
-   * Extracted verbatim.
-   */
-  /**
-   * Resolved for FET purposes: storage-resolved OR SOC-confirmed all-correct.
-   * isQuestionResolvedFromStorage misses an all-correct multi-answer in shuffle
-   * (the storage record is keyed/derived differently), which made the FET fall
-   * back to question text even though _multiAnswerPerfect/fetBypass were set on
-   * completion. Honor those authoritative completion signals so a fully-answered
-   * multi-answer actually shows its FET.
-   */
-  private isResolvedOrConfirmed(host: Host, idx: number): boolean {
-    if (this.fetGuard.isQuestionResolvedFromStorage(host, idx)) return true;
-    if (host.quizService?._multiAnswerPerfect?.get?.(idx) === true) return true;
-    if (host.explanationTextService?.fetBypassForQuestion?.get?.(idx) === true) return true;
-    if (this.dotStatusService?.timedOutFetForced?.has(idx) === true) return true;
-    return false;
-  }
-
-  private computeOnTheFlyFet(host: Host, idx: number): string {
-    try {
-      const questions = host.quizService.getQuestionsInDisplayOrder?.()
-        ?? host.quizService.questions;
-      const q = questions?.[idx];
-      if (q?.explanation && q?.options?.length > 0) {
-        // Check resolution to decide FET vs question text
-        const isResolved = this.isResolvedOrConfirmed(host, idx);
-        if (isResolved) {
-          const correctIndices = host.explanationTextService.getCorrectOptionIndices(q, q.options, idx);
-          if (correctIndices.length > 0) {
-            return host.explanationTextService.formatExplanation(q, correctIndices, q.explanation);
-          }
-        } else {
-          // Unresolved (partial multi-answer) — show question text
-          return this.fetGuard.buildQuestionDisplayHTML(host, idx);
-        }
-      }
-    } catch { /* ignore */ }
-    return '';
-  }
-
-  /**
-   * If the qText heading is blank (or differs from the intended HTML), restamp
-   * it via the FET guard — unless the current content has the multi-answer
-   * banner and the intended doesn't (preserve the nav-lock banner). Extracted
-   * verbatim from runOnInit's closure.
-   */
-  private forceStampIfBlank(host: Host): void {
-    const el = host.qText?.()?.nativeElement;
-    if (!el) return;
-    const current = (el.innerHTML ?? '').trim();
-    const intended = this.computeIntendedQText(host);
-    if (!intended) return;
-    if (!current || current !== intended) {
-      // If the h3 already has the multi-answer banner but the computed
-      // intended text does not, preserve the current content — the banner
-      // was correctly set by the navigation lock and should not be stripped.
-      if (current && current.includes('correct-count') && !intended.includes('correct-count')) {
-        return;
-      }
-    }
-  }
 
   runOnDestroy(host: Host): void {
-    if (host._cqcVisibilityHandler) {
-      document.removeEventListener('visibilitychange', host._cqcVisibilityHandler);
-      host._cqcVisibilityHandler = undefined;
-    }
     if (host._qTextObserver) {
       try { host._qTextObserver.disconnect(); } catch { /* ignore */ }
       host._qTextObserver = null;
