@@ -186,7 +186,7 @@
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin: 16px 0;
+  margin: 2px 0 16px;  // pulled up ~14px to line up with the "You scored…" text
   
   .star {
     font-size: 32px;
