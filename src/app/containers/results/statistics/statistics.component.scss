@@ -224,6 +224,35 @@
 
 
 // ============================================================
+// SCORE BREAKDOWN (Correct / Incorrect / Timed Out)
+// ============================================================
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 8px auto 12px;
+  animation: slideInUp 0.5s ease-out 0.5s both;
+
+  .breakdown-item {
+    font-size: 17px;
+    font-weight: 600;
+
+    &.correct {
+      color: vars.$green;
+    }
+
+    &.incorrect {
+      color: vars.$red;
+    }
+
+    &.timed-out {
+      color: vars.$gray;
+    }
+  }
+}
+
+// ============================================================
 // TIME SECTION with Icon
 // ============================================================
 .time-section {

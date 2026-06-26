@@ -54,6 +54,14 @@ export class StatisticsComponent implements OnInit {
   readonly elapsedSeconds = computed(() => this.completionTimeSig() % 60);
   readonly percentage = computed(() => this.quizMetadata().percentage ?? 0);
 
+  // ── score breakdown (Correct / Incorrect / Timed Out) ───────────
+  readonly totalCount = computed(() => this.quizMetadata().totalQuestions ?? 0);
+  readonly correctCount = computed(() => this.quizMetadata().correctAnswersCount?.() ?? 0);
+  readonly incorrectCount = computed(() =>
+    Math.max(0, this.totalCount() - this.correctCount())
+  );
+  readonly timedOutCount = computed(() => this.countTimedOutQuestions());
+
   readonly feedbackLevel = computed<'excellent' | 'good' | 'poor'>(() => {
     const pct = this.percentage();
     if (pct >= 80) return 'excellent';
@@ -150,6 +158,18 @@ export class StatisticsComponent implements OnInit {
     this.sendQuizStatusToQuizService();
 
     this.cdRef.markForCheck();
+  }
+
+  private countTimedOutQuestions(): number {
+    if (!this.timerService.isCountdown()) return 0;
+    const duration = this.timerService.timePerQuestion;
+    if (duration <= 0) return 0;
+    const elapsed = this.timerService.elapsedTimes ?? [];
+    let count = 0;
+    for (let i = 0; i < this.totalCount(); i++) {
+      if ((elapsed[i] ?? 0) >= duration) count++;
+    }
+    return count;
   }
 
   private sendQuizStatusToQuizService(): void {

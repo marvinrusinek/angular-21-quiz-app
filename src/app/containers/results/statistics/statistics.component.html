@@ -114,6 +114,13 @@
 
 
 
+          <!-- SCORE BREAKDOWN -->
+          <div class="score-breakdown">
+            <span class="breakdown-item correct">✔ {{ correctCount() }} <span i18n>Correct</span></span>
+            <span class="breakdown-item incorrect">✖ {{ incorrectCount() }} <span i18n>Incorrect</span></span>
+            <span class="breakdown-item timed-out">⏱ {{ timedOutCount() }} <span i18n>Timed Out</span></span>
+          </div>
+
           <!-- TIME SECTION -->
           <div class="time-section">
             <span class="time-icon">⏱️</span>
