@@ -15,7 +15,7 @@ modular Angular architecture, and dynamic UI rendering.
 </p>
 
 <p align="center">
-<a href="https://marvinrusinek.github.io/angular-20-quiz-app/" target="_blank">
+<a href="https://marvinrusinek.github.io/angular-20-quiz-app" target="_blank">
 ▶ Launch Live Demo
 </a>
 </p>
@@ -25,18 +25,19 @@ modular Angular architecture, and dynamic UI rendering.
 <h2>🎯 Goal / Purpose</h2>
 
 <p>
-This project explores advanced Angular application design through a real-world quiz platform
-that combines <strong>Signals</strong>, <strong>RxJS</strong>, and a <strong>modular service-driven architecture</strong>.
+This project demonstrates modern Angular application architecture through a feature-rich quiz platform built with
+<strong>Angular 20</strong>, <strong>Signals</strong>, <strong>RxJS</strong>, and a
+<strong>modular service-oriented architecture</strong>.
 </p>
 
 <p>
-It was built both as a practical learning project and as a demonstration of scalable frontend engineering patterns,
-including dynamic UI rendering, reactive state synchronization, and maintainable application structure.
+It showcases scalable frontend engineering practices including reactive state management, dynamic UI rendering,
+component decoupling, performance optimization, and maintainable application design.
 </p>
 
 <p>
-The app has been <strong>heavily refactored</strong> to reduce component complexity, improve separation of concerns,
-and organize quiz behavior into focused services and UI layers.
+The application has undergone extensive refactoring to reduce component complexity, improve separation of concerns,
+increase testability, and organize quiz behavior into focused services and reusable UI layers.
 </p>
 
 <hr>
@@ -45,11 +46,11 @@ and organize quiz behavior into focused services and UI layers.
 
 <ul>
 <li>Built with <strong>Angular 20</strong>, <strong>TypeScript</strong>, <strong>RxJS</strong>, and <strong>Angular Signals</strong></li>
-<li>Supports <strong>single-answer</strong> and <strong>multiple-answer</strong> quiz flows with distinct interaction logic</li>
-<li>Refactored large components into a more modular, service-oriented architecture</li>
-<li>Combines <strong>Signals</strong> for local/reactive UI state and <strong>RxJS</strong> for async/event-driven flows</li>
-<li>Implements timer-based quiz behavior, score tracking, feedback display, and explanation text handling</li>
-<li>Designed to keep quiz logic, rendering, and state synchronization cleanly separated</li>
+<li>Architected using a <strong>modular service-oriented design</strong> with standalone components and clear separation of concerns</li>
+<li>Combines <strong>Signals</strong> for reactive UI state with <strong>RxJS</strong> for asynchronous and event-driven workflows</li>
+<li>Supports <strong>single-answer</strong> and <strong>multiple-answer</strong> quiz modes with distinct interaction, scoring, and feedback logic</li>
+<li>Implements question timing, answer validation, score analysis, explanation rendering, and quiz progress tracking</li>
+<li>Includes comprehensive <strong>unit</strong> and <strong>end-to-end testing</strong> to improve reliability and reduce regressions</li>
 </ul>
 
 <hr>
@@ -59,34 +60,44 @@ and organize quiz behavior into focused services and UI layers.
 <h3>🧠 Multiple Question Types</h3>
 <p>
 Supports both <strong>single-answer</strong> and <strong>multiple-answer</strong> questions,
-each with its own selection rules, validation flow, and feedback behavior.
+each with its own selection rules, validation, scoring, and feedback behavior.
 </p>
 
-<h3>💡 Feedback + Explanation Text</h3>
+<h3>💡 Immediate Feedback & Explanations</h3>
 <p>
-Displays immediate answer feedback and explanation text to make the quiz experience
-more instructional and interactive.
+Provides real-time answer feedback with detailed explanation text to reinforce learning
+and improve quiz engagement.
 </p>
 
 <h3>⏱️ Timer-Based Quiz Flow</h3>
 <p>
-Includes timed question behavior to add urgency and simulate a more realistic quiz environment.
+Supports timed questions with automatic timeout handling, progress updates,
+and consistent navigation behavior.
 </p>
 
-<h3>📈 Live Score Tracking</h3>
+<h3>🔀 Question & Answer Shuffling</h3>
 <p>
-Updates the user’s score dynamically throughout the quiz experience.
+Randomizes both question order and answer choices while preserving correct scoring,
+feedback, quiz review, and results.
 </p>
 
-<h3>🔀 Shuffle Mode</h3>
+<h3>📊 Quiz Review & Score Analysis</h3>
 <p>
-Supports randomized quiz/question flow while preserving consistent answer validation,
-feedback, and explanation behavior.
+Includes a detailed post-quiz review with score analysis, correct answers,
+user selections, and performance summaries.
 </p>
 
-<h3>📊 Results Summary</h3>
+<h3>📈 Live Progress Tracking</h3>
 <p>
-Provides a structured summary view so users can review performance after completing a quiz.
+Tracks score and quiz progress throughout each session, giving users continuous
+feedback as they advance.
+</p>
+
+<h3>🧪 Robust Testing</h3>
+
+<p>
+Comprehensive unit and end-to-end tests help ensure application reliability
+and prevent regressions as new features are added.
 </p>
 
 <hr>
@@ -94,23 +105,24 @@ Provides a structured summary view so users can review performance after complet
 <h2>🧭 Architecture Overview</h2>
 
 <p>
-The application follows a modular Angular architecture where container components coordinate UI behavior,
-focused services manage quiz logic and state, and reactive primitives keep the interface synchronized.
+The application follows a modular Angular architecture in which container components orchestrate application flow,
+specialized services encapsulate business logic, and reactive state keeps the UI synchronized with user interactions.
 </p>
 
 <p>
-It uses <strong>Angular Signals</strong> for direct reactive UI state and <strong>RxJS streams</strong> for asynchronous flows,
-event coordination, and cross-component synchronization.
+It combines <strong>Angular Signals</strong> for fine-grained reactive UI state with <strong>RxJS</strong> for asynchronous data flows,
+event coordination, and cross-component communication.
 </p>
 
 <h3>High-Level Flow</h3>
 
-<pre><code>[User Interaction]
+<pre><code>
+[User Interaction]
         ↓
 [Container Components]
 Introduction / Quiz / Results
         ↓
-[Question + Answer Components]
+[Question & Answer Components]
         ↓
 [Service Layer]
  ├── QuizService
@@ -120,10 +132,10 @@ Introduction / Quiz / Results
  ├── TimerService
  └── SelectionMessageService
         ↓
-[Signals + RxJS State]
+[Signals + RxJS]
         ↓
-[UI Updates]
-Scoreboard / Feedback / Results
+[Reactive UI]
+Score • Feedback • Quiz Review • Results
 </code></pre>
 
 <hr>
@@ -131,30 +143,40 @@ Scoreboard / Feedback / Results
 <h2>🛠️ Technology Stack</h2>
 
 <ul>
-<li><strong>Angular 20</strong></li>
-<li><strong>TypeScript</strong></li>
-<li><strong>Angular Signals</strong></li>
-<li><strong>RxJS</strong></li>
-<li><strong>Angular Material</strong></li>
-<li><strong>SCSS</strong></li>
+<li><strong>Framework:</strong> Angular 20</li>
+<li><strong>Language:</strong> TypeScript</li>
+<li><strong>State Management:</strong> Angular Signals, RxJS</li>
+<li><strong>UI:</strong> Angular Material, SCSS</li>
+<li><strong>Forms:</strong> Reactive Forms</li>
+<li><strong>Testing:</strong> Unit Testing, End-to-End Testing</li>
+<li><strong>Platform:</strong> Progressive Web App (PWA)</li>
 </ul>
 
 <hr>
 
 <h2>📁 Project Structure</h2>
-
-<pre><code>src/
+<p>The project is organized into reusable UI components, feature containers, and focused service layers to promote separation of concerns, maintainability, and scalability.</p>
+<pre><code>
+src/
 ├── app/
-│   ├── components/
-│   ├── containers/
+│   ├── components/     # Reusable UI components
+│   ├── containers/     # Feature containers and page orchestration
 │   ├── shared/
-│   │   ├── services/
-│   │   ├── models/
-│   │   └── utils/
-│   ├── pipes/
-│   ├── directives/
-│   └── animations/
+│   │   ├── services/   # Business logic and application state
+│   │   ├── models/     # Shared TypeScript models and interfaces
+│   │   └── utils/      # Utility functions and helpers
+│   ├── pipes/          # Custom Angular pipes
+│   ├── directives/     # Custom Angular directives
+│   └── animations/     # Reusable animations
 </code></pre>
+
+shared/
+├── services/
+│   ├── quiz/
+│   ├── answer/
+│   ├── feedback/
+│   ├── navigation/
+│   └── timer/
 
 <hr>
 
@@ -163,8 +185,8 @@ Scoreboard / Feedback / Results
 <h3>Prerequisites</h3>
 
 <ul>
-<li>Node.js 18+</li>
-<li>Angular CLI 20+</li>
+<li>Node.js 18 or later</li>
+<li>Angular CLI 20 or later</li>
 </ul>
 
 <h3>Installation</h3>
@@ -174,42 +196,38 @@ cd angular-20-quiz-app
 npm install
 </code></pre>
 
-<h3>Run the App</h3>
+<h3>Run the Development Server</h3>
 
 <pre><code>ng serve</code></pre>
 
-<p>Then open:</p>
+<p>Open your browser and navigate to:</p>
 
 <pre><code>http://localhost:4200</code></pre>
 
+<p>The application will automatically reload when source files are modified.</p>
+
 <hr>
 
-<h2>🚧 Roadmap</h2>
+<h2>🚀 Upcoming Features</h2>
 
 <ul>
-<li>Continue refining Signals usage across the application</li>
-<li>Further reduce complexity in larger feature areas</li>
-<li>Improve mobile responsiveness and touch interactions</li>
-<li>Enhance UI/UX polish and animation consistency</li>
-<li>Expand quiz content and results insights</li>
+<li>Expand quiz coverage with additional Angular topics, including <strong>RxJS</strong> and <strong>Signals</strong></li>
+<li>Add enhanced quiz review capabilities, including advanced filtering and sorting</li>
+<li>Introduce difficulty-based quiz organization and learning progression</li>
+<li>Continue refining Angular Signals usage and modern Angular patterns throughout the application</li>
+<li>Further simplify complex feature areas through ongoing architectural refactoring</li>
+<li>Enhance accessibility, responsive design, and touch interactions</li>
+<li>Expand performance insights and post-quiz analytics</li>
 </ul>
 
 <hr>
 
 <h2>⭐ Support</h2>
 
-<p>
-If you’ve found this project helpful or even a little interesting, please take a moment to give it a ⭐ on GitHub — it really helps support the project and keeps it growing!
-</p>
+<p> If you enjoyed exploring this project or found it helpful, a ⭐ on GitHub is greatly appreciated. It helps others discover the project and supports its ongoing development. </p>
 
 <hr>
 
 <h2>📄 License</h2>
 
-<p>
-Licensed under the <strong>MIT License</strong>.
-</p>
-
-<p>
-See the <a href="./LICENSE">LICENSE</a> file for details.
-</p>
+<p> Distributed under the <strong>MIT License</strong>. See the <a href="./LICENSE">LICENSE</a> file for more information. </p>
