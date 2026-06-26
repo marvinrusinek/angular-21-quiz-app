@@ -79,6 +79,13 @@
                 </div>
               </div>
 
+              <!-- Score Breakdown -->
+              <div class="score-breakdown">
+                <span class="breakdown-item correct">✔ {{ correctCount() }} <span i18n>Correct</span></span>
+                <span class="breakdown-item incorrect">✖ {{ incorrectCount() }} <span i18n>Incorrect</span></span>
+                <span class="breakdown-item timed-out">⏱ {{ timedOutCount() }} <span i18n>Timed Out</span></span>
+              </div>
+
               <!-- Star Rating -->
               <div class="star-rating" aria-label="Score rating">
                 @for (star of [1, 2, 3, 4, 5]; track star) {
@@ -113,13 +120,6 @@
           </div>
 
 
-
-          <!-- SCORE BREAKDOWN -->
-          <div class="score-breakdown">
-            <span class="breakdown-item correct">✔ {{ correctCount() }} <span i18n>Correct</span></span>
-            <span class="breakdown-item incorrect">✖ {{ incorrectCount() }} <span i18n>Incorrect</span></span>
-            <span class="breakdown-item timed-out">⏱ {{ timedOutCount() }} <span i18n>Timed Out</span></span>
-          </div>
 
           <!-- TIME SECTION -->
           <div class="time-section">
