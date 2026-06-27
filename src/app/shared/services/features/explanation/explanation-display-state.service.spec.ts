@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { Injector } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
+import { FET_UNLOCK_WATCHDOG_MS } from '../../../constants/timing';
+
 import { ExplanationDisplayStateService } from './explanation-display-state.service';
 import { ExplanationFormatterService } from './explanation-formatter.service';
 
@@ -212,5 +214,162 @@ describe('ExplanationDisplayStateService', () => {
     service.emitFormatted(0, '', { bypassGuard: true });
     // A no-op empty emit must not change the lock either way.
     expect(service._fetLocked).toBe(true);
+  });
+
+  // ── prepareExplanationText ──────────────────────────────────────────
+
+  it('prepareExplanationText returns the explanation or a fallback', () => {
+    expect(service.prepareExplanationText({ explanation: 'Hi' } as any)).toBe('Hi');
+    expect(service.prepareExplanationText({} as any)).toBe('No explanation available');
+  });
+
+  // ── getLatestFormattedExplanation ───────────────────────────────────
+
+  it('getLatestFormattedExplanation reads the formatter signal', () => {
+    formatterMock.formattedExplanationSig.mockReturnValue('Live text');
+    expect(service.getLatestFormattedExplanation()).toBe('Live text');
+  });
+
+  // ── getFormattedExplanation (uninitialized fallback) ────────────────
+
+  it('getFormattedExplanation emits the fallback string before init', () => {
+    let emitted: string | undefined;
+    service.getFormattedExplanation(0).subscribe((v) => (emitted = v));
+    expect(emitted).toBe('No explanation available');
+  });
+
+  // ── emitFormatted non-empty (applyFormattedEmit) ────────────────────
+
+  it('emitFormatted with real text stores it and flips the display signals on', () => {
+    service._fetLocked = false;
+    service.emitFormatted(5, 'Because reasons', { bypassGuard: true });
+
+    expect(service.latestExplanation).toBe('Because reasons');
+    expect(service.latestExplanationIndex).toBe(5);
+    expect(formatterMock.fetByIndex.get(5)).toBe('Because reasons');
+    expect(formatterMock.formattedExplanationSig.set).toHaveBeenCalledWith('Because reasons');
+    expect(service.shouldDisplayExplanationSig()).toBe(true);
+    expect(service.isExplanationTextDisplayedSig()).toBe(true);
+    // applyFormattedEmit leaves the lock engaged for the active question.
+    expect(service._fetLocked).toBe(true);
+  });
+
+  // ── setExplanationTextForQuestionIndex ──────────────────────────────
+
+  it('setExplanationTextForQuestionIndex stores the text and opens the gate', () => {
+    service.setExplanationTextForQuestionIndex(2, 'Indexed text');
+    expect(service.explanationTexts[2]).toBe('Indexed text');
+    expect(service._gate.get(2)?.getValue()).toBe(true);
+  });
+
+  it('setExplanationTextForQuestionIndex ignores negative indices', () => {
+    service.setExplanationTextForQuestionIndex(-1, 'nope');
+    expect(service.explanationTexts[-1]).toBeUndefined();
+  });
+
+  // ── setShouldDisplayExplanation (context aggregation) ────────────────
+
+  it('setShouldDisplayExplanation aggregates across contexts (force-bypassed guard)', () => {
+    service.setShouldDisplayExplanation(true, { force: true });
+    expect(service.shouldDisplayExplanationSig()).toBe(true);
+
+    service.setShouldDisplayExplanation(false, { force: true });
+    expect(service.shouldDisplayExplanationSig()).toBe(false);
+
+    service.setShouldDisplayExplanation(true, { context: 'a', force: true });
+    service.setShouldDisplayExplanation(true, { context: 'b', force: true });
+    expect(service.shouldDisplayExplanationSig()).toBe(true);
+
+    // Removing one context leaves the other -> still aggregated true.
+    service.setShouldDisplayExplanation(false, { context: 'a', force: true });
+    expect(service.shouldDisplayExplanationSig()).toBe(true);
+
+    // A global false clears every context.
+    service.setShouldDisplayExplanation(false, { force: true });
+    expect(service.shouldDisplayExplanationSig()).toBe(false);
+  });
+
+  // ── setIsExplanationTextDisplayed (context aggregation) ──────────────
+
+  it('setIsExplanationTextDisplayed aggregates and a global false clears all', () => {
+    service.setIsExplanationTextDisplayed(true, { context: 'a', force: true });
+    service.setIsExplanationTextDisplayed(true, { context: 'b', force: true });
+    expect(service.isExplanationTextDisplayedSig()).toBe(true);
+
+    service.setIsExplanationTextDisplayed(false, { context: 'a', force: true });
+    expect(service.isExplanationTextDisplayedSig()).toBe(true);
+
+    service.setIsExplanationTextDisplayed(false, { force: true });
+    expect(service.isExplanationTextDisplayedSig()).toBe(false);
+  });
+
+  // ── quiet zone / nav time ───────────────────────────────────────────
+
+  it('setQuietZone mirrors the deadline into the signal', () => {
+    service.setQuietZone(100);
+    expect(service.quietZoneUntilSig()).toBe(service._quietZoneUntil);
+    expect(service.quietZoneUntilSig()).toBeGreaterThan(0);
+  });
+
+  it('markLastNavTime records the nav timestamp', () => {
+    service.markLastNavTime(123456);
+    expect(service._lastNavTime).toBe(123456);
+  });
+
+  // ── purgeAndDefer (deferred-unlock timer cluster) ───────────────────
+  // The heaviest timing path: locks immediately on nav, then releases the FET
+  // lock via rAF + setTimeout, with a watchdog backstop. Fake timers + a
+  // synchronous rAF stub make the unlock deterministic.
+  describe('purgeAndDefer', () => {
+    let rafSpy: jest.SpyInstance;
+    let cafSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      rafSpy = jest.spyOn(window, 'requestAnimationFrame')
+        .mockImplementation(((cb: FrameRequestCallback) => { cb(0); return 1; }) as any);
+      cafSpy = jest.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      rafSpy.mockRestore();
+      cafSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    it('locks immediately and sets the new active index + token', () => {
+      service._fetLocked = false;
+      service.purgeAndDefer(2);
+      expect(service._fetLocked).toBe(true);
+      expect(service._activeIndex).toBe(2);
+      expect(service._gateToken).toBeGreaterThan(0);
+    });
+
+    it('releases the lock after the settle delay', () => {
+      service.purgeAndDefer(2);
+      jest.advanceTimersByTime(200);  // > 120ms settle
+      expect(service._fetLocked).toBe(false);
+    });
+
+    it('a newer purge bumps the token and its own cycle unlocks', () => {
+      service.purgeAndDefer(1);
+      const firstToken = service._gateToken;
+      service.purgeAndDefer(2);
+      expect(service._gateToken).toBe(firstToken + 1);
+
+      jest.advanceTimersByTime(200);
+      expect(service._fetLocked).toBe(false);
+      expect(service._activeIndex).toBe(2);
+    });
+
+    it('watchdog force-unlocks when the rAF settle path never runs', () => {
+      rafSpy.mockImplementation((() => 1) as any);  // never invoke the callback
+      service._fetLocked = false;
+      service.purgeAndDefer(3);
+      expect(service._fetLocked).toBe(true);
+
+      jest.advanceTimersByTime(FET_UNLOCK_WATCHDOG_MS + 10);
+      expect(service._fetLocked).toBe(false);
+    });
   });
 });
