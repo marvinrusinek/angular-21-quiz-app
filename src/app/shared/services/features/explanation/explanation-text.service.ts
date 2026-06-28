@@ -13,6 +13,7 @@ import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
+import { swallow } from '../../../utils/error-logging';
 
 export { FETPayload } from './explanation-display-state.service';
 
@@ -56,7 +57,7 @@ export class ExplanationTextService {
       try {
         const scoringSvc = this.quizService?.scoringService;
         if (scoringSvc?.questionCorrectness?.get(idx) === true) return true;
-      } catch { /* ignore */ }
+      } catch (err: unknown) { swallow('explanation-text.service.ts scoring fast-path', err); }
 
       const qs: any = this.quizService;
       const isShuffled = qs?.isShuffleEnabled?.()
@@ -98,7 +99,7 @@ export class ExplanationTextService {
             if (t) selectedTexts.add(t);
           }
         }
-      } catch { /* ignore */ }
+      } catch (err: unknown) { swallow('explanation-text.service.ts selectedOptionsMap read', err); }
 
       // sessionStorage sel_Q{idx}
       try {
@@ -114,7 +115,7 @@ export class ExplanationTextService {
             }
           }
         }
-      } catch { /* ignore */ }
+      } catch (err: unknown) { swallow('explanation-text.service.ts sessionStorage sel_Q read', err); }
 
       const allCorrect = pristineCorrectTexts.every(t => selectedTexts.has(t));
       return allCorrect;
