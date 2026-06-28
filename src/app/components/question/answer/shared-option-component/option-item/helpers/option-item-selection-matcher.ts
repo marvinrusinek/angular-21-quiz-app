@@ -4,6 +4,7 @@ import { SelectedOptionService } from '../../../../../../shared/services/state/s
 
 import { QUESTION_ROUTE_REGEX } from '../../../../../../shared/constants/route-patterns';
 import { norm } from '../../../../../../shared/utils/text-norm';
+import { swallow } from '../../../../../../shared/utils/error-logging';
 
 /**
  * Resolve a usable question index when the input/service value lags behind
@@ -17,7 +18,7 @@ function resolveQIndexFromUrl(qIndex: number): number {
       const urlIdx = Number(m[1]) - 1;
       if (Number.isFinite(urlIdx) && urlIdx > 0) return urlIdx;
     }
-  } catch { /* ignore */ }
+  } catch (err: unknown) { swallow('option-item-selection-matcher.ts resolveQIndexFromUrl', err); }
   return qIndex;
 }
 
