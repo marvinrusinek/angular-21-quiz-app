@@ -10,6 +10,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
+import { swallow } from '../../../utils/error-logging';
 
 type Host = QuizQuestionComponent;
 
@@ -336,7 +337,7 @@ export class QqcOrchClickService {
           break;
         }
       }
-    } catch { /* ignore */ }
+    } catch (err: unknown) { swallow('qqc-orch-click.service.ts pristine multi-answer detect', err); }
     return false;
   }
 
@@ -349,7 +350,7 @@ export class QqcOrchClickService {
       let rawCorrectTexts = new Set<string>();
       try {
         rawCorrectTexts = host.quizService.getPristineCorrectTextsForQuestion(displayQ?.questionText);
-      } catch { /* ignore */ }
+      } catch (err: unknown) { swallow('qqc-orch-click.service.ts pristine correct-texts read', err); }
       if (rawCorrectTexts.size === 0) {
         const rawOpts: any[] = displayQ?.options ?? [];
         rawCorrectTexts = new Set(
