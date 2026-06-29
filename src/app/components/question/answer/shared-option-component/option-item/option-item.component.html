@@ -1,21 +1,27 @@
+@let optionBinding = binding();
+@let option = optionBinding.option;
+@let optionId = option.optionId;
+@let index = displayIndex();
+@let config = sharedOptionConfig();
+
 <div
   class="option-cursor-wrapper"
-  [class.cursor-not-allowed]="getOptionCursor() === 'not-allowed'"
-  [attr.data-option-id]="binding().option.optionId"
+  [class.cursor-not-allowed]="isNotAllowedCursor()"
+  [attr.data-option-id]="optionId"
 >
   @if (type() === 'single') {
     <mat-radio-button
       class="option-row single-option"
       appHighlightOption
-      [sharedOptionConfig]="sharedOptionConfig()"
-      [optionBinding]="binding()"
-      [value]="displayIndex()"
+      [sharedOptionConfig]="config"
+      [optionBinding]="optionBinding"
+      [value]="index"
       [ngClass]="getOptionClasses()"
       [style.background-color]="getOptionBackgroundColor()"
       [disabled]="isDisabled()"
       [disableRipple]="true"
       (change)="onChanged($event)"
-      [attr.data-option-id]="binding().option.optionId"
+      [attr.data-option-id]="optionId"
     >
       <ng-container *ngTemplateOutlet="optionContent"></ng-container>
     </mat-radio-button>
@@ -23,15 +29,15 @@
     <mat-checkbox
       class="option-row multiple-option"
       appHighlightOption
-      [sharedOptionConfig]="sharedOptionConfig()"
-      [optionBinding]="binding()"
-      [checked]="binding().isSelected"
+      [sharedOptionConfig]="config"
+      [optionBinding]="optionBinding"
+      [checked]="optionBinding.isSelected"
       [ngClass]="getOptionClasses()"
       [style.background-color]="getOptionBackgroundColor()"
       [disabled]="isDisabled()"
       [disableRipple]="true"
       (change)="onChanged($event)"
-      [attr.data-option-id]="binding().option.optionId"
+      [attr.data-option-id]="optionId"
     >
       <ng-container *ngTemplateOutlet="optionContent"></ng-container>
     </mat-checkbox>
@@ -39,15 +45,14 @@
 </div>
 
 <ng-template #optionContent>
-  <div class="option-wrapper" (click)="onContentClick($event)">
-    <span class="option-text">
-      {{ getOptionDisplayText() }}
-    </span>
+  <div
+    class="option-wrapper"
+    (click)="onContentClick($event)"
+  >
+    <span class="option-text">{{ getOptionDisplayText() }}</span>
 
-    @if (shouldShowIcon(binding().option, displayIndex())) {
-      <mat-icon class="opt-icon">
-        {{ getOptionIcon(binding().option, displayIndex()) }}
-      </mat-icon>
+    @if (shouldShowIcon()) {
+      <mat-icon class="opt-icon">{{ getOptionIcon() }}</mat-icon>
     }
   </div>
 </ng-template>

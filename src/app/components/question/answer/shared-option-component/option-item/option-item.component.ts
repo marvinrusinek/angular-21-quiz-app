@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef,
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef,
   effect, inject, input, OnInit, output, ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FeedbackProps } from '../../../../../shared/models/FeedbackProps.model';
+import { Option } from '../../../../../shared/models/Option.model';
 import { OptionBindings } from '../../../../../shared/models/OptionBindings.model';
 import { SelectedOption } from '../../../../../shared/models/SelectedOption.model';
 import { SharedOptionConfig } from '../../../../../shared/models/SharedOptionConfig.model';
@@ -88,6 +89,20 @@ export class OptionItemComponent implements OnInit {
   readonly sharedOptionConfig = input.required<SharedOptionConfig>();
   readonly currentQuestionIndex = input(0);
   readonly timerExpired = input(false);
+
+  readonly option = computed(() => this.binding().option);
+
+  readonly optionId = computed(() => {
+    const id = this.option()?.optionId;
+    return (id != null && id !== -1) ? Number(id) : this.displayIndex();
+  });
+
+  // NOTE: option text / icon visibility / icon name are intentionally plain
+  // method calls in the template (getOptionDisplayText / shouldShowIcon /
+  // getOptionIcon), NOT computed(). They depend on imperatively-mutated state
+  // (_wasSelected, option.showIcon/highlight/_autoRevealedCorrect) that isn't
+  // signal-backed, so a computed would cache a stale value and the icon could
+  // fail to appear/clear on click. Methods re-evaluate every CD pass.
 
   // ── remaining variables ─────────────────────────────────────────
   private _wasSelected = false;
@@ -192,11 +207,6 @@ export class OptionItemComponent implements OnInit {
       });
   }
 
-  get optionId(): number {
-    return (this.binding()?.option?.optionId != null && this.binding().option.optionId !== -1)
-      ? Number(this.binding().option.optionId) : this.displayIndex();
-  }
-
   getOptionDisplayText(): string {
     return this.optionService.getOptionDisplayText(this.binding().option, this.displayIndex());
   }
@@ -221,107 +231,169 @@ export class OptionItemComponent implements OnInit {
   getOptionClasses(): { [key: string]: boolean } {
     const classes = { ...this.binding().cssClasses };
 
-    // Previous-revisit override (highest priority): when the user revisits a
-    // FULLY-resolved question, paint correct options green and incorrect ones
-    // dark gray. Otherwise (imperfect/none) leave alone.
-    try {
-      const _qIdxRev = this.resolveQuestionIndex();
+    const revisitClasses = this.getRevisitOptionClasses(classes);
+    if (revisitClasses) return revisitClasses;
 
-      const res = this.questionResolution.resolveQuestionState(_qIdxRev, { includeWrongDetection: true });
-      const { fullyResolvedCorrect, fullyResolvedWrong, correctOpts } = res;
-      const _opt = this.binding()?.option;
-
-      if (fullyResolvedCorrect) {
-        const isCanonCorrectHere = this.questionResolution.isOptionCanonCorrect(_opt, correctOpts);
-        if (isCanonCorrectHere) {
-          return {
-            ...classes,
-            'selected': true,
-            'selected-option': true,
-            'correct-option': true,
-            'incorrect-option': false,
-            'highlighted': true,
-            'disabled-option': false
-          };
-        }
-        // Previously-clicked incorrect options should show red, not gray.
-        // Without 'incorrect-option', .mat-mdc-radio-disabled applies
-        // gray !important which overrides the inline red background.
-        let wasClickedIncorrect = this._wasSelected
-          || this._userHasClicked
-          || !!this.binding()?.option?.showIcon
-          || !!this.binding()?.option?.highlight;
-        const optText = norm(_opt?.text);
-        if (!wasClickedIncorrect && optText) {
-          const histEntries = this.selectedOptionService._selectionHistory.get(_qIdxRev) ?? [];
-          wasClickedIncorrect = histEntries.some((s: SelectedOption) => norm(s?.text) === optText);
-        }
-        return {
-          ...classes,
-          'selected': false,
-          'selected-option': false,
-          'correct-option': false,
-          'incorrect-option': wasClickedIncorrect,
-          'highlighted': false,
-          'disabled-option': !wasClickedIncorrect
-        };
-      } else if (fullyResolvedWrong && !this._userHasClicked) {
-        return {
-          ...classes,
-          'selected': false,
-          'selected-option': false,
-          'correct-option': false,
-          'incorrect-option': false,
-          'highlighted': false,
-          'disabled-option': false
-        };
-      }
-    } catch (err: unknown) { console.error('getOptionClasses revisit-override failed:', err); }
-
-    // If the timer-expiry handler pre-stamped CSS classes on this binding
-    // FOR THIS question, return them directly — do NOT let downstream
-    // logic overwrite them. Stale stamps from a previous question fall
-    // through to the normal class-derivation path.
     if (this.isTimerStamped()) return classes;
 
     if (this.isTimerExpiredForThisQuestion()) {
-      // Preserve the user's selected state on timer expiry: a selected
-      // wrong option must still paint red with its close icon.
-      const wasSelected = this.binding()?.isSelected
-        || !!this.binding()?.option?.highlight
-        || this._wasSelected
-        || this.isSelectedForCurrentQuestion();
-      const showCorrect = this.shouldShowCorrectOnTimeout();
-      classes['correct-option'] = showCorrect;
-      classes['incorrect-option'] = wasSelected && !this.isCurrentOptionCorrect();
-      return classes;
+      return this.getTimerExpiredOptionClasses(classes);
     }
 
+    return this.getDefaultOptionClasses(classes);
+  }
+
+  private getTimerExpiredOptionClasses(
+    classes: { [key: string]: boolean }
+  ): { [key: string]: boolean } {
+    const wasSelected =
+      this.binding()?.isSelected ||
+      !!this.binding()?.option?.highlight ||
+      this._wasSelected ||
+      this.isSelectedForCurrentQuestion();
+
+    const showCorrect = this.shouldShowCorrectOnTimeout();
+
+    return {
+      ...classes,
+      'correct-option': showCorrect,
+      'incorrect-option': wasSelected && !this.isCurrentOptionCorrect()
+    };
+  }
+
+  private getDefaultOptionClasses(
+    classes: { [key: string]: boolean }
+  ): { [key: string]: boolean } {
     const isCorrect = this.isCurrentOptionCorrect();
     const shouldHighlight = this.shouldHighlightOption();
 
-    if (shouldHighlight) {
-      if (isCorrect) {
-        classes['correct-option'] = true;
-        classes['incorrect-option'] = false;
-      } else {
-        classes['incorrect-option'] = true;
-        classes['correct-option'] = false;
-      }
-    } else {
-      // Explicitly clear all highlight classes to prevent stale cssClasses from leaking
-      classes['correct-option'] = false;
-      classes['incorrect-option'] = false;
-      classes['highlighted'] = false;
-      classes['selected'] = false;
-      classes['selected-option'] = false;
+    if (!shouldHighlight) {
+      return this.clearHighlightClasses(classes);
     }
 
-    return classes;
+    return {
+      ...classes,
+      'correct-option': isCorrect,
+      'incorrect-option': !isCorrect
+    };
+  }
+
+  private clearHighlightClasses(
+    classes: { [key: string]: boolean }
+  ): { [key: string]: boolean } {
+    return {
+      ...classes,
+      'correct-option': false,
+      'incorrect-option': false,
+      highlighted: false,
+      selected: false,
+      'selected-option': false
+    };
+  }
+
+  private getRevisitOptionClasses(
+    classes: { [key: string]: boolean }
+  ): { [key: string]: boolean } | null {
+    // Defensive: a throw here must fall through to the timer/default class
+    // logic (return null), never break the option render. Mirrors the
+    // try/catch the original inline getOptionClasses() had around this block.
+    try {
+      const questionIndex = this.resolveQuestionIndex();
+
+      const {
+        fullyResolvedCorrect,
+        fullyResolvedWrong,
+        correctOpts
+      } = this.questionResolution.resolveQuestionState(questionIndex, {
+        includeWrongDetection: true
+      });
+
+      const option = this.binding()?.option;
+
+      if (fullyResolvedCorrect) {
+        return this.getFullyResolvedCorrectClasses(classes, option, correctOpts, questionIndex);
+      }
+
+      if (fullyResolvedWrong && !this._userHasClicked) {
+        return this.clearRevisitClasses(classes);
+      }
+
+      return null;
+    } catch (err: unknown) {
+      console.error('getRevisitOptionClasses failed:', err);
+      return null;
+    }
+  }
+
+  private getFullyResolvedCorrectClasses(
+    classes: { [key: string]: boolean },
+    option: Option | undefined,
+    correctOpts: Option[],
+    questionIndex: number
+  ): { [key: string]: boolean } {
+    const isCanonCorrectHere =
+      this.questionResolution.isOptionCanonCorrect(option, correctOpts);
+
+    if (isCanonCorrectHere) {
+      return {
+        ...classes,
+        selected: true,
+        'selected-option': true,
+        'correct-option': true,
+        'incorrect-option': false,
+        highlighted: true,
+        'disabled-option': false
+      };
+    }
+
+    const wasClickedIncorrect =
+      this.wasClickedIncorrectOnRevisit(option, questionIndex);
+
+    return {
+      ...classes,
+      selected: false,
+      'selected-option': false,
+      'correct-option': false,
+      'incorrect-option': wasClickedIncorrect,
+      highlighted: false,
+      'disabled-option': !wasClickedIncorrect
+    };
+  }
+
+  private wasClickedIncorrectOnRevisit(
+    option: Option | undefined,
+    questionIndex: number
+  ): boolean {
+    if (
+      this._wasSelected ||
+      this._userHasClicked ||
+      !!this.binding()?.option?.showIcon ||
+      !!this.binding()?.option?.highlight
+    ) {
+      return true;
+    }
+
+    const optionText = norm(option?.text);
+    if (!optionText) return false;
+
+    return this.selectedOptionService.wasOptionSelectedForQuestion(
+      questionIndex,
+      optionText
+    );
+  }
+
+  private clearRevisitClasses(
+    classes: { [key: string]: boolean }
+  ): { [key: string]: boolean } {
+    return { ...this.clearHighlightClasses(classes), 'disabled-option': false };
   }
 
   getOptionCursor(): string {
     return this.binding().optionCursor || 'default';
+  }
+
+  isNotAllowedCursor(): boolean {
+    return this.getOptionCursor() === 'not-allowed';
   }
 
   isDisabled(): boolean {
@@ -762,7 +834,7 @@ export class OptionItemComponent implements OnInit {
     this._wasSelected = true;
     this.cdRef.markForCheck();
     this.optionUI.emit({
-      optionId: this.optionId,
+      optionId: this.optionId(),
       displayIndex: this.displayIndex(),
       kind: 'change',
       inputType: this.inputType,
@@ -776,7 +848,7 @@ export class OptionItemComponent implements OnInit {
     this._wasSelected = true;
     this.cdRef.markForCheck();
     this.optionUI.emit({
-      optionId: this.optionId,
+      optionId: this.optionId(),
       displayIndex: this.displayIndex(),
       kind: 'contentClick',
       inputType: this.inputType,

@@ -8,6 +8,7 @@ import { QuestionType } from '../../models/question-type.enum';
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
+import { norm } from '../../utils/text-norm';
 
 import { SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SAVED_QUESTION_INDEX, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 import { shallowArrayEqual } from '../../utils/shallow-equal';
@@ -68,6 +69,14 @@ export class SelectedOptionService {
       if (!already) history.push(entry);
     }
     this._selectionHistory.set(questionIndex, history);
+  }
+
+  wasOptionSelectedForQuestion(questionIndex: number, optionText: string): boolean {
+    const normalizedText = norm(optionText);
+
+    return (this._selectionHistory.get(questionIndex) ?? []).some(
+      (selected: SelectedOption) => norm(selected?.text) === normalizedText
+    );
   }
 
   get hasRefreshBackup(): boolean {
