@@ -1,4 +1,5 @@
 @let qa = combinedQuestionDataView();
+@let progress = progressSig();
 
 <ng-container>
   @if (qa && qa.options && qa.options.length > 0) {
@@ -96,19 +97,19 @@
                         </div>
                       }
                     </div>
-                    <span class="progress-inline" [class.is-complete]="progressSig() >= 100">({{ progressSig() }}% complete)</span>
+                    <span class="progress-inline" [class.is-complete]="progress >= 100">({{ progress }}% complete)</span>
                   </section>
 
                   <!-- Row 3: Animated striped progress bar -->
                   <div class="quiz-progress"
-                    [class.is-complete]="progressSig() >= 100"
+                    [class.is-complete]="progress >= 100"
                     role="progressbar"
-                    [attr.aria-valuenow]="progressSig()"
+                    [attr.aria-valuenow]="progress"
                     aria-valuemin="0"
                     aria-valuemax="100"
                     aria-label="Quiz progress"
                     i18n-aria-label>
-                    <div class="quiz-progress__fill" [style.width.%]="progressSig()"></div>
+                    <div class="quiz-progress__fill" [style.width.%]="progress"></div>
                   </div>
                 }
             </mat-card-footer>
@@ -120,4 +121,3 @@
     <p i18n>Loading&hellip;</p>
   }
 </ng-container>
-
