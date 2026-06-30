@@ -25,32 +25,25 @@ export class HighlightOptionDirective implements OnInit {
 
   // ── inputs ──────────────────────────────────────────────────────
   readonly appHighlightInputTypeInput =
-    input<'checkbox' | 'radio'>('radio',
-      { alias: 'appHighlightInputType' });
-  readonly type =
-    input<'single' | 'multiple'>('single');
+    input<'checkbox' | 'radio'>('radio', { alias: 'appHighlightInputType' });
+  readonly type = input<'single' | 'multiple'>('single');
   readonly appHighlightResetInput =
     input(false, { alias: 'appHighlightReset' });
   readonly appResetBackground = input(false);
   readonly optionInput =
     input<Option | undefined>(undefined, { alias: 'option' });
-  readonly showFeedbackForOption =
-    input<{ [key: number]: boolean; }>({});
-  readonly highlightCorrectAfterIncorrect =
-    input(false);
+  readonly showFeedbackForOption = input<{ [key: number]: boolean; }>({});
+  readonly highlightCorrectAfterIncorrect = input(false);
   readonly allOptions = input<Option[]>([]);
   readonly optionsToDisplay = input<Option[]>([]);
-  readonly optionBinding =
-    input<OptionBindings>();
+  readonly optionBinding = input<OptionBindings>();
   readonly selectedOptionHistory = input<number[]>([]);
-  readonly isSelectedInput =
-    input(false, { alias: 'isSelected' });
+  readonly isSelectedInput = input(false, { alias: 'isSelected' });
   readonly isCorrect = input(false);
   readonly isAnswered = input(false);
   readonly showFeedback = input(false);
   readonly renderReady = input(false);
-  readonly sharedOptionConfig =
-    input.required<SharedOptionConfig>();
+  readonly sharedOptionConfig = input.required<SharedOptionConfig>();
 
   // ── remaining variables ─────────────────────────────────────────
   appHighlightInputType: 'checkbox' | 'radio' = 'radio';
@@ -99,9 +92,7 @@ export class HighlightOptionDirective implements OnInit {
 
   ngOnInit(): void {
     const optionBinding = this.optionBinding();
-    if (optionBinding) {
-      optionBinding.directiveInstance = this;
-    }
+    if (optionBinding) optionBinding.directiveInstance = this;
   }
 
   onClick(): void {
@@ -134,9 +125,7 @@ export class HighlightOptionDirective implements OnInit {
         // OptionItemComponent.shouldShowIcon() which has proper guards
         // against stale binding flags on refresh. Setting showIcon = true
         // here would bypass those guards.
-        if (isLiveSelected) {
-          return;
-        }
+        if (isLiveSelected) return;
 
         // Not selected — check config for reset
         const sharedOptionConfig = this.sharedOptionConfig();
@@ -161,10 +150,7 @@ export class HighlightOptionDirective implements OnInit {
         this.renderer.setStyle(host, 'cursor', 'pointer');
         this.setPointerEvents(host, 'auto');
 
-        if (opt.highlight) {
-          // Do NOT set showIcon here — let OptionItemComponent decide.
-          return;
-        }
+        if (opt.highlight) return;
 
         // Disabled
         if (!opt.correct && opt.active === false) {
@@ -210,9 +196,7 @@ export class HighlightOptionDirective implements OnInit {
     // clearing it here would undo that before OptionItemComponent renders.
     const binding = this.optionBinding();
     const isLiveSelected = binding?.isSelected || opt.selected || opt.highlight;
-    if (!isLiveSelected) {
-      opt.showIcon = false;
-    }
+    if (!isLiveSelected) opt.showIcon = false;
 
     // Check shouldResetBackground FIRST, before selection state
     // This ensures new questions always start clean, regardless of stale state
