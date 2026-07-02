@@ -1,0 +1,48 @@
+<div class="quiz-sort">
+  <span class="sort-label" i18n>Sort by difficulty:</span>
+
+  <div class="sort-buttons">
+    <button
+      type="button"
+      class="sort-btn"
+      [class.active]="isDifficulty('asc')"
+      [disabled]="isDifficulty('asc')"
+      [attr.aria-pressed]="isDifficulty('asc')"
+      (click)="selectDifficulty('asc')"
+      matTooltip="Easiest first (beginner → advanced)"
+      i18n-matTooltip
+      aria-label="Sort easiest to hardest"
+      i18n-aria-label
+    >
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+
+    <button
+      type="button"
+      class="sort-btn"
+      [class.active]="isDifficulty('desc')"
+      [disabled]="isDifficulty('desc')"
+      [attr.aria-pressed]="isDifficulty('desc')"
+      (click)="selectDifficulty('desc')"
+      matTooltip="Hardest first (advanced → beginner)"
+      i18n-matTooltip
+      aria-label="Sort hardest to easiest"
+      i18n-aria-label
+    >
+      <mat-icon>arrow_downward</mat-icon>
+    </button>
+  </div>
+
+  <select
+    class="sort-select"
+    [value]="alphaDirection()"
+    (change)="onAlphaChange($any($event.target).value)"
+    matTooltip="Alphabetical order within each difficulty"
+    i18n-matTooltip
+    aria-label="Alphabetical order within each difficulty"
+    i18n-aria-label
+  >
+    <option value="az" i18n>A–Z</option>
+    <option value="za" i18n>Z–A</option>
+  </select>
+</div>

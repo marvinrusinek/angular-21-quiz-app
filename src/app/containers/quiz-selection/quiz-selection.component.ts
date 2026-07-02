@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit,
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit,
   signal, ViewEncapsulation } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { SK_COMPLETED_QUIZ_IDS, SK_QUIZ_SORT_DIRECTION, SK_STARTED_QUIZ_IDS } from '../../shared/constants/session-keys';
+import { SK_COMPLETED_QUIZ_IDS, SK_QUIZ_SORT_ALPHA, SK_QUIZ_SORT_DIFFICULTY, SK_STARTED_QUIZ_IDS } from '../../shared/constants/session-keys';
 import { readSessionJson, writeSessionJson } from '../../shared/utils/session-storage';
 import { readLocalString, writeLocalString } from '../../shared/utils/local-storage';
 
@@ -17,7 +17,7 @@ import { QuizStatus } from '../../shared/models/quiz-status.enum';
 
 import { AnimationState } from '../../shared/models/AnimationState.type';
 import { Quiz } from '../../shared/models/Quiz.model';
-import { QuizSortDirection } from '../../shared/models/QuizSortDirection.type';
+import { AlphaDirection, DifficultyDirection } from '../../shared/models/QuizSort.type';
 import { QuizSelectionParams } from '../../shared/models/QuizSelectionParams.model';
 import { QuizTileStyles } from '../../shared/models/QuizTileStyles.model';
 
@@ -25,6 +25,8 @@ import { QuizDataService } from '../../shared/services/data/quizdata.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
 
 import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
+import { QuizSearchComponent } from '../../components/quiz-search/quiz-search.component';
+import { QuizSortComponent } from '../../components/quiz-sort/quiz-sort.component';
 import { ScrollDownIndicatorComponent } from '../../components/scroll-down-indicator/scroll-down-indicator.component';
 
 import { SlideLeftToRightAnimation } from '../../animations/animations';
@@ -41,6 +43,8 @@ import { swallow } from '../../shared/utils/error-logging';
     MatMenuModule,
     MatTooltipModule,
     NgOptimizedImage,
+    QuizSearchComponent,
+    QuizSortComponent,
     ScrollDownIndicatorComponent,
     BackToTopComponent
   ],
@@ -60,9 +64,8 @@ export class QuizSelectionComponent implements OnInit {
   readonly quizzes = this.quizDataService.quizzesSig;
   private readonly completedQuizIds = signal<ReadonlySet<string>>(new Set());
 
-  // ── difficulty sort ─────────────────────────────────────────────
-  // Rank each difficulty so the grid can be ordered easiest→hardest.
-  // Missing/unknown difficulties always sink to the bottom (see difficultyRank).
+  // ── difficulty ranking (used by the 'difficulty' sort) ──────────
+  // beginner→intermediate→advanced; missing/unknown difficulties sink last.
   private static readonly DIFFICULTY_RANK: Readonly<Record<string, number>> = {
     beginner: 0,
     intermediate: 1,
@@ -70,30 +73,31 @@ export class QuizSelectionComponent implements OnInit {
   };
   private static readonly UNKNOWN_RANK = Number.MAX_SAFE_INTEGER;
 
-  readonly sortDirection = signal<QuizSortDirection>('default');
+  // ── search + sort state (this component owns ALL of it) ─────────
+  // The child SearchComponent / SortComponent are presentational only; they
+  // emit changes that flow into these signals, and read back the value.
+  // Sorting has two independent dimensions: the difficulty direction is the
+  // primary grouping, and the alphabetical direction orders quizzes WITHIN
+  // each difficulty group.
+  readonly searchTerm = signal('');
+  readonly sortDifficulty = signal<DifficultyDirection>('asc');
+  readonly sortAlpha = signal<AlphaDirection>('az');
 
-  // The grid renders this instead of quizzes(): default order is left
-  // untouched; asc/desc reorder by difficulty while keeping same-difficulty
-  // tiles in their original quiz.json order (stable), and unknown/missing
-  // difficulties always trail regardless of direction.
-  readonly sortedQuizzes = computed<Quiz[]>(() => {
-    const list = this.quizzes() ?? [];
-    const direction = this.sortDirection();
-    if (direction === 'default') return list;
+  // Persist both sort dimensions so they're remembered on the next visit.
+  private readonly persistSortEffect = effect(() => {
+    writeLocalString(SK_QUIZ_SORT_DIFFICULTY, this.sortDifficulty());
+    writeLocalString(SK_QUIZ_SORT_ALPHA, this.sortAlpha());
+  });
 
-    const factor = direction === 'asc' ? 1 : -1;
-    return list
-      .map((quiz, index) => ({ quiz, index }))
-      .sort((a, b) => {
-        const rankA = this.difficultyRank(a.quiz);
-        const rankB = this.difficultyRank(b.quiz);
-        const aUnknown = rankA === QuizSelectionComponent.UNKNOWN_RANK;
-        const bUnknown = rankB === QuizSelectionComponent.UNKNOWN_RANK;
-        if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;  // unknowns last
-        if (rankA !== rankB) return (rankA - rankB) * factor;
-        return a.index - b.index;  // stable tiebreak: preserve JSON order
-      })
-      .map(entry => entry.quiz);
+  // The grid renders this: filter the full list by the search term, then sort
+  // the result. Neither step mutates the source array (filter returns a new
+  // array; sortQuizzes spreads before sorting).
+  readonly displayedQuizzes = computed<Quiz[]>(() => {
+    const term = this.searchTerm();
+    const difficultyDir = this.sortDifficulty();
+    const alphaDir = this.sortAlpha();
+    const filtered = (this.quizzes() ?? []).filter(quiz => this.matchesSearch(quiz, term));
+    return this.sortQuizzes(filtered, difficultyDir, alphaDir);
   });
 
   readonly accessedCount = signal(0);
@@ -245,19 +249,31 @@ export class QuizSelectionComponent implements OnInit {
     return [prefix, quiz?.quizId];
   }
 
-  // Set the difficulty sort direction from an arrow button. The active arrow
-  // is disabled in the template, so a direction only changes when the user
-  // clicks the OTHER (currently-enabled) arrow. Persisted so the choice is
-  // remembered on the user's next visit.
-  setSort(direction: Exclude<QuizSortDirection, 'default'>): void {
-    this.sortDirection.set(direction);
-    writeLocalString(SK_QUIZ_SORT_DIRECTION, direction);
+  // Case-insensitive match against the quiz's milestone/title, summary and
+  // difficulty. An empty term matches everything.
+  private matchesSearch(quiz: Quiz, term: string): boolean {
+    const needle = term.trim().toLowerCase();
+    if (!needle) return true;
+    return [quiz?.milestone, quiz?.summary, quiz?.difficulty]
+      .some(field => (field ?? '').toString().toLowerCase().includes(needle));
   }
 
-  // True when the given direction is active (drives the arrow's highlighted +
-  // disabled state).
-  isActiveSort(direction: QuizSortDirection): boolean {
-    return this.sortDirection() === direction;
+  // Return a NEW sorted array (never mutates the input). Two-dimensional:
+  // primary = difficulty rank (asc/desc), then alphabetical by milestone
+  // (az/za) WITHIN each difficulty group.
+  private sortQuizzes(quizzes: Quiz[], difficultyDir: DifficultyDirection, alphaDir: AlphaDirection): Quiz[] {
+    const difficultyFactor = difficultyDir === 'asc' ? 1 : -1;
+    const alphaFactor = alphaDir === 'az' ? 1 : -1;
+
+    return [...quizzes].sort((a, b) => {
+      const rankDiff = (this.difficultyRank(a) - this.difficultyRank(b)) * difficultyFactor;
+      if (rankDiff !== 0) return rankDiff;
+      return this.titleOf(a).localeCompare(this.titleOf(b)) * alphaFactor;  // within group
+    });
+  }
+
+  private titleOf(quiz: Quiz): string {
+    return (quiz?.milestone ?? '').toString().toLowerCase();
   }
 
   private difficultyRank(quiz: Quiz): number {
@@ -273,11 +289,16 @@ export class QuizSelectionComponent implements OnInit {
     this.loadQuizCatalog();
   }
 
-  // Restore the difficulty sort choice from a previous visit (localStorage).
+  // Restore both sort dimensions from a previous visit (localStorage).
   private restoreSortPreference(): void {
-    const saved = readLocalString(SK_QUIZ_SORT_DIRECTION);
-    if (saved === 'asc' || saved === 'desc' || saved === 'default') {
-      this.sortDirection.set(saved);
+    const savedDifficulty = readLocalString(SK_QUIZ_SORT_DIFFICULTY);
+    if (savedDifficulty === 'asc' || savedDifficulty === 'desc') {
+      this.sortDifficulty.set(savedDifficulty);
+    }
+
+    const savedAlpha = readLocalString(SK_QUIZ_SORT_ALPHA);
+    if (savedAlpha === 'az' || savedAlpha === 'za') {
+      this.sortAlpha.set(savedAlpha);
     }
   }
 

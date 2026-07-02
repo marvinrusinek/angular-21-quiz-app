@@ -36,46 +36,23 @@
     </div>
   </header>
 
-  <!-- Toolbar: Milestones + Sort menus -->
+  <!-- Toolbar: Milestones menu + search + sort -->
   <div class="toolbar">
     <button [matMenuTriggerFor]="menu" aria-label="Milestones Menu" i18n-aria-label>
       <span i18n>Milestones ▼</span>
     </button>
 
-    <div class="sort-controls">
-      <span class="sort-label" i18n>Sort by difficulty:</span>
-      <div class="sort-arrows">
-        <button
-          type="button"
-          class="sort-arrow"
-          [class.active]="isActiveSort('asc')"
-          [disabled]="isActiveSort('asc')"
-          [attr.aria-pressed]="isActiveSort('asc')"
-          (click)="setSort('asc')"
-          matTooltip="Easiest first (beginner → advanced)"
-          i18n-matTooltip
-          aria-label="Sort easiest to hardest"
-          i18n-aria-label
-        >
-          <mat-icon>arrow_upward</mat-icon>
-        </button>
+    <app-quiz-search
+      [searchTerm]="searchTerm()"
+      (searchTermChange)="searchTerm.set($event)"
+    ></app-quiz-search>
 
-        <button
-          type="button"
-          class="sort-arrow"
-          [class.active]="isActiveSort('desc')"
-          [disabled]="isActiveSort('desc')"
-          [attr.aria-pressed]="isActiveSort('desc')"
-          (click)="setSort('desc')"
-          matTooltip="Hardest first (advanced → beginner)"
-          i18n-matTooltip
-          aria-label="Sort hardest to easiest"
-          i18n-aria-label
-        >
-          <mat-icon>arrow_downward</mat-icon>
-        </button>
-      </div>
-    </div>
+    <app-quiz-sort
+      [difficultyDirection]="sortDifficulty()"
+      (difficultyDirectionChange)="sortDifficulty.set($event)"
+      [alphaDirection]="sortAlpha()"
+      (alphaDirectionChange)="sortAlpha.set($event)"
+    ></app-quiz-sort>
 
     <mat-menu #menu="matMenu" xPosition="before">
       <span class="quiz-menu-label" i18n>
@@ -111,9 +88,16 @@
     </div>
   }
 
+  <!-- Empty state: quizzes are loaded but none match the search -->
+  @if (quizzes().length > 0 && displayedQuizzes().length === 0) {
+    <p class="no-results" role="status" aria-live="polite" i18n>
+      No quizzes match your search.
+    </p>
+  }
+
   <!-- Quiz Tiles Grid -->
   <div class="quiz-grid">
-    @for (quiz of sortedQuizzes(); let i = $index; track quiz?.quizId) {
+    @for (quiz of displayedQuizzes(); let i = $index; track quiz?.quizId) {
       <div
         class="quiz-tile"
         [class.completed]="isCompleted(quiz)"

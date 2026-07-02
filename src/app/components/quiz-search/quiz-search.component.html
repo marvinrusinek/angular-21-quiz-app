@@ -1,0 +1,27 @@
+<div class="quiz-search">
+  @if (showIcon()) {
+    <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
+  }
+
+  <input
+    type="text"
+    class="search-input"
+    [value]="searchTerm()"
+    (input)="onInput($any($event.target).value)"
+    [placeholder]="placeholder()"
+    aria-label="Search quizzes"
+    i18n-aria-label
+  />
+
+  @if (showClear() && searchTerm()) {
+    <button
+      type="button"
+      class="clear-btn"
+      (click)="clear()"
+      aria-label="Clear search"
+      i18n-aria-label
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+</div>
