@@ -44,17 +44,37 @@
 
     <div class="sort-controls">
       <span class="sort-label" i18n>Sort by difficulty:</span>
-      <mat-radio-group
-        class="sort-radio-group"
-        aria-label="Sort quizzes by difficulty"
-        i18n-aria-label
-        [value]="sortDirection()"
-        (change)="setSort($event.value)"
-      >
-        <mat-radio-button value="default" i18n>Default</mat-radio-button>
-        <mat-radio-button value="asc" i18n>Easiest → Hardest</mat-radio-button>
-        <mat-radio-button value="desc" i18n>Hardest → Easiest</mat-radio-button>
-      </mat-radio-group>
+      <div class="sort-arrows">
+        <button
+          type="button"
+          class="sort-arrow"
+          [class.active]="isActiveSort('asc')"
+          [disabled]="isActiveSort('asc')"
+          [attr.aria-pressed]="isActiveSort('asc')"
+          (click)="setSort('asc')"
+          matTooltip="Easiest first (beginner → advanced)"
+          i18n-matTooltip
+          aria-label="Sort easiest to hardest"
+          i18n-aria-label
+        >
+          <mat-icon>arrow_upward</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="sort-arrow"
+          [class.active]="isActiveSort('desc')"
+          [disabled]="isActiveSort('desc')"
+          [attr.aria-pressed]="isActiveSort('desc')"
+          (click)="setSort('desc')"
+          matTooltip="Hardest first (advanced → beginner)"
+          i18n-matTooltip
+          aria-label="Sort hardest to easiest"
+          i18n-aria-label
+        >
+          <mat-icon>arrow_downward</mat-icon>
+        </button>
+      </div>
     </div>
 
     <mat-menu #menu="matMenu" xPosition="before">

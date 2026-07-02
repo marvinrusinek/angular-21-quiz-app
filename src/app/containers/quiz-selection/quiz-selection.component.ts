@@ -6,7 +6,6 @@ import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatRadioModule } from '@angular/material/radio';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { SK_COMPLETED_QUIZ_IDS, SK_STARTED_QUIZ_IDS } from '../../shared/constants/session-keys';
@@ -39,7 +38,6 @@ import { swallow } from '../../shared/utils/error-logging';
     MatCardModule,
     MatIconModule,
     MatMenuModule,
-    MatRadioModule,
     MatTooltipModule,
     NgOptimizedImage,
     ScrollDownIndicatorComponent,
@@ -246,9 +244,17 @@ export class QuizSelectionComponent implements OnInit {
     return [prefix, quiz?.quizId];
   }
 
-  // Set the difficulty sort order for the grid (default / asc / desc).
-  setSort(direction: QuizSortDirection): void {
+  // Set the difficulty sort direction from an arrow button. The active arrow
+  // is disabled in the template, so a direction only changes when the user
+  // clicks the OTHER (currently-enabled) arrow.
+  setSort(direction: Exclude<QuizSortDirection, 'default'>): void {
     this.sortDirection.set(direction);
+  }
+
+  // True when the given direction is active (drives the arrow's highlighted +
+  // disabled state).
+  isActiveSort(direction: QuizSortDirection): boolean {
+    return this.sortDirection() === direction;
   }
 
   private difficultyRank(quiz: Quiz): number {
