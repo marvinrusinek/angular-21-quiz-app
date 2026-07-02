@@ -70,11 +70,15 @@
   }
 
   .toolbar {
-    width: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    width: fit-content;
     padding-bottom: 15px;
     margin: 35px auto 0;
     position: relative;
-    left: 40px;
     background-color: white;
 
     button {
@@ -132,6 +136,31 @@
       width: 20px;
       height: 20px;
       margin-left: 12px;
+    }
+  }
+
+  // Sort-by-difficulty radio controls — label on its own line, radios stacked below
+  .sort-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+
+    .sort-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: vars.$fire-red;
+    }
+
+    .sort-radio-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+
+      .mat-mdc-radio-button {
+        font-weight: 600;
+      }
     }
   }
 

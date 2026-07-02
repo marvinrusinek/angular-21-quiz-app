@@ -36,11 +36,26 @@
     </div>
   </header>
 
-  <!-- Toolbar: Milestones Menu -->
+  <!-- Toolbar: Milestones + Sort menus -->
   <div class="toolbar">
     <button [matMenuTriggerFor]="menu" aria-label="Milestones Menu" i18n-aria-label>
       <span i18n>Milestones ▼</span>
     </button>
+
+    <div class="sort-controls">
+      <span class="sort-label" i18n>Sort by difficulty:</span>
+      <mat-radio-group
+        class="sort-radio-group"
+        aria-label="Sort quizzes by difficulty"
+        i18n-aria-label
+        [value]="sortDirection()"
+        (change)="setSort($event.value)"
+      >
+        <mat-radio-button value="default" i18n>Default</mat-radio-button>
+        <mat-radio-button value="asc" i18n>Easiest → Hardest</mat-radio-button>
+        <mat-radio-button value="desc" i18n>Hardest → Easiest</mat-radio-button>
+      </mat-radio-group>
+    </div>
 
     <mat-menu #menu="matMenu" xPosition="before">
       <span class="quiz-menu-label" i18n>
@@ -78,7 +93,7 @@
 
   <!-- Quiz Tiles Grid -->
   <div class="quiz-grid">
-    @for (quiz of quizzes(); let i = $index; track quiz?.quizId) {
+    @for (quiz of sortedQuizzes(); let i = $index; track quiz?.quizId) {
       <div
         class="quiz-tile"
         [class.completed]="isCompleted(quiz)"

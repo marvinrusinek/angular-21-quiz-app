@@ -6,6 +6,7 @@ import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { SK_COMPLETED_QUIZ_IDS, SK_STARTED_QUIZ_IDS } from '../../shared/constants/session-keys';
@@ -16,6 +17,7 @@ import { QuizStatus } from '../../shared/models/quiz-status.enum';
 
 import { AnimationState } from '../../shared/models/AnimationState.type';
 import { Quiz } from '../../shared/models/Quiz.model';
+import { QuizSortDirection } from '../../shared/models/QuizSortDirection.type';
 import { QuizSelectionParams } from '../../shared/models/QuizSelectionParams.model';
 import { QuizTileStyles } from '../../shared/models/QuizTileStyles.model';
 
@@ -37,6 +39,7 @@ import { swallow } from '../../shared/utils/error-logging';
     MatCardModule,
     MatIconModule,
     MatMenuModule,
+    MatRadioModule,
     MatTooltipModule,
     NgOptimizedImage,
     ScrollDownIndicatorComponent,
@@ -57,6 +60,42 @@ export class QuizSelectionComponent implements OnInit {
   // ── remaining variables ─────────────────────────────────────────
   readonly quizzes = this.quizDataService.quizzesSig;
   private readonly completedQuizIds = signal<ReadonlySet<string>>(new Set());
+
+  // ── difficulty sort ─────────────────────────────────────────────
+  // Rank each difficulty so the grid can be ordered easiest→hardest.
+  // Missing/unknown difficulties always sink to the bottom (see difficultyRank).
+  private static readonly DIFFICULTY_RANK: Readonly<Record<string, number>> = {
+    beginner: 0,
+    intermediate: 1,
+    advanced: 2
+  };
+  private static readonly UNKNOWN_RANK = Number.MAX_SAFE_INTEGER;
+
+  readonly sortDirection = signal<QuizSortDirection>('default');
+
+  // The grid renders this instead of quizzes(): default order is left
+  // untouched; asc/desc reorder by difficulty while keeping same-difficulty
+  // tiles in their original quiz.json order (stable), and unknown/missing
+  // difficulties always trail regardless of direction.
+  readonly sortedQuizzes = computed<Quiz[]>(() => {
+    const list = this.quizzes() ?? [];
+    const direction = this.sortDirection();
+    if (direction === 'default') return list;
+
+    const factor = direction === 'asc' ? 1 : -1;
+    return list
+      .map((quiz, index) => ({ quiz, index }))
+      .sort((a, b) => {
+        const rankA = this.difficultyRank(a.quiz);
+        const rankB = this.difficultyRank(b.quiz);
+        const aUnknown = rankA === QuizSelectionComponent.UNKNOWN_RANK;
+        const bUnknown = rankB === QuizSelectionComponent.UNKNOWN_RANK;
+        if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;  // unknowns last
+        if (rankA !== rankB) return (rankA - rankB) * factor;
+        return a.index - b.index;  // stable tiebreak: preserve JSON order
+      })
+      .map(entry => entry.quiz);
+  });
 
   readonly accessedCount = signal(0);
   readonly totalQuizCountSig = signal(0);
@@ -205,6 +244,17 @@ export class QuizSelectionComponent implements OnInit {
   public getQuizRoute(quiz: any): string[] {
     const prefix = this.isCompleted(quiz) ? '/results/' : '/intro/';
     return [prefix, quiz?.quizId];
+  }
+
+  // Set the difficulty sort order for the grid (default / asc / desc).
+  setSort(direction: QuizSortDirection): void {
+    this.sortDirection.set(direction);
+  }
+
+  private difficultyRank(quiz: Quiz): number {
+    const key = (quiz?.difficulty ?? '').toString().toLowerCase();
+    const rank = QuizSelectionComponent.DIFFICULTY_RANK[key];
+    return rank ?? QuizSelectionComponent.UNKNOWN_RANK;
   }
 
   private initializeQuizSelection(): void {
