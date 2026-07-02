@@ -148,6 +148,15 @@
             }
           </mat-card-actions>
         </div>
+
+        @if (quiz?.difficulty; as difficulty) {
+          <span
+            class="difficulty-badge"
+            [ngClass]="'difficulty-' + difficulty"
+          >
+            {{ difficulty | titlecase }}
+          </span>
+        }
       </div>
     }
   </div>
