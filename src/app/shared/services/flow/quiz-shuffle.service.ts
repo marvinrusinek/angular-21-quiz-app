@@ -44,6 +44,9 @@ export class QuizShuffleService {
     if (this.loadState(quizId)) {
       const state = this.shuffleByQuizId.get(quizId);
       if (state && state.questionOrder.length === questions.length) {
+        // Re-pin AOTA last in the persisted order too (handles orders saved
+        // before this rule, or by the old display-time pin). Idempotent.
+        this.applyAotaPinToState(quizId, state, questions);
         return;
       }
       // Persisted shuffle length mismatch — regenerating
@@ -58,12 +61,15 @@ export class QuizShuffleService {
 
     const optionOrder = new Map<number, number[]>();
     for (const origIdx of questionOrder) {
-      const len = questions[origIdx]?.options?.length ?? 0;
-      const base = Array.from({ length: len }, (_, i) => i);
-      optionOrder.set(
-        origIdx,
-        shuffleOptions ? ArrayUtils.shuffleArray(base) : base
-      );
+      const opts = questions[origIdx]?.options ?? [];
+      const base = Array.from({ length: opts.length }, (_, i) => i);
+      const ordered = shuffleOptions ? ArrayUtils.shuffleArray(base) : base;
+      // Pin any "All of the above" option LAST in the STORED order, so the
+      // displayed order (reorderOptions applies this order verbatim) equals the
+      // stored order — no display-vs-stored divergence for the visibility
+      // restore to churn on. (Pinning at display time instead caused a
+      // StackBlitz tab-return flicker.)
+      optionOrder.set(origIdx, this.pinAotaInOrder(ordered, opts));
     }
 
     this.shuffleByQuizId.set(quizId, { questionOrder, optionOrder });
@@ -407,6 +413,42 @@ export class QuizShuffleService {
     if (typeof v === 'number' && Number.isFinite(v)) return v;
     const n = Number(String(v));
     return Number.isFinite(n) ? n : null;
+  }
+
+  // True for an "All of the above"-style option (trailing punctuation ignored).
+  private isAllOfTheAbove(text: unknown): boolean {
+    const normalized = this.normalize(text).replace(/[.!?]+$/, '').trim();
+    return normalized === 'all of the above';
+  }
+
+  // Move any "All of the above" option index to the END of an option-order
+  // permutation, preserving the relative order of the rest. Idempotent; returns
+  // the input unchanged when there's nothing to pin.
+  private pinAotaInOrder(order: number[], options: Option[]): number[] {
+    if (!Array.isArray(order) || order.length < 2) return order;
+    if (!order.some((i) => this.isAllOfTheAbove(options[i]?.text))) return order;
+    const rest = order.filter((i) => !this.isAllOfTheAbove(options[i]?.text));
+    const aota = order.filter((i) => this.isAllOfTheAbove(options[i]?.text));
+    return [...rest, ...aota];
+  }
+
+  // Re-pin AOTA across a persisted shuffle state's option orders (idempotent);
+  // saves back only if an order actually changed.
+  private applyAotaPinToState(
+    quizId: string,
+    state: ShuffleState,
+    questions: QuizQuestion[]
+  ): void {
+    let changed = false;
+    for (const [origIdx, order] of state.optionOrder) {
+      const opts = questions[origIdx]?.options ?? [];
+      const pinned = this.pinAotaInOrder(order, opts);
+      if (pinned.length === order.length && pinned.some((v, i) => v !== order[i])) {
+        state.optionOrder.set(origIdx, pinned);
+        changed = true;
+      }
+    }
+    if (changed) this.saveState(quizId);
   }
 
   private cloneAndNormalizeOptions(

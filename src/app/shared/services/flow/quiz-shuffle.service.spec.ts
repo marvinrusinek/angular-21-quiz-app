@@ -129,6 +129,64 @@ describe('QuizShuffleService', () => {
     });
   });
 
+  // ── "All of the above" pinning (order-level) ────────────────
+  // AOTA is pinned LAST in the STORED option order (not at display time), so
+  // displayed order == stored order — no divergence for visibility-restore.
+  describe('"All of the above" pinning', () => {
+    const aggregateQuestions: QuizQuestion[] = [
+      {
+        questionText: 'Which are true?',
+        options: [
+          { text: 'All of the above.', correct: true, value: 1 },  // FIRST in source
+          { text: 'Alpha', correct: false, value: 2 },
+          { text: 'Bravo', correct: false, value: 3 },
+          { text: 'Charlie', correct: false, value: 4 }
+        ],
+        explanation: 'x',
+        type: QuestionType.SingleAnswer
+      }
+    ];
+
+    it('pins AOTA last in the STORED option order (many trials)', () => {
+      for (let i = 0; i < 30; i++) {
+        const quizId = `aota-${i}`;
+        service.clear(quizId);
+        service.prepareShuffle(quizId, aggregateQuestions, { shuffleQuestions: false, shuffleOptions: true });
+        const order = service.getShuffleState(quizId)!.optionOrder.get(0)!;
+        expect(order[order.length - 1]).toBe(0);          // AOTA's original index (0) is last
+        expect([...order].sort()).toEqual([0, 1, 2, 3]);  // still a full permutation
+      }
+    });
+
+    it('displays AOTA last via buildShuffledQuestions', () => {
+      service.prepareShuffle('aota-disp', aggregateQuestions, { shuffleQuestions: false, shuffleOptions: true });
+      const options = service.buildShuffledQuestions('aota-disp', aggregateQuestions)[0].options;
+      expect(options[options.length - 1].text).toBe('All of the above.');
+      expect(options[options.length - 1].correct).toBe(true);
+    });
+
+    it('detects AOTA case/punctuation-insensitively', () => {
+      const q: QuizQuestion[] = [{
+        questionText: 'Q',
+        options: [
+          { text: 'ALL OF THE ABOVE', correct: true, value: 1 },
+          { text: 'Alpha', correct: false, value: 2 },
+          { text: 'Bravo', correct: false, value: 3 }
+        ],
+        explanation: 'x', type: QuestionType.SingleAnswer
+      }];
+      service.prepareShuffle('aota-case', q, { shuffleQuestions: false, shuffleOptions: false });
+      const order = service.getShuffleState('aota-case')!.optionOrder.get(0)!;
+      expect(order[order.length - 1]).toBe(0);  // AOTA (idx 0) moved last
+    });
+
+    it('leaves non-aggregate questions as a plain permutation', () => {
+      service.prepareShuffle('no-aota', mockQuestions, { shuffleQuestions: false, shuffleOptions: true });
+      const order = service.getShuffleState('no-aota')!.optionOrder.get(0)!;
+      expect([...order].sort()).toEqual([0, 1, 2, 3]);
+    });
+  });
+
   // ── assignOptionIds ─────────────────────────────────────────
 
   describe('assignOptionIds', () => {
