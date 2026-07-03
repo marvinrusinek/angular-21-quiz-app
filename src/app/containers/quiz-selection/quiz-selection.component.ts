@@ -277,13 +277,12 @@ export class QuizSelectionComponent implements OnInit {
   //   return [prefix, quiz?.quizId];
   // }
 
-  // Case-insensitive match against the quiz's milestone/title, summary and
-  // difficulty. An empty term matches everything.
+  // Case-insensitive match against the quiz's milestone/title ONLY (not the
+  // summary or difficulty). An empty term matches everything.
   private matchesSearch(quiz: Quiz, term: string): boolean {
     const needle = term.trim().toLowerCase();
     if (!needle) return true;
-    return [quiz?.milestone, quiz?.summary, quiz?.difficulty]
-      .some(field => (field ?? '').toString().toLowerCase().includes(needle));
+    return (quiz?.milestone ?? '').toString().toLowerCase().includes(needle);
   }
 
   // Return a NEW sorted array (never mutates the input). Two-dimensional:
