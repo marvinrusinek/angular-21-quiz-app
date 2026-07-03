@@ -869,11 +869,19 @@ subscribeToTimerExpiry(host: Host): void {
     switch (event.key) {
       case 'ArrowRight':
       case 'Enter': {
-        // Mirror the on-screen Next button, which is gated by nextButtonEnabled()
-        // (durable answered state) — NOT live selections, which are cleared on
-        // navigate-away/back, so a revisited-but-answered question can still advance.
         if (host.shouldShowNextButton()) {
-          if (!host.nextButtonEnabled()) return;
+          // Advance only when the CURRENT question is genuinely answered — OR
+          // its timer has expired (auto-advance is allowed even if unanswered).
+          // nextButtonEnabled() alone isn't reliable: several navigation paths
+          // force-enable it, which would let ArrowRight skip ahead on an
+          // unanswered question. isQuestionAnswered() is durable (survives
+          // navigate-back), so a revisited-but-answered question still advances.
+          const answered =
+            this.quizStateService.isQuestionAnswered(currentIdx) ||
+            this.selectedOptionService.isQuestionAnswered(currentIdx);
+          const timerExpired =
+            this.timerService.expiredForQuestionIndexSig() === currentIdx;
+          if ((!answered && !timerExpired) || !host.nextButtonEnabled()) return;
           event.preventDefault();
           await host.advanceToNextQuestion();
           return;
