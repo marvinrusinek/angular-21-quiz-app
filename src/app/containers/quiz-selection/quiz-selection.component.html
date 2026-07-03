@@ -38,9 +38,12 @@
 
   <!-- Toolbar: Milestones menu + search + sort -->
   <div class="toolbar">
+    <!-- Milestones dropdown temporarily disabled while evaluating Search + Sort UX.
+         Preserved (not deleted) for possible future restoration.
     <button [matMenuTriggerFor]="menu" aria-label="Milestones Menu" i18n-aria-label>
       <span i18n>Milestones ▼</span>
     </button>
+    -->
 
     <app-quiz-search
       [searchTerm]="searchTerm()"
@@ -54,6 +57,8 @@
       (alphaDirectionChange)="sortAlpha.set($event)"
     ></app-quiz-sort>
 
+    <!-- Milestones dropdown menu temporarily disabled (see note above);
+         preserved for possible future restoration.
     <mat-menu #menu="matMenu" xPosition="before">
       <span class="quiz-menu-label" i18n>
         <strong>Select a Quiz…</strong>
@@ -80,6 +85,7 @@
         </button>
       }
     </mat-menu>
+    -->
   </div>
 
   @if (hasAccessedQuizzes()) {

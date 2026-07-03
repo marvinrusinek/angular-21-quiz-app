@@ -5,7 +5,9 @@ import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
+// Milestones dropdown temporarily disabled while evaluating Search + Sort UX.
+// MatMenuModule is only used by that dropdown; preserved for future restoration.
+// import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { SK_COMPLETED_QUIZ_IDS, SK_QUIZ_SORT_ALPHA, SK_QUIZ_SORT_DIFFICULTY, SK_STARTED_QUIZ_IDS } from '../../shared/constants/session-keys';
@@ -40,7 +42,7 @@ import { swallow } from '../../shared/utils/error-logging';
     RouterModule,
     MatCardModule,
     MatIconModule,
-    MatMenuModule,
+    // MatMenuModule,  // Milestones dropdown temporarily disabled (preserved for restoration)
     MatTooltipModule,
     NgOptimizedImage,
     QuizSearchComponent,
@@ -244,10 +246,15 @@ export class QuizSelectionComponent implements OnInit {
       || this.completedQuizIds().has(quiz?.quizId);
   }
 
-  public getQuizRoute(quiz: any): string[] {
-    const prefix = this.isCompleted(quiz) ? '/results/' : '/intro/';
-    return [prefix, quiz?.quizId];
-  }
+  // Milestones dropdown temporarily disabled while evaluating Search + Sort UX.
+  // getQuizRoute() is used ONLY by that dropdown's [routerLink]; preserved (not
+  // deleted) for possible future restoration. NOTE: isCompleted() above is
+  // intentionally left active — it is shared with the grid tiles'
+  // [class.completed] binding and the (now-commented) dropdown.
+  // public getQuizRoute(quiz: any): string[] {
+  //   const prefix = this.isCompleted(quiz) ? '/results/' : '/intro/';
+  //   return [prefix, quiz?.quizId];
+  // }
 
   // Case-insensitive match against the quiz's milestone/title, summary and
   // difficulty. An empty term matches everything.
