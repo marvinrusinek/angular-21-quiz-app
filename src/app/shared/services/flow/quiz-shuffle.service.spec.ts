@@ -129,6 +129,74 @@ describe('QuizShuffleService', () => {
     });
   });
 
+  // ── "All of the above" pinning ──────────────────────────────
+  // Pinned at every ordering site (stored optionOrder + reorderOptions + the
+  // restore raw-fallback via pinAotaLast) so no representation diverges.
+  describe('"All of the above" pinning', () => {
+    const aggregateQuestions: QuizQuestion[] = [
+      {
+        questionText: 'Which are true?',
+        options: [
+          { text: 'All of the above.', correct: true, value: 1 },  // FIRST in source
+          { text: 'Alpha', correct: false, value: 2 },
+          { text: 'Bravo', correct: false, value: 3 },
+          { text: 'Charlie', correct: false, value: 4 }
+        ],
+        explanation: 'x',
+        type: QuestionType.SingleAnswer
+      }
+    ];
+
+    it('pins AOTA last in the STORED option order (many trials)', () => {
+      for (let i = 0; i < 30; i++) {
+        const quizId = `aota-${i}`;
+        service.clear(quizId);
+        service.prepareShuffle(quizId, aggregateQuestions, { shuffleQuestions: false, shuffleOptions: true });
+        const order = service.getShuffleState(quizId)!.optionOrder.get(0)!;
+        expect(order[order.length - 1]).toBe(0);          // AOTA's original index (0) is last
+        expect([...order].sort()).toEqual([0, 1, 2, 3]);  // still a permutation
+      }
+    });
+
+    it('displays AOTA last via buildShuffledQuestions (many trials)', () => {
+      for (let i = 0; i < 20; i++) {
+        const quizId = `aota-disp-${i}`;
+        service.clear(quizId);
+        service.prepareShuffle(quizId, aggregateQuestions, { shuffleQuestions: false, shuffleOptions: true });
+        const options = service.buildShuffledQuestions(quizId, aggregateQuestions)[0].options;
+        expect(options[options.length - 1].text).toBe('All of the above.');
+        expect(options[options.length - 1].correct).toBe(true);
+        expect(options.length).toBe(4);
+      }
+    });
+
+    it('pinAotaLast() moves AOTA to the end of a materialised array (idempotent)', () => {
+      const opts = [
+        { text: 'All of the above.', value: 1 } as any,
+        { text: 'Alpha', value: 2 } as any,
+        { text: 'Bravo', value: 3 } as any
+      ];
+      const once = service.pinAotaLast(opts);
+      expect(once[once.length - 1].text).toBe('All of the above.');
+      const twice = service.pinAotaLast(once);
+      expect(twice.map(o => o.text)).toEqual(once.map(o => o.text));  // idempotent
+    });
+
+    it('isAllOfTheAbove() is case/punctuation-insensitive', () => {
+      expect(service.isAllOfTheAbove('All of the above.')).toBe(true);
+      expect(service.isAllOfTheAbove('ALL OF THE ABOVE')).toBe(true);
+      expect(service.isAllOfTheAbove('all of the above!')).toBe(true);
+      expect(service.isAllOfTheAbove('Alpha')).toBe(false);
+      expect(service.isAllOfTheAbove('none of the above')).toBe(false);
+    });
+
+    it('leaves non-aggregate questions as a plain permutation', () => {
+      service.prepareShuffle('no-aota', mockQuestions, { shuffleQuestions: false, shuffleOptions: true });
+      const order = service.getShuffleState('no-aota')!.optionOrder.get(0)!;
+      expect([...order].sort()).toEqual([0, 1, 2, 3]);
+    });
+  });
+
   // ── assignOptionIds ─────────────────────────────────────────
 
   describe('assignOptionIds', () => {

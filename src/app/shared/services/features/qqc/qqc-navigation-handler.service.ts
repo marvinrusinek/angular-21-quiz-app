@@ -10,6 +10,7 @@ import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QqcStatePersistenceService } from '../../state/qqc-state-persistence.service';
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 import { QuizService } from '../../data/quiz.service';
+import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { TimerService } from '../timer/timer.service';
@@ -32,6 +33,7 @@ export class QqcNavigationHandlerService {
   private readonly explanationTextService = inject(ExplanationTextService);
   private readonly nextButtonStateService = inject(NextButtonStateService);
   private readonly quizService = inject(QuizService);
+  private readonly quizShuffleService = inject(QuizShuffleService);
   private readonly quizStateService = inject(QuizStateService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly statePersistence = inject(QqcStatePersistenceService);
@@ -527,11 +529,15 @@ export class QqcNavigationHandlerService {
     // Ensure options are ready (fallback if restore returned empty)
     if (!Array.isArray(optionsToDisplay) || optionsToDisplay.length === 0) {
       if (params.currentQuestion && Array.isArray(params.currentQuestion.options)) {
-        optionsToDisplay = params.currentQuestion.options.map((option, index) => ({
-          ...option,
-          optionId: option.optionId ?? index,
-          correct: option.correct ?? false
-        }));
+        // Pin AOTA last here too — this fallback bypasses reorderOptions, so
+        // without this the restored order would diverge from the pinned display.
+        optionsToDisplay = this.quizShuffleService.pinAotaLast(
+          params.currentQuestion.options.map((option, index) => ({
+            ...option,
+            optionId: option.optionId ?? index,
+            correct: option.correct ?? false
+          }))
+        );
       } else {
         return {
           currentExplanationText: restoredState.explanationText,

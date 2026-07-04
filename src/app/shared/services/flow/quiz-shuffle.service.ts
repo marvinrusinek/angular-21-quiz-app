@@ -44,6 +44,9 @@ export class QuizShuffleService {
     if (this.loadState(quizId)) {
       const state = this.shuffleByQuizId.get(quizId);
       if (state && state.questionOrder.length === questions.length) {
+        // Re-pin AOTA last in the persisted order too (handles orders saved
+        // before this rule). Idempotent.
+        this.applyAotaPinToState(quizId, state, questions);
         return;
       }
       // Persisted shuffle length mismatch — regenerating
@@ -58,12 +61,11 @@ export class QuizShuffleService {
 
     const optionOrder = new Map<number, number[]>();
     for (const origIdx of questionOrder) {
-      const len = questions[origIdx]?.options?.length ?? 0;
-      const base = Array.from({ length: len }, (_, i) => i);
-      optionOrder.set(
-        origIdx,
-        shuffleOptions ? ArrayUtils.shuffleArray(base) : base
-      );
+      const opts2 = questions[origIdx]?.options ?? [];
+      const base = Array.from({ length: opts2.length }, (_, i) => i);
+      const ordered = shuffleOptions ? ArrayUtils.shuffleArray(base) : base;
+      // Pin any "All of the above" option LAST in the STORED order.
+      optionOrder.set(origIdx, this.pinAotaInOrder(ordered, opts2));
     }
 
     this.shuffleByQuizId.set(quizId, { questionOrder, optionOrder });
@@ -341,8 +343,14 @@ export class QuizShuffleService {
         } as Option;  // if displayOrder isn't in Option, use a local type if you need it
       });
 
+    // Belt-and-suspenders: pin AOTA last even if the order applied here wasn't
+    // pinned (e.g. a stale cached order). Idempotent — a no-op when the stored
+    // order was already pinned, so it can't cause churn.
+    const finalize = (opts: Option[]): Option[] =>
+      normalizeForDisplay(this.pinAotaLast(opts));
+
     if (!Array.isArray(order) || order.length !== options.length) {
-      return normalizeForDisplay(options.map((option) => ({ ...option })));
+      return finalize(options.map((option) => ({ ...option })));
     }
 
     const reordered = order
@@ -354,10 +362,10 @@ export class QuizShuffleService {
       .filter((option): option is Option => option !== null);
 
     if (reordered.length !== options.length) {
-      return normalizeForDisplay(options.map((option) => ({ ...option })));
+      return finalize(options.map((option) => ({ ...option })));
     }
 
-    return normalizeForDisplay(reordered);
+    return finalize(reordered);
   }
 
   private normalize(val: unknown): string {
@@ -407,6 +415,53 @@ export class QuizShuffleService {
     if (typeof v === 'number' && Number.isFinite(v)) return v;
     const n = Number(String(v));
     return Number.isFinite(n) ? n : null;
+  }
+
+  // ── "All of the above" pinning ──────────────────────────────────
+  // AOTA is pinned LAST at every ordering site (stored optionOrder,
+  // reorderOptions, and the restore raw-fallback) so no representation is ever
+  // un-pinned to diverge from. All helpers are idempotent.
+
+  /** True for an "All of the above"-style option (trailing punctuation ignored). */
+  public isAllOfTheAbove(text: unknown): boolean {
+    const normalized = this.normalize(text).replace(/[.!?]+$/, '').trim();
+    return normalized === 'all of the above';
+  }
+
+  /** Move any AOTA option index to the END of an option-order permutation. */
+  private pinAotaInOrder(order: number[], options: Option[]): number[] {
+    if (!Array.isArray(order) || order.length < 2) return order;
+    if (!order.some((i) => this.isAllOfTheAbove(options[i]?.text))) return order;
+    const rest = order.filter((i) => !this.isAllOfTheAbove(options[i]?.text));
+    const aota = order.filter((i) => this.isAllOfTheAbove(options[i]?.text));
+    return [...rest, ...aota];
+  }
+
+  /** Move any AOTA option to the END of an already-materialised options array. */
+  public pinAotaLast(options: Option[]): Option[] {
+    if (!Array.isArray(options) || options.length < 2) return options;
+    if (!options.some((o) => this.isAllOfTheAbove(o?.text))) return options;
+    const rest = options.filter((o) => !this.isAllOfTheAbove(o?.text));
+    const aota = options.filter((o) => this.isAllOfTheAbove(o?.text));
+    return [...rest, ...aota];
+  }
+
+  /** Re-pin AOTA across a persisted shuffle state's option orders (idempotent). */
+  private applyAotaPinToState(
+    quizId: string,
+    state: ShuffleState,
+    questions: QuizQuestion[]
+  ): void {
+    let changed = false;
+    for (const [origIdx, order] of state.optionOrder) {
+      const opts = questions[origIdx]?.options ?? [];
+      const pinned = this.pinAotaInOrder(order, opts);
+      if (pinned.length === order.length && pinned.some((v, i) => v !== order[i])) {
+        state.optionOrder.set(origIdx, pinned);
+        changed = true;
+      }
+    }
+    if (changed) this.saveState(quizId);
   }
 
   private cloneAndNormalizeOptions(
