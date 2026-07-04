@@ -314,6 +314,16 @@ export class OptionItemComponent implements OnInit {
         return this.getFullyResolvedCorrectClasses(classes, option, correctOpts, questionIndex);
       }
 
+      // Engaged-but-partial question on revisit: repaint the first-visit colors
+      // from the display-only snapshot (green selected-correct, red selected-
+      // wrong, neutral untouched). Gated on !_userHasClicked so a fresh click
+      // re-engages live interaction. This snapshot never feeds the auto-reveal,
+      // so restoring it can't trigger the "all incorrects selected" reveal.
+      if (!this._userHasClicked &&
+          this.selectedOptionService.hasRevisitDisplay(questionIndex)) {
+        return this.getPartialRevisitClasses(classes, option, correctOpts, questionIndex);
+      }
+
       if (fullyResolvedWrong && !this._userHasClicked) {
         return this.clearRevisitClasses(classes);
       }
@@ -357,6 +367,35 @@ export class OptionItemComponent implements OnInit {
       'incorrect-option': wasClickedIncorrect,
       highlighted: false,
       'disabled-option': !wasClickedIncorrect
+    };
+  }
+
+  // Repaint an engaged-but-partial question on revisit to match how the user
+  // left it: each option that was selected shows green (if canon-correct) or red
+  // (if incorrect); untouched options stay neutral + interactive so the user can
+  // keep answering. Driven purely by the display-only revisit snapshot.
+  private getPartialRevisitClasses(
+    classes: { [key: string]: boolean },
+    option: Option | undefined,
+    correctOpts: Option[],
+    questionIndex: number
+  ): { [key: string]: boolean } {
+    const wasSelected = this.selectedOptionService.wasTextSelectedOnLastVisit(
+      questionIndex, option?.text ?? ''
+    );
+    if (!wasSelected) {
+      // Untouched on the last visit → neutral, still clickable on revisit.
+      return this.clearRevisitClasses(classes);
+    }
+    const isCorrect = this.questionResolution.isOptionCanonCorrect(option, correctOpts);
+    return {
+      ...classes,
+      selected: true,
+      'selected-option': true,
+      'correct-option': isCorrect,
+      'incorrect-option': !isCorrect,
+      highlighted: true,
+      'disabled-option': false
     };
   }
 

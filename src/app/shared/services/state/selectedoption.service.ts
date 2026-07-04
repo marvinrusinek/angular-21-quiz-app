@@ -71,6 +71,41 @@ export class SelectedOptionService {
     this._selectionHistory.set(questionIndex, history);
   }
 
+  // Display-only snapshot of which option TEXTS were selected on a question when
+  // the user last navigated away from it. Revisit reads this to repaint the
+  // first-visit colors (green for selected-correct, red for selected-wrong)
+  // WITHOUT repopulating the selection stores the auto-reveal reads
+  // (_multiSelectByQuestion / getSelectedOptionsForQuestion) — so the "all
+  // incorrects selected" auto-reveal guard stays intact on the first revisit
+  // click. Keyed by display index; texts are normalized.
+  private _revisitDisplayByQuestion = new Map<number, Set<string>>();
+
+  /** Snapshot the selected option texts for a question, for revisit repaint. */
+  captureRevisitDisplay(questionIndex: number, selectedTexts: string[]): void {
+    const set = new Set<string>();
+    for (const t of selectedTexts) {
+      const n = norm(t);
+      if (n) set.add(n);
+    }
+    if (set.size > 0) this._revisitDisplayByQuestion.set(questionIndex, set);
+    else this._revisitDisplayByQuestion.delete(questionIndex);
+  }
+
+  /** True if this question has a revisit-display snapshot (was engaged). */
+  hasRevisitDisplay(questionIndex: number): boolean {
+    return (this._revisitDisplayByQuestion.get(questionIndex)?.size ?? 0) > 0;
+  }
+
+  /** Was this option (by text) selected when the user last left the question? */
+  wasTextSelectedOnLastVisit(questionIndex: number, optionText: string): boolean {
+    const set = this._revisitDisplayByQuestion.get(questionIndex);
+    return !!set && set.has(norm(optionText));
+  }
+
+  clearRevisitDisplay(questionIndex: number): void {
+    this._revisitDisplayByQuestion.delete(questionIndex);
+  }
+
   wasOptionSelectedForQuestion(questionIndex: number, optionText: string): boolean {
     const normalizedText = norm(optionText);
 
@@ -680,6 +715,7 @@ export class SelectedOptionService {
     this.selectedOptionsMap.clear();
     this.rawSelectionsMap.clear();
     this._selectionHistory.clear();
+    this._revisitDisplayByQuestion.clear();
     this.selectedOption = [];
     this.selectedOptionIndices = {};
     this.feedbackState.clearAll();

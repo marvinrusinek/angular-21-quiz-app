@@ -175,6 +175,11 @@ export class QuizNavigationService {
   // Returns false on a failed router nav or fetch. Throws propagate to
   // navigateToQuestion's catch; its finally always clears the navigating flags.
   private async performNavigation(index: number): Promise<boolean> {
+    // Snapshot the CURRENT (source) question's selections for revisit repaint,
+    // BEFORE router nav updates the index and the selection stores are cleared.
+    // Display-only — does NOT feed the selection stores the auto-reveal reads.
+    this.captureRevisitDisplayForSource(index);
+
     // Set navigating state
     this.isNavigating = true;
     this.quizStateService.setNavigating(true);
@@ -224,6 +229,22 @@ export class QuizNavigationService {
   // revisit, regardless of what was clicked first visit. _multiAnswerPerfect
   // was previously used as a "preserve correct state" gate but it was
   // being set by buggy paths even on wrong-only clicks.
+  // Snapshot the source (current) question's selected option texts into the
+  // display-only revisit store so a later revisit can repaint the first-visit
+  // colors. Runs at nav entry, before the index/selection stores change.
+  private captureRevisitDisplayForSource(destIndex: number): void {
+    try {
+      const srcIdx = this.quizService.getCurrentQuestionIndex();
+      if (srcIdx < 0 || srcIdx === destIndex) return;
+      const sel = this.selectedOptionService.getSelectedOptionsForQuestion(srcIdx) ?? [];
+      const texts = sel
+        .filter((s: any) => s && (s.selected || s.highlight || s.showIcon))
+        .map((s: any) => s?.text)
+        .filter((t: any): t is string => typeof t === 'string' && t.length > 0);
+      this.selectedOptionService.captureRevisitDisplay(srcIdx, texts);
+    } catch (err: unknown) { swallow('performNavigation revisit-display capture', err); }
+  }
+
   private clearStaleNavigationState(index: number): void {
     const isResolved = (idx: number) => this.optionLockState.isQuestionLocked(idx);
     const sourceIdx = this.quizService.getCurrentQuestionIndex();
