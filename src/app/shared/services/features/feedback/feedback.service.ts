@@ -7,6 +7,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
 
 import { QUESTION_ROUTE_REGEX } from '../../../constants/route-patterns';
+import { pinAllOfTheAboveLast } from '../../../utils/all-of-the-above';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
@@ -571,13 +572,16 @@ export class FeedbackService {
         if (idx >= 0 && allQs[idx]?.options?.length) canonicalQ = allQs[idx];
       }
     } catch {}
+    // Number options in the PINNED display order ("All of the above" last) so the
+    // message matches what the user sees. pinAllOfTheAboveLast is a no-op when
+    // there's no AOTA, so non-AOTA questions are unaffected.
     const directFromCanonical: number[] = [];
-    for (const [i, o] of (canonicalQ?.options ?? []).entries()) {
+    for (const [i, o] of pinAllOfTheAboveLast(canonicalQ?.options ?? [], (o) => o?.text).entries()) {
       if (isOptionCorrect(o)) directFromCanonical.push(i + 1);
     }
     const indices = directFromCanonical.length > 0
       ? directFromCanonical
-      : this.explanationTextService.getCorrectOptionIndices(question!, optionsToDisplay, typeof currentIndex === 'number' ? currentIndex : undefined);
+      : this.explanationTextService.getCorrectOptionIndices(question!, pinAllOfTheAboveLast(optionsToDisplay ?? [], (o) => o?.text), typeof currentIndex === 'number' ? currentIndex : undefined);
     const deduped = Array.from(new Set(indices)).sort((a, b) => a - b);
     if (deduped.length === 0) return 'No correct options found.';
 

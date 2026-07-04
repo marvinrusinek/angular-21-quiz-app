@@ -35,3 +35,23 @@ export function pinAllOfTheAboveLast<T>(items: T[], getText: (item: T) => unknow
   const aota = items.filter((item) => isAllOfTheAbove(getText(item)));
   return [...rest, ...aota];
 }
+
+/**
+ * Map a 1-based option index in the canonical array to its 1-based index AFTER
+ * AOTA is pinned last — i.e. the number the user actually sees. Used so
+ * feedback/FET "Option N" text matches the pinned display order. Returns the
+ * input index unchanged when there's nothing to remap (no AOTA, out of range).
+ */
+export function pinnedIndex1Based<T>(
+  items: T[],
+  canonicalIndex1Based: number,
+  getText: (item: T) => unknown
+): number {
+  if (!Array.isArray(items) || canonicalIndex1Based < 1 || canonicalIndex1Based > items.length) {
+    return canonicalIndex1Based;
+  }
+  const target = items[canonicalIndex1Based - 1];
+  const pinned = pinAllOfTheAboveLast(items, getText);
+  const pos = pinned.indexOf(target);
+  return pos >= 0 ? pos + 1 : canonicalIndex1Based;
+}

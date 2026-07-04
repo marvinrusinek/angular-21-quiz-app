@@ -11,6 +11,7 @@ import { QuizQuestion } from '../../../models/QuizQuestion.model';
 
 import { QuizService } from '../../data/quiz.service';
 import { QuizShuffleService } from '../../flow/quiz-shuffle.service';
+import { pinAllOfTheAboveLast, pinnedIndex1Based } from '../../../utils/all-of-the-above';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 import { swallow } from '../../../utils/error-logging';
@@ -636,6 +637,15 @@ export class ExplanationFormatterService {
     let indices: number[] = Array.isArray(correctOptionIndices)
       ? correctOptionIndices.slice() : [];
 
+    // Renumber to the PINNED display order ("All of the above" last) so the FET
+    // "Option N" matches what the user sees. The passed indices are positions in
+    // the (possibly shuffled) canonical order; remap each through the same pin
+    // used for display. pinAllOfTheAboveLast is a no-op without an AOTA option,
+    // so non-AOTA questions are unaffected. `pinnedOptions` is used for any
+    // subsequent index→option lookups below so they stay consistent.
+    const pinnedOptions = pinAllOfTheAboveLast(question?.options ?? [], (o) => o?.text);
+    indices = indices.map((n) => pinnedIndex1Based(question?.options ?? [], n, (o) => o?.text));
+
     // Stabilize: dedupe + sort so multi-answer phrasing is consistent
     indices = Array.from(new Set(indices)).sort((a, b) => a - b);
 
@@ -675,7 +685,7 @@ export class ExplanationFormatterService {
       if (!isExplicitMultiRef && !isDataMulti && indices.length > 1) {
         const expLower = e.toLowerCase();
         const verified = indices.filter(idx => {
-          const opt = question.options?.[idx - 1];
+          const opt = pinnedOptions?.[idx - 1];
           const text = (opt?.text || '').toLowerCase();
           return text.length > 2 && expLower.includes(text);
         });
