@@ -299,12 +299,16 @@ export class SelectedOptionService {
     return this.answerEval.areAllCorrectAnswersSelected(question, selectedOptionIds);
   }
 
-  clearSelectionsForQuestion(questionIndex: number): void {
+  clearSelectionsForQuestion(questionIndex: number, preserveHistory = false): void {
     const idx = Number(questionIndex);
     if (!Number.isFinite(idx)) return;
     // Remove from selection and feedback maps
     if (this.selectedOptionsMap.has(idx)) this.selectedOptionsMap.delete(idx);
-    this._selectionHistory.delete(idx);
+    // Preserve _selectionHistory for a scored-correct question (caller passes
+    // preserveHistory=true) so revisit can re-render its clicked-wrong option red
+    // via wasClickedIncorrectOnRevisit. Everything else below is still cleared so
+    // navigation/lock state stays consistent. Wrong-only questions clear history.
+    if (!preserveHistory) this._selectionHistory.delete(idx);
     // _refreshBackup is the in-memory fallback that getSelectedOptionsForQuestion
     // reads when sessionStorage is empty — without clearing it, prior clicks
     // resurface and the autoreveal "all incorrects selected" check fires

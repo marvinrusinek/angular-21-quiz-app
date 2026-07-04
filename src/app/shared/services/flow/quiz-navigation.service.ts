@@ -227,19 +227,10 @@ export class QuizNavigationService {
   private clearStaleNavigationState(index: number): void {
     const isResolved = (idx: number) => this.optionLockState.isQuestionLocked(idx);
     const sourceIdx = this.quizService.getCurrentQuestionIndex();
-    if (sourceIdx >= 0 && sourceIdx !== index && !isResolved(sourceIdx)) {
-      this.selectedOptionService.clearSelectionsForQuestion(sourceIdx);
-    }
-    if (!isResolved(index)) {
-      this.selectedOptionService.clearSelectionsForQuestion(index);
-    }
-    // Wipe _multiAnswerPerfect for the destination unless the question
-    // was actually scored correct (questionCorrectness). For a genuinely
-    // perfectly-answered question we WANT the flag preserved so revisit
-    // re-renders the green/gray highlight; only buggy stale flags need
-    // wiping, and those won't have questionCorrectness set.
-    // In shuffled mode, questionCorrectness is keyed by ORIGINAL index
-    // (set by scoreDirectly), so map display→original before checking.
+
+    // Whether a question was actually scored correct (questionCorrectness).
+    // In shuffled mode questionCorrectness is keyed by ORIGINAL index (set by
+    // scoreDirectly), so map display→original before checking.
     const _isScoredAt = (idx: number): boolean => {
       if (this.quizService.questionCorrectness?.get?.(idx) === true) return true;
       try {
@@ -258,6 +249,26 @@ export class QuizNavigationService {
       } catch (err: unknown) { swallow('quiz-navigation.service.ts', err); /* ignore */ }
       return false;
     };
+
+    // Clear stale selections on both source AND destination. Always run the full
+    // clear (unlock options, wipe per-question sessionStorage, push the reactive
+    // signal) so navigation state stays consistent — skipping it entirely leaves
+    // options locked and freezes navigation. But for a question that was actually
+    // scored correct, PRESERVE its _selectionHistory (preserveHistory=true) so
+    // revisit can re-render its clicked-wrong option red (wasClickedIncorrectOn-
+    // Revisit reads that history). Wrong-only questions clear it → clean revisit,
+    // keeping the autoreveal "all incorrects selected" bug fixed.
+    if (sourceIdx >= 0 && sourceIdx !== index && !isResolved(sourceIdx)) {
+      this.selectedOptionService.clearSelectionsForQuestion(sourceIdx, _isScoredAt(sourceIdx));
+    }
+    if (!isResolved(index)) {
+      this.selectedOptionService.clearSelectionsForQuestion(index, _isScoredAt(index));
+    }
+
+    // Wipe _multiAnswerPerfect for the destination unless the question was
+    // actually scored correct. For a genuinely perfectly-answered question we
+    // WANT the flag preserved so revisit re-renders the green/gray highlight;
+    // only buggy stale flags need wiping, and those won't have questionCorrectness.
     const _scoredDest = _isScoredAt(index);
     if (!_scoredDest) this.quizService._multiAnswerPerfect.delete(index);
     if (sourceIdx >= 0 && sourceIdx !== index && !_isScoredAt(sourceIdx)) {
