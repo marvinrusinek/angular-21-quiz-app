@@ -104,6 +104,33 @@ test('revisit — completing a partial multi-answer grays the remaining option',
   await expect(rows.nth(wrongs[1])).toHaveCSS('background-color', DISABLED_GRAY);
 });
 
+test('remembered colors survive multi-hop Q1->Q2->Q3->Q2->Q1->Q2', async ({ page }) => {
+  const { rows, corrects, wrongs } = await gotoQ2(page); // Q1 -> Q2
+  expect(corrects.length).toBeGreaterThan(0);
+  expect(wrongs.length).toBeGreaterThan(0);
+
+  // Q2 first visit: partial (1 wrong + 1 correct).
+  await rows.nth(wrongs[0]).click();
+  await rows.nth(corrects[0]).click();
+
+  // Q2 -> Q3 -> Q2 -> Q1 -> Q2
+  await page.locator(NEXT_BTN).click();
+  await expect(page).toHaveURL(/\/3$/);
+  await rows.first().waitFor({ state: 'visible' });
+  await page.locator(PREV_BTN).click();
+  await expect(page).toHaveURL(/\/2$/);
+  await rows.first().waitFor({ state: 'visible' });
+  await page.locator(PREV_BTN).click();
+  await expect(page).toHaveURL(/\/1$/);
+  await page.locator(NEXT_BTN).click();
+  await expect(page).toHaveURL(/\/2$/);
+  await rows.first().waitFor({ state: 'visible' });
+
+  // Remembered colors must still be there after the full round-trip.
+  await expect(rows.nth(wrongs[0])).toHaveClass(/incorrect-option/);
+  await expect(rows.nth(corrects[0])).toHaveClass(/correct-option/);
+});
+
 test('after completing on revisit, colors persist through Q2->Q1->Q2', async ({ page }) => {
   const { rows, corrects, wrongs } = await gotoQ2(page);
   expect(corrects.length).toBe(2);
