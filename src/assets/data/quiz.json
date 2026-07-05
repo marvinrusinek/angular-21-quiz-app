@@ -807,5 +807,94 @@
         "explanation": "all of the above are true statements about the Angular-CLI"
       }
     ]
+  },
+  {
+    "quizId": "change-detection",
+    "milestone": "Change Detection",
+    "summary": "Change detection keeps the view in sync with your data — learn how it runs, the OnPush strategy, and how to optimize it.",
+    "image": "https://raw.githubusercontent.com/marvinrusinek/codelab-angular-10-quiz-app/quiz/codelab-master/apps/playground/src/assets/images/tree.png",
+    "difficulty": "advanced",
+    "questions": [
+      {
+        "questionText": "What is the primary job of Angular's change detection?",
+        "options": [
+          { "text": "Keep the view (DOM) in sync with the component's data model.", "correct": true },
+          { "text": "Compile TypeScript into JavaScript." },
+          { "text": "Bundle the application for production." },
+          { "text": "Manage HTTP requests." }
+        ],
+        "explanation": "Change detection keeps the rendered view (DOM) in sync with the component's data model whenever that data changes."
+      },
+      {
+        "questionText": "Which library does Angular use by default to know WHEN to run change detection?",
+        "options": [
+          { "text": "Zone.js", "correct": true },
+          { "text": "RxJS" },
+          { "text": "Lodash" },
+          { "text": "Immer" }
+        ],
+        "explanation": "Zone.js patches async APIs (DOM events, timers, XHR) so Angular knows when something may have changed and runs change detection."
+      },
+      {
+        "questionText": "Which change detection strategy checks a component only when an @Input reference changes, an event fires inside it, or an async-pipe observable emits?",
+        "options": [
+          { "text": "OnPush", "correct": true },
+          { "text": "Default" },
+          { "text": "Detached" },
+          { "text": "CheckAlways" }
+        ],
+        "explanation": "ChangeDetectionStrategy.OnPush limits checks to new @Input references, events originating in the component, and async-pipe emissions."
+      },
+      {
+        "questionText": "With OnPush, why must you pass a NEW object or array reference instead of mutating the existing one?",
+        "options": [
+          { "text": "OnPush compares @Input values by reference, so an in-place mutation keeps the same reference and is missed.", "correct": true },
+          { "text": "OnPush deep-clones every input on each cycle." },
+          { "text": "OnPush disables all @Input bindings." },
+          { "text": "OnPush only works with primitive inputs." }
+        ],
+        "explanation": "OnPush uses reference equality for @Input. Mutating an object or array in place keeps the same reference, so the change goes undetected — provide a new reference instead."
+      },
+      {
+        "questionText": "Which ChangeDetectorRef method marks a component and its ancestors to be checked on the next cycle (often used with OnPush after an async update)?",
+        "options": [
+          { "text": "markForCheck()", "correct": true },
+          { "text": "detectChanges()" },
+          { "text": "detach()" },
+          { "text": "reattach()" }
+        ],
+        "explanation": "markForCheck() flags the component and its path to the root as dirty so they are checked on the next change detection run."
+      },
+      {
+        "questionText": "Which of the following trigger Angular's change detection by default? Select all that apply.",
+        "options": [
+          { "text": "A DOM event such as a click", "correct": true },
+          { "text": "An HTTP response via HttpClient", "correct": true },
+          { "text": "A setTimeout callback", "correct": true },
+          { "text": "Code run inside NgZone.runOutsideAngular()" }
+        ],
+        "explanation": "Zone.js patches DOM events, XHR, and timers, so each triggers change detection. Code inside runOutsideAngular() intentionally escapes the zone and does NOT trigger it."
+      },
+      {
+        "questionText": "In a zoneless Angular app (no Zone.js), what does Angular rely on to know when to update the view?",
+        "options": [
+          { "text": "Signals and explicit notifications (e.g. signal reads, async pipe, markForCheck)", "correct": true },
+          { "text": "Polling the DOM every 16ms" },
+          { "text": "Manual page reloads" },
+          { "text": "Nothing — Zone.js is always required" }
+        ],
+        "explanation": "Zoneless Angular schedules change detection from signals and explicit notifications instead of relying on Zone.js to patch async APIs."
+      },
+      {
+        "questionText": "Which are valid ways to optimize change detection performance?",
+        "options": [
+          { "text": "Use the OnPush change detection strategy." },
+          { "text": "Use immutable data so inputs get new references." },
+          { "text": "Use the async pipe or signals instead of manual subscriptions." },
+          { "text": "All of the above.", "correct": true }
+        ],
+        "explanation": "OnPush, immutable data (new references), and the async pipe or signals all reduce unnecessary change detection work."
+      }
+    ]
   }
 ]
