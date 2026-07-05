@@ -274,6 +274,30 @@ export class SharedOptionComponent
 
   ngDoCheck(): void {
     this.updateBindingSnapshots();
+    this.syncUiSelectedTexts();
+  }
+
+  // Publish the current question's selected option texts (from live bindings
+  // UNION the first-visit revisit snapshot) to SelectedOptionService, so the
+  // multi-answer completion lock in option-item reads a reliable, reactive,
+  // auto-reveal-invisible source instead of the flaky selectedOptionsMap. The
+  // snapshot union is what lets "complete a partial multi-answer on revisit"
+  // register as all-correct even though the bindings were reset on revisit.
+  private syncUiSelectedTexts(): void {
+    try {
+      const qIdx = this.getActiveQuestionIndex();
+      if (qIdx == null || qIdx < 0) return;
+      const texts: string[] = [];
+      for (const b of this.optionBindings() ?? []) {
+        const opt = b?.option;
+        if (opt && (b.isSelected || opt.selected || opt.highlight)) {
+          if (opt.text) texts.push(opt.text);
+        }
+      }
+      const snapshot = this.selectedOptionService.getRevisitDisplayTexts(qIdx);
+      if (snapshot) texts.push(...snapshot);
+      this.selectedOptionService.setUiSelectedTextsForQuestion(qIdx, texts);
+    } catch { /* non-fatal — lock falls back to selectedOptionsMap */ }
   }
 
   // ── methods (host-pattern delegators + template helpers) ─────────

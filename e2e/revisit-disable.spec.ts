@@ -1,43 +1,56 @@
 import { test, expect } from '@playwright/test';
-import { NEXT_BTN, PREV_BTN } from './helpers';
+import { NEXT_BTN, PREV_BTN, HEADING, diQuiz, correctRowsForHeading } from './helpers';
 
 /**
- * Regression guard: option disabling must NOT persist across navigation between
- * questions. On the dependency-injection quiz, Q2 is multi-answer (correct =
- * idx 0,1), so clicking option 3 (idx 2) locks that wrong option into
- * disabledOptionsPerQuestion. Previously, on revisit the highlight was scrubbed
- * but the durable disabled set was not cleared, leaving the option
- * disabled-but-unhighlighted and unclickable. The Q→Q cleanup now clears
- * disabledOptionsPerQuestion for the incoming question.
+ * Regression guard for revisit clickability — updated 2026-07-05 for the
+ * "remember on revisit" behavior.
+ *
+ * On revisit, a previously-clicked option is REMEMBERED and READ-ONLY (red for a
+ * wrong pick, green for a correct one — those classes carry pointer-events:none
+ * by design). But UNSELECTED options must stay CLICKABLE so the user can still
+ * add to / complete their answer — they must never be left stuck-disabled (the
+ * original durable-disabled-set bug this file has always guarded).
+ *
+ * DI Q2 is multi-answer. Option rows are resolved by visible text (shuffle-immune).
  */
 
-const OPT3 = 2; // 3rd option, 0-based — a wrong option on DI Q2 (multi-answer)
-
-test('option disabling clears on navigation — DI Q2 revisit re-click highlights', async ({ page }) => {
+test('revisit — remembered pick is read-only, unselected options stay clickable', async ({ page }) => {
   await page.goto('/quiz/question/dependency-injection/1');
   const rows = page.locator('.option-row');
   await rows.first().waitFor({ state: 'visible', timeout: 20_000 });
 
-  // Answer Q1 so Next is enabled, then go to Q2.
+  // Answer Q1 so Next is enabled, then go to Q2 (multi-answer).
   await rows.nth(0).click();
   await expect(page.locator(NEXT_BTN)).toBeEnabled();
   await page.locator(NEXT_BTN).click();
   await expect(page).toHaveURL(/\/2$/);
-
-  // Q2 (multi): click option 3 — highlights.
   await rows.first().waitFor({ state: 'visible' });
-  await rows.nth(OPT3).click();
-  await expect(rows.nth(OPT3)).toHaveClass(/selected/);
 
-  // Back to Q1, then forward to Q2 again.
+  const heading = (await page.locator(HEADING).first().textContent()) ?? '';
+  const corrects = await correctRowsForHeading(rows, diQuiz, heading);
+  const count = await rows.count();
+  const wrongs = [...Array(count).keys()].filter((i) => !corrects.includes(i));
+  expect(corrects.length).toBeGreaterThan(0);
+  expect(wrongs.length).toBeGreaterThan(0);
+
+  // First visit: click a WRONG option — it highlights (red).
+  await rows.nth(wrongs[0]).click();
+  await expect(rows.nth(wrongs[0])).toHaveClass(/selected/);
+
+  // Back to Q1, forward to Q2 again (revisit).
   await page.locator(PREV_BTN).click();
   await expect(page).toHaveURL(/\/1$/);
   await page.locator(NEXT_BTN).click();
   await expect(page).toHaveURL(/\/2$/);
   await rows.first().waitFor({ state: 'visible' });
 
-  // On revisit the option must not be stuck disabled — re-click highlights it.
-  await expect(rows.nth(OPT3)).not.toHaveClass(/disabled-option/);
-  await rows.nth(OPT3).click();
-  await expect(rows.nth(OPT3)).toHaveClass(/selected/, { timeout: 5000 });
+  // Remembered: the wrong pick shows red (incorrect-option), read-only.
+  await expect(rows.nth(wrongs[0])).toHaveClass(/incorrect-option/);
+
+  // An UNSELECTED option must NOT be stuck-disabled on revisit — it stays
+  // clickable so the user can keep answering.
+  const fresh = corrects[0];
+  await expect(rows.nth(fresh)).not.toHaveClass(/disabled-option/);
+  await rows.nth(fresh).click();
+  await expect(rows.nth(fresh)).toHaveClass(/selected/, { timeout: 5000 });
 });

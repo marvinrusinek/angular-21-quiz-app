@@ -236,11 +236,22 @@ export class QuizNavigationService {
     try {
       const srcIdx = this.quizService.getCurrentQuestionIndex();
       if (srcIdx < 0 || srcIdx === destIndex) return;
-      const sel = this.selectedOptionService.getSelectedOptionsForQuestion(srcIdx) ?? [];
-      const texts = sel
-        .filter((s: any) => s && (s.selected || s.highlight || s.showIcon))
-        .map((s: any) => s?.text)
-        .filter((t: any): t is string => typeof t === 'string' && t.length > 0);
+
+      // Prefer the RELIABLE, auto-reveal-invisible uiSelectedTexts signal (live
+      // bindings ∪ prior snapshot, kept current each CD by the shared-option
+      // component). getSelectedOptionsForQuestion is flaky for multi-answer and
+      // can momentarily return empty, which previously wiped the remembered set
+      // and left a revisited question with no colors. Fall back to it only when
+      // the signal hasn't been populated yet.
+      const uiTexts = this.selectedOptionService.uiSelectedTextsForQuestion(srcIdx);
+      let texts: string[] = uiTexts ? [...uiTexts] : [];
+      if (texts.length === 0) {
+        const sel = this.selectedOptionService.getSelectedOptionsForQuestion(srcIdx) ?? [];
+        texts = sel
+          .filter((s: any) => s && (s.selected || s.highlight || s.showIcon))
+          .map((s: any) => s?.text)
+          .filter((t: any): t is string => typeof t === 'string' && t.length > 0);
+      }
       this.selectedOptionService.captureRevisitDisplay(srcIdx, texts);
     } catch (err: unknown) { swallow('performNavigation revisit-display capture', err); }
   }

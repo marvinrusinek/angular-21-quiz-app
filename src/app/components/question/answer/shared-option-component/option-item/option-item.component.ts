@@ -521,13 +521,20 @@ export class OptionItemComponent implements OnInit {
       this.quizService.getPristineCorrectTextsForQuestion(liveQT);
 
     if (pristineCorrectTexts.size > 0) {
-      // Read the signal directly — registers as a template dependency
-      // so this OnPush component re-renders when selections change.
+      // Read both signals directly — registers template dependencies so this
+      // OnPush component re-renders when selections change.
       const selectionsMap = this.selectedOptionService.selectedOptionsMapSig();
       const selections = selectionsMap.get(_qIdx) ?? [];
       const selectedTexts = new Set(
         selections.map((s: SelectedOption) => norm(s?.text)).filter((t: string) => !!t)
       );
+      // Union the reliable, auto-reveal-invisible UI-selected-texts (live bindings
+      // ∪ first-visit snapshot, published by the shared-option component). This is
+      // what makes "complete a partial multi-answer on revisit" register as
+      // all-correct even though selectedOptionsMap is wiped/flaky on revisit.
+      for (const t of this.selectedOptionService.uiSelectedTextsForQuestion(_qIdx)) {
+        selectedTexts.add(t);
+      }
       const allPristineCorrectSelected =
         [...pristineCorrectTexts].every(t => selectedTexts.has(t));
       if (allPristineCorrectSelected) {
@@ -708,6 +715,12 @@ export class OptionItemComponent implements OnInit {
   private partialMultiSuppressColor(): null | undefined {
     try {
       if (!this._userHasClicked && !this.binding()?.isSelected) {
+        // If this option is already LOCKED (disabled because every correct answer
+        // is now selected — including the "completed a partial M-A on revisit"
+        // case), the question is effectively complete: let it gray via the
+        // disabled path rather than suppressing the color.
+        if (this.isDisabled()) return undefined;
+
         const _qIdxRev = this.resolveQuestionIndex();
 
         const res = this.questionResolution.resolveQuestionState(_qIdxRev, { includeDot: false });

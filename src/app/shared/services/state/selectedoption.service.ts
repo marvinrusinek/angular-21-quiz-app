@@ -102,8 +102,43 @@ export class SelectedOptionService {
     return !!set && set.has(norm(optionText));
   }
 
+  /** The first-visit selected-text snapshot for a question (normalized), or undefined. */
+  getRevisitDisplayTexts(questionIndex: number): ReadonlySet<string> | undefined {
+    return this._revisitDisplayByQuestion.get(questionIndex);
+  }
+
   clearRevisitDisplay(questionIndex: number): void {
     this._revisitDisplayByQuestion.delete(questionIndex);
+  }
+
+  // Auto-reveal-INVISIBLE mirror of the current question's selected option texts.
+  // The shared-option component publishes it each CD from its live bindings UNION
+  // the first-visit _revisitDisplay snapshot, so it holds the COMPLETE selection
+  // across visits. The multi-answer "all correct selected" lock reads this
+  // (reliable + reactive) instead of selectedOptionsMap, which isn't reliably
+  // populated for multi-answer and is wiped on navigation. The auto-reveal never
+  // reads it, so surfacing revisit selections here can't retrigger the reveal.
+  readonly uiSelectedTextsSig = signal<Map<number, ReadonlySet<string>>>(new Map());
+
+  /** Publish the current question's selected texts (normalized; set-if-different to avoid CD loops). */
+  setUiSelectedTextsForQuestion(questionIndex: number, rawTexts: Iterable<string>): void {
+    const texts = new Set<string>();
+    for (const t of rawTexts) {
+      const n = norm(t);
+      if (n) texts.add(n);
+    }
+    const current = this.uiSelectedTextsSig().get(questionIndex);
+    if (current && current.size === texts.size && [...texts].every((t) => current.has(t))) {
+      return; // unchanged — don't churn the signal
+    }
+    const next = new Map(this.uiSelectedTextsSig());
+    next.set(questionIndex, texts);
+    this.uiSelectedTextsSig.set(next);
+  }
+
+  /** Reactive read of the current question's UI-selected texts (for the M-A lock). */
+  uiSelectedTextsForQuestion(questionIndex: number): ReadonlySet<string> {
+    return this.uiSelectedTextsSig().get(questionIndex) ?? new Set<string>();
   }
 
   wasOptionSelectedForQuestion(questionIndex: number, optionText: string): boolean {
@@ -716,6 +751,7 @@ export class SelectedOptionService {
     this.rawSelectionsMap.clear();
     this._selectionHistory.clear();
     this._revisitDisplayByQuestion.clear();
+    this.uiSelectedTextsSig.set(new Map());
     this.selectedOption = [];
     this.selectedOptionIndices = {};
     this.feedbackState.clearAll();

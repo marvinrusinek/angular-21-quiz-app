@@ -11,14 +11,13 @@ import { NEXT_BTN, PREV_BTN, HEADING, diQuiz, correctRowsForHeading } from './he
  *
  * - CONTROL (first visit, no navigation): selecting all correct grays the
  *   remaining options. This works today and validates the assertion mechanism.
- * - BUG REPRO (revisit + re-engage): answer PARTIALLY (1 wrong + 1 correct),
+ * - REVISIT (revisit + re-engage): answer PARTIALLY (1 wrong + 1 correct),
  *   navigate away and back, then select the 2nd correct so all correct are now
- *   selected. The remaining unselected option SHOULD gray — but currently does
- *   NOT, because the revisit re-engagement selection state never registers
- *   "all correct selected" (see project_ma_revisit_completion_lock memory).
- *
- * The BUG REPRO is expected to FAIL until the revisit selection-state fix lands.
- * Remove test.fail() from it once fixed.
+ *   selected. The remaining unselected option must gray. This exercised the
+ *   revisit selection-state bug (the lock read a wiped/flaky selectedOptionsMap);
+ *   fixed by publishing a reliable, auto-reveal-invisible uiSelectedTexts signal
+ *   (live bindings ∪ first-visit snapshot) that the lock reads. See the
+ *   project_ma_revisit_completion_lock memory.
  */
 
 const DISABLED_GRAY = 'rgb(160, 160, 160)'; // #a0a0a0 DISABLED_COLOR
@@ -58,8 +57,30 @@ test('CONTROL: first-visit — selecting all correct grays the remaining options
   }
 });
 
-test('BUG REPRO: revisit — completing a partial multi-answer grays the remaining option', async ({ page }) => {
-  test.fail(); // expected to fail until the revisit selection-state fix lands
+test('revisit via Q1 — a partial multi-answer keeps its remembered colors (Q2->Q1->Q2)', async ({ page }) => {
+  const { rows, corrects, wrongs } = await gotoQ2(page);
+  expect(corrects.length).toBeGreaterThan(0);
+  expect(wrongs.length).toBeGreaterThan(0);
+
+  // Partial: select 1 wrong + 1 correct.
+  await rows.nth(wrongs[0]).click();
+  await rows.nth(corrects[0]).click();
+  await expect(rows.nth(wrongs[0])).toHaveClass(/selected/);
+  await expect(rows.nth(corrects[0])).toHaveClass(/selected/);
+
+  // Navigate Q2 -> Q1 (Previous) -> Q2 (Next).
+  await page.locator(PREV_BTN).click();
+  await expect(page).toHaveURL(/\/1$/);
+  await page.locator(NEXT_BTN).click();
+  await expect(page).toHaveURL(/\/2$/);
+  await rows.first().waitFor({ state: 'visible' });
+
+  // Remembered colors must persist: wrong pick red, correct pick green.
+  await expect(rows.nth(wrongs[0])).toHaveClass(/incorrect-option/);
+  await expect(rows.nth(corrects[0])).toHaveClass(/correct-option/);
+});
+
+test('revisit — completing a partial multi-answer grays the remaining option', async ({ page }) => {
   const { rows, corrects, wrongs } = await gotoQ2(page);
   expect(corrects.length).toBe(2);
   expect(wrongs.length).toBe(2);
@@ -81,4 +102,35 @@ test('BUG REPRO: revisit — completing a partial multi-answer grays the remaini
 
   // The remaining unselected wrong option must lock to dark gray.
   await expect(rows.nth(wrongs[1])).toHaveCSS('background-color', DISABLED_GRAY);
+});
+
+test('after completing on revisit, colors persist through Q2->Q1->Q2', async ({ page }) => {
+  const { rows, corrects, wrongs } = await gotoQ2(page);
+  expect(corrects.length).toBe(2);
+  expect(wrongs.length).toBe(2);
+
+  // First visit: partial (1 wrong + 1 correct), then Q2 -> Q3 -> back to Q2.
+  await rows.nth(wrongs[0]).click();
+  await rows.nth(corrects[0]).click();
+  await page.locator(NEXT_BTN).click();
+  await expect(page).toHaveURL(/\/3$/);
+  await rows.first().waitFor({ state: 'visible' });
+  await page.locator(PREV_BTN).click();
+  await expect(page).toHaveURL(/\/2$/);
+  await rows.first().waitFor({ state: 'visible' });
+
+  // Complete it on revisit: select the 2nd correct.
+  await rows.nth(corrects[1]).click();
+  await expect(rows.nth(wrongs[1])).toHaveCSS('background-color', DISABLED_GRAY);
+
+  // Now Q2 -> Q1 -> Q2: the completed state's colors must persist.
+  await page.locator(PREV_BTN).click();
+  await expect(page).toHaveURL(/\/1$/);
+  await page.locator(NEXT_BTN).click();
+  await expect(page).toHaveURL(/\/2$/);
+  await rows.first().waitFor({ state: 'visible' });
+
+  await expect(rows.nth(corrects[0])).toHaveClass(/correct-option/);
+  await expect(rows.nth(corrects[1])).toHaveClass(/correct-option/);
+  await expect(rows.nth(wrongs[0])).toHaveClass(/incorrect-option/);
 });
