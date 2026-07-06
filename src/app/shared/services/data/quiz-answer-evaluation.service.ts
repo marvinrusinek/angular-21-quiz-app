@@ -220,6 +220,16 @@ export class QuizAnswerEvaluationService {
       } catch (err: unknown) { swallow('quiz-answer-evaluation.service.ts', err); }
     }
 
+    // Cross-visit union: fold in uiSelectedTexts (live bindings ∪ first-visit
+    // snapshot) so COMPLETING a multi-answer on REVISIT verifies. The sources
+    // above reset on navigation and hold only the just-clicked option, which
+    // would fail the every()-correct check below and block the credit.
+    try {
+      const sos = this.selectedOptionServiceLazy;
+      const ui = sos?.uiSelectedTextsForQuestion?.(questionIndex);
+      if (ui) for (const t of ui) { const n = norm(t); if (n) selTexts.add(n); }
+    } catch (err: unknown) { swallow('quiz-answer-evaluation.service.ts ui-union', err); }
+
     if (selTexts.size > 0) {
       if (pristineCorrectTexts.length === 1) {
         if (!pristineCorrectTexts.some(t => selTexts.has(t))) return false;

@@ -708,7 +708,23 @@ export class OptionUiSyncService {
     const isTrulyMulti = correctOptions.length > 1 || ctx.type === 'multiple';
     const isActuallySingle = !isTrulyMulti;
 
-    const selectedOptions = this.gatherSelectedOptionsForScoring(ctx, questionIndex);
+    let selectedOptions = this.gatherSelectedOptionsForScoring(ctx, questionIndex);
+
+    // Fold in the cross-visit union (uiSelectedTexts = live bindings ∪ first-visit
+    // snapshot) for multi-answer, so COMPLETING a partial multi-answer on REVISIT
+    // is detected even though the live sources only hold the just-clicked option.
+    // Remembered texts are represented as {text} stubs; scoring matches on text.
+    if (isTrulyMulti) {
+      const uiSelected = this.selectedOptionService.uiSelectedTextsForQuestion(questionIndex);
+      if (uiSelected && uiSelected.size > 0) {
+        selectedOptions = [...selectedOptions];
+        const known = new Set(selectedOptions.map((s: any) => norm(s?.text)).filter(Boolean));
+        for (const t of uiSelected) {
+          if (!known.has(t)) selectedOptions.push({ text: t } as any);
+        }
+      }
+    }
+
     const { correctSelectedCount, hasIncorrect } =
       this.countCorrectSelected(selectedOptions, correctTextSet);
 

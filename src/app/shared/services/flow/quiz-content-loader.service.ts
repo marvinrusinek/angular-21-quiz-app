@@ -338,10 +338,12 @@ export class QuizContentLoaderService {
       leavingDotClass.includes('wrong') ? 'wrong' : null;
 
     if (leavingStatus) {
-      const sk = params.getScoringKey(leavingIdx);
-      if (leavingStatus === 'correct' && !this.quizService.questionCorrectness.get(sk)) {
-        this.quizService.questionCorrectness.set(sk, true);
-      }
+      // NOTE: the score is credited ONLY on the completing click (option-ui-sync
+      // checkAndScoreMultiAnswer, which now folds in the cross-visit uiSelectedTexts
+      // so revisit-completion credits on the click as well). We deliberately do NOT
+      // credit the score here on navigation — crediting on leave made the score tick
+      // up "between questions", which is not wanted. Only the display dot status
+      // below is persisted on leave.
       try {
         const key = `dot_status_${quizId}_${leavingIdx}`;
         localStorage.setItem(key, leavingStatus);

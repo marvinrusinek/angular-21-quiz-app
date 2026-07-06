@@ -45,6 +45,10 @@ export class FeedbackComponent {
     // initial undefined value is just ignored until the parent provides one.
     effect(() => {
       const cfg = this.feedbackConfig();
+      // Reactive dependency: re-run when this question's UI selections change
+      // (e.g. COMPLETING a multi-answer on REVISIT, where the parent doesn't push
+      // a fresh feedbackConfig) so the win message can replace "select N more".
+      this.selectedOptionService.uiSelectedTextsSig();
       if (cfg) this.updateFeedback();
     });
   }
@@ -76,7 +80,13 @@ export class FeedbackComponent {
     // still matches the live URL question (see cachedFeedbackMatchesUrl).
     const cachedFeedback = cfg.feedback?.trim();
     if (cachedFeedback) {
-      if (this.cachedFeedbackMatchesUrl(cfg, cachedFeedback) && cfg.feedback) {
+      // A cached "That's correct! Please select N more correct answer(s)." goes
+      // stale the moment the user COMPLETES the question (notably on REVISIT,
+      // where the parent doesn't recompute it). When every correct option is now
+      // selected, skip the cache and regenerate so the win message shows.
+      const isPartialProgress = /please select\b.*\bmore correct answers?\b/i.test(cachedFeedback);
+      const staleOnCompletion = isPartialProgress && this.allCorrectSelectedForCurrentQuestion();
+      if (!staleOnCompletion && this.cachedFeedbackMatchesUrl(cfg, cachedFeedback) && cfg.feedback) {
         this.displayMessage.set(cfg.feedback);
         return;
       }
@@ -124,6 +134,44 @@ export class FeedbackComponent {
       }
     } catch {}
     return cacheMatchesUrl;
+  }
+
+  // True when EVERY correct option of the live URL (multi-answer) question is
+  // currently selected and no incorrect option is — i.e. the question is
+  // complete. Reads uiSelectedTextsSig (live bindings ∪ first-visit snapshot),
+  // which survives navigation, so it holds even when the question is completed
+  // on a REVISIT. Used to reject a stale "select N more" cached message.
+  private allCorrectSelectedForCurrentQuestion(): boolean {
+    try {
+      const m = window.location.pathname.match(QUESTION_ROUTE_REGEX);
+      if (!m) return false;
+      const urlIdx = Number(m[1]) - 1;
+      const liveQ =
+        this.quizService.getDisplayedQuestion?.(urlIdx) ??
+        this.quizService.questions?.[urlIdx];
+      const opts: Option[] = liveQ?.options ?? [];
+      if (!opts.length) return false;
+
+      const correctTexts = new Set<string>();
+      const allTexts = new Set<string>();
+      for (const o of opts) {
+        const t = norm(o?.text);
+        if (t) allTexts.add(t);
+        if (isOptionCorrect(o) && t) correctTexts.add(t);
+      }
+      if (correctTexts.size <= 1) return false;  // multi-answer only
+
+      const ui = this.selectedOptionService.uiSelectedTextsForQuestion(urlIdx);
+      let correct = 0;
+      let incorrect = 0;
+      for (const t of ui) {
+        if (correctTexts.has(t)) correct++;
+        else if (allTexts.has(t)) incorrect++;
+      }
+      return correct >= correctTexts.size && incorrect === 0;
+    } catch {
+      return false;
+    }
   }
 
   // True when the user's clicked option text matches a correct option in the

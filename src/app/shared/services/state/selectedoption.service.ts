@@ -87,8 +87,27 @@ export class SelectedOptionService {
       const n = norm(t);
       if (n) set.add(n);
     }
-    if (set.size > 0) this._revisitDisplayByQuestion.set(questionIndex, set);
-    else this._revisitDisplayByQuestion.delete(questionIndex);
+    if (set.size > 0) {
+      this._revisitDisplayByQuestion.set(questionIndex, set);
+    }
+    // Empty read: leave any existing snapshot intact rather than wiping it. The
+    // capture sources (uiSelectedTexts signal) can momentarily read empty due to
+    // change-detection timing, and deleting a good snapshot there is exactly what
+    // broke "complete a partial multi-answer on revisit".
+  }
+
+  /**
+   * Texts of the options recorded in _selectionHistory for a question. Unlike the
+   * uiSelectedTexts signal, _selectionHistory is written synchronously on every
+   * click (SelectionCrudService.setSelectedOptionsForQuestion) and is intact at
+   * nav-capture time, so this is a DETERMINISTIC source for the revisit snapshot.
+   */
+  getSelectionHistoryTextsForQuestion(questionIndex: number): string[] {
+    const history = this._selectionHistory.get(questionIndex) ?? [];
+    return history
+      .filter((s: any) => s && (s.selected || s.highlight || s.showIcon))
+      .map((s: any) => s?.text)
+      .filter((t: any): t is string => typeof t === 'string' && t.length > 0);
   }
 
   /** True if this question has a revisit-display snapshot (was engaged). */

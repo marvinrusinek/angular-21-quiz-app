@@ -243,16 +243,23 @@ export class QuizNavigationService {
       // can momentarily return empty, which previously wiped the remembered set
       // and left a revisited question with no colors. Fall back to it only when
       // the signal hasn't been populated yet.
+      // Union ALL available sources so the first-visit pick is captured even when
+      // the uiSelectedTexts signal reads racy-empty. _selectionHistory is the
+      // DETERMINISTIC source: written synchronously on every click and still
+      // intact here (cleared only later, in clearStaleNavigationState).
+      const texts = new Set<string>();
       const uiTexts = this.selectedOptionService.uiSelectedTextsForQuestion(srcIdx);
-      let texts: string[] = uiTexts ? [...uiTexts] : [];
-      if (texts.length === 0) {
+      if (uiTexts) for (const t of uiTexts) texts.add(t);
+      for (const t of this.selectedOptionService.getSelectionHistoryTextsForQuestion(srcIdx)) texts.add(t);
+      if (texts.size === 0) {
         const sel = this.selectedOptionService.getSelectedOptionsForQuestion(srcIdx) ?? [];
-        texts = sel
-          .filter((s: any) => s && (s.selected || s.highlight || s.showIcon))
-          .map((s: any) => s?.text)
-          .filter((t: any): t is string => typeof t === 'string' && t.length > 0);
+        for (const s of sel) {
+          if (s && (s.selected || s.highlight || s.showIcon) && typeof s.text === 'string' && s.text.length > 0) {
+            texts.add(s.text);
+          }
+        }
       }
-      this.selectedOptionService.captureRevisitDisplay(srcIdx, texts);
+      this.selectedOptionService.captureRevisitDisplay(srcIdx, [...texts]);
     } catch (err: unknown) { swallow('performNavigation revisit-display capture', err); }
   }
 

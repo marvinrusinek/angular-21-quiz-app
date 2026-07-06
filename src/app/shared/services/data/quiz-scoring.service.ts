@@ -1,10 +1,11 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, Injector, signal } from '@angular/core';
 
 import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX } from '../../constants/session-keys';
 
 import { QuizScore } from '../../models/QuizScore.model';
 
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { SelectedOptionService } from '../state/selectedoption.service';
 
 import { getQuizData } from '../../quiz-data-cache';
 import { isOptionCorrect } from '../../utils/is-option-correct';
@@ -15,6 +16,9 @@ import { swallow } from '../../utils/error-logging';
 export class QuizScoringService {
   // ── injects ─────────────────────────────────────────────────────
   public readonly quizShuffleService = inject(QuizShuffleService);
+  // Lazily resolved (via Injector, like feedback.service) to read the cross-visit
+  // UI selection in the multi-answer gate without risking a DI cycle at construction.
+  private readonly injector = inject(Injector);
 
   // ── signals ─────────────────────────────────────────────────────
   readonly correctCountSig = signal<number>(0);
@@ -149,6 +153,32 @@ export class QuizScoringService {
     return wasCorrect;
   }
 
+  /**
+   * Whether the LEAVING question may be credited as correct. Single-answer
+   * questions (<= 1 pristine correct) are creditable when the caller has
+   * confirmed the dot is correct. Multi-answer questions are creditable ONLY
+   * when EVERY pristine-correct answer was confirmed-clicked — the green dot
+   * alone can come from a single correct click on a partial multi-answer, which
+   * must NOT score. Pure (no side effects); reuses the same confirmed-clicks +
+   * pristine data the scoring gate uses.
+   */
+  public isLeavingQuestionCreditable(
+    qIndex: number,
+    quizId: string,
+    scoringKey: number,
+    extraSelectedTexts?: ReadonlySet<string>
+  ): boolean {
+    // Union the confirmed correct clicks with any cross-visit selected texts
+    // (uiSelectedTexts = live bindings ∪ first-visit snapshot). _confirmedCorrectClicks
+    // resets on navigation, so on REVISIT it lacks the first-visit correct clicks —
+    // without the union, completing a multi-answer on revisit would never credit.
+    const selected = new Set<string>(this._confirmedCorrectClicks.get(qIndex) ?? []);
+    if (extraSelectedTexts) for (const t of extraSelectedTexts) selected.add(norm(t));
+    const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
+    if (pristineCorrectTexts.length <= 1) return true;                // single-answer
+    return pristineCorrectTexts.every((t: string) => selected.has(t)); // multi: all correct selected
+  }
+
   // PRISTINE GATE: block a multi-answer increment unless ALL pristine correct
   // answers have been confirmed clicked. Safety net for non-OIS callers.
   private applyPristineMultiAnswerGate(
@@ -160,10 +190,20 @@ export class QuizScoringService {
   ): boolean {
     let isNowCorrect = correctAnswerFound;  // simplified
     if (isNowCorrect && quizId && isMultipleAnswer) {
+      // Union the confirmed correct clicks with the cross-visit UI selection
+      // (uiSelectedTexts = live bindings ∪ first-visit snapshot). _confirmedCorrectClicks
+      // resets on navigation, so COMPLETING a multi-answer on REVISIT would otherwise
+      // never satisfy the gate — mirrors the union in isLeavingQuestionCreditable.
       const confirmed = this._confirmedCorrectClicks.get(qIndex) ?? new Set<string>();
-      const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, confirmed);
+      const selected = new Set<string>(confirmed);
+      try {
+        const sos = this.injector.get(SelectedOptionService, null);
+        const ui = sos?.uiSelectedTextsForQuestion?.(qIndex);
+        if (ui) for (const t of ui) selected.add(norm(t));
+      } catch (err: unknown) { swallow('quiz-scoring.service.ts gate ui-union', err); }
+      const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
       if (pristineCorrectTexts.length > 1) {
-        const allConfirmed = pristineCorrectTexts.every((t: string) => confirmed.has(t));
+        const allConfirmed = pristineCorrectTexts.every((t: string) => selected.has(t));
         if (!allConfirmed) isNowCorrect = false;
       }
     }

@@ -207,6 +207,14 @@ export class FeedbackService {
         if (s?.text) candidateTexts.add(norm(s.text));
       }
     } catch { /* ignore */ }
+    // Cross-visit union (live bindings ∪ first-visit snapshot): the live
+    // selection service resets on navigation, so on a COMPLETING click made on
+    // REVISIT it would miss the first-visit correct pick and the win message
+    // ("You're right! …") would never fire. uiSelectedTexts remembers it.
+    try {
+      const uiTexts = this.selectedOptionService?.uiSelectedTextsForQuestion?.(urlIdx);
+      if (uiTexts) for (const t of uiTexts) candidateTexts.add(norm(t));
+    } catch { /* ignore */ }
     return candidateTexts;
   }
 
