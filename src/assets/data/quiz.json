@@ -812,7 +812,7 @@
     "quizId": "change-detection",
     "milestone": "Change Detection",
     "summary": "Change detection keeps the view in sync with your data — learn how it runs, the OnPush strategy, and how to optimize it.",
-    "image": "https://raw.githubusercontent.com/marvinrusinek/codelab-angular-10-quiz-app/quiz/codelab-master/apps/playground/src/assets/images/tree.png",
+    "image": "assets/images/change-detection.svg",
     "difficulty": "advanced",
     "questions": [
       {
