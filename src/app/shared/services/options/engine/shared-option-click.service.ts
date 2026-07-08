@@ -479,9 +479,9 @@ export class SharedOptionClickService {
    * Post-click feedback display: resolve the feedback config for the clicked
    * option (by key, by idx, or the active config), apply the multi-answer
    * override, and stamp comp._feedbackDisplay when it should show. Terminal
-   * side-effect. CLICK-FEEDBACK PIPELINE — the [FB-DIAG] console.logs are
-   * LOAD-BEARING (removing them previously broke multi-answer FET); body and
-   * logs are verbatim. Do not "clean up" the logging.
+   * side-effect. Deterministic re-render is guaranteed by the cdRef.markForCheck()
+   * at the end of this method (setting the plain _feedbackDisplay field does not
+   * schedule change detection in this zoneless app).
    */
   private applyPostClickFeedbackDisplay(comp: any, index: number): void {
     comp._feedbackDisplay = null;
@@ -505,22 +505,17 @@ export class SharedOptionClickService {
           );
         }
 
-        console.log('[FB-DIAG] post-click idx:', index, 'key:', key, 'byKey?.showFeedback:', byKey?.showFeedback, 'byIdx:', !!byIdx, 'activeCfg?.showFeedback:', activeCfg?.showFeedback, 'cfg?.showFeedback:', cfg?.showFeedback, 'configKeys:', Object.keys(comp.feedbackConfigs || {}));
         if (cfg?.showFeedback) {
           comp._feedbackDisplay = { idx: index, optionId: clickedBinding.option?.optionId, config: cfg };
         }
-      } else {
-        console.log('[FB-DIAG] no clickedBinding at idx:', index, 'bindingsLen:', comp.optionBindings()?.length);
       }
-    } else {
-      console.log('[FB-DIAG] showFeedback() is false');
     }
     // DETERMINISTIC RENDER: _feedbackDisplay is a PLAIN field, so in this zoneless
     // app setting it does NOT schedule change detection. When this runs async
     // (after the click's CD), the template's feedback/FET predicates never
     // re-evaluate and the FET silently fails to render on some machines/browsers
-    // (the [FB-DIAG] logs were only incidentally nudging the timing). Force a CD
-    // pass so the FET shows deterministically regardless of machine speed.
+    // with no error. Force a CD pass so the FET renders deterministically
+    // regardless of machine speed (this replaced the old timing-dependent behavior).
     comp.cdRef?.markForCheck();
   }
 

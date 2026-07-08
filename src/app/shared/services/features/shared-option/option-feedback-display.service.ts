@@ -13,10 +13,10 @@ type Host = SharedOptionComponent;
  * (shouldShowFeedbackFor / shouldShowFeedbackAfter / getInlineFeedbackConfig).
  * The component keeps thin delegators because the HTML template calls them.
  *
- * IMPORTANT: this is the click-feedback pipeline. The [FB-SHOW]/[FB-CFG]
- * console.logs are LOAD-BEARING — removing them previously broke multi-answer
- * FET display. Bodies are moved verbatim (`this.` → host-as-any); do not
- * "clean up" the logging.
+ * NOTE: these predicates read the plain `_feedbackDisplay` field. Deterministic
+ * re-render is guaranteed by the explicit `cdRef.markForCheck()` the click handler
+ * runs after setting `_feedbackDisplay` (shared-option-click.service.ts) — the old
+ * [FB-*] console.logs that used to incidentally nudge CD timing are no longer needed.
  */
 @Injectable({ providedIn: 'root' })
 export class OptionFeedbackDisplayService {
@@ -34,10 +34,6 @@ export class OptionFeedbackDisplayService {
     // Anchor by optionId (identity) so pinned "All of the above" — whose display
     // index differs from its canonical index — still shows feedback on its own row.
     const ok = feedbackAnchorMatches(h._feedbackDisplay, b.option?.optionId, i);
-    if (ok || (h._feedbackDisplay !== null && i === 0)) {
-      // Only log once per render cycle for idx 0 to confirm template re-eval
-      console.log('[FB-SHOW]', 'i:', i, 'fbDisplay.idx:', h._feedbackDisplay?.idx, 'returns:', ok);
-    }
     if (ok) {
       return true;
     }
@@ -51,9 +47,6 @@ export class OptionFeedbackDisplayService {
   getInlineFeedbackConfig(host: Host, b: OptionBindings, i: number): FeedbackProps | null {
     const h = host as any;
     const cfg = h.bindingService.getInlineFeedbackConfig(host, b, i);
-    if (h._feedbackDisplay !== null && h._feedbackDisplay.idx === i) {
-      console.log('[FB-CFG]', 'i:', i, 'returned cfg:', !!cfg, 'showFeedback:', cfg?.showFeedback);
-    }
     return cfg;
   }
 }
