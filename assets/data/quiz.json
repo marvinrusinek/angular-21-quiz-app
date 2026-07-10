@@ -1344,5 +1344,117 @@
         "explanation": "nested subscriptions are hard to read, error-prone, and leak easily. The reactive approach chains dependent requests with a higher-order operator like switchMap (or concatMap), keeping a single subscription; that also cancels stale inner requests and lets the async pipe manage cleanup."
       }
     ]
+  },
+  {
+    "quizId": "signals",
+    "milestone": "Angular Signals",
+    "summary": "Master reactive state in Angular — writable signals, computed derived state, effects, signals in templates, and when to reach for signals instead of RxJS.",
+    "image": "assets/images/signals.svg",
+    "difficulty": "advanced",
+    "facts": [
+      "input() creates a signal-based component input that replaces the @Input decorator and is read like any other signal in templates and computed values.",
+      "toSignal() and toObservable() bridge RxJS and Signals, so you can adopt Signals incrementally alongside existing Observable code.",
+      "In a zoneless Angular app, signals are the primary way Angular knows when to update the view, replacing Zone.js-based change detection."
+    ],
+    "questions": [
+      {
+        "questionText": "What is an Angular Signal?",
+        "options": [
+          { "text": "A one-time value that never changes after it is created." },
+          { "text": "An RxJS Observable with a different name." },
+          { "text": "A reactive wrapper around a value that notifies its consumers when the value changes.", "correct": true },
+          { "text": "A directive that updates the DOM directly." }
+        ],
+        "explanation": "a signal is a reactive wrapper around a value: you read it by calling it like a function, and when its value changes it notifies everything that depends on it — computed signals, templates, and effects. It is not a fixed constant, it is not an Observable (signals are synchronous and always hold a current value), and it is not a directive."
+      },
+      {
+        "questionText": "How do you create a writable signal holding the number 0, and then read its value?",
+        "options": [
+          { "text": "const count = signal(0); then read it with count().", "correct": true },
+          { "text": "const count = signal(0); then read it with count.value." },
+          { "text": "const count = new Signal(0); then read it with count.get()." },
+          { "text": "const count = computed(() => 0); then read it with count()." }
+        ],
+        "explanation": "signal(0) creates a writable signal with an initial value, and you read it by calling it as a function: count(). Signals are not read with .value or .get(), you do not construct them with new, and computed() creates a read-only derived signal rather than a writable one."
+      },
+      {
+        "questionText": "You have count = signal(0) and want to increment it based on its current value. Which is the idiomatic way?",
+        "options": [
+          { "text": "count.set(count + 1)" },
+          { "text": "count.update(n => n + 1)", "correct": true },
+          { "text": "count = count() + 1" },
+          { "text": "count.value++" }
+        ],
+        "explanation": "update() receives the current value and returns the new one, so count.update(n => n + 1) is the idiomatic way to derive the next value from the old. set() replaces the value outright and fits when the new value does not depend on the old (e.g. count.set(5)); reassigning the variable or using .value is not how signals work."
+      },
+      {
+        "questionText": "You have firstName and lastName signals. How do you create a fullName that stays in sync automatically?",
+        "options": [
+          { "text": "const fullName = signal(firstName() + ' ' + lastName());" },
+          { "text": "const fullName = effect(() => firstName() + ' ' + lastName());" },
+          { "text": "const fullName = firstName() + ' ' + lastName();" },
+          { "text": "const fullName = computed(() => firstName() + ' ' + lastName());", "correct": true }
+        ],
+        "explanation": "computed() creates a read-only signal that re-derives its value whenever any signal it reads changes, so fullName updates automatically. A plain signal(...) captures the value once and won't track changes, a bare expression is a one-time string, and effect() runs side effects and does not return a usable value."
+      },
+      {
+        "questionText": "Which statements about computed() signals are correct? Select all that apply.",
+        "options": [
+          { "text": "A computed signal automatically tracks the signals it reads and recomputes when they change.", "correct": true },
+          { "text": "A computed signal recalculates on every change detection cycle, even if its dependencies did not change." },
+          { "text": "A computed signal is read-only; you cannot call set() or update() on it.", "correct": true },
+          { "text": "A computed signal is lazy and memoized — it recomputes only when it is read after a dependency changed.", "correct": true }
+        ],
+        "explanation": "a computed signal tracks whichever signals it reads and recomputes when they change; it is read-only (no set/update); and it is lazy and memoized, recomputing only when read after a dependency changed. It does NOT recompute on every change detection cycle — that memoization is exactly what avoids wasted work."
+      },
+      {
+        "questionText": "What is the primary purpose of effect()?",
+        "options": [
+          { "text": "To derive a new value from other signals." },
+          { "text": "To run a side effect (like logging or syncing to localStorage) whenever the signals it reads change.", "correct": true },
+          { "text": "To create a new writable signal." },
+          { "text": "To manually trigger Angular change detection." }
+        ],
+        "explanation": "effect() runs a side effect — logging, syncing to storage, DOM work outside bindings — automatically whenever any signal it reads changes. Deriving a value is computed()'s job (prefer it over an effect that just sets another signal), creating state is signal(), and effects are not how you trigger change detection."
+      },
+      {
+        "questionText": "How do you display a signal's value in a template, and what does Angular do when it changes?",
+        "options": [
+          { "text": "{{ count.value }} — Angular polls the signal on a timer." },
+          { "text": "{{ count | async }} — the async pipe subscribes to the signal." },
+          { "text": "{{ count() }} — Angular tracks the read and updates just that view when the signal changes.", "correct": true },
+          { "text": "{{ count }} — Angular renders the signal object itself." }
+        ],
+        "explanation": "in the template you call the signal like a function, {{ count() }}, and Angular records that this view depends on it, so when it changes only the affected part of the view updates — no async pipe or manual subscription needed. Signals are not read with .value, the async pipe is for Observables, and rendering the bare signal would show the function, not its value."
+      },
+      {
+        "questionText": "Which statements comparing Signals and RxJS are correct? Select all that apply.",
+        "options": [
+          { "text": "A signal always holds a current value you can read synchronously, similar to a BehaviorSubject's current value.", "correct": true },
+          { "text": "Signals suit synchronous UI state, while RxJS excels at async streams and event pipelines.", "correct": true },
+          { "text": "Reading a signal needs no subscribe/unsubscribe, avoiding that class of memory leak.", "correct": true },
+          { "text": "Signals fully replace RxJS for HTTP requests and complex async coordination." }
+        ],
+        "explanation": "a signal always has a current value you can read synchronously (like a BehaviorSubject), it fits synchronous UI state while RxJS shines for async streams, and reading it needs no subscription so there is no unsubscribe leak. Signals do NOT replace RxJS for HTTP or complex async work — those still belong to Observables, often bridged with toSignal()."
+      },
+      {
+        "questionText": "Which are recommended practices when working with Angular Signals? Select all that apply.",
+        "options": [
+          { "text": "Put heavy work and side effects inside computed() so the UI stays in sync." },
+          { "text": "Keep computed() functions pure — no side effects and no mutating other signals.", "correct": true },
+          { "text": "Prefer computed() over an effect() when you only need to derive a value.", "correct": true },
+          { "text": "Model local component state with signals instead of manual change detection.", "correct": true }
+        ],
+        "explanation": "computed() must stay pure — deriving a value with no side effects or signal mutations — you should prefer it over an effect() whenever you only need derived state, and you can model local component state with signals instead of manual change detection. Putting side effects or heavy work in a computed breaks its purity and memoization; side effects belong in effect()."
+      },
+      {
+        "questionText": "True or False: Using an effect() to read one signal and set() another signal is the recommended way to create derived state.",
+        "options": [
+          { "text": "True" },
+          { "text": "False", "correct": true }
+        ],
+        "explanation": "deriving one signal's value from others is exactly what computed() is for — it is pure, memoized, and updates automatically. Using an effect() to read one signal and set another is an anti-pattern: it invites feedback loops, runs extra work, and Angular disallows writing to signals inside effects by default."
+      }
+    ]
   }
 ]
