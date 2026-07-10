@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 460" role="img"
+     aria-label="Angular HttpClient sending a request to a server and receiving a JSON response">
+  <defs>
+    <marker id="http-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#dd0031"/>
+    </marker>
+    <style>
+      .box   { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .node  { fill:#dd0031; }
+      .lbl   { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-size:18px;
+               text-anchor:middle; dominant-baseline:middle; }
+      .lbl-w { fill:#ffffff; font-weight:600; }
+      .lbl-d { fill:#3d3d3d; font-weight:600; }
+      .flow  { stroke:#dd0031; stroke-width:2.5; fill:none; }
+      .verb  { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#3d3d3d;
+               font-size:14px; text-anchor:middle; font-weight:600; }
+      .resp  { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+               font-size:14px; text-anchor:middle; font-weight:600; }
+      .title { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+               fill:#1a1a1a; font-size:22px; text-anchor:middle; }
+      .sub   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+               font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="620" height="460" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="310" y="42">Angular HTTP</text>
+  <text class="sub"   x="310" y="66">HttpClient sends a request &#8594; the server returns a response</text>
+
+  <!-- Client -->
+  <rect class="box node" x="60" y="190" width="180" height="90" rx="14"/>
+  <text class="lbl lbl-w" x="150" y="228">Angular App</text>
+  <text class="lbl lbl-w" x="150" y="252" font-size="14">HttpClient</text>
+
+  <!-- Server -->
+  <rect class="box" x="380" y="190" width="180" height="90" rx="14"/>
+  <text class="lbl lbl-d" x="470" y="228">Server</text>
+  <text class="lbl lbl-d" x="470" y="252" font-size="14">REST API</text>
+
+  <!-- Request (client -> server) -->
+  <path class="flow" marker-end="url(#http-arrow)" d="M240 218 L378 218"/>
+  <text class="verb" x="310" y="200">Request</text>
+  <text class="verb" x="310" y="176" font-size="12" fill="#8a8a8a">GET &#183; POST &#183; PUT &#183; PATCH &#183; DELETE</text>
+
+  <!-- Response (server -> client) -->
+  <path class="flow" marker-end="url(#http-arrow)" d="M380 252 L242 252"/>
+  <text class="resp" x="310" y="286">Response</text>
+  <text class="resp" x="310" y="308" font-size="12" fill="#8a8a8a">JSON body &#183; status &#183; headers</text>
+</svg>

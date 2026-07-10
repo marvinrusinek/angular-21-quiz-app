@@ -896,5 +896,117 @@
         "explanation": "OnPush, immutable data (new references), and the async pipe or signals all reduce unnecessary change detection work."
       }
     ]
+  },
+  {
+    "quizId": "http",
+    "milestone": "Angular HTTP",
+    "summary": "Talk to servers the modern Angular way — provideHttpClient, typed requests, params and headers, error handling, functional interceptors, and cancellation.",
+    "image": "assets/images/http.svg",
+    "difficulty": "intermediate",
+    "facts": [
+      "By default HttpClient parses the response body as JSON — set responseType to 'text', 'blob', or 'arraybuffer' when you need something else.",
+      "HttpParams and HttpHeaders are immutable — methods like set() and append() return a new instance instead of mutating the original.",
+      "The HttpClient testing tools (provideHttpClientTesting and HttpTestingController) let you unit-test HTTP calls without making real network requests."
+    ],
+    "questions": [
+      {
+        "questionText": "In a standalone Angular 20 app, how do you make HttpClient available for injection?",
+        "options": [
+          { "text": "Add provideHttpClient() to the providers passed to bootstrapApplication().", "correct": true },
+          { "text": "Import HttpClientModule into every standalone component." },
+          { "text": "Create it yourself with new HttpClient() wherever it is needed." },
+          { "text": "Assign HttpClient to a global window variable at startup." }
+        ],
+        "explanation": "provideHttpClient() is added to the app's providers (in bootstrapApplication or appConfig) to make HttpClient injectable. HttpClientModule is the older, discouraged setup, and you never construct HttpClient yourself."
+      },
+      {
+        "questionText": "Which snippet correctly obtains HttpClient inside a standalone service?",
+        "options": [
+          { "text": "private http = inject(HttpClient);", "correct": true },
+          { "text": "private http = new HttpClient();" },
+          { "text": "private http = HttpClient.get();" },
+          { "text": "private http = @Inject();" }
+        ],
+        "explanation": "HttpClient is obtained through Angular's DI — most concisely with inject(HttpClient), or via constructor injection. You never create it with new, and HttpClient.get() is not a static factory."
+      },
+      {
+        "questionText": "Which of the following statements about HTTP method semantics are correct? Select all that apply.",
+        "options": [
+          { "text": "GET retrieves data and should not change server state.", "correct": true },
+          { "text": "POST is typically used to create a new resource.", "correct": true },
+          { "text": "PUT replaces a resource, while PATCH applies a partial update.", "correct": true },
+          { "text": "DELETE is used to fetch a resource without removing it." }
+        ],
+        "explanation": "GET is safe and read-only, POST creates resources, and PUT replaces a resource while PATCH updates it partially. DELETE removes a resource — it does not fetch one."
+      },
+      {
+        "questionText": "How do you tell HttpClient to type the response body as a User object?",
+        "options": [
+          { "text": "this.http.get<User>('/api/users/1')", "correct": true },
+          { "text": "this.http.get('/api/users/1', User)" },
+          { "text": "this.http.get('/api/users/1', { type: User })" },
+          { "text": "this.http.getTyped(User, '/api/users/1')" }
+        ],
+        "explanation": "HttpClient methods take a generic type, so http.get<User>(url) returns an Observable<User> with a typed body. It is a compile-time generic — there is no runtime type argument or getTyped() method."
+      },
+      {
+        "questionText": "Which is the correct way to add the query parameter ?page=2 to a GET request?",
+        "options": [
+          { "text": "this.http.get('/api/items', { params: new HttpParams().set('page', 2) })", "correct": true },
+          { "text": "this.http.get('/api/items?params=page:2')" },
+          { "text": "this.http.get('/api/items', { query: { page: 2 } })" },
+          { "text": "this.http.get('/api/items').setParam('page', 2)" }
+        ],
+        "explanation": "Query parameters go in the params option, e.g. { params: new HttpParams().set('page', 2) }, which Angular serializes to ?page=2. There is no query option or setParam() method."
+      },
+      {
+        "questionText": "How do you attach an Authorization header to a single POST request?",
+        "options": [
+          { "text": "this.http.post('/api/items', body, { headers: new HttpHeaders().set('Authorization', token) })", "correct": true },
+          { "text": "this.http.post('/api/items', body, { Authorization: token })" },
+          { "text": "this.http.post('/api/items', body).header('Authorization', token)" },
+          { "text": "this.http.setHeaders({ Authorization: token }).post('/api/items', body)" }
+        ],
+        "explanation": "Per-request headers go in the headers option using HttpHeaders, e.g. { headers: new HttpHeaders().set('Authorization', token) }. For a header on every request, a functional interceptor is the better choice."
+      },
+      {
+        "questionText": "Which statements about handling HttpClient errors with catchError() are correct? Select all that apply.",
+        "options": [
+          { "text": "catchError() is placed inside the observable's pipe() to intercept a failed request.", "correct": true },
+          { "text": "Inside catchError() you can return a fallback observable such as of([]) to recover gracefully.", "correct": true },
+          { "text": "Re-throwing with throwError(() => err) lets the error propagate to the subscriber.", "correct": true },
+          { "text": "catchError() automatically retries the failed request three times." }
+        ],
+        "explanation": "catchError() is an RxJS operator used inside pipe() to handle a failed request. You can recover by returning a fallback such as of([]) or re-throw with throwError(() => err); it does not retry on its own."
+      },
+      {
+        "questionText": "In Angular 20, functional HTTP interceptors are plain functions registered with withInterceptors() (passed to provideHttpClient()) that can modify both outgoing requests and incoming responses. True or False?",
+        "options": [
+          { "text": "True", "correct": true },
+          { "text": "False" }
+        ],
+        "explanation": "Functional interceptors are plain functions — (req, next) => next(req) — registered with withInterceptors() in provideHttpClient(). They transform the outgoing request and incoming response, replacing the class-based HTTP_INTERCEPTORS."
+      },
+      {
+        "questionText": "A search box fires a GET request on each keystroke. Which approach best cancels the previous in-flight request when a new keystroke arrives?",
+        "options": [
+          { "text": "Pipe the keystrokes through switchMap() into the HttpClient call, so a new emission unsubscribes from the previous request and Angular aborts it if it is still in flight.", "correct": true },
+          { "text": "Call request.cancel() on the object returned by http.get()." },
+          { "text": "Pass { cancelPrevious: true } in the request options." },
+          { "text": "Nothing can be done — an HTTP request can always be cancelled retroactively once it has been sent." }
+        ],
+        "explanation": "switchMap() unsubscribes from the previous request when a new value arrives, aborting it only if it is still in flight. There is no request.cancel() or cancelPrevious option, and an already-completed request cannot be undone."
+      },
+      {
+        "questionText": "Which are recommended best practices for using HttpClient in Angular 20? Select all that apply.",
+        "options": [
+          { "text": "Encapsulate HTTP calls in dedicated services instead of calling HttpClient from components.", "correct": true },
+          { "text": "Use typed responses and handle failures with catchError().", "correct": true },
+          { "text": "Use functional interceptors for cross-cutting concerns like auth headers and logging.", "correct": true },
+          { "text": "Subscribe to the same request observable in many places to reuse a single network call." }
+        ],
+        "explanation": "Wrap HTTP calls in services, use typed responses with catchError(), and put cross-cutting concerns in interceptors. Subscribing to the same observable in many places does not reuse one call (they are cold) — use shareReplay() or the async pipe."
+      }
+    ]
   }
 ]
