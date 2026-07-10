@@ -642,6 +642,16 @@
           { "text": "mat-card-actions", "correct": true }
         ],
         "explanation": "the mat-card-actions tag is used to display actions inside an Angular Material template"
+      },
+      {
+        "questionText": "Which part of Angular Material provides unstyled building blocks like drag-and-drop, overlays, and virtual scrolling?",
+        "options": [
+          { "text": "The Component Dev Kit (CDK).", "correct": true },
+          { "text": "The Angular Router." },
+          { "text": "HttpClient." },
+          { "text": "The async pipe." }
+        ],
+        "explanation": "the Angular CDK (Component Dev Kit) provides reusable, unstyled behaviors — drag-and-drop, overlays, virtual scrolling, accessibility helpers — that Material builds on and that you can use directly. The Router handles navigation, HttpClient does HTTP, and the async pipe unwraps Observables."
       }
     ]
   },
