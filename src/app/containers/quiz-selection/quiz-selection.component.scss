@@ -400,7 +400,12 @@
       .quiz-tile {
         width: calc(100% - 24px) !important;
         max-width: 100% !important;
-        height: 375px !important;
+        // Let the tile grow to fit the summary + badge instead of the fixed
+        // 375px, which clipped the summary and forced the badge to overlap the
+        // last lines of text on mobile.
+        height: auto !important;
+        min-height: 375px !important;
+        padding-bottom: 14px !important;
         margin: 0 !important;
         background-size: 300px 210px !important;
         background-position: center 10px !important;
@@ -415,6 +420,17 @@
           .quiz-summary {
             width: 100% !important;
           }
+        }
+
+        // On mobile the badge flows BELOW the summary (right-aligned) instead
+        // of being absolutely pinned over the text, so it never overlaps.
+        .difficulty-badge {
+          position: static !important;
+          display: block !important;
+          width: fit-content !important;
+          margin: 12px 6px 0 auto !important;
+          bottom: auto !important;
+          right: auto !important;
         }
       }
     }
