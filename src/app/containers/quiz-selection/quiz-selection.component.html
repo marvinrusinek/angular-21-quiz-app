@@ -21,7 +21,8 @@
 
     <div class="intro-titles">
       <h1 i18n>Angular Codelab Quiz App</h1>
-      <h4 i18n>How well do you know Angular? Find out!</h4>
+      <h4 i18n>How well do you know Angular 20? Find out!</h4>
+      <p class="version-note" i18n>Questions updated for Angular 20</p>
     </div>
 
     <div class="info">
@@ -63,22 +64,21 @@
       role="status"
       aria-live="polite"
     >
-      <span class="stat">{{ quizStats().quizCount }} Quizzes</span>
-      <span
-        class="stat-divider"
-        aria-hidden="true"
-      >
-        |
+      <span class="stat">
+        <span class="stat-num">{{ quizStats().quizCount }}</span>
+        <span class="stat-label" i18n>Quizzes</span>
       </span>
-      <span class="stat">{{ quizStats().questionCount }} Questions</span>
-      @if (quizStats().difficultyText) {
-        <span
-          class="stat-divider"
-          aria-hidden="true"
-        >
-          |
+      <span class="stat-divider" aria-hidden="true"></span>
+      <span class="stat">
+        <span class="stat-num">{{ quizStats().questionCount }}</span>
+        <span class="stat-label" i18n>Questions</span>
+      </span>
+      @for (level of quizStats().levels; track level.key) {
+        <span class="stat-divider" aria-hidden="true"></span>
+        <span class="stat" [class]="'level-' + level.key">
+          <span class="stat-num">{{ level.count }}</span>
+          <span class="stat-label">{{ level.label }}</span>
         </span>
-        <span class="stat">{{ quizStats().difficultyText }}</span>
       }
     </div>
   }

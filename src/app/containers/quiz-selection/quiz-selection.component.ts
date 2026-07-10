@@ -118,12 +118,15 @@ export class QuizSelectionComponent implements OnInit {
       const difficulty = (quiz.difficulty ?? '').toLowerCase();
       if (difficulty) counts.set(difficulty, (counts.get(difficulty) ?? 0) + 1);
     }
-    const difficultyText = ['beginner', 'intermediate', 'advanced']
+    const levels = ['beginner', 'intermediate', 'advanced']
       .filter(difficulty => counts.has(difficulty))
-      .map(difficulty => `${counts.get(difficulty)} ${difficulty[0].toUpperCase()}${difficulty.slice(1)}`)
-      .join(' / ');
+      .map(difficulty => ({
+        key: difficulty,
+        label: `${difficulty[0].toUpperCase()}${difficulty.slice(1)}`,
+        count: counts.get(difficulty) ?? 0
+      }));
 
-    return { quizCount, questionCount, difficultyText };
+    return { quizCount, questionCount, levels };
   });
 
   readonly accessedCount = signal(0);

@@ -53,6 +53,14 @@
         margin: 0;
         margin-top: -18px;
       }
+
+      .version-note {
+        margin: 6px 0 0;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        color: vars.$dodger-blue;
+      }
     }
 
     .info {
@@ -156,7 +164,7 @@
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: 22px;
     width: fit-content;
     max-width: 100%;
     margin: 18px auto 30px;
@@ -168,15 +176,40 @@
     box-sizing: border-box;
 
     .stat {
-      font-size: 16px;
-      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.05;
       color: vars.$chambray-blue;
       white-space: nowrap;
+
+      .stat-num {
+        font-size: 30px;
+        font-weight: 800;
+      }
+
+      .stat-label {
+        margin-top: 3px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: vars.$medium-gray;
+      }
     }
 
+    // Color-code the difficulty cells to match the tile badges.
+    .stat.level-beginner .stat-num { color: vars.$green-angular-leaf; }
+    .stat.level-intermediate .stat-num { color: vars.$fuel-yellow; }
+    .stat.level-advanced .stat-num { color: vars.$fire-red; }
+
+    // Tall vertical rule between the stat cells.
     .stat-divider {
-      color: vars.$medium-gray;
-      font-weight: 400;
+      width: 2px;
+      height: 46px;
+      background: vars.$medium-gray;
+      opacity: 0.45;
+      border-radius: 1px;
     }
   }
 
