@@ -1569,6 +1569,118 @@
           "explanation": "Wrap HTTP calls in services, use typed responses with catchError(), and put cross-cutting concerns in interceptors. Subscribing to the same observable in many places does not reuse one call (they are cold) — use shareReplay() or the async pipe."
         }
       ]
+    },
+    {
+      "quizId": "testing",
+      "milestone": "Angular Testing",
+      "summary": "Test Angular the modern way — TestBed and fixtures, change detection, injected services, spies and mocks, async, signals, HTTP, and choosing the right test level.",
+      "image": "assets/images/testing.svg",
+      "difficulty": "intermediate",
+      "facts": [
+        "Playwright tests run through a real browser context, while Angular Jest unit tests run in a faster, more isolated jsdom environment.",
+        "Excessive mocking can make a test pass even when the real, integrated behavior is broken — so mock only what a test genuinely needs to isolate.",
+        "TestBed builds a dedicated testing module for each test, keeping tests isolated from the real application bootstrap and from each other."
+      ],
+      "questions": [
+        {
+          "questionText": "You want to verify a single pure function that formats a score, in isolation and as fast as possible. Which type of test is the best fit?",
+          "options": [
+            { "text": "An end-to-end (Playwright) test that clicks through the UI." },
+            { "text": "A unit test.", "correct": true },
+            { "text": "A manual test in the browser each time." },
+            { "text": "An integration test spanning several components and services." }
+          ],
+          "explanation": "A unit test verifies a small, isolated piece of logic like a pure function — fast and without spinning up the whole app. End-to-end tests exercise real user flows and are slower; pick the lowest level that gives useful confidence."
+        },
+        {
+          "questionText": "What is the role of TestBed.configureTestingModule({ ... }) in an Angular test?",
+          "options": [
+            { "text": "It sets up the testing module — the standalone imports, declarations, and providers the test needs.", "correct": true },
+            { "text": "It launches a real browser to run the test." },
+            { "text": "It compiles the production bundle." },
+            { "text": "It replaces Jest's expect() assertions." }
+          ],
+          "explanation": "TestBed.configureTestingModule() sets up the testing module — the imports, declarations, and providers a test needs — before anything is created. It does not launch a browser, build for production, or provide assertions (that is Jest's expect())."
+        },
+        {
+          "questionText": "After configuring TestBed, how do you create a component and get access to it for assertions?",
+          "options": [
+            { "text": "const comp = new MyComponent();" },
+            { "text": "const comp = TestBed.inject(MyComponent);" },
+            { "text": "const fixture = TestBed.createComponent(MyComponent), then read fixture.componentInstance.", "correct": true },
+            { "text": "const fixture = MyComponent.render();" }
+          ],
+          "explanation": "TestBed.createComponent(MyComponent) returns a ComponentFixture: fixture.componentInstance is the component and fixture.nativeElement is its rendered DOM. Using new bypasses DI and rendering, and TestBed.inject is for services."
+        },
+        {
+          "questionText": "A test updates a component's data, then asserts the rendered text in fixture.nativeElement — but the DOM still shows the old value. What is the most likely fix?",
+          "options": [
+            { "text": "Construct the component again with new." },
+            { "text": "Call fixture.detectChanges() to run change detection before asserting the DOM.", "correct": true },
+            { "text": "Restart the Jest process." },
+            { "text": "Read from the production DOM instead of nativeElement." }
+          ],
+          "explanation": "Angular does not auto-render on every change in a test, so call fixture.detectChanges() to run change detection and update the DOM before asserting on fixture.nativeElement. Creating a fixture does not guarantee every cycle runs for you."
+        },
+        {
+          "questionText": "You are testing a ScoreService that depends on other providers. What is the recommended way to obtain it in a Jest + TestBed test?",
+          "options": [
+            { "text": "const svc = new ScoreService(); with no providers configured." },
+            { "text": "Import the instance from the component under test." },
+            { "text": "Read it off the global window object." },
+            { "text": "Register providers in TestBed, then const svc = TestBed.inject(ScoreService);", "correct": true }
+          ],
+          "explanation": "When a service's dependencies or providers matter, get it through DI: register providers in TestBed and retrieve it with TestBed.inject(ScoreService). Using new bypasses DI — direct construction only fits a dependency-free class."
+        },
+        {
+          "questionText": "Which statements about test doubles in this Jest-based project are correct? Select all that apply.",
+          "options": [
+            { "text": "jest.fn() creates a mock function whose calls and arguments you can assert.", "correct": true },
+            { "text": "jest.spyOn(obj, 'method') wraps an existing method so you can observe or override it.", "correct": true },
+            { "text": "A stub supplies canned return values to keep a test focused and deterministic.", "correct": true },
+            { "text": "jasmine.createSpyObj() is the standard way to create spies in this project." }
+          ],
+          "explanation": "This project uses Jest, so jest.fn() creates assertable mock functions, jest.spyOn() wraps existing methods, and stubs return canned values for determinism. jasmine.createSpyObj() belongs to Jasmine, which this project does not use."
+        },
+        {
+          "questionText": "Which are valid ways to test asynchronous code in an Angular + Jest test? Select all that apply.",
+          "options": [
+            { "text": "Use async/await with a promise-returning API.", "correct": true },
+            { "text": "Use fakeAsync() with tick() to advance virtual time for timers.", "correct": true },
+            { "text": "Assume the assertion runs after the async work with no awaiting or flushing." },
+            { "text": "Await fixture.whenStable() to let pending async work settle before asserting.", "correct": true }
+          ],
+          "explanation": "async/await handles promise-based work, fakeAsync() with tick() advances virtual time for timers, and fixture.whenStable() waits for pending async tasks before you assert. Asserting with no awaiting or flushing checks state before the work finishes."
+        },
+        {
+          "questionText": "Which are good practices when testing a component that uses Angular Signals? Select all that apply.",
+          "options": [
+            { "text": "Reach into and directly overwrite the component's private signals from the test." },
+            { "text": "Trigger the state change the test needs, then read the resulting signal or computed value.", "correct": true },
+            { "text": "Call fixture.detectChanges() before asserting on the rendered DOM.", "correct": true },
+            { "text": "Assert the externally observable state or output rather than a signal's internal details.", "correct": true }
+          ],
+          "explanation": "Test Signals by driving the required state change and reading the resulting value or rendered output, running change detection before DOM assertions. Focus on observable behavior — mutating private signals couples the test to implementation details."
+        },
+        {
+          "questionText": "Using Angular's HTTP testing utilities with HttpTestingController, what is the correct order to test a GET request?",
+          "options": [
+            { "text": "Flush a mock response first, then make the request." },
+            { "text": "Allow a real network request, then assert the parsed body." },
+            { "text": "Make the request, match it with expectOne() and assert it, then flush() the mock response and verify().", "correct": true },
+            { "text": "Call fixture.detectChanges() to send the HTTP request." }
+          ],
+          "explanation": "With HttpTestingController you trigger the request, match it with expectOne() (asserting method and URL), then flush() a mock response and call verify(). Unit tests must never hit the real network, and you assert the request before flushing."
+        },
+        {
+          "questionText": "True or False: Playwright end-to-end tests are the best choice for verifying every small service method and individual component in isolation.",
+          "options": [
+            { "text": "True" },
+            { "text": "False", "correct": true }
+          ],
+          "explanation": "False. Playwright runs real-browser end-to-end tests — ideal for critical user flows, routing, and cross-page behavior, but slower than unit tests. Small, isolated logic belongs in fast Jest unit tests; choose the lowest practical test level."
+        }
+      ]
     }
   ],
   "resources": [
