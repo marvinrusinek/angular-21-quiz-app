@@ -29,6 +29,7 @@ import { ThemeService } from '../../shared/services/ui/theme.service';
 
 import { AccordionComponent } from './accordion/accordion.component';
 import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
+import { QuizFactComponent } from '../../components/quiz-fact/quiz-fact.component';
 import { ChallengeComponent } from './challenge/challenge.component';
 import { ReturnComponent } from './return/return.component';
 import { StatisticsComponent } from './statistics/statistics.component';
@@ -48,6 +49,7 @@ import { swallow } from '../../shared/utils/error-logging';
     MatTooltipModule,
     NgOptimizedImage,
     BackToTopComponent,
+    QuizFactComponent,
     AccordionComponent,
     ChallengeComponent,
     ReturnComponent,
@@ -89,6 +91,11 @@ export class ResultsComponent implements OnInit {
   readonly finalResult = signal<FinalResult | null>(null);
   readonly scoreAnalysis = computed<ScoreAnalysisItem[]>(
     () => this.finalResult()?.analysis ?? []
+  );
+
+  // Facts (0-3) for the completed quiz; QuizFactComponent shows one at random.
+  readonly currentQuizFacts = computed<string[]>(
+    () => this.quizData.find(quiz => quiz.quizId === this.quizId())?.facts ?? []
   );
 
   readonly showScrollIndicator = signal(true);

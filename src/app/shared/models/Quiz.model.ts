@@ -8,6 +8,7 @@ export interface Quiz {
   summary: string;
   image: string;
   difficulty?: QuizDifficulty;
+  facts?: string[];
   questions?: QuizQuestion[];
   shuffleOptions?: boolean;
   status?: string;

@@ -23,7 +23,6 @@ const GUARDED_DIRS = [
   'src/app/shared/services/state',
   'src/app/shared/services/flow',
   'src/app/shared/services/ui',
-  'src/app/shared/directives',
   'src/app/shared/pipes'
 ];
 
