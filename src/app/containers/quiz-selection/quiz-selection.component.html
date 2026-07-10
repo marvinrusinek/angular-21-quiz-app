@@ -42,21 +42,6 @@
     </div>
   </header>
 
-  <!-- Toolbar: search + sort -->
-  <div class="toolbar">
-    <app-quiz-search
-      [searchTerm]="searchTerm()"
-      (searchTermChange)="searchTerm.set($event)"
-    ></app-quiz-search>
-
-    <app-quiz-sort
-      [difficultyDirection]="sortDifficulty()"
-      (difficultyDirectionChange)="sortDifficulty.set($event)"
-      [alphaDirection]="sortAlpha()"
-      (alphaDirectionChange)="sortAlpha.set($event)"
-    ></app-quiz-sort>
-  </div>
-
   <!-- Catalog summary stats -->
   @if (quizzes().length > 0) {
     <div
@@ -86,6 +71,21 @@
   @if (hasAccessedQuizzes()) {
     <span class="accessed-banner">{{ accessedBannerMessage() }}</span>
   }
+
+  <!-- Toolbar: search + sort (right above the grid they act on) -->
+  <div class="toolbar">
+    <app-quiz-search
+      [searchTerm]="searchTerm()"
+      (searchTermChange)="searchTerm.set($event)"
+    ></app-quiz-search>
+
+    <app-quiz-sort
+      [difficultyDirection]="sortDifficulty()"
+      (difficultyDirectionChange)="sortDifficulty.set($event)"
+      [alphaDirection]="sortAlpha()"
+      (alphaDirectionChange)="sortAlpha.set($event)"
+    ></app-quiz-sort>
+  </div>
 
   <!-- Empty state: quizzes are loaded but none match the search -->
   @if (quizzes().length > 0 && displayedQuizzes().length === 0) {
