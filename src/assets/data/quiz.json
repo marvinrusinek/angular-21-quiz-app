@@ -957,7 +957,7 @@
           { "text": "this.http.get('/api/items', { query: { page: 2 } })" },
           { "text": "this.http.get('/api/items').setParam('page', 2)" }
         ],
-        "explanation": "Query parameters go in the params option, e.g. { params: new HttpParams().set('page', 2) }, which Angular serializes to ?page=2. There is no query option or setParam() method."
+        "explanation": "query parameters go in the params option, e.g. { params: new HttpParams().set('page', 2) }, which Angular serializes to ?page=2. There is no query option or setParam() method."
       },
       {
         "questionText": "How do you attach an Authorization header to a single POST request?",
@@ -967,7 +967,7 @@
           { "text": "this.http.post('/api/items', body).header('Authorization', token)" },
           { "text": "this.http.setHeaders({ Authorization: token }).post('/api/items', body)" }
         ],
-        "explanation": "Per-request headers go in the headers option using HttpHeaders, e.g. { headers: new HttpHeaders().set('Authorization', token) }. For a header on every request, a functional interceptor is the better choice."
+        "explanation": "per-request headers go in the headers option using HttpHeaders, e.g. { headers: new HttpHeaders().set('Authorization', token) }. For a header on every request, a functional interceptor is the better choice."
       },
       {
         "questionText": "Which statements about handling HttpClient errors with catchError() are correct? Select all that apply.",
@@ -985,7 +985,7 @@
           { "text": "True", "correct": true },
           { "text": "False" }
         ],
-        "explanation": "Functional interceptors are plain functions — (req, next) => next(req) — registered with withInterceptors() in provideHttpClient(). They transform the outgoing request and incoming response, replacing the class-based HTTP_INTERCEPTORS."
+        "explanation": "functional interceptors are plain functions — (req, next) => next(req) — registered with withInterceptors() in provideHttpClient(). They transform the outgoing request and incoming response, replacing the class-based HTTP_INTERCEPTORS."
       },
       {
         "questionText": "A search box fires a GET request on each keystroke. Which approach best cancels the previous in-flight request when a new keystroke arrives?",
@@ -1005,7 +1005,7 @@
           { "text": "Use functional interceptors for cross-cutting concerns like auth headers and logging.", "correct": true },
           { "text": "Subscribe to the same request observable in many places to reuse a single network call." }
         ],
-        "explanation": "Wrap HTTP calls in services, use typed responses with catchError(), and put cross-cutting concerns in interceptors. Subscribing to the same observable in many places does not reuse one call (they are cold) — use shareReplay() or the async pipe."
+        "explanation": "wrap HTTP calls in services, use typed responses with catchError(), and put cross-cutting concerns in interceptors. Subscribing to the same observable in many places does not reuse one call (they are cold) — use shareReplay() or the async pipe."
       }
     ]
   },
@@ -1029,7 +1029,7 @@
           { "text": "A manual test in the browser each time." },
           { "text": "An integration test spanning several components and services." }
         ],
-        "explanation": "A unit test verifies a small, isolated piece of logic like a pure function — fast and without spinning up the whole app. End-to-end tests exercise real user flows and are slower; pick the lowest level that gives useful confidence."
+        "explanation": "a unit test verifies a small, isolated piece of logic like a pure function — fast and without spinning up the whole app. End-to-end tests exercise real user flows and are slower; pick the lowest level that gives useful confidence."
       },
       {
         "questionText": "What is the role of TestBed.configureTestingModule({ ... }) in an Angular test?",
@@ -1069,7 +1069,7 @@
           { "text": "Read it off the global window object." },
           { "text": "Register providers in TestBed, then const svc = TestBed.inject(ScoreService);", "correct": true }
         ],
-        "explanation": "When a service's dependencies or providers matter, get it through DI: register providers in TestBed and retrieve it with TestBed.inject(ScoreService). Using new bypasses DI — direct construction only fits a dependency-free class."
+        "explanation": "when a service's dependencies or providers matter, get it through DI: register providers in TestBed and retrieve it with TestBed.inject(ScoreService). Using new bypasses DI — direct construction only fits a dependency-free class."
       },
       {
         "questionText": "Which statements about test doubles in this Jest-based project are correct? Select all that apply.",
@@ -1079,7 +1079,7 @@
           { "text": "A stub supplies canned return values to keep a test focused and deterministic.", "correct": true },
           { "text": "jasmine.createSpyObj() is the standard way to create spies in this project." }
         ],
-        "explanation": "This project uses Jest, so jest.fn() creates assertable mock functions, jest.spyOn() wraps existing methods, and stubs return canned values for determinism. jasmine.createSpyObj() belongs to Jasmine, which this project does not use."
+        "explanation": "this project uses Jest, so jest.fn() creates assertable mock functions, jest.spyOn() wraps existing methods, and stubs return canned values for determinism. jasmine.createSpyObj() belongs to Jasmine, which this project does not use."
       },
       {
         "questionText": "Which are valid ways to test asynchronous code in an Angular + Jest test? Select all that apply.",
@@ -1099,7 +1099,7 @@
           { "text": "Call fixture.detectChanges() before asserting on the rendered DOM.", "correct": true },
           { "text": "Assert the externally observable state or output rather than a signal's internal details.", "correct": true }
         ],
-        "explanation": "Test Signals by driving the required state change and reading the resulting value or rendered output, running change detection before DOM assertions. Focus on observable behavior — mutating private signals couples the test to implementation details."
+        "explanation": "test Signals by driving the required state change and reading the resulting value or rendered output, running change detection before DOM assertions. Focus on observable behavior — mutating private signals couples the test to implementation details."
       },
       {
         "questionText": "Using Angular's HTTP testing utilities with HttpTestingController, what is the correct order to test a GET request?",
@@ -1109,7 +1109,7 @@
           { "text": "Make the request, match it with expectOne() and assert it, then flush() the mock response and verify().", "correct": true },
           { "text": "Call fixture.detectChanges() to send the HTTP request." }
         ],
-        "explanation": "With HttpTestingController you trigger the request, match it with expectOne() (asserting method and URL), then flush() a mock response and call verify(). Unit tests must never hit the real network, and you assert the request before flushing."
+        "explanation": "with HttpTestingController you trigger the request, match it with expectOne() (asserting method and URL), then flush() a mock response and call verify(). Unit tests must never hit the real network, and you assert the request before flushing."
       },
       {
         "questionText": "True or False: Playwright end-to-end tests are the best choice for verifying every small service method and individual component in isolation.",
@@ -1117,7 +1117,7 @@
           { "text": "True" },
           { "text": "False", "correct": true }
         ],
-        "explanation": "False. Playwright runs real-browser end-to-end tests — ideal for critical user flows, routing, and cross-page behavior, but slower than unit tests. Small, isolated logic belongs in fast Jest unit tests; choose the lowest practical test level."
+        "explanation": "Playwright runs real-browser end-to-end tests — ideal for critical user flows, routing, and cross-page behavior, but slower than unit tests. Small, isolated logic belongs in fast Jest unit tests; choose the lowest practical test level that gives useful confidence."
       }
     ]
   }
