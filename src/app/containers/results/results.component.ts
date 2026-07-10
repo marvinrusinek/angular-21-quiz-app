@@ -209,11 +209,14 @@ export class ResultsComponent implements OnInit {
   selectQuiz(): void {
     const quizId = this.quizId() || this.quizService.quizId || '';
 
-    // Only mark as completed (checkmark) if score is 100%
+    // Mark as completed (checkmark) whenever the quiz was actually finished,
+    // regardless of score. A finished quiz has a result snapshot with questions;
+    // the 100% distinction is surfaced separately via the Perfect Score /
+    // Angular Master achievements, not the tile checkmark.
     const snapshot = this.finalResult();
-    const isPerfect = snapshot && snapshot.total > 0 && snapshot.correct === snapshot.total;
+    const isCompleted = !!snapshot && snapshot.total > 0;
     if (quizId) {
-      const key = isPerfect ? SK_COMPLETED_QUIZ_IDS : SK_STARTED_QUIZ_IDS;
+      const key = isCompleted ? SK_COMPLETED_QUIZ_IDS : SK_STARTED_QUIZ_IDS;
       const existing = readSessionJson<string[]>(key, []);
       if (!existing.includes(quizId)) {
         existing.push(quizId);
@@ -221,17 +224,14 @@ export class ResultsComponent implements OnInit {
       }
     }
 
-    // Clear quiz status set by setCompletedQuiz() so non-perfect quizzes
-    // don't show as completed on the selection screen
     if (quizId) {
-      if (isPerfect) {
-        this.quizDataService.updateQuizStatus(quizId, QuizStatus.COMPLETED);
-      } else {
-        this.quizDataService.updateQuizStatus(quizId, QuizStatus.STARTED);
-      }
+      this.quizDataService.updateQuizStatus(
+        quizId,
+        isCompleted ? QuizStatus.COMPLETED : QuizStatus.STARTED
+      );
     }
-    this.quizService.setCompletedQuizId(isPerfect ? quizId : '');
-    this.quizService.quizCompleted = !!isPerfect;
+    this.quizService.setCompletedQuizId(isCompleted ? quizId : '');
+    this.quizService.quizCompleted = isCompleted;
 
     this.quizService.resetAll();
     this.quizService.resetQuestions();
