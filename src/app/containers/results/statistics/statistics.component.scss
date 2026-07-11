@@ -312,17 +312,22 @@
     padding: 20px;
     margin-top: 16px;
     text-align: left;
-    
+
+    // No icon on the summary — hide the native <summary> disclosure triangle.
+    summary {
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
     .resources-header {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
-      
-      .resources-icon {
-        font-size: 24px;
-      }
-      
+
       h4 {
         margin: 0;
         font-size: 16px;

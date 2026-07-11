@@ -1,7 +1,6 @@
 @for (quiz of quizzes(); track quiz.quizId) {
   @if (quiz.quizId === quizId()) {
     <div class="statistics">
-      
       <!-- === SCORE ANALYSIS SECTION === -->
       @if (viewMode() === 'all' || viewMode() === 'score') {
         <div class="score-view">
@@ -45,10 +44,14 @@
 
               <!-- Score Text -->
               <div class="score-text-container">
-                <span class="your-score" i18n>
+                <span
+                  class="your-score"
+                  i18n
+                >
                   You scored
                   <span class="result">{{ quizMetadata().correctAnswersCount?.() ?? 0 }}</span>
-                  out of <span class="result">{{ quizMetadata().totalQuestions }}</span>
+                  out of
+                  <span class="result">{{ quizMetadata().totalQuestions }}</span>
                   {{ questionLabel() }}
                   correctly.
                 </span>
@@ -59,18 +62,26 @@
             <div class="score-col-visuals">
               <!-- Circular Score Ring -->
               <div class="circular-score">
-                <svg class="score-ring" viewBox="0 0 140 140">
-                  <circle class="ring-bg" cx="70" cy="70" r="60" />
-                  <circle 
+                <svg
+                  class="score-ring"
+                  viewBox="0 0 140 140"
+                >
+                  <circle
+                    class="ring-bg"
+                    cx="70"
+                    cy="70"
+                    r="60"
+                  />
+                  <circle
                     class="ring-progress"
                     [class.ring-excellent]="feedbackLevel() === 'excellent'"
                     [class.ring-good]="feedbackLevel() === 'good'"
                     [class.ring-poor]="feedbackLevel() === 'poor'"
-                    cx="70" 
-                    cy="70" 
+                    cx="70"
+                    cy="70"
                     r="60"
                     [style.stroke-dasharray]="377"
-                    [style.stroke-dashoffset]="377 - (377 * (percentage() / 100))"
+                    [style.stroke-dashoffset]="377 - 377 * (percentage() / 100)"
                   />
                 </svg>
                 <div class="score-value">
@@ -81,16 +92,28 @@
 
               <!-- Score Breakdown -->
               <div class="score-breakdown">
-                <span class="breakdown-item correct">✔ {{ correctCount() }} <span i18n>Correct</span></span>
-                <span class="breakdown-item incorrect">✖ {{ incorrectCount() }} <span i18n>Incorrect</span></span>
-                <span class="breakdown-item timed-out">⏱ {{ timedOutCount() }} <span i18n>Timed Out</span></span>
+                <span class="breakdown-item correct">
+                  ✔ {{ correctCount() }}
+                  <span i18n>Correct</span>
+                </span>
+                <span class="breakdown-item incorrect">
+                  ✖ {{ incorrectCount() }}
+                  <span i18n>Incorrect</span>
+                </span>
+                <span class="breakdown-item timed-out">
+                  ⏱ {{ timedOutCount() }}
+                  <span i18n>Timed Out</span>
+                </span>
               </div>
 
               <!-- Star Rating -->
-              <div class="star-rating" aria-label="Score rating">
+              <div
+                class="star-rating"
+                aria-label="Score rating"
+              >
                 @for (star of [1, 2, 3, 4, 5]; track star) {
-                  <span 
-                    class="star" 
+                  <span
+                    class="star"
                     [class.filled]="star <= starCount()"
                     [class.empty]="star > starCount()"
                   >
@@ -119,16 +142,19 @@
             </div>
           </div>
 
-
-
           <!-- TIME SECTION -->
           <div class="time-section">
             <span class="time-icon">⏱️</span>
-            <span class="elapsed-time" i18n>
+            <span
+              class="elapsed-time"
+              i18n
+            >
               Completed in
               <span class="result">{{ elapsedMinutes() }}</span>
               {{ minuteLabel() }}
-              and <span class="result">{{ elapsedSeconds() }}</span> seconds.
+              and
+              <span class="result">{{ elapsedSeconds() }}</span>
+              seconds.
             </span>
           </div>
         </div>
@@ -137,7 +163,12 @@
       <!-- === RESOURCES SECTION (Standalone) === -->
       @if (viewMode() === 'resources') {
         <div class="resources-view">
-          <h3 class="section-title" i18n>Use these resources to improve your score!</h3>
+          <h3
+            class="section-title"
+            i18n
+          >
+            Use these resources to improve your score!
+          </h3>
           <ng-container *ngTemplateOutlet="resourcesTemplate"></ng-container>
         </div>
       }
@@ -147,19 +178,31 @@
 
 <!-- === REUSABLE RESOURCES TEMPLATE === -->
 <ng-template #resourcesTemplate>
-  <details class="resources-section" open>
+  <details
+    class="resources-section"
+    open
+  >
     <summary class="resources-header">
-      <span class="resources-icon">📚</span>
-      <span i18n>Brush up your knowledge of <strong><em>{{ milestoneName() }}</em></strong> with these resources:</span>
+      <span i18n>
+        Brush up your knowledge of
+        <strong>
+          <em>{{ milestoneName() }}</em>
+        </strong>
+        with these resources:
+      </span>
     </summary>
 
     <ul>
       @for (resource of resources(); track resource.url) {
         <li>
-          <a [href]="resource.url" target="_blank" rel="noopener">
+          <a
+            [href]="resource.url"
+            target="_blank"
+            rel="noopener"
+          >
             <span class="resource-title">{{ resource.title }}</span>
           </a>
-          <span class="resource-host"> — {{ resource.host }}</span>
+          <span class="resource-host">— {{ resource.host }}</span>
         </li>
       }
     </ul>
