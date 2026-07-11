@@ -51,7 +51,8 @@
         font-style: italic;
         font-size: 18px;
         margin: 0;
-        margin-top: -18px;
+        // Nudged up ~8px (was -18px) to tighten the header spacing.
+        margin-top: -26px;
       }
 
       .version-note {
