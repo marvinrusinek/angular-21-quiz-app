@@ -349,7 +349,7 @@
       }
     }
 
-    &[open] .summary-caret::before {
+    &[open] .resources-header .summary-caret::before {
       content: '▲';
     }
   }
