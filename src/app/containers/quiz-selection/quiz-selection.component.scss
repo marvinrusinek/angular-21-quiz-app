@@ -258,7 +258,7 @@
       // to fit; the footer row is pinned to the bottom via margin-top:auto.
       height: 375px;
       overflow: hidden;
-      padding-bottom: 6px;
+      padding-bottom: 2px;
       background-color: vars.$off-white;
       border: 1px solid vars.$black;
       border-radius: 10px;
@@ -337,8 +337,9 @@
         justify-content: space-between;
         gap: 8px;
         margin-top: auto;
-        // Lifted 5px off the bottom (was 8px) so the progress row sits higher.
-        padding: 0 10px 13px;
+        // Sits close to the bottom border (moved the row back down ~5px and
+        // trimmed the space beneath it).
+        padding: 0 10px 8px;
 
         .quiz-card-progress-line {
           min-width: 0;  // truncate rather than grow the row
