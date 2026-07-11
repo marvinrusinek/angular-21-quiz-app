@@ -1,11 +1,24 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 
-import { SK_COMPLETED_QUIZ_IDS, SK_CORRECT_ANSWERS_COUNT, SK_DISPLAY_MODE, SK_DOT_CONFIRMED, SK_IS_ANSWERED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_STARTED_QUIZ_IDS } from '../../../shared/constants/session-keys';
-import { readSessionJson, removeSessionKey, writeSessionJson } from '../../../shared/utils/session-storage';
+import {
+  SK_COMPLETED_QUIZ_IDS,
+  SK_CORRECT_ANSWERS_COUNT,
+  SK_DISPLAY_MODE,
+  SK_DOT_CONFIRMED,
+  SK_IS_ANSWERED,
+  SK_SEL_Q,
+  SK_SELECTED_OPTIONS_MAP,
+  SK_STARTED_QUIZ_IDS,
+} from '../../../shared/constants/session-keys';
+import {
+  readSessionJson,
+  removeSessionKey,
+  writeSessionJson,
+} from '../../../shared/utils/session-storage';
 
 import { ExplanationTextService } from '../../../shared/services/features/explanation/explanation-text.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
@@ -20,10 +33,10 @@ import { swallow } from '../../../shared/utils/error-logging';
 @Component({
   selector: 'codelab-results-return',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatListModule],
+  imports: [MatCardModule, MatListModule],
   templateUrl: './return.component.html',
   styleUrls: ['./return.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReturnComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -151,7 +164,9 @@ export class ReturnComponent implements OnInit {
       this.clearQuizProgressLocalStorage();
 
       sessionStorage.setItem('freshStartFromResults', 'true');
-    } catch (err: unknown) { swallow('return.component.ts', err); }
+    } catch (err: unknown) {
+      swallow('return.component.ts', err);
+    }
   }
 
   private clearQuestionSessionStorage(): void {
@@ -178,10 +193,8 @@ export class ReturnComponent implements OnInit {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
 
-      if (
-        key &&
-        (key.startsWith('quiz_dot_status_') || key.startsWith('quiz_progress_'))
-      ) lsKeysToRemove.push(key);
+      if (key && (key.startsWith('quiz_dot_status_') || key.startsWith('quiz_progress_')))
+        lsKeysToRemove.push(key);
     }
 
     for (const key of lsKeysToRemove) {
@@ -199,6 +212,8 @@ export class ReturnComponent implements OnInit {
   private clearResultsUiState(): void {
     try {
       sessionStorage.removeItem('resultsActiveSection');
-    } catch (err: unknown) { swallow('return.component.ts', err); }
+    } catch (err: unknown) {
+      swallow('return.component.ts', err);
+    }
   }
 }

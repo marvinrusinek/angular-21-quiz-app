@@ -1,20 +1,34 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef, effect,
-  ElementRef, inject, input, OnInit, output, Renderer2, signal, untracked, viewChild
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  OnInit,
+  output,
+  Renderer2,
+  signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 
-import { CombinedQuestionDataType } from
-  '../../../shared/models/CombinedQuestionDataType.model';
+import { CombinedQuestionDataType } from '../../../shared/models/CombinedQuestionDataType.model';
 import { Option } from '../../../shared/models/Option.model';
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 
 import { CqcOrchestratorService } from '../../../shared/services/features/quiz-content/cqc-orchestrator.service';
-import { ExplanationTextService, FETPayload } from
-      '../../../shared/services/features/explanation/explanation-text.service';
+import {
+  ExplanationTextService,
+  FETPayload,
+} from '../../../shared/services/features/explanation/explanation-text.service';
 import { QuizContentDisplayService } from '../../../shared/services/features/quiz-content/quiz-content-display.service';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { QuizNavigationService } from '../../../shared/services/flow/quiz-navigation.service';
@@ -24,8 +38,7 @@ import { QuizStateService } from '../../../shared/services/state/quizstate.servi
 import { SelectedOptionService } from '../../../shared/services/state/selectedoption.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
 
-import { QuizQuestionComponent } from
-  '../../../components/question/quiz-question/quiz-question.component';
+import { QuizQuestionComponent } from '../../../components/question/quiz-question/quiz-question.component';
 
 import { buildHeadingInputs } from '../../../shared/utils/heading-inputs';
 import { deriveHeadingHtml } from '../../../shared/utils/heading-model';
@@ -33,10 +46,10 @@ import { deriveHeadingHtml } from '../../../shared/utils/heading-model';
 @Component({
   selector: 'codelab-quiz-content',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './codelab-quiz-content.component.html',
   styleUrls: ['./codelab-quiz-content.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CodelabQuizContentComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -73,7 +86,10 @@ export class CodelabQuizContentComponent implements OnInit {
   readonly correctAnswersText = input<string>('');
   readonly questionText = input<string>('');
   readonly quizData = input<CombinedQuestionDataType | null>(null);
-  readonly displayState$ = input<Observable<{ mode: 'question' | 'explanation', answered: boolean }> | null>(null);
+  readonly displayState$ = input<Observable<{
+    mode: 'question' | 'explanation';
+    answered: boolean;
+  }> | null>(null);
   readonly displayVariables = input<{ question: string; explanation: string } | null>(null);
   readonly localExplanationText = input<string>('');
   readonly showLocalExplanation = input<boolean>(false);
@@ -128,10 +144,10 @@ export class CodelabQuizContentComponent implements OnInit {
     // htmlSig trigger, decoupling the heading from the setHtml writers so they
     // can be removed. Extra triggers are harmless; a missing one is the bug, so
     // we read every signal that correlates with a heading change.
-    this.currentQuestionSig();                              // question data resolved / changed
-    this.selectedOptionService.selectedOptionSig();         // option selection changed
-    this.quizStateService.lastInteractionTimeSig();         // any genuine option click
-    this.explanationTextService.formattedExplanationSig();  // FET text became available
+    this.currentQuestionSig(); // question data resolved / changed
+    this.selectedOptionService.selectedOptionSig(); // option selection changed
+    this.quizStateService.lastInteractionTimeSig(); // any genuine option click
+    this.explanationTextService.formattedExplanationSig(); // FET text became available
     const inputs = buildHeadingInputs({
       idx: this.quizService.currentQuestionIndex,
       quizService: this.quizService,
@@ -140,7 +156,7 @@ export class CodelabQuizContentComponent implements OnInit {
       selectedOptionService: this.selectedOptionService,
       quizStateService: this.quizStateService,
       quizNavigationService: this.quizNavigationService,
-      quizQuestionManagerService: this.quizQuestionManagerService
+      quizQuestionManagerService: this.quizQuestionManagerService,
     });
     return inputs ? deriveHeadingHtml(inputs) : '';
   });
@@ -169,11 +185,12 @@ export class CodelabQuizContentComponent implements OnInit {
   explanationTexts: string[] = [];
 
   constructor() {
-    this.formattedExplanation$ = this.displayService.createFormattedExplanation$(this.currentIndex$);
+    this.formattedExplanation$ = this.displayService.createFormattedExplanation$(
+      this.currentIndex$
+    );
     this.activeFetText$ = this.displayService.createActiveFetText$(this.currentIndex$);
 
-    this.isExplanationTextDisplayed$ =
-      this.explanationTextService.isExplanationTextDisplayed$;
+    this.isExplanationTextDisplayed$ = this.explanationTextService.isExplanationTextDisplayed$;
 
     let effectFiredOnce = false;
     effect(() => {
@@ -229,9 +246,13 @@ export class CodelabQuizContentComponent implements OnInit {
     return result;
   }
 
-  setCombinedQuestionData$(v: Observable<CombinedQuestionDataType> | null): void { this._combinedQuestionDataSig.set(v); }
+  setCombinedQuestionData$(v: Observable<CombinedQuestionDataType> | null): void {
+    this._combinedQuestionDataSig.set(v);
+  }
 
-  setQuizId(v: string): void { this._quizIdSig.set(v); }
+  setQuizId(v: string): void {
+    this._quizIdSig.set(v);
+  }
 
   get _lastQuestionTextByIndex(): Map<number, string> {
     return this.displayService._lastQuestionTextByIndex;
@@ -241,10 +262,18 @@ export class CodelabQuizContentComponent implements OnInit {
     return this.displayService._fetDisplayedThisSession;
   }
 
-  get _fetLocked(): boolean { return this.displayService._fetLockedSig(); }
-  set _fetLocked(v: boolean) { this.displayService._fetLockedSig.set(v); }
-  get _lockedForIndex(): number { return this.displayService._lockedForIndexSig(); }
-  set _lockedForIndex(v: number) { this.displayService._lockedForIndexSig.set(v); }
+  get _fetLocked(): boolean {
+    return this.displayService._fetLockedSig();
+  }
+  set _fetLocked(v: boolean) {
+    this.displayService._fetLockedSig.set(v);
+  }
+  get _lockedForIndex(): number {
+    return this.displayService._lockedForIndexSig();
+  }
+  set _lockedForIndex(v: number) {
+    this.displayService._lockedForIndexSig.set(v);
+  }
 
   resetInitialState(): void {
     this.explanationTextService.setIsExplanationTextDisplayed(false);
@@ -261,7 +290,7 @@ export class CodelabQuizContentComponent implements OnInit {
 
     this.explanationTextService.resetForIndex(0);
     this.explanationTextService.setShouldDisplayExplanation(false, {
-      force: true
+      force: true,
     });
   }
 
@@ -273,7 +302,6 @@ export class CodelabQuizContentComponent implements OnInit {
     this.explanationTextService.setShouldDisplayExplanation(false);
     this.explanationTextService.setExplanationText('');
   }
-
 
   emitContentAvailableState(): void {
     this.orchestrator.runEmitContentAvailableState(this);
@@ -302,8 +330,7 @@ export class CodelabQuizContentComponent implements OnInit {
     this.questionIndexSig.set(idx);
     this.questionIndexSubject.next(idx);
     this.currentIndex = idx;
-    this.currentQuestionIndex$ =
-      this.quizService.getCurrentQuestionIndexObservable();
+    this.currentQuestionIndex$ = this.quizService.getCurrentQuestionIndexObservable();
   }
 
   updateCorrectAnswersDisplay(question: QuizQuestion | null): Observable<void> {
@@ -329,9 +356,14 @@ export class CodelabQuizContentComponent implements OnInit {
     isExplanationDisplayed: boolean,
     formattedExplanation: string
   ): CombinedQuestionDataType {
-    return this.orchestrator.runCalculateCombinedQuestionData(this, currentQuizData, numberOfCorrectAnswers, isExplanationDisplayed, formattedExplanation);
+    return this.orchestrator.runCalculateCombinedQuestionData(
+      this,
+      currentQuizData,
+      numberOfCorrectAnswers,
+      isExplanationDisplayed,
+      formattedExplanation
+    );
   }
-
 
   // Prime synchronously with the initial input value so runOnInit's
   // downstream setup sees the correct currentIndex / FET state.
@@ -346,5 +378,4 @@ export class CodelabQuizContentComponent implements OnInit {
   private initializeCombinedQuestionData(): void {
     this.orchestrator.runInitializeCombinedQuestionData(this);
   }
-
 }

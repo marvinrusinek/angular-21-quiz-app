@@ -1,9 +1,16 @@
 import {
-  ChangeDetectionStrategy, Component, effect, inject, input, model, OnInit, 
-  output, signal
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  model,
+  OnInit,
+  output,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { Option } from '../../../../shared/models/Option.model';
@@ -30,12 +37,11 @@ import { norm } from '../../../../shared/utils/text-norm';
 @Component({
   selector: 'codelab-question-answer',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedOptionComponent],
+  imports: [ReactiveFormsModule, SharedOptionComponent],
   templateUrl: './answer.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
-  implements OnInit {
+export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
   private readonly answerBindingsService = inject(AnswerBindingsService);
   private readonly answerOptionsService = inject(AnswerOptionsService);
@@ -46,9 +52,9 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
   // ── outputs ─────────────────────────────────────────────────────
   readonly componentLoaded = output<any>();
   readonly optionSelected = output<{
-    option: SelectedOption,
-    index: number,
-    checked: boolean
+    option: SelectedOption;
+    index: number;
+    checked: boolean;
   }>();
   readonly quizQuestionComponentLoaded = output<void>();
 
@@ -103,13 +109,15 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           this.cdRef.markForCheck();
           return;
         }
-        this.optionBindingsSource.set(next.map((o: Option) => ({
-          ...o,
-          selected: false,
-          highlight: false,
-          showIcon: false,
-          feedback: undefined
-        })));
+        this.optionBindingsSource.set(
+          next.map((o: Option) => ({
+            ...o,
+            selected: false,
+            highlight: false,
+            showIcon: false,
+            feedback: undefined,
+          }))
+        );
         this.optionBindings.set(this.rebuildOptionBindings(this.optionBindingsSource()));
         this.renderReady.set(true);
         this.syncOptionsWithSelections();
@@ -130,14 +138,15 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       this.applyIncomingOptions(this.optionsToDisplay());
     }
 
-    this.quizService.getCurrentQuestion(this.quizService.currentQuestionIndex)
+    this.quizService
+      .getCurrentQuestion(this.quizService.currentQuestionIndex)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((currentQuestion: QuizQuestion | null) => {
         if (!currentQuestion) return;
 
         // ROBUST MULTI-ANSWER CHECK
         const opts = currentQuestion.options || [];
-        const correctCount = opts.filter(o => isOptionCorrect(o)).length;
+        const correctCount = opts.filter((o) => isOptionCorrect(o)).length;
 
         this.type.set(correctCount > 1 ? 'multiple' : 'single');
 
@@ -174,9 +183,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
           this.question.set({ ...liveQ });
         }
 
-        this.incomingOptions.set(this.answerOptionsService.normalizeOptions(
-          structuredClone(opts)
-        ));
+        this.incomingOptions.set(this.answerOptionsService.normalizeOptions(structuredClone(opts)));
 
         //  Clear prior icons and bindings (clean slate)
         this.optionBindings.set([]);
@@ -184,7 +191,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
         // Apply options synchronously (removed Promise.resolve to fix StackBlitz timing)
         this.applyIncomingOptions(this.incomingOptions(), {
-          resetSelection: false
+          resetSelection: false,
         });
       });
   }
@@ -196,45 +203,39 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
     }
   }
 
-  public override async onOptionClicked(
-    payload: OptionClickedPayload,
-  ): Promise<void> {
+  public override async onOptionClicked(payload: OptionClickedPayload): Promise<void> {
     if (!payload || !payload.option) return;
 
     const activeQuestionIndex = this.getActiveQuestionIndex();
 
-    const enrichedOption =
-      this.answerSelectionService.buildEnrichedSelectedOption(
-        payload,
-        activeQuestionIndex,
-        this.optionsToDisplay()
-      );
+    const enrichedOption = this.answerSelectionService.buildEnrichedSelectedOption(
+      payload,
+      activeQuestionIndex,
+      this.optionsToDisplay()
+    );
 
     this.selectedOption = enrichedOption;
 
-    this.selectedOptions =
-      this.answerSelectionService.updateSelectedOptionsArray(
-        this.selectedOptions,
-        enrichedOption,
-        this.type()
-      );
+    this.selectedOptions = this.answerSelectionService.updateSelectedOptionsArray(
+      this.selectedOptions,
+      enrichedOption,
+      this.type()
+    );
 
     const question = this.resolveQuestion(activeQuestionIndex);
 
     if (!question) return;
 
-    const optionsSource =
-      this.answerOptionsService.resolveOptionsSource(
-        this.optionsToDisplay(),
-        question
-      );
+    const optionsSource = this.answerOptionsService.resolveOptionsSource(
+      this.optionsToDisplay(),
+      question
+    );
 
-    const isMultiAnswer =
-      this.answerOptionsService.isMultipleAnswerQuestion(
-        question,
-        optionsSource,
-        this.type()
-      );
+    const isMultiAnswer = this.answerOptionsService.isMultipleAnswerQuestion(
+      question,
+      optionsSource,
+      this.type()
+    );
 
     this.answerSelectionService.syncSelectedOptionService(
       activeQuestionIndex,
@@ -242,11 +243,10 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       isMultiAnswer
     );
 
-    const complete =
-      this.answerSelectionService.updateQuestionCompletionState(
-        this.questionIndex(),
-        question
-      );
+    const complete = this.answerSelectionService.updateQuestionCompletionState(
+      this.questionIndex(),
+      question
+    );
 
     this.answerSelectionService.updateScoringAndAnswerSelectedState(
       activeQuestionIndex,
@@ -256,19 +256,15 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       complete
     );
 
-    const updatedBindings =
-      this.answerBindingsService.updateVisualBindings(
-        this.optionBindings(),
-        enrichedOption,
-        this.type()
-      );
+    const updatedBindings = this.answerBindingsService.updateVisualBindings(
+      this.optionBindings(),
+      enrichedOption,
+      this.type()
+    );
 
     this.optionBindings.set(updatedBindings);
 
-    this.answerSelectionService.updateDotStatus(
-      activeQuestionIndex,
-      enrichedOption
-    );
+    this.answerSelectionService.updateDotStatus(activeQuestionIndex, enrichedOption);
 
     this.emitCleanOptionClickedPayload(payload, enrichedOption);
   }
@@ -292,17 +288,14 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
     this.showFeedbackForOption = {};
   }
 
-  private applyIncomingOptions(
-    options: Option[],
-    config: { resetSelection?: boolean } = {}
-  ): void {
+  private applyIncomingOptions(options: Option[], config: { resetSelection?: boolean } = {}): void {
     const normalized = this.answerOptionsService.normalizeOptions(options);
     const nextOptions = normalized.map((option: Option) => ({
       ...option,
       selected: false,
       highlight: false,
       showIcon: false,
-      feedback: undefined
+      feedback: undefined,
     }));
 
     if (config.resetSelection ?? true) this.resetSelectionState();
@@ -311,18 +304,17 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
     // Without this, navigating from a multi-answer question (e.g. Q4) to a
     // single-answer question (e.g. Q5) would leave type='multiple', causing
     // SOC to render checkboxes and use multi-answer interaction logic.
-    const correctCount = nextOptions.filter(o => isOptionCorrect(o)).length;
+    const correctCount = nextOptions.filter((o) => isOptionCorrect(o)).length;
     this.type.set(correctCount > 1 ? 'multiple' : 'single');
 
     this.optionsToDisplay.set(nextOptions);
-    this.optionBindingsSource.set(
-      nextOptions.map((option) => ({ ...option })));
+    this.optionBindingsSource.set(nextOptions.map((option) => ({ ...option })));
 
     if (this.sharedOptionConfig) {
       this.sharedOptionConfig = {
         ...this.sharedOptionConfig,
         type: this.type(),
-        optionsToDisplay: nextOptions.map((option: Option) => ({ ...option }))
+        optionsToDisplay: nextOptions.map((option: Option) => ({ ...option })),
       };
     }
 
@@ -340,8 +332,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
     if (index === null || index === undefined || index < 0) return;
 
-    const savedSelections =
-      this.selectedOptionService.getSelectedOptionsForQuestion(index) ?? [];
+    const savedSelections = this.selectedOptionService.getSelectedOptionsForQuestion(index) ?? [];
 
     if (!savedSelections.length || !this.optionsToDisplay()?.length) return;
 
@@ -353,29 +344,22 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
         continue;
       }
 
-      const savedIds = new Set(savedSelections.map(selection => String(selection.optionId)));
+      const savedIds = new Set(savedSelections.map((selection) => String(selection.optionId)));
 
-      const savedTexts = new Set(
-        savedSelections.map(selection =>
-          norm(selection.text),
-        )
-      );
+      const savedTexts = new Set(savedSelections.map((selection) => norm(selection.text)));
 
-      const idMatch =
-        option.optionId != null && savedIds.has(String(option.optionId));
+      const idMatch = option.optionId != null && savedIds.has(String(option.optionId));
 
-      const textMatch =
-        !!(option.text && savedTexts.has(norm(option.text)));
+      const textMatch = !!(option.text && savedTexts.has(norm(option.text)));
 
       option.selected = idMatch || textMatch;
     }
 
-    const updatedBindings =
-      this.answerBindingsService.hydrateBindingsFromSavedSelections(
-        this.optionBindings(),
-        savedSelections,
-        isMulti
-      );
+    const updatedBindings = this.answerBindingsService.hydrateBindingsFromSavedSelections(
+      this.optionBindings(),
+      savedSelections,
+      isMulti
+    );
 
     this.optionBindings.set(updatedBindings);
 
@@ -384,10 +368,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
       const selectedId = savedSelections[0]?.optionId;
 
       if (selectedId != null) {
-        formGroup.patchValue(
-          { selectedOptionId: selectedId },
-          { emitEvent: false }
-        );
+        formGroup.patchValue({ selectedOptionId: selectedId }, { emitEvent: false });
       }
     }
   }
@@ -432,18 +413,17 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload>
 
   private emitCleanOptionClickedPayload(
     originalPayload: OptionClickedPayload,
-    enrichedOption: SelectedOption,
+    enrichedOption: SelectedOption
   ): void {
     const cleanPayload: OptionClickedPayload = {
       option: enrichedOption,
       index: originalPayload.index,
       checked: enrichedOption.selected === true,
-      wasReselected: originalPayload.wasReselected ?? false
+      wasReselected: originalPayload.wasReselected ?? false,
     };
 
     this.optionClicked.emit(cleanPayload);
   }
-
 
   // Rebuild optionBindings from the latest optionsToDisplay.
   private rebuildOptionBindings(options: Option[]): OptionBindings[] {

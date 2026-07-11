@@ -1,9 +1,16 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef,
-  effect, inject, OnInit, signal
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  OnInit,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -13,8 +20,20 @@ import { take } from 'rxjs/operators';
 
 import { QuizStatus } from '../../shared/models/quiz-status.enum';
 
-import { SK_COMPLETED_QUIZ_IDS, SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS, SK_STARTED_QUIZ_IDS, SK_USER_ANSWERS } from '../../shared/constants/session-keys';
-import { readSessionJson, writeSessionJson, writeSessionString } from '../../shared/utils/session-storage';
+import {
+  SK_COMPLETED_QUIZ_IDS,
+  SK_DOT_CONFIRMED,
+  SK_SEL_Q,
+  SK_SELECTED_OPTIONS_MAP,
+  SK_SHUFFLED_QUESTIONS,
+  SK_STARTED_QUIZ_IDS,
+  SK_USER_ANSWERS,
+} from '../../shared/constants/session-keys';
+import {
+  readSessionJson,
+  writeSessionJson,
+  writeSessionString,
+} from '../../shared/utils/session-storage';
 
 import { FinalResult, ScoreAnalysisItem } from '../../shared/models/Final-Result.model';
 import { Quiz } from '../../shared/models/Quiz.model';
@@ -47,7 +66,6 @@ import { swallow } from '../../shared/utils/error-logging';
   selector: 'codelab-quiz-results',
   standalone: true,
   imports: [
-    CommonModule,
     MatCardModule,
     MatExpansionModule,
     MatIconModule,
@@ -61,7 +79,7 @@ import { swallow } from '../../shared/utils/error-logging';
     ChallengeComponent,
     ReturnComponent,
     StatisticsComponent,
-    SummaryReportComponent
+    SummaryReportComponent,
   ],
   templateUrl: './results.component.html',
   styleUrls: ['./results.component.scss'],
@@ -69,8 +87,8 @@ import { swallow } from '../../shared/utils/error-logging';
   host: {
     '(window:scroll)': 'onWindowScroll()',
     '(document:click)': 'onDocumentClick($event)',
-    '(document:keydown.escape)': 'onEscapeKey()'
-  }
+    '(document:keydown.escape)': 'onEscapeKey()',
+  },
 })
 export class ResultsComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -94,14 +112,12 @@ export class ResultsComponent implements OnInit {
   readonly headerLabel = signal('');
 
   readonly menuOpen = signal(false);
-  readonly activeSection = signal<
-    'score' | 'report' | 'summary' | 'highscores' | 'resources'
-  >(this.restoreActiveSection());
+  readonly activeSection = signal<'score' | 'report' | 'summary' | 'highscores' | 'resources'>(
+    this.restoreActiveSection()
+  );
 
   readonly finalResult = signal<FinalResult | null>(null);
-  readonly scoreAnalysis = computed<ScoreAnalysisItem[]>(
-    () => this.finalResult()?.analysis ?? []
-  );
+  readonly scoreAnalysis = computed<ScoreAnalysisItem[]>(() => this.finalResult()?.analysis ?? []);
 
   // Achievements newly earned by THIS completed quiz (shown once, not after refresh).
   readonly newlyEarnedAchievements = signal<AchievementDefinition[]>([]);
@@ -111,7 +127,7 @@ export class ResultsComponent implements OnInit {
 
   // Facts (0-3) for the completed quiz; QuizFactComponent shows one at random.
   readonly currentQuizFacts = computed<string[]>(
-    () => this.quizData.find(quiz => quiz.quizId === this.quizId())?.facts ?? []
+    () => this.quizData.find((quiz) => quiz.quizId === this.quizId())?.facts ?? []
   );
 
   readonly showScrollIndicator = signal(true);
@@ -119,10 +135,9 @@ export class ResultsComponent implements OnInit {
   // Tracks whether ngOnInit already applied a synchronous snapshot, so the
   // finalResult$ effect skips re-applying when the observable later emits.
   private readonly hasSnapshot = signal(false);
-  private readonly finalResultStream = toSignal(
-    this.quizService.finalResult$,
-    { initialValue: null as FinalResult | null }
-  );
+  private readonly finalResultStream = toSignal(this.quizService.finalResult$, {
+    initialValue: null as FinalResult | null,
+  });
 
   constructor() {
     effect(() => {
@@ -145,9 +160,7 @@ export class ResultsComponent implements OnInit {
     this.setCompletedQuiz();
     this.findQuizIndex();
 
-    this.detailedSummaryQuestions.set(
-      this.quizService.getQuestionsInDisplayOrder()
-    );
+    this.detailedSummaryQuestions.set(this.quizService.getQuestionsInDisplayOrder());
 
     this.updateHeaderLabel(
       this.quizService.totalQuestions() || this.detailedSummaryQuestions().length
@@ -166,7 +179,7 @@ export class ResultsComponent implements OnInit {
         total,
         percentage: total > 0 ? Math.round((correct / total) * 100) : 0,
         analysis: [],
-        completedAt: Date.now()
+        completedAt: Date.now(),
       };
     }
 
@@ -193,7 +206,7 @@ export class ResultsComponent implements OnInit {
   }
 
   toggleMenu(): void {
-    this.menuOpen.update(prev => !prev);
+    this.menuOpen.update((prev) => !prev);
   }
 
   closeMenu(): void {
@@ -295,7 +308,9 @@ export class ResultsComponent implements OnInit {
       localStorage.removeItem(SK_SELECTED_OPTIONS_MAP);
       localStorage.removeItem(SK_USER_ANSWERS);
       localStorage.removeItem(SK_SHUFFLED_QUESTIONS);
-    } catch (err: unknown) { swallow('results.component.ts', err); }
+    } catch (err: unknown) {
+      swallow('results.component.ts', err);
+    }
 
     // Reset to light mode when leaving results
     if (this.themeService.isDark()) {
@@ -314,32 +329,38 @@ export class ResultsComponent implements OnInit {
   private restoreActiveSection(): 'score' | 'report' | 'summary' | 'highscores' | 'resources' {
     try {
       const stored = sessionStorage.getItem('resultsActiveSection');
-      if (stored === 'score' || stored === 'report' || stored === 'summary' || stored === 'highscores' || stored === 'resources') {
+      if (
+        stored === 'score' ||
+        stored === 'report' ||
+        stored === 'summary' ||
+        stored === 'highscores' ||
+        stored === 'resources'
+      ) {
         return stored;
       }
-    } catch (err: unknown) { swallow('results.component.ts', err); }
+    } catch (err: unknown) {
+      swallow('results.component.ts', err);
+    }
     return 'score';
   }
 
   private fetchQuizIdFromParams(): void {
-    this.activatedRoute.paramMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((params) => {
-        const routeQuizId = params.get('quizId');
-        if (routeQuizId) {
-          this.quizId.set(routeQuizId);
-          this.setCompletedQuiz();
-          this.findQuizIndex();
-          this.cdRef.markForCheck();
-        }
-      });
+    this.activatedRoute.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const routeQuizId = params.get('quizId');
+      if (routeQuizId) {
+        this.quizId.set(routeQuizId);
+        this.setCompletedQuiz();
+        this.findQuizIndex();
+        this.cdRef.markForCheck();
+      }
+    });
   }
 
   private setCompletedQuiz(): void {
     const id = this.quizId();
     if (id) {
       this.quizService.setCompletedQuizId(id);
-      this.quizService.setQuizId(id);  // ensure service has correct ID for high scores
+      this.quizService.setQuizId(id); // ensure service has correct ID for high scores
       this.quizService.setQuizStatus(QuizStatus.COMPLETED);
 
       // Update the quiz object's status so QuizSelectionComponent can show the icon
@@ -350,9 +371,7 @@ export class ResultsComponent implements OnInit {
   private findQuizIndex(): void {
     const id = this.quizId();
     if (id) {
-      this.indexOfQuizId.set(
-        this.quizData.findIndex((elem) => elem.quizId === id)
-      );
+      this.indexOfQuizId.set(this.quizData.findIndex((elem) => elem.quizId === id));
     }
   }
 
@@ -362,9 +381,10 @@ export class ResultsComponent implements OnInit {
   }
 
   private updateHeaderLabel(totalQuestions: number): void {
-    const questionCount = Number.isFinite(totalQuestions) && totalQuestions > 0
-      ? totalQuestions
-      : this.detailedSummaryQuestions().length;
+    const questionCount =
+      Number.isFinite(totalQuestions) && totalQuestions > 0
+        ? totalQuestions
+        : this.detailedSummaryQuestions().length;
 
     this.headerLabel.set(
       this.quizService.isShuffleEnabled()
@@ -385,9 +405,7 @@ export class ResultsComponent implements OnInit {
     if (!result?.quizId) return;
     this.achievementsProcessed = true;
     this.achievementService.recordQuizResult(result.quizId, result.percentage);
-    this.newlyEarnedAchievements.set(
-      this.achievementService.evaluate(this.quizData)
-    );
+    this.newlyEarnedAchievements.set(this.achievementService.evaluate(this.quizData));
     // Refresh the catalog so any just-earned achievement flips to "Earned".
     this.achievementsCatalog.set(this.achievementService.catalog());
     this.cdRef.markForCheck();
@@ -396,6 +414,8 @@ export class ResultsComponent implements OnInit {
   private persistResultsToSession(result: FinalResult): void {
     try {
       sessionStorage.setItem('finalResult', JSON.stringify(result));
-    } catch (err: unknown) { swallow('results.component.ts', err); }
+    } catch (err: unknown) {
+      swallow('results.component.ts', err);
+    }
   }
 }

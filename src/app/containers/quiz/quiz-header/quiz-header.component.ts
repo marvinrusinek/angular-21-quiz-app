@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,17 +16,16 @@ import { QuizService } from '../../../shared/services/data/quiz.service';
   selector: 'codelab-quiz-header',
   standalone: true,
   imports: [
-    CommonModule,
     NgOptimizedImage,
     RouterModule,
     MatCardModule,
     MatIconModule,
     MatTooltipModule,
-    ThemeToggleComponent
+    ThemeToggleComponent,
   ],
   templateUrl: './quiz-header.component.html',
   styleUrls: ['./quiz-header.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CodelabQuizHeaderComponent {
   // ── injects ─────────────────────────────────────────────────────
@@ -36,9 +35,9 @@ export class CodelabQuizHeaderComponent {
 
   // ── remaining variables ─────────────────────────────────────────
   readonly currentQuiz = computed(
-    () => this.quizDataService.quizzesSig().find(
-      (quiz) => quiz.quizId === this.quizService.quizId
-    ) ?? null
+    () =>
+      this.quizDataService.quizzesSig().find((quiz) => quiz.quizId === this.quizService.quizId) ??
+      null
   );
 
   // Open the presentational keyboard-shortcuts dialog. ariaLabelledBy /
@@ -52,7 +51,7 @@ export class CodelabQuizHeaderComponent {
       autoFocus: 'dialog',
       restoreFocus: true,
       ariaLabelledBy: 'ksd-title',
-      ariaDescribedBy: 'ksd-desc'
+      ariaDescribedBy: 'ksd-desc',
     });
   }
 }

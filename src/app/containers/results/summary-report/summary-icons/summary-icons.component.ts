@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { Quiz } from '../../../../shared/models/Quiz.model';
 import { QuizMetadata } from '../../../../shared/models/QuizMetadata.model';
@@ -7,10 +6,10 @@ import { QuizMetadata } from '../../../../shared/models/QuizMetadata.model';
 @Component({
   selector: 'codelab-summary-icons',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './summary-icons.component.html',
   styleUrls: ['./summary-icons.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SummaryIconsComponent {
   // ── inputs ──────────────────────────────────────────────────────
@@ -23,8 +22,7 @@ export class SummaryIconsComponent {
   readonly mailtoHref = computed<string>(() => {
     const { percentage, milestone, codelabUrl } = this.getShareValues();
     const subject = 'Try to beat my quiz score!';
-    const body =
-      `I scored ${percentage}% on this awesome quiz about Angular ${milestone}.
+    const body = `I scored ${percentage}% on this awesome quiz about Angular ${milestone}.
       Try to beat my score at ${codelabUrl}`;
 
     return `mailto:?subject=${encodeURIComponent(subject)}&body=
@@ -33,8 +31,7 @@ export class SummaryIconsComponent {
 
   readonly twitterHref = computed<string>(() => {
     const { percentage, milestone, codelabUrl } = this.getShareValues();
-    const tweetText =
-      `I scored ${percentage}/100 on this awesome quiz about Angular ${milestone}.
+    const tweetText = `I scored ${percentage}/100 on this awesome quiz about Angular ${milestone}.
       Try to beat my score at`;
 
     return `https://twitter.com/intent/tweet?text=${this.encodeShareText(tweetText)}
@@ -45,22 +42,21 @@ export class SummaryIconsComponent {
   // in email and social media shares
   private encodeShareText(text: string): string {
     return encodeURIComponent(text)
-      .replace(/%25/g, '%')   // restore % signs
-      .replace(/%2F/g, '/');  // restore forward slashes
+      .replace(/%25/g, '%') // restore % signs
+      .replace(/%2F/g, '/'); // restore forward slashes
   }
 
   private getShareValues(): {
-    percentage: number,
-    milestone: string,
-    codelabUrl: string
+    percentage: number;
+    milestone: string;
+    codelabUrl: string;
   } {
-    const percentageSource =
-      this.quizMetadata()?.percentage ?? this.quizPercentage();
+    const percentageSource = this.quizMetadata()?.percentage ?? this.quizPercentage();
 
     return {
       percentage: Number.isFinite(percentageSource) ? percentageSource : 0,
       milestone: this.quiz()?.milestone ?? '',
-      codelabUrl: this.codelabUrl() ?? ''
+      codelabUrl: this.codelabUrl() ?? '',
     };
   }
 }

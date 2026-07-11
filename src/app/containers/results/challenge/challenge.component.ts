@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  Signal,
+} from '@angular/core';
+
 import { ActivatedRoute } from '@angular/router';
 
 import { QuizMetadata } from '../../../shared/models/QuizMetadata.model';
@@ -11,10 +18,10 @@ import { TimerService } from '../../../shared/services/features/timer/timer.serv
 @Component({
   selector: 'codelab-results-challenge',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './challenge.component.html',
   styleUrls: ['./challenge.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChallengeComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -40,17 +47,17 @@ export class ChallengeComponent implements OnInit {
     totalQuestionsAttempted: this.quizService.totalQuestions(),
     correctAnswersCount: this.quizService.correctAnswersCountSig,
     percentage: this.percentageCorrect(),
-    completionTime: this.timerService.calculateTotalElapsedTime(
-      this.timerService.elapsedTimes
-    )
+    completionTime: this.timerService.calculateTotalElapsedTime(this.timerService.elapsedTimes),
   };
   codelabUrl = 'https://www.codelab.fun';
 
   ngOnInit(): void {
     // Get quizId from service (most reliable) or from route params
-    this.currentQuizId = this.quizService.quizId ||
+    this.currentQuizId =
+      this.quizService.quizId ||
       this.activatedRoute.snapshot.paramMap.get('quizId') ||
-      this.activatedRoute.parent?.snapshot.paramMap.get('quizId') || '';
+      this.activatedRoute.parent?.snapshot.paramMap.get('quizId') ||
+      '';
     this.quizName = this.currentQuizId;
   }
 }

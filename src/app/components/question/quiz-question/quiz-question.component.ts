@@ -1,10 +1,21 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, Component, computed, DestroyRef, 
-  effect, inject, input, model, OnInit, output,
-  signal, viewChild, ViewContainerRef
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  input,
+  model,
+  OnInit,
+  output,
+  signal,
+  viewChild,
+  ViewContainerRef,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
@@ -40,21 +51,15 @@ const EXPLANATION_PURGE_DELAY_MS = 500;
 @Component({
   selector: 'codelab-quiz-question',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCheckboxModule,
-    MatRadioModule
-  ],
+  imports: [ReactiveFormsModule, MatCheckboxModule, MatRadioModule],
   templateUrl: './quiz-question.component.html',
   styleUrls: ['./quiz-question.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '(window:visibilitychange)': 'onVisibilityChange()'
-  }
+    '(window:visibilitychange)': 'onVisibilityChange()',
+  },
 })
-export class QuizQuestionComponent extends BaseQuestion
-  implements OnInit, AfterViewInit {
+export class QuizQuestionComponent extends BaseQuestion implements OnInit, AfterViewInit {
   // ── injects ─────────────────────────────────────────────────────
   public readonly explanationTextService = inject(ExplanationTextService);
   public readonly nextButtonStateService = inject(NextButtonStateService);
@@ -75,8 +80,8 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly answer = output<number>();
   readonly answeredChange = output<boolean>();
   readonly selectionChanged = output<{
-    question: QuizQuestion,
-    selectedOptions: Option[]
+    question: QuizQuestion;
+    selectedOptions: Option[];
   }>();
   readonly questionAnswered = output<QuizQuestion>();
   readonly isAnswerSelectedChange = output<boolean>();
@@ -87,8 +92,8 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly answerSelected = output<boolean>();
   readonly optionSelected = output<SelectedOption>();
   readonly displayStateChange = output<{
-    mode: 'question' | 'explanation',
-    answered: boolean
+    mode: 'question' | 'explanation';
+    answered: boolean;
   }>();
   readonly feedbackApplied = output<number>();
   readonly nextButtonState = output<boolean>();
@@ -99,18 +104,23 @@ export class QuizQuestionComponent extends BaseQuestion
   readonly currentQuestion$ = input<Observable<QuizQuestion | null>>(of(null));
   readonly reset = input<boolean>(false);
   readonly questionToDisplay$ = input<Observable<string>>(of(''));
-  readonly displayState$ = input<Observable<{ mode: 'question' | 'explanation'; answered: boolean }>>(of({ mode: 'question', answered: false }));
+  readonly displayState$ = input<
+    Observable<{ mode: 'question' | 'explanation'; answered: boolean }>
+  >(of({ mode: 'question', answered: false }));
   readonly explanation = input<string>('');
   readonly questionIndex = input<number | undefined>(undefined);
   readonly questionPayload = input<QuestionPayload | null>(null);
 
   // ── models ──────────────────────────────────────────────────────
-  readonly data = model<{
-    questionText: string,
-    explanationText?: string,
-    correctAnswersText?: string,
-    options: Option[]
-  } | undefined>(undefined);
+  readonly data = model<
+    | {
+        questionText: string;
+        explanationText?: string;
+        correctAnswersText?: string;
+        options: Option[];
+      }
+    | undefined
+  >(undefined);
   readonly questionData = model<QuizQuestion | undefined>(undefined);
   readonly options = model<Option[] | undefined>(undefined);
   readonly currentQuestion = model<QuizQuestion | null>(null);
@@ -149,14 +159,14 @@ export class QuizQuestionComponent extends BaseQuestion
 
   readonly displayState = computed(() => ({
     mode: this.displayMode(),
-    answered: this.isAnswered()
+    answered: this.isAnswered(),
   }));
 
   override questionForm: FormGroup = new FormGroup({});
   lastLoggedIndex = -1;
   lastLoggedQuestionIndex = -1;
   lastProcessedQuestionIndex = -1;
-  _clickGate = false;  // same-tick re-entrancy guard
+  _clickGate = false; // same-tick re-entrancy guard
   public selectedIndices = new Set<number>();
 
   override selectedOption: SelectedOption | null = null;
@@ -170,7 +180,7 @@ export class QuizQuestionComponent extends BaseQuestion
   isMultipleAnswer!: boolean;
   override sharedOptionConfig: SharedOptionConfig | null = null;
   shouldRenderFinalOptions = false;
-  explanationLocked = false;  // flag to lock explanation
+  explanationLocked = false; // flag to lock explanation
   displaySubscriptions: Subscription[] = [];
   lastOptionsQuestionSignature: string | null = null;
   _formattedByIndex = new Map<number, string>();
@@ -179,7 +189,12 @@ export class QuizQuestionComponent extends BaseQuestion
   _fetEarlyShown = new Set<number>();
   readonly questionPayload$ = toObservable(this.questionPayloadSig);
   waitingForReady = false;
-  deferredClick?: { option: SelectedOption | null, index: number, checked: boolean, wasReselected?: boolean };
+  deferredClick?: {
+    option: SelectedOption | null;
+    index: number;
+    checked: boolean;
+    wasReselected?: boolean;
+  };
   _pendingRAF: number | null = null;
   _msgTok = 0;
   public feedbackConfigs: Record<FeedbackKey, FeedbackConfig> = {};
@@ -293,21 +308,51 @@ export class QuizQuestionComponent extends BaseQuestion
   // via `host.<service>`. They delegate to qqcFacade so QQC's constructor
   // stays compact while the established host:any access pattern keeps
   // working unchanged.
-  get componentOrchestrator() { return this.qqcFacade.componentOrchestrator; }
-  get displayStateManager() { return this.qqcFacade.displayStateManager; }
-  get explanationDisplay() { return this.qqcFacade.explanationDisplay; }
-  get explanationFlow() { return this.qqcFacade.explanationFlow; }
-  get explanationManager() { return this.qqcFacade.explanationManager; }
-  get feedbackManager() { return this.qqcFacade.feedbackManager; }
-  get initializer() { return this.qqcFacade.initializer; }
-  get lifecycle() { return this.qqcFacade.lifecycle; }
-  get navigationHandler() { return this.qqcFacade.navigationHandler; }
-  get clickOrchestrator() { return this.qqcFacade.clickOrchestrator; }
-  get optionSelection() { return this.qqcFacade.optionSelection; }
-  get questionLoader() { return this.qqcFacade.questionLoader; }
-  get resetManager() { return this.qqcFacade.resetManager; }
-  get subscriptionWiring() { return this.qqcFacade.subscriptionWiring; }
-  get timerEffect() { return this.qqcFacade.timerEffect; }
+  get componentOrchestrator() {
+    return this.qqcFacade.componentOrchestrator;
+  }
+  get displayStateManager() {
+    return this.qqcFacade.displayStateManager;
+  }
+  get explanationDisplay() {
+    return this.qqcFacade.explanationDisplay;
+  }
+  get explanationFlow() {
+    return this.qqcFacade.explanationFlow;
+  }
+  get explanationManager() {
+    return this.qqcFacade.explanationManager;
+  }
+  get feedbackManager() {
+    return this.qqcFacade.feedbackManager;
+  }
+  get initializer() {
+    return this.qqcFacade.initializer;
+  }
+  get lifecycle() {
+    return this.qqcFacade.lifecycle;
+  }
+  get navigationHandler() {
+    return this.qqcFacade.navigationHandler;
+  }
+  get clickOrchestrator() {
+    return this.qqcFacade.clickOrchestrator;
+  }
+  get optionSelection() {
+    return this.qqcFacade.optionSelection;
+  }
+  get questionLoader() {
+    return this.qqcFacade.questionLoader;
+  }
+  get resetManager() {
+    return this.qqcFacade.resetManager;
+  }
+  get subscriptionWiring() {
+    return this.qqcFacade.subscriptionWiring;
+  }
+  get timerEffect() {
+    return this.qqcFacade.timerEffect;
+  }
 
   async onVisibilityChange(): Promise<void> {
     return this.componentOrchestrator.runOnVisibilityChange(this);
@@ -338,10 +383,7 @@ export class QuizQuestionComponent extends BaseQuestion
     this.componentOrchestrator.runApplyExplanationFlags(this, flags);
   }
 
-  applyDisplayState(state: {
-    mode: 'question' | 'explanation';
-    answered: boolean;
-  }): void {
+  applyDisplayState(state: { mode: 'question' | 'explanation'; answered: boolean }): void {
     if (this._isDestroyed) return;
     this.displayMode.set(state.mode);
     this.isAnswered.set(state.answered);
@@ -385,7 +427,10 @@ export class QuizQuestionComponent extends BaseQuestion
     this.componentOrchestrator.runHandlePageVisibilityChange(this, isHidden);
   }
 
-  public override async loadDynamicComponent(question: QuizQuestion, options: Option[]): Promise<void> {
+  public override async loadDynamicComponent(
+    question: QuizQuestion,
+    options: Option[]
+  ): Promise<void> {
     return this.componentOrchestrator.runLoadDynamicComponent(this, question, options);
   }
 
@@ -395,7 +440,9 @@ export class QuizQuestionComponent extends BaseQuestion
 
   public async generateFeedbackText(question: QuizQuestion): Promise<string> {
     if (!this.optionsToDisplay()?.length) this.populateOptionsToDisplay();
-    this.feedbackText.set(this.feedbackManager.generateFeedbackText(question, this.optionsToDisplay()));
+    this.feedbackText.set(
+      this.feedbackManager.generateFeedbackText(question, this.optionsToDisplay())
+    );
     if (!this._isDestroyed) this.feedbackTextChange.emit(this.feedbackText());
     return this.feedbackText();
   }
@@ -421,7 +468,12 @@ export class QuizQuestionComponent extends BaseQuestion
   }
 
   // Called when a user clicks an option row
-  public override async onOptionClicked(event: { option: SelectedOption | null; index: number; checked: boolean; wasReselected?: boolean; }): Promise<void> {
+  public override async onOptionClicked(event: {
+    option: SelectedOption | null;
+    index: number;
+    checked: boolean;
+    wasReselected?: boolean;
+  }): Promise<void> {
     return this.componentOrchestrator.runOnOptionClicked(this, event);
   }
 
@@ -445,8 +497,21 @@ export class QuizQuestionComponent extends BaseQuestion
     this.componentOrchestrator.runRefreshFeedbackFor(this, opt);
   }
 
-  async postClickTasks(opt: SelectedOption, idx: number, checked: boolean, wasPreviouslySelected: boolean, questionIndex?: number): Promise<void> {
-    return this.componentOrchestrator.runPostClickTasks(this, opt, idx, checked, wasPreviouslySelected, questionIndex);
+  async postClickTasks(
+    opt: SelectedOption,
+    idx: number,
+    checked: boolean,
+    wasPreviouslySelected: boolean,
+    questionIndex?: number
+  ): Promise<void> {
+    return this.componentOrchestrator.runPostClickTasks(
+      this,
+      opt,
+      idx,
+      checked,
+      wasPreviouslySelected,
+      questionIndex
+    );
   }
 
   async performInitialSelectionFlow(event: any, option: SelectedOption): Promise<void> {
@@ -465,8 +530,17 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runApplyOptionFeedback(this, selectedOption);
   }
 
-  async finalizeSelection(option: SelectedOption, index: number, wasPreviouslySelected: boolean): Promise<void> {
-    return this.componentOrchestrator.runFinalizeSelection(this, option, index, wasPreviouslySelected);
+  async finalizeSelection(
+    option: SelectedOption,
+    index: number,
+    wasPreviouslySelected: boolean
+  ): Promise<void> {
+    return this.componentOrchestrator.runFinalizeSelection(
+      this,
+      option,
+      index,
+      wasPreviouslySelected
+    );
   }
 
   public async fetchAndProcessCurrentQuestion(): Promise<QuizQuestion | null> {
@@ -477,7 +551,10 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runUpdateExplanationDisplay(this, shouldDisplay);
   }
 
-  public async resetQuestionStateBeforeNavigation(options?: { preserveVisualState?: boolean; preserveExplanation?: boolean }): Promise<void> {
+  public async resetQuestionStateBeforeNavigation(options?: {
+    preserveVisualState?: boolean;
+    preserveExplanation?: boolean;
+  }): Promise<void> {
     return this.componentOrchestrator.runResetQuestionStateBeforeNavigation(this, options);
   }
 
@@ -485,15 +562,28 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runUpdateExplanationText(this, index);
   }
 
-  public async handleOptionSelection(option: SelectedOption, optionIndex: number, currentQuestion: QuizQuestion): Promise<void> {
-    return this.componentOrchestrator.runHandleOptionSelection(this, option, optionIndex, currentQuestion);
+  public async handleOptionSelection(
+    option: SelectedOption,
+    optionIndex: number,
+    currentQuestion: QuizQuestion
+  ): Promise<void> {
+    return this.componentOrchestrator.runHandleOptionSelection(
+      this,
+      option,
+      optionIndex,
+      currentQuestion
+    );
   }
 
   initializeForm(): void {
     this.componentOrchestrator.runInitializeForm(this);
   }
 
-  async selectOption(currentQuestion: QuizQuestion, option: SelectedOption, optionIndex: number): Promise<void> {
+  async selectOption(
+    currentQuestion: QuizQuestion,
+    option: SelectedOption,
+    optionIndex: number
+  ): Promise<void> {
     return this.componentOrchestrator.runSelectOption(this, currentQuestion, option, optionIndex);
   }
 
@@ -529,7 +619,6 @@ export class QuizQuestionComponent extends BaseQuestion
     this.componentOrchestrator.runResetPerQuestionState(this, index);
   }
 
-
   public resetForQuestion(index: number): void {
     this.componentOrchestrator.runResetForQuestion(this, index);
   }
@@ -539,9 +628,14 @@ export class QuizQuestionComponent extends BaseQuestion
     return this.componentOrchestrator.runOnTimerExpiredFor(this, index);
   }
 
-  normalizeIndex(idx: number): number { return this.explanationManager.normalizeIndex(idx, this.questions()); }
+  normalizeIndex(idx: number): number {
+    return this.explanationManager.normalizeIndex(idx, this.questions());
+  }
 
-  async resolveFormatted(index: number, opts: { useCache?: boolean; setCache?: boolean; timeoutMs?: number } = {}): Promise<string> {
+  async resolveFormatted(
+    index: number,
+    opts: { useCache?: boolean; setCache?: boolean; timeoutMs?: number } = {}
+  ): Promise<string> {
     return this.componentOrchestrator.runResolveFormatted(this, index, opts);
   }
 
@@ -564,7 +658,7 @@ export class QuizQuestionComponent extends BaseQuestion
     this.componentOrchestrator.runUpdateShouldRenderOptions(this, options);
   }
 
-  safeSetDisplayState(state: { mode: 'question' | 'explanation', answered: boolean }): void {
+  safeSetDisplayState(state: { mode: 'question' | 'explanation'; answered: boolean }): void {
     this.componentOrchestrator.runSafeSetDisplayState(this, state);
   }
 

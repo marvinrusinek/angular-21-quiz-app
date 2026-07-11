@@ -1,10 +1,17 @@
 import {
-  ChangeDetectionStrategy, Component, computed, DestroyRef, effect,
-  inject, input, OnInit, signal
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  input,
+  OnInit,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -28,10 +35,10 @@ export type ReviewFilter = 'all' | 'incorrect' | 'correct';
 @Component({
   selector: 'codelab-results-accordion',
   standalone: true,
-  imports: [CommonModule, MatExpansionModule, MatIconModule],
+  imports: [MatExpansionModule, MatIconModule],
   templateUrl: './accordion.component.html',
   styleUrls: ['./accordion.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccordionComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -46,7 +53,7 @@ export class AccordionComponent implements OnInit {
   // ── inputs ──────────────────────────────────────────────────────
   readonly questionsInput = input<QuizQuestion[]>([], { alias: 'questions' });
   readonly isShuffled = input(false);
-  readonly accordionHeaderLabel = input('', { alias: "headerLabel" });
+  readonly accordionHeaderLabel = input('', { alias: 'headerLabel' });
 
   // ── remaining variables ─────────────────────────────────────────
   readonly questions = signal<QuizQuestion[]>([]);
@@ -66,20 +73,23 @@ export class AccordionComponent implements OnInit {
     switch (filter) {
       case 'correct':
         return withIndex.filter(({ question, index }) =>
-          this.checkIfAnswersAreCorrectFromService(question, index));
+          this.checkIfAnswersAreCorrectFromService(question, index)
+        );
       case 'incorrect':
-        return withIndex.filter(({ question, index }) =>
-          !this.checkIfAnswersAreCorrectFromService(question, index));
+        return withIndex.filter(
+          ({ question, index }) => !this.checkIfAnswersAreCorrectFromService(question, index)
+        );
       default:
         return withIndex;
     }
   });
 
   // Counts shown on the filter buttons (e.g. "Correct (7)").
-  readonly correctCount = computed(() =>
-    this.questions().filter((question, index) =>
-      this.checkIfAnswersAreCorrectFromService(question, index)
-    ).length
+  readonly correctCount = computed(
+    () =>
+      this.questions().filter((question, index) =>
+        this.checkIfAnswersAreCorrectFromService(question, index)
+      ).length
   );
   readonly incorrectCount = computed(() => this.questions().length - this.correctCount());
 
@@ -89,7 +99,7 @@ export class AccordionComponent implements OnInit {
 
   results: Result = {
     userAnswers: [],
-    elapsedTimes: []
+    elapsedTimes: [],
   };
 
   private hasRetried = false;
@@ -120,11 +130,7 @@ export class AccordionComponent implements OnInit {
     this.normalizeUserAnswers();
   }
 
-  checkIfAnswersAreCorrect(
-    question: QuizQuestion,
-    userAnswers: any[],
-    index: number
-  ): boolean {
+  checkIfAnswersAreCorrect(question: QuizQuestion, userAnswers: any[], index: number): boolean {
     const userIds = userAnswers[index];
     if (!userIds || (Array.isArray(userIds) && userIds.length === 0)) return false;
 
@@ -146,8 +152,8 @@ export class AccordionComponent implements OnInit {
     return ids
       .map((id: number) => {
         // Try matching by optionId first
-        let idx = question.options.findIndex((opt: Option) =>
-          opt.optionId != null && String(opt.optionId) === String(id)
+        let idx = question.options.findIndex(
+          (opt: Option) => opt.optionId != null && String(opt.optionId) === String(id)
         );
 
         // Fallback: treat id as a 0-based display index (used when options lack optionId)
@@ -200,16 +206,24 @@ export class AccordionComponent implements OnInit {
 
     const matchOption = (sel: any): number => {
       // Match by optionId (when both sides have it)
-      let idx = question.options.findIndex((opt: Option) =>
-        opt.optionId != null && sel.optionId != null && sel.optionId !== -1 &&
-        String(opt.optionId) === String(sel.optionId)
+      let idx = question.options.findIndex(
+        (opt: Option) =>
+          opt.optionId != null &&
+          sel.optionId != null &&
+          sel.optionId !== -1 &&
+          String(opt.optionId) === String(sel.optionId)
       );
       // Match by text
       if (idx === -1 && sel.text) {
         idx = question.options.findIndex((opt: Option) => opt.text === sel.text);
       }
       // Fallback: treat optionId as display index (when options lack optionId)
-      if (idx === -1 && typeof sel.optionId === 'number' && sel.optionId >= 0 && sel.optionId < question.options.length) {
+      if (
+        idx === -1 &&
+        typeof sel.optionId === 'number' &&
+        sel.optionId >= 0 &&
+        sel.optionId < question.options.length
+      ) {
         idx = sel.optionId;
       }
       return idx;
@@ -218,59 +232,61 @@ export class AccordionComponent implements OnInit {
     // Try rawSelectionsMap first (more reliable)
     const rawSelections = this.selectedOptionService.rawSelectionsMap.get(questionIndex);
     if (rawSelections && rawSelections.length > 0) {
-      return rawSelections.map((sel: any) => {
-        const visualIdx = matchOption(sel);
-        return {
-          text: sel.text || (visualIdx >= 0 ? question.options[visualIdx]?.text : '') || `Option ${visualIdx + 1}`,
-          visualIndex: visualIdx >= 0 ? visualIdx + 1 : 0
-        };
-      }).filter((o: any) => o.visualIndex > 0);
+      return rawSelections
+        .map((sel: any) => {
+          const visualIdx = matchOption(sel);
+          return {
+            text:
+              sel.text ||
+              (visualIdx >= 0 ? question.options[visualIdx]?.text : '') ||
+              `Option ${visualIdx + 1}`,
+            visualIndex: visualIdx >= 0 ? visualIdx + 1 : 0,
+          };
+        })
+        .filter((o: any) => o.visualIndex > 0);
     }
 
     // Fallback to selectedOptionsMap
     const selections = this.selectedOptionService.selectedOptionsMap.get(questionIndex);
     if (!selections || selections.length === 0) return [];
 
-    return selections.map((sel: any) => {
-      const visualIdx = matchOption(sel);
-      return {
-        text: sel.text || (visualIdx >= 0 ? question.options[visualIdx]?.text : '') || `Option ${visualIdx + 1}`,
-        visualIndex: visualIdx >= 0 ? visualIdx + 1 : 0
-      };
-    }).filter((o: any) => o.visualIndex > 0);
+    return selections
+      .map((sel: any) => {
+        const visualIdx = matchOption(sel);
+        return {
+          text:
+            sel.text ||
+            (visualIdx >= 0 ? question.options[visualIdx]?.text : '') ||
+            `Option ${visualIdx + 1}`,
+          visualIndex: visualIdx >= 0 ? visualIdx + 1 : 0,
+        };
+      })
+      .filter((o: any) => o.visualIndex > 0);
   }
 
   // Check if we have any selections from the service for this question
   hasSelectionsFromService(questionIndex: number): boolean {
-    const rawSelections =
-      this.selectedOptionService.rawSelectionsMap.get(questionIndex);
+    const rawSelections = this.selectedOptionService.rawSelectionsMap.get(questionIndex);
     if (rawSelections && rawSelections.length > 0) return true;
 
-    const selections =
-      this.selectedOptionService.selectedOptionsMap.get(questionIndex);
+    const selections = this.selectedOptionService.selectedOptionsMap.get(questionIndex);
     return !!selections && selections.length > 0;
   }
 
   // Check if user selections match correct answers for a question (using service data)
   // Returns true if ALL correct answers are INCLUDED in the user's selections
-  checkIfAnswersAreCorrectFromService(
-    question: QuizQuestion,
-    questionIndex: number
-  ): boolean {
+  checkIfAnswersAreCorrectFromService(question: QuizQuestion, questionIndex: number): boolean {
     if (!question || !question.options) return false;
 
     // Get correct option texts
-    const correctTexts = question.options
-      .filter(opt => opt.correct)
-      .map(opt => norm(opt.text));
+    const correctTexts = question.options.filter((opt) => opt.correct).map((opt) => norm(opt.text));
 
     // Get selected option texts
     const selectedOpts = this.getSelectedOptionsForQuestion(questionIndex);
-    const selectedTexts = selectedOpts
-      .map(o => norm(o.text));
+    const selectedTexts = selectedOpts.map((o) => norm(o.text));
 
     // Check if ALL correct answers are included in selections
-    return correctTexts.every(ct => selectedTexts.includes(ct));
+    return correctTexts.every((ct) => selectedTexts.includes(ct));
   }
 
   // Recover selections from durable localStorage store. clearState/resetAll
@@ -294,7 +310,7 @@ export class AccordionComponent implements OnInit {
   private initializeResults(userAnswersData: any[]): void {
     this.results = {
       userAnswers: userAnswersData,
-      elapsedTimes: this.timerService.elapsedTimes
+      elapsedTimes: this.timerService.elapsedTimes,
     };
   }
 
@@ -316,7 +332,8 @@ export class AccordionComponent implements OnInit {
       const id = this.resolveQuizId();
       if (!id) return;
 
-      this.quizDataService.getQuestionsForQuiz(id)
+      this.quizDataService
+        .getQuestionsForQuiz(id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe((qs: QuizQuestion[]) => {
           if (qs && qs.length > 0) {
@@ -329,7 +346,8 @@ export class AccordionComponent implements OnInit {
   // Priority: URL params > service state. Syncs the service if the URL had
   // a different id so downstream consumers see consistent state.
   private resolveQuizId(): string | null {
-    let id = this.activatedRoute.snapshot.paramMap.get('quizId') ||
+    let id =
+      this.activatedRoute.snapshot.paramMap.get('quizId') ||
       this.activatedRoute.parent?.snapshot.paramMap.get('quizId') ||
       null;
 
@@ -347,7 +365,7 @@ export class AccordionComponent implements OnInit {
   private normalizeUserAnswers(): void {
     if (!this.results?.userAnswers) return;
     this.results.userAnswers = this.results.userAnswers.map((ans) =>
-      Array.isArray(ans) ? ans : (ans !== null && ans !== undefined ? [ans] : [])
+      Array.isArray(ans) ? ans : ans !== null && ans !== undefined ? [ans] : []
     );
   }
 }

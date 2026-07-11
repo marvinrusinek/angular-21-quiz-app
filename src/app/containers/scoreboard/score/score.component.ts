@@ -1,8 +1,13 @@
 import {
-  ChangeDetectionStrategy, Component, computed, inject, OnInit, signal
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -15,10 +20,10 @@ import { swallow } from '../../../shared/utils/error-logging';
 @Component({
   selector: 'codelab-scoreboard-score',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatMenuModule, MatToolbarModule],
+  imports: [MatButtonModule, MatMenuModule, MatToolbarModule],
   templateUrl: './score.component.html',
   styleUrls: ['./score.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScoreComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -29,10 +34,9 @@ export class ScoreComponent implements OnInit {
 
   // Source signals derived directly from QuizService streams.
   private readonly correctAnswersCountSig = this.quizService.correctAnswersCountSig;
-  private readonly questionsSig = toSignal(
-    this.quizService.questions$,
-    { initialValue: [] as QuizQuestion[] }
-  );
+  private readonly questionsSig = toSignal(this.quizService.questions$, {
+    initialValue: [] as QuizQuestion[],
+  });
   private readonly totalQuestionsSig = computed<number>(() => {
     const fromStream = this.questionsSig()?.length ?? 0;
     if (fromStream === 0 && this.quizService.totalQuestions() > 0) {
@@ -49,13 +53,13 @@ export class ScoreComponent implements OnInit {
     const total = this.totalQuestionsSig();
     const safeTotal = Number.isFinite(total) ? Math.max(0, Math.trunc(total)) : 0;
     const rawCorrect = this.correctAnswersCountSig();
-    const safeCorrect = safeTotal > 0
-      ? Math.min(Math.max(0, Math.trunc(rawCorrect)), safeTotal)
-      : Math.max(0, Math.trunc(rawCorrect));
+    const safeCorrect =
+      safeTotal > 0
+        ? Math.min(Math.max(0, Math.trunc(rawCorrect)), safeTotal)
+        : Math.max(0, Math.trunc(rawCorrect));
 
     if (this.isPercentage()) {
-      return safeTotal > 0
-        ? `${((safeCorrect / safeTotal) * 100).toFixed(0)}%` : '0%';
+      return safeTotal > 0 ? `${((safeCorrect / safeTotal) * 100).toFixed(0)}%` : '0%';
     }
     return `${safeCorrect}/${safeTotal}`;
   });
@@ -65,9 +69,7 @@ export class ScoreComponent implements OnInit {
   }
 
   toggleScoreDisplay(scoreType?: 'numerical' | 'percentage'): void {
-    const next = scoreType
-      ? scoreType === 'percentage'
-      : !this.isPercentage();
+    const next = scoreType ? scoreType === 'percentage' : !this.isPercentage();
     if (next === this.isPercentage()) return;
     this.isPercentage.set(next);
     this.persistScoreDisplayPreference();
@@ -75,9 +77,7 @@ export class ScoreComponent implements OnInit {
 
   private restoreScoreDisplayPreference(): void {
     try {
-      this.isPercentage.set(
-        localStorage.getItem(this.scoreDisplayStorageKey) === 'percentage'
-      );
+      this.isPercentage.set(localStorage.getItem(this.scoreDisplayStorageKey) === 'percentage');
     } catch {
       this.isPercentage.set(false);
     }

@@ -1,18 +1,30 @@
 import {
-  ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import {
-  ActivatedRoute, ActivatedRouteSnapshot, NavigationEnd, Params, Router
+  ActivatedRoute,
+  ActivatedRouteSnapshot,
+  NavigationEnd,
+  Params,
+  Router,
 } from '@angular/router';
+import { combineLatest, fromEvent, merge, Observable, of } from 'rxjs';
 import {
-  combineLatest, fromEvent, merge, Observable, of
-} from 'rxjs';
-import {
-  catchError, distinctUntilChanged, filter, map, shareReplay, startWith,
-  switchMap
+  catchError,
+  distinctUntilChanged,
+  filter,
+  map,
+  shareReplay,
+  startWith,
+  switchMap,
 } from 'rxjs/operators';
 
 import { QuizService } from '../../shared/services/data/quiz.service';
@@ -24,10 +36,10 @@ import { TimerComponent } from './timer/timer.component';
 @Component({
   selector: 'codelab-scoreboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, ScoreComponent, TimerComponent],
+  imports: [MatCardModule, ScoreComponent, TimerComponent],
   templateUrl: './scoreboard.component.html',
   styleUrls: ['./scoreboard.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScoreboardComponent implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -44,21 +56,19 @@ export class ScoreboardComponent implements OnInit {
   private coerceIndex = (raw: string | null): number => {
     let n = Number(raw);
     if (!Number.isFinite(n)) n = 0;
-    if (this.routeIsOneBased) n -= 1;  // normalize to 0-based internally
+    if (this.routeIsOneBased) n -= 1; // normalize to 0-based internally
     return n < 0 ? 0 : n;
   };
 
   // Seed from snapshot to avoid the "1" flash on resume
   private readonly seedIndex = this.coerceIndex(
-    this.activatedRoute.snapshot.paramMap.get('questionIndex'),
+    this.activatedRoute.snapshot.paramMap.get('questionIndex')
   );
 
   // 0-based route index stream, seeded with snapshot
   readonly routeIndex$: Observable<number> = merge(
     of(this.seedIndex),
-    this.activatedRoute.paramMap.pipe(
-      map((pm) => this.coerceIndex(pm.get('questionIndex'))),
-    ),
+    this.activatedRoute.paramMap.pipe(map((pm) => this.coerceIndex(pm.get('questionIndex')))),
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       map(() => this.readIndexFromSnapshot())
@@ -71,9 +81,7 @@ export class ScoreboardComponent implements OnInit {
   ).pipe(distinctUntilChanged(), shareReplay(1));
 
   // 1-based for display
-  readonly displayIndex$: Observable<number> = this.routeIndex$.pipe(
-    map((i) => i + 1)
-  );
+  readonly displayIndex$: Observable<number> = this.routeIndex$.pipe(map((i) => i + 1));
 
   // Service badge stream. Seed with '' so combineLatest emits.
   private readonly serviceBadgeText$: Observable<string> = (
@@ -89,11 +97,9 @@ export class ScoreboardComponent implements OnInit {
     this.quizService.totalQuestions$.pipe(
       map((t) => Number(t)),
       startWith(-1)
-    )
-  ]).pipe(
-    map(([n, total]) =>
-      Number.isFinite(total) && total > 0 ? `Question ${n} of ${total}` : ''
     ),
+  ]).pipe(
+    map(([n, total]) => (Number.isFinite(total) && total > 0 ? `Question ${n} of ${total}` : '')),
     distinctUntilChanged(),
     shareReplay(1)
   );
@@ -104,7 +110,7 @@ export class ScoreboardComponent implements OnInit {
   // the two disagree, trust the route.
   private readonly badgeText$: Observable<string> = combineLatest([
     this.serviceBadgeText$,
-    this.computedBadgeText$
+    this.computedBadgeText$,
   ]).pipe(
     map(([svc, cmp]) => {
       if (svc === '') return cmp;
@@ -132,9 +138,7 @@ export class ScoreboardComponent implements OnInit {
     this.activatedRoute.params
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        distinctUntilChanged(
-          (prev, curr) => shallowObjectEqual(prev, curr),
-        ),
+        distinctUntilChanged((prev, curr) => shallowObjectEqual(prev, curr)),
         switchMap((params: Params) => this.processRouteParams(params)),
         catchError(() => {
           return of(null);
@@ -142,14 +146,10 @@ export class ScoreboardComponent implements OnInit {
       )
       .subscribe((totalQuestions: number | null) => {
         if (totalQuestions !== null) {
-          const validQuestionNumber =
-            this.questionNumber >= 1 ? this.questionNumber : 1;
+          const validQuestionNumber = this.questionNumber >= 1 ? this.questionNumber : 1;
 
           if (validQuestionNumber <= totalQuestions) {
-            this.quizService.updateBadgeText(
-              validQuestionNumber,
-              totalQuestions
-            );
+            this.quizService.updateBadgeText(validQuestionNumber, totalQuestions);
           }
         }
       });
@@ -157,9 +157,7 @@ export class ScoreboardComponent implements OnInit {
 
   private processRouteParams(params: Params): Observable<number> {
     if (params['questionIndex'] !== undefined) {
-      const rawIndex =
-        params['questionIndex'] != null
-          ? String(params['questionIndex']) : null;
+      const rawIndex = params['questionIndex'] != null ? String(params['questionIndex']) : null;
       const normalizedIndex = this.coerceIndex(rawIndex);
       const updatedQuestionNumber = normalizedIndex + 1;
 
@@ -179,13 +177,11 @@ export class ScoreboardComponent implements OnInit {
       this.quizService.totalQuestions$.pipe(
         map((total) => Number(total)),
         filter((total) => Number.isFinite(total) && total > 0)
-      )
+      ),
     ])
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        filter(
-          ([displayIndex]) => Number.isFinite(displayIndex) && displayIndex > 0
-        ),
+        filter(([displayIndex]) => Number.isFinite(displayIndex) && displayIndex > 0),
         distinctUntilChanged(
           ([prevIndex, prevTotal], [currIndex, currTotal]) =>
             prevIndex === currIndex && prevTotal === currTotal
@@ -207,9 +203,7 @@ export class ScoreboardComponent implements OnInit {
   }
 
   private readIndexFromSnapshot(): number {
-    const raw = this.getParamDeep(
-      this.router.routerState.snapshot.root, 'questionIndex'
-    );
+    const raw = this.getParamDeep(this.router.routerState.snapshot.root, 'questionIndex');
     return this.coerceIndex(raw);
   }
 }
