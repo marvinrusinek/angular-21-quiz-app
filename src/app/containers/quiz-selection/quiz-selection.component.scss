@@ -294,8 +294,16 @@
           font-size: 18px;
           font-weight: vars.$font-weight-max;
           color: vars.$fire-red;
-          // Lifted 5px (was 20px) so the tile's first row clears the fold.
+          // Keep clear of the background image: the image bottom is ~220px and
+          // the info block starts ~208px, so the title must stay a little below
+          // it — moving it higher would overlap the image.
           margin-top: 15px;
+          // Keep the title on ONE line so a long milestone can't wrap to two
+          // lines and push the summary + footer past the fixed tile height
+          // (which is what crowded the footer up against the summary).
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .quiz-summary {
