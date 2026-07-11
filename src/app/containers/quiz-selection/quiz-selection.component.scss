@@ -213,6 +213,12 @@
       }
     }
 
+    // On desktop the difficulty group is transparent — its children flow into
+    // the single stats row exactly as before. (On mobile it becomes its own row.)
+    .difficulty-stats {
+      display: contents;
+    }
+
     // Color-code the difficulty cells to match the tile badges.
     .stat.level-beginner .stat-num { color: vars.$green-angular-leaf; }
     .stat.level-intermediate .stat-num { color: vars.$fuel-yellow; }
@@ -514,14 +520,19 @@
         height: 28px !important;
       }
 
-      // The divider before the first difficulty (4th child) becomes an invisible
-      // full-width break, dropping the three levels onto their own row.
-      .stat-divider:nth-child(4) {
+      // Drop the whole difficulty group onto its own line (full-width flex row,
+      // no-wrap so all three levels stay together), and hide the now-dangling
+      // divider that separated Questions from the levels.
+      .stat-divider--before-levels {
+        display: none !important;
+      }
+
+      .difficulty-stats {
+        display: flex !important;
         flex-basis: 100% !important;
-        width: 100% !important;
-        height: 0 !important;
-        margin: 0 !important;
-        background: transparent !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 8px !important;
       }
     }
 
