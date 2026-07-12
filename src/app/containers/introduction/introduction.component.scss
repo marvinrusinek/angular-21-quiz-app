@@ -183,6 +183,9 @@ mat-card-actions {
 
 :host ::ng-deep mat-card.quiz-card {
   padding-top: 15px !important;
+  // Breathing room so the header/content/actions don't touch the L/R borders.
+  padding-left: 28px !important;
+  padding-right: 28px !important;
 }
 
 /* ✓ Final card style — thick RHS + bottom border */
