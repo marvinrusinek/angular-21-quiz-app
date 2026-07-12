@@ -13,7 +13,7 @@ A feature-rich quiz platform built with <strong>Angular 21</strong> that demonst
 </p>
 
 <p align="center">
-<a href="https://marvinrusinek.github.io/angular-20-quiz-app" target="_blank">
+<a href="https://marvinrusinek.github.io/angular-21-quiz-app" target="_blank">
 ▶ Launch Live Demo
 </a>
 </p>
@@ -205,8 +205,8 @@ shared/
 
 <h3>Installation</h3>
 
-<pre><code>git clone https://github.com/marvinrusinek/angular-20-quiz-app.git
-cd angular-20-quiz-app
+<pre><code>git clone https://github.com/marvinrusinek/angular-21-quiz-app.git
+cd angular-21-quiz-app
 npm install
 </code></pre>
 

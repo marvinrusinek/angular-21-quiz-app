@@ -19,7 +19,7 @@
             },
             "production": {
               "aot": true,
-              "baseHref": "/angular-20-quiz-app/",
+              "baseHref": "/angular-21-quiz-app/",
               "extractLicenses": true,
               "namedChunks": false,
               "optimization": true,
