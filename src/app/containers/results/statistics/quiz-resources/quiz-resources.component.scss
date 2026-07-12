@@ -1,0 +1,144 @@
+@use '../../../../../variables' as vars;
+
+// ViewEncapsulation.None → these rules are global. The host is layout-transparent
+// so `.resources-section` sits exactly where the previous <ng-template> content
+// did (a direct child of `.quiz-feedback` / `.resources-view`).
+app-quiz-resources {
+  display: contents;
+}
+
+// ============================================================
+// RESOURCES — inline in the low-score feedback column (.quiz-feedback context)
+// ============================================================
+.quiz-feedback {
+  // Resources Section
+  .resources-section {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+    text-align: left;
+
+    // Signal-controlled toggle button (replaces a native <details>/<summary>).
+    .resources-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      margin: 0 0 12px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      color: vars.$dark-blue;
+
+      // Right-side caret: ▼ collapsed, ▲ expanded (interpolated in the template).
+      .resources-caret {
+        flex: 0 0 auto;
+        margin-left: auto;
+        font-size: 12px;
+        line-height: 1;
+        color: vars.$dark-blue;
+      }
+
+      h4 {
+        margin: 0;
+        font-size: 16px;
+        color: vars.$dark-blue;
+      }
+    }
+  }
+
+  ul {
+    line-height: 1.5;
+    padding-left: 24px;
+    margin: 0;
+
+    li {
+      list-style-type: none;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: white;
+      border-radius: 8px;
+      border-left: 3px solid vars.$dodger-blue;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      a {
+        color: vars.$dodger-blue;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .resource-title {
+    font-weight: 600;
+    display: inline;
+  }
+
+  .resource-host {
+    font-style: italic;
+    color: vars.$gray;
+    display: inline;
+  }
+}
+
+// ============================================================
+// RESOURCES — standalone list (.resources-view context)
+// ============================================================
+.resources-view {
+  .resources-header {
+    color: vars.$dark-blue;
+    font-weight: 600;
+  }
+
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+    text-align: left;
+
+    li {
+      margin-bottom: 12px;
+      padding: 8px 12px 8px 34px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+      position: relative;
+
+      // Custom Bullet - Link Icon
+      &::before {
+        content: '🔗';
+        font-size: 14px;
+        position: absolute;
+        left: 10px;
+        top: 10px;
+      }
+
+      a {
+        text-decoration: none;
+        color: vars.$dodger-blue;
+        font-weight: 600;
+        display: inline;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .resource-host {
+        font-size: 0.9em;
+        color: vars.$gray;
+        display: inline;
+      }
+    }
+  }
+}

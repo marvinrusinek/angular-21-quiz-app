@@ -1,215 +1,110 @@
-@for (quiz of quizzes(); track quiz.quizId) {
-  @if (quiz.quizId === quizId()) {
-    <div class="statistics">
-      <!-- === SCORE ANALYSIS SECTION === -->
-      @if (viewMode() === 'all' || viewMode() === 'score') {
-        <div class="score-view">
-          <div class="score-grid">
-            <!-- LEFT COLUMN: Feedback Image, Score Text -->
-            <div class="score-col-feedback">
-              <div class="quiz-feedback">
-                @if (feedbackLevel() === 'excellent') {
-                  <img
-                    mat-card-image
-                    loading="lazy"
-                    [src]="CONGRATULATIONS"
-                    alt="Photo of 'Congratulations'"
-                    i18n-title
-                    title="Congratulations"
-                  />
-                } @else if (feedbackLevel() === 'good') {
-                  <img
-                    mat-card-image
-                    loading="lazy"
-                    [src]="NOT_BAD"
-                    alt="Photo of 'Not Bad'"
-                    i18n-title
-                    title="Not Bad"
-                  />
-                } @else {
-                  <img
-                    mat-card-image
-                    loading="lazy"
-                    [src]="TRY_AGAIN"
-                    alt="Photo of 'Try Again'"
-                    i18n-title
-                    title="Try Again"
-                  />
-                  <!-- If viewMode is 'all', show resources here for low scores -->
-                  @if (viewMode() === 'all') {
-                    <ng-container *ngTemplateOutlet="resourcesTemplate"></ng-container>
-                  }
-                }
-              </div>
-
-              <!-- Score Text -->
-              <div class="score-text-container">
-                <span
-                  class="your-score"
-                  i18n
-                >
-                  You scored
-                  <span class="result">{{ quizMetadata().correctAnswersCount?.() ?? 0 }}</span>
-                  out of
-                  <span class="result">{{ quizMetadata().totalQuestions }}</span>
-                  {{ questionLabel() }}
-                  correctly.
-                </span>
-              </div>
-            </div>
-
-            <!-- RIGHT COLUMN: Circle, Stars, Badge -->
-            <div class="score-col-visuals">
-              <!-- Circular Score Ring -->
-              <div class="circular-score">
-                <svg
-                  class="score-ring"
-                  viewBox="0 0 140 140"
-                >
-                  <circle
-                    class="ring-bg"
-                    cx="70"
-                    cy="70"
-                    r="60"
-                  />
-                  <circle
-                    class="ring-progress"
-                    [class.ring-excellent]="feedbackLevel() === 'excellent'"
-                    [class.ring-good]="feedbackLevel() === 'good'"
-                    [class.ring-poor]="feedbackLevel() === 'poor'"
-                    cx="70"
-                    cy="70"
-                    r="60"
-                    [style.stroke-dasharray]="377"
-                    [style.stroke-dashoffset]="377 - 377 * (percentage() / 100)"
-                  />
-                </svg>
-                <div class="score-value">
-                  <div class="percentage">{{ percentage() }}%</div>
-                  <div class="label">Score</div>
-                </div>
-              </div>
-
-              <!-- Score Breakdown -->
-              <div class="score-breakdown">
-                <span class="breakdown-item correct">
-                  ✔ {{ correctCount() }}
-                  <span i18n>Correct</span>
-                </span>
-                <span class="breakdown-item incorrect">
-                  ✖ {{ incorrectCount() }}
-                  <span i18n>Incorrect</span>
-                </span>
-                <span class="breakdown-item timed-out">
-                  ⏱ {{ timedOutCount() }}
-                  <span i18n>Timed Out</span>
-                </span>
-              </div>
-
-              <!-- Star Rating -->
-              <div
-                class="star-rating"
-                aria-label="Score rating"
-              >
-                @for (star of [1, 2, 3, 4, 5]; track star) {
-                  <span
-                    class="star"
-                    [class.filled]="star <= starCount()"
-                    [class.empty]="star > starCount()"
-                  >
-                    ⭐
-                  </span>
-                }
-              </div>
-
-              <!-- Achievement Badge -->
+@if (selectedQuiz(); as quiz) {
+  <div class="statistics">
+    <!-- === SCORE ANALYSIS SECTION === -->
+    @if (viewMode() === 'all' || viewMode() === 'score') {
+      <div class="score-view">
+        <div class="score-grid">
+          <!-- LEFT COLUMN: Feedback Image, Score Text -->
+          <div class="score-col-feedback">
+            <div class="quiz-feedback">
               @if (feedbackLevel() === 'excellent') {
-                <div class="achievement-badge excellent">
-                  <span class="badge-icon">🏆</span>
-                  <span>Excellent Performance!</span>
-                </div>
+                <img
+                  mat-card-image
+                  loading="lazy"
+                  [src]="CONGRATULATIONS"
+                  alt="Photo of 'Congratulations'"
+                  i18n-title
+                  title="Congratulations"
+                />
               } @else if (feedbackLevel() === 'good') {
-                <div class="achievement-badge good">
-                  <span class="badge-icon">🥈</span>
-                  <span>Good Job!</span>
-                </div>
+                <img
+                  mat-card-image
+                  loading="lazy"
+                  [src]="NOT_BAD"
+                  alt="Photo of 'Not Bad'"
+                  i18n-title
+                  title="Not Bad"
+                />
               } @else {
-                <div class="achievement-badge needs-work">
-                  <span class="badge-icon">💪</span>
-                  <span>Keep Practicing!</span>
-                </div>
+                <img
+                  mat-card-image
+                  loading="lazy"
+                  [src]="TRY_AGAIN"
+                  alt="Photo of 'Try Again'"
+                  i18n-title
+                  title="Try Again"
+                />
+                <!-- If viewMode is 'all', show resources here for low scores -->
+                @if (viewMode() === 'all') {
+                  <app-quiz-resources
+                    [milestoneName]="milestoneName()"
+                    [resources]="resources()"
+                  />
+                }
               }
             </div>
+
+            <!-- Score Text -->
+            <div class="score-text-container">
+              <span
+                class="your-score"
+                i18n
+              >
+                You scored
+                <span class="result">{{ quizMetadata().correctAnswersCount?.() ?? 0 }}</span>
+                out of
+                <span class="result">{{ quizMetadata().totalQuestions }}</span>
+                {{ questionLabel() }}
+                correctly.
+              </span>
+            </div>
           </div>
 
-          <!-- TIME SECTION -->
-          <div class="time-section">
-            <span class="time-icon">⏱️</span>
-            <span
-              class="elapsed-time"
-              i18n
-            >
-              Completed in
-              <span class="result">{{ elapsedMinutes() }}</span>
-              {{ minuteLabel() }}
-              and
-              <span class="result">{{ elapsedSeconds() }}</span>
-              seconds.
-            </span>
+          <!-- RIGHT COLUMN: Circle, Stars, Badge -->
+          <div class="score-col-visuals">
+            <app-score-visual
+              [percentage]="percentage()"
+              [feedbackLevel]="feedbackLevel()"
+              [correctCount]="correctCount()"
+              [incorrectCount]="incorrectCount()"
+              [timedOutCount]="timedOutCount()"
+              [starCount]="starCount()"
+            />
           </div>
         </div>
-      }
 
-      <!-- === RESOURCES SECTION (Standalone) === -->
-      @if (viewMode() === 'resources') {
-        <div class="resources-view">
-          <h3
-            class="section-title"
+        <!-- TIME SECTION -->
+        <div class="time-section">
+          <span class="time-icon">⏱️</span>
+          <span
+            class="elapsed-time"
             i18n
           >
-            Use these resources to improve your score!
-          </h3>
-          <ng-container *ngTemplateOutlet="resourcesTemplate"></ng-container>
+            Completed in
+            <span class="result">{{ elapsedMinutes() }}</span>
+            {{ minuteLabel() }}
+            and
+            <span class="result">{{ elapsedSeconds() }}</span>
+            seconds.
+          </span>
         </div>
-      }
-    </div>
-  }
-}
+      </div>
+    }
 
-<!-- === REUSABLE RESOURCES TEMPLATE === -->
-<ng-template #resourcesTemplate>
-  <div class="resources-section" [class.open]="resourcesExpanded()">
-    <button
-      type="button"
-      class="resources-header"
-      (click)="toggleResources()"
-      [attr.aria-expanded]="resourcesExpanded()"
-    >
-      <span i18n>
-        Brush up your knowledge of
-        <strong>
-          {{ milestoneName() }}
-        </strong>
-        with these resources:
-      </span>
-      <span class="resources-caret" aria-hidden="true">{{ resourcesExpanded() ? '▲' : '▼' }}</span>
-    </button>
-
-    @if (resourcesExpanded()) {
-      <ul>
-        @for (resource of resources(); track resource.url) {
-          <li>
-            <a
-              [href]="resource.url"
-              target="_blank"
-              rel="noopener"
-            >
-              <span class="resource-title">{{ resource.title }}</span>
-            </a>
-            <span class="resource-host">— {{ resource.host }}</span>
-          </li>
-        }
-      </ul>
+    <!-- === RESOURCES SECTION (Standalone) === -->
+    @if (viewMode() === 'resources') {
+      <div class="resources-view">
+        <h3
+          class="section-title"
+          i18n
+        >
+          Use these resources to improve your score!
+        </h3>
+        <app-quiz-resources
+          [milestoneName]="milestoneName()"
+          [resources]="resources()"
+        />
+      </div>
     }
   </div>
-</ng-template>
+}

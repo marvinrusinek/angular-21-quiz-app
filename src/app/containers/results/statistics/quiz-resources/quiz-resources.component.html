@@ -1,0 +1,34 @@
+<div class="resources-section" [class.open]="resourcesExpanded()">
+  <button
+    type="button"
+    class="resources-header"
+    (click)="toggleResources()"
+    [attr.aria-expanded]="resourcesExpanded()"
+  >
+    <span i18n>
+      Brush up your knowledge of
+      <strong>
+        {{ milestoneName() }}
+      </strong>
+      with these resources:
+    </span>
+    <span class="resources-caret" aria-hidden="true">{{ resourcesExpanded() ? '▲' : '▼' }}</span>
+  </button>
+
+  @if (resourcesExpanded()) {
+    <ul>
+      @for (resource of resources(); track resource.url) {
+        <li>
+          <a
+            [href]="resource.url"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="resource-title">{{ resource.title }}</span>
+          </a>
+          <span class="resource-host">— {{ resource.host }}</span>
+        </li>
+      }
+    </ul>
+  }
+</div>

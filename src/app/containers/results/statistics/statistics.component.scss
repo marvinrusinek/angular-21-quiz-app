@@ -25,9 +25,6 @@
 }
 
 // ============================================================
-// SCORE SECTION with Icon
-// ============================================================
-// ============================================================
 // SCORE GRID (2-Column Layout)
 // ============================================================
 .score-grid {
@@ -36,10 +33,10 @@
   gap: 32px;
   align-items: center;
   justify-content: center;
-  
+
   // Removed card styling to avoid nested card look
   margin-bottom: 24px;
-  padding: 0; 
+  padding: 0;
   background: none;
   border-radius: 0;
   animation: slideInUp 0.5s ease-out 0.2s both;
@@ -54,7 +51,7 @@
     text-align: center;
     gap: 20px;
   }
-  
+
   // Right Column: Visual Stats
   .score-col-visuals {
     display: flex;
@@ -71,10 +68,6 @@
     gap: 24px;
     padding: 16px;
   }
-
-  .circular-score .score-value .percentage {
-    font-size: 34px;
-  }
 }
 
 @keyframes slideInUp {
@@ -85,78 +78,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-// ============================================================
-// CIRCULAR SCORE INDICATOR
-// ============================================================
-.circular-score {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 0 auto 4px auto;
-  
-  .score-ring {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-    
-    .ring-bg {
-      fill: none;
-      stroke: rgba(0, 0, 0, 0.1);
-      stroke-width: 12;
-    }
-    
-    .ring-progress {
-      fill: none;
-      stroke-width: 12;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1.5s ease-out, stroke 0.5s ease;
-      // Circumference = 2 * PI * 60 ≈ 377
-    }
-    
-    // Color based on score (set via ngClass or style in template)
-    .ring-excellent { stroke: vars.$green; }
-    .ring-good { stroke: #f0a121; }
-    .ring-poor { stroke: vars.$red; }
-  }
-  
-  .score-value {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    
-    .percentage {
-      font-size: 42px;
-      font-weight: 800;
-      color: vars.$dark-blue;
-      line-height: 1;
-      
-      // Animated count-up effect handled by component
-      animation: scorePopIn 0.5s ease-out 0.8s both;
-    }
-    
-    .label {
-      font-size: 12px;
-      font-weight: 600;
-      color: vars.$gray;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-  }
-}
-
-@keyframes scorePopIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -180,79 +101,6 @@
 }
 
 // ============================================================
-// STAR RATING
-// ============================================================
-.star-rating {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 2px 0 16px;  // pulled up ~14px to line up with the "You scored…" text
-  
-  .star {
-    font-size: 32px;
-    transition: transform 0.3s ease;
-    animation: starReveal 0.3s ease-out both;
-    
-    &:nth-child(1) { animation-delay: 0.6s; }
-    &:nth-child(2) { animation-delay: 0.7s; }
-    &:nth-child(3) { animation-delay: 0.8s; }
-    &:nth-child(4) { animation-delay: 0.9s; }
-    &:nth-child(5) { animation-delay: 1s; }
-    
-    &.filled {
-      filter: drop-shadow(0 2px 4px rgba(240, 161, 33, 0.4));
-    }
-    
-    &.empty {
-      opacity: 0.3;
-      filter: grayscale(1);
-    }
-  }
-}
-
-@keyframes starReveal {
-  from {
-    opacity: 0;
-    transform: scale(0) rotate(-30deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(0);
-  }
-}
-
-
-
-// ============================================================
-// SCORE BREAKDOWN (Correct / Incorrect / Timed Out)
-// ============================================================
-.score-breakdown {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin: 0 auto 4px;
-  animation: slideInUp 0.5s ease-out 0.5s both;
-
-  .breakdown-item {
-    font-size: 17px;
-    font-weight: 600;
-
-    &.correct {
-      color: vars.$green;
-    }
-
-    &.incorrect {
-      color: vars.$red;
-    }
-
-    &.timed-out {
-      color: vars.$gray;
-    }
-  }
-}
-
-// ============================================================
 // TIME SECTION with Icon
 // ============================================================
 .time-section {
@@ -266,11 +114,11 @@
   margin: 8px auto; // Reduced margin (was 24px)
   max-width: 400px;
   animation: slideInUp 0.5s ease-out 0.6s both;
-  
+
   .time-icon {
     font-size: 28px;
   }
-  
+
   .elapsed-time {
     margin: 0;
     font-size: 16px;
@@ -293,7 +141,7 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     border: 4px solid white;
     transition: transform 0.3s ease;
-    
+
     &:hover {
       transform: scale(1.05);
     }
@@ -304,211 +152,21 @@
     color: #555;
     margin: 16px 0;
   }
-
-  // Resources Section
-  .resources-section {
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 12px;
-    padding: 20px;
-    margin-top: 16px;
-    text-align: left;
-
-    // Signal-controlled toggle button (replaces a native <details>/<summary>).
-    .resources-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      margin: 0 0 12px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font: inherit;
-      text-align: left;
-      color: vars.$dark-blue;
-
-      // Right-side caret: ▼ collapsed, ▲ expanded (interpolated in the template).
-      .resources-caret {
-        flex: 0 0 auto;
-        margin-left: auto;
-        font-size: 12px;
-        line-height: 1;
-        color: vars.$dark-blue;
-      }
-
-      h4 {
-        margin: 0;
-        font-size: 16px;
-        color: vars.$dark-blue;
-      }
-    }
-  }
-
-  ul {
-    line-height: 1.5;
-    padding-left: 24px;
-    margin: 0;
-
-    li {
-      list-style-type: none;
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      background: white;
-      border-radius: 8px;
-      border-left: 3px solid vars.$dodger-blue;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      
-      &:hover {
-        transform: translateX(4px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-      
-      a {
-        color: vars.$dodger-blue;
-        text-decoration: none;
-        
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-  }
-
-  .resource-title {
-    font-weight: 600;
-    display: inline;
-  }
-  
-  .resource-host {
-    font-style: italic;
-    color: vars.$gray;
-    display: inline;
-  }
-}
-
-// ============================================================
-// ACHIEVEMENT BADGES
-// ============================================================
-.achievement-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 4px; // Reduced margin (was 12px)
-  animation: badgePopIn 0.5s ease-out 1.2s both;
-  
-  &.excellent {
-    background: linear-gradient(135deg, #ffd700, #ffb700);
-    color: #5a4500;
-    box-shadow: 0 4px 12px rgba(255, 183, 0, 0.4);
-  }
-  
-  &.good {
-    background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
-    color: #444;
-    box-shadow: 0 4px 12px rgba(160, 160, 160, 0.4);
-  }
-  
-  &.needs-work {
-    background: linear-gradient(135deg, #cd7f32, #a66528);
-    color: white;
-    box-shadow: 0 4px 12px rgba(166, 101, 40, 0.4);
-  }
-  
-  .badge-icon {
-    font-size: 20px;
-  }
-}
-
-@keyframes badgePopIn {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  70% {
-    transform: scale(1.1);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 // ============================================================
 // RESPONSIVE
 // ============================================================
 @media (max-width: 480px) {
-  .circular-score {
-    width: 140px;
-    height: 140px;
-    
-    .score-value .percentage {
-      font-size: 32px;
-    }
-  }
-  
-  .star-rating .star {
-    font-size: 24px;
-  }
-  
   .score-section {
     padding: 16px;
   }
 }
 
 // Resources List Styling
-.resources-view, details {
+.resources-view {
   .section-title {
     color: vars.$dark-blue;
     font-weight: 700;
-  }
-
-  .resources-header {
-    color: vars.$dark-blue;
-    font-weight: 600;
-  }
-
-  ul {
-    list-style-type: none;
-    padding-left: 0;
-    text-align: left;
-
-    li {
-      margin-bottom: 12px;
-      padding: 8px 12px 8px 34px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 8px;
-      position: relative;
-
-      // Custom Bullet - Link Icon
-      &::before {
-        content: '🔗';
-        font-size: 14px;
-        position: absolute;
-        left: 10px;
-        top: 10px;
-      }
-
-      a {
-        text-decoration: none;
-        color: vars.$dodger-blue;
-        font-weight: 600;
-        display: inline;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-
-      .resource-host {
-        font-size: 0.9em;
-        color: vars.$gray;
-        display: inline;
-      }
-    }
   }
 }

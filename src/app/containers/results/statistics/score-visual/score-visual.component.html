@@ -1,0 +1,79 @@
+<!-- Circular Score Ring -->
+<div class="circular-score">
+  <svg
+    class="score-ring"
+    viewBox="0 0 140 140"
+  >
+    <circle
+      class="ring-bg"
+      cx="70"
+      cy="70"
+      r="60"
+    />
+    <circle
+      class="ring-progress"
+      [class.ring-excellent]="feedbackLevel() === 'excellent'"
+      [class.ring-good]="feedbackLevel() === 'good'"
+      [class.ring-poor]="feedbackLevel() === 'poor'"
+      cx="70"
+      cy="70"
+      r="60"
+      [style.stroke-dasharray]="377"
+      [style.stroke-dashoffset]="377 - 377 * (percentage() / 100)"
+    />
+  </svg>
+  <div class="score-value">
+    <div class="percentage">{{ percentage() }}%</div>
+    <div class="label">Score</div>
+  </div>
+</div>
+
+<!-- Score Breakdown -->
+<div class="score-breakdown">
+  <span class="breakdown-item correct">
+    ✔ {{ correctCount() }}
+    <span i18n>Correct</span>
+  </span>
+  <span class="breakdown-item incorrect">
+    ✖ {{ incorrectCount() }}
+    <span i18n>Incorrect</span>
+  </span>
+  <span class="breakdown-item timed-out">
+    ⏱ {{ timedOutCount() }}
+    <span i18n>Timed Out</span>
+  </span>
+</div>
+
+<!-- Star Rating -->
+<div
+  class="star-rating"
+  aria-label="Score rating"
+>
+  @for (star of [1, 2, 3, 4, 5]; track star) {
+    <span
+      class="star"
+      [class.filled]="star <= starCount()"
+      [class.empty]="star > starCount()"
+    >
+      ⭐
+    </span>
+  }
+</div>
+
+<!-- Achievement Badge -->
+@if (feedbackLevel() === 'excellent') {
+  <div class="achievement-badge excellent">
+    <span class="badge-icon">🏆</span>
+    <span>Excellent Performance!</span>
+  </div>
+} @else if (feedbackLevel() === 'good') {
+  <div class="achievement-badge good">
+    <span class="badge-icon">🥈</span>
+    <span>Good Job!</span>
+  </div>
+} @else {
+  <div class="achievement-badge needs-work">
+    <span class="badge-icon">💪</span>
+    <span>Keep Practicing!</span>
+  </div>
+}

@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect,
   inject, input, OnInit, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { QuizStatus } from '../../../shared/models/quiz-status.enum'
 import { QuizMetadata } from '../../../shared/models/QuizMetadata.model';
@@ -12,10 +11,13 @@ import { QuizDataService } from '../../../shared/services/data/quizdata.service'
 import { QuizService } from '../../../shared/services/data/quiz.service';
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
 
+import { ScoreVisualComponent } from './score-visual/score-visual.component';
+import { QuizResourcesComponent } from './quiz-resources/quiz-resources.component';
+
 @Component({
   selector: 'codelab-results-statistics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ScoreVisualComponent, QuizResourcesComponent],
   templateUrl: './statistics.component.html',
   styleUrls: ['./statistics.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -38,6 +40,12 @@ export class StatisticsComponent implements OnInit {
   readonly quizzes = this.quizDataService.quizzesSig;
   readonly quizId = signal('');
 
+  // The single quiz this results view is for. Replaces the template's
+  // @for(quizzes)+@if(quizId match) guard with a direct lookup.
+  readonly selectedQuiz = computed(() =>
+    this.quizzes().find(q => q.quizId === this.quizId())
+  );
+
   readonly milestoneName = computed(() => {
     const qId = this.quizId();
     if (!qId) return '';
@@ -50,14 +58,6 @@ export class StatisticsComponent implements OnInit {
   readonly quizMetadata = signal<Partial<QuizMetadata>>({});
   readonly resources = signal<Resource[]>([]);
 
-  // Signal-controlled expand/collapse for the resources panel (replaces a native
-  // <details>, whose [open] CSS didn't flip the caret reliably here). COLLAPSED by
-  // default — starts with a ▼, and the first click reveals the resources.
-  readonly resourcesExpanded = signal(false);
-  toggleResources(): void {
-    this.resourcesExpanded.update(open => !open);
-    this.cdRef.markForCheck();
-  }
   readonly completionTimeSig = signal(0);
   readonly elapsedMinutes = computed(() => Math.floor(this.completionTimeSig() / 60));
   readonly elapsedSeconds = computed(() => this.completionTimeSig() % 60);
