@@ -4,9 +4,10 @@ import * as path from 'path';
 
 /** Shared helpers for the e2e specs: quiz data lookup + common selectors. */
 
+// Single source of truth: assets/data/quiz.json holds { quizzes, resources }.
 export const quizData = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), 'src/assets/data/quiz.json'), 'utf8')
-);
+).quizzes;
 
 export const tsQuiz = quizData.find((q: any) => (q.quizId || q.id) === 'typescript');
 export const formsQuiz = quizData.find((q: any) => (q.quizId || q.id) === 'forms');

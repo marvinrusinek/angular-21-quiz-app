@@ -29,7 +29,7 @@ export class QuizDataService {
   private readonly http = inject(HttpClient);
 
   // ── remaining variables ─────────────────────────────────────────
-  private quizUrl = 'assets/data/quiz.json';
+  private quizUrl = 'assets/data/quiz.json';  // single source of truth: { quizzes, resources }
   question: QuizQuestion | null = null;
   questionType: string | null = null;
 
@@ -64,7 +64,8 @@ export class QuizDataService {
   }
 
   loadQuizzes(): Observable<Quiz[]> {
-    return this.http.get<Quiz[]>(this.quizUrl).pipe(
+    return this.http.get<{ quizzes: Quiz[] }>(this.quizUrl).pipe(
+      map((res) => res?.quizzes ?? []),
       tap((quizzes) => {
         // Preserve existing statuses from previously loaded quizzes
         const existingStatuses = new Map<string, string>();

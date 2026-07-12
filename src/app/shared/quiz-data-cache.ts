@@ -2,7 +2,7 @@ import { Quiz } from './models/Quiz.model';
 import { QuizResource } from './models/QuizResource.model';
 
 // Module-level cache populated at bootstrap by the APP_INITIALIZER
-// in main.ts (which fetches assets/quiz.json once). Consumers read via
+// in main.ts (which fetches assets/data/quiz.json once). Consumers read via
 // the getters below instead of importing a static array — this keeps
 // the 1100-line dataset out of the main JS bundle and lets us swap
 // the data source without touching every consumer.

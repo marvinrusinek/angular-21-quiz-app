@@ -40,16 +40,16 @@ bootstrapApplication(AppComponent, {
     // Fetch quiz dataset BEFORE app stabilizes. Populates the module-level
     // cache that QuizService.quizInitialState et al. read from synchronously
     // at construction time. The dataset is no longer bundled into main.js;
-    // it lives in assets/quiz.json and ships with the static deploy.
+    // it lives in assets/data/quiz.json and ships with the static deploy.
     provideAppInitializer(async () => {
       const http = inject(HttpClient);
       try {
         const data = await firstValueFrom(
-          http.get<{ quizzes: Quiz[]; resources: QuizResource[] }>('assets/quiz.json')
+          http.get<{ quizzes: Quiz[]; resources: QuizResource[] }>('assets/data/quiz.json')
         );
         setQuizDataCache(data?.quizzes ?? [], data?.resources ?? []);
       } catch (err: any) {
-        console.error('[bootstrap] failed to load assets/quiz.json', err);
+        console.error('[bootstrap] failed to load assets/data/quiz.json', err);
         setQuizDataCache([], []);
       }
     }),

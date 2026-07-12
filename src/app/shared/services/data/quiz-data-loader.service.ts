@@ -38,7 +38,7 @@ export class QuizDataLoaderService {
   private canonicalQuestionsByQuiz = new Map<string, QuizQuestion[]>();
   private canonicalQuestionIndexByText = new Map<string, Map<string, number>>();
 
-  private quizUrl = 'assets/data/quiz.json';
+  private quizUrl = 'assets/data/quiz.json';  // single source of truth: { quizzes, resources }
   private fetchPromise: Promise<QuizQuestion[]> | null = null;
 
   private readonly shuffleEnabledSig = signal<boolean>(
@@ -269,9 +269,10 @@ export class QuizDataLoaderService {
     try {
       if (!quizId) return [];
 
-      const quizzes = await firstValueFrom<Quiz[]>(
-        this.http.get<Quiz[]>(this.quizUrl)
+      const response = await firstValueFrom(
+        this.http.get<{ quizzes: Quiz[] }>(this.quizUrl)
       );
+      const quizzes = response?.quizzes ?? [];
 
       const quiz = quizzes.find((q) => String(q.quizId) === String(quizId));
       if (!quiz) return [];
