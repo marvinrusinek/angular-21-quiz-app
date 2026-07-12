@@ -24,6 +24,7 @@ import { QuizDataService } from '../../shared/services/data/quizdata.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { AchievementService } from '../../shared/services/achievements/achievement.service';
 import { ProgressService } from '../../shared/services/progress/progress.service';
+import { SessionEngagementService } from '../../shared/services/state/session-engagement.service';
 
 import { ProgressSummary, QuizProgress } from '../../shared/models/progress.model';
 
@@ -74,7 +75,14 @@ export class QuizSelectionComponent implements OnInit {
   private readonly quizService = inject(QuizService);
   private readonly achievementService = inject(AchievementService);
   private readonly progressService = inject(ProgressService);
+  private readonly sessionEngagement = inject(SessionEngagementService);
   private readonly router = inject(Router);
+
+  // Gates the progress-driven pieces on THIS screen. Starts hidden on a fresh
+  // load and flips true once the user starts using a quiz this session (see
+  // onSelect). In-memory, so a real reload starts clean again — no need to
+  // clear site data. Saved progress in localStorage is untouched.
+  readonly showSelectionProgress = this.sessionEngagement.engaged;
 
   // Compact "Achievements X / N" progress for the catalog header. Populated
   // silently on init (evaluating any achievements the user's existing progress
@@ -227,6 +235,10 @@ export class QuizSelectionComponent implements OnInit {
   async onSelect(quizId: string, _index: number): Promise<void> {
     try {
       if (!quizId) return;
+
+      // The user is now using the quizzes this session → reveal the progress-
+      // driven pieces on the Quiz Selection screen from here on (until reload).
+      this.sessionEngagement.markEngaged();
 
       // Track this quiz as accessed AT SELECTION TIME so the
       // "You've accessed N quizzes" / "ALL quizzes accessed" banner

@@ -368,9 +368,11 @@
 
       .difficulty-badge {
         // Sits at the right of the shared bottom row (see .quiz-card-footer).
+        // margin-left:auto keeps it right-aligned even when the progress line
+        // is hidden (fresh load, before the session is engaged).
         display: block;
         width: fit-content;
-        margin: 0;
+        margin: 0 0 0 auto;
         flex: 0 0 auto;
         z-index: 2;
         padding: 3px 11px;

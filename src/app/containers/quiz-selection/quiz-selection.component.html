@@ -75,23 +75,28 @@
     </div>
   }
 
-  <!-- Compact achievements progress (renders nothing until total > 0) -->
-  <div class="achievements-summary-row">
-    <codelab-achievements-summary
-      [earned]="achievementsEarned()"
-      [total]="achievementsTotal()"
+  <!-- Progress-driven pieces stay hidden on a fresh load; they appear once the
+       user starts using a quiz this session (showSelectionProgress). Their own
+       inner guards still apply (e.g. renders nothing until there's data). -->
+  @if (showSelectionProgress()) {
+    <!-- Compact achievements progress (renders nothing until total > 0) -->
+    <div class="achievements-summary-row">
+      <codelab-achievements-summary
+        [earned]="achievementsEarned()"
+        [total]="achievementsTotal()"
+      />
+    </div>
+
+    @if (hasAccessedQuizzes()) {
+      <span class="accessed-banner">{{ accessedBannerMessage() }}</span>
+    }
+
+    <!-- Your Progress — collapsible; hidden until a quiz is In Progress or Completed -->
+    <codelab-progress-panel
+      [summary]="progressSummary()"
+      [cardStates]="cardStateList()"
     />
-  </div>
-
-  @if (hasAccessedQuizzes()) {
-    <span class="accessed-banner">{{ accessedBannerMessage() }}</span>
   }
-
-  <!-- Your Progress — collapsible; hidden until a quiz is In Progress or Completed -->
-  <codelab-progress-panel
-    [summary]="progressSummary()"
-    [cardStates]="cardStateList()"
-  />
 
   <!-- Toolbar: search + sort (right above the grid they act on) -->
   <div class="toolbar">
@@ -167,12 +172,14 @@
         <!-- Bottom row: progress (left) + difficulty (right) share one line so
              the tile height stays fixed and content stays above the fold. -->
         <div class="quiz-card-footer">
-          @let cardProgress = quizCardProgress().get(quiz.quizId);
-          <codelab-quiz-card-progress
-            class="quiz-card-progress-line"
-            [state]="cardProgress?.state ?? 'not-started'"
-            [bestScore]="cardProgress?.bestScore ?? null"
-          />
+          @if (showSelectionProgress()) {
+            @let cardProgress = quizCardProgress().get(quiz.quizId);
+            <codelab-quiz-card-progress
+              class="quiz-card-progress-line"
+              [state]="cardProgress?.state ?? 'not-started'"
+              [bestScore]="cardProgress?.bestScore ?? null"
+            />
+          }
 
           @if (quiz?.difficulty; as difficulty) {
             <span
