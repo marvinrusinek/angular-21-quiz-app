@@ -1,3 +1,15 @@
 <main>
+  @if (navigating()) {
+    <div
+      class="nav-loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading"
+      i18n-aria-label
+    >
+      <app-google-spinner />
+    </div>
+  }
+
   <router-outlet></router-outlet>
 </main>

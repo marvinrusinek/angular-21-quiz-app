@@ -3,19 +3,6 @@
 @let progress = progressSig();
 
 <ng-container>
-  <!-- Before the first question is ready, show the Google loading spinner. -->
-  @if (!(qa && qa.options && qa.options.length > 0)) {
-    <div
-      class="quiz-loading"
-      role="status"
-      aria-live="polite"
-      aria-label="Loading"
-      i18n-aria-label
-    >
-      <app-google-spinner />
-    </div>
-  }
-
   @if (qa && qa.options && qa.options.length > 0) {
     <div class="animation-shell">
       <div

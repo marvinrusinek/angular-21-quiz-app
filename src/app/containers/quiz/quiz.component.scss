@@ -1,16 +1,6 @@
 @use '../../../variables' as vars;
 @use 'sass:color';
 
-// Loading state shown before the first question is ready — center the Google
-// spinner in the quiz area.
-.quiz-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  padding: 40px 0;
-}
-
 // Question / FET heading. The <h3> is now PROJECTED from THIS template into
 // <codelab-quiz-content>'s <ng-content>, so it carries this component's
 // encapsulation — its styles must live here (the receiving component's scoped

@@ -1,12 +1,21 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import { filter } from 'rxjs/operators';
+
+import { GoogleSpinnerComponent } from './components/google-spinner/google-spinner.component';
 
 @Component({
   selector: 'codelab-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, GoogleSpinnerComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,6 +24,17 @@ export class AppComponent {
   questionIndexKey = '';
   showOutlet = true;
   outletKey = '';
+
+  // Navigation spinner. The "before the first question loads" window is the
+  // route RESOLVER (QuizResolverService) running during navigation to the quiz
+  // question route — and resolvers run BEFORE QuizComponent activates, so a
+  // spinner inside QuizComponent can never cover it. It belongs here, at the
+  // router level. A short delay means instant (cached) navigations — including
+  // Q1→Q2, which hit the resolver's fast path — never flash it; only a genuinely
+  // slow first-question load keeps the spinner on screen.
+  readonly navigating = signal(false);
+  private navSpinnerTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly NAV_SPINNER_DELAY_MS = 150;
 
   constructor(private router: Router) {
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
@@ -31,5 +51,32 @@ export class AppComponent {
         }, 0);
       }
     });
+
+    // Show the Google spinner while a quiz-question navigation is in flight.
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        if (event.url.includes('/quiz/question/')) {
+          this.clearNavSpinnerTimer();
+          this.navSpinnerTimer = setTimeout(
+            () => this.navigating.set(true),
+            AppComponent.NAV_SPINNER_DELAY_MS
+          );
+        }
+      } else if (
+        event instanceof NavigationEnd ||
+        event instanceof NavigationCancel ||
+        event instanceof NavigationError
+      ) {
+        this.clearNavSpinnerTimer();
+        this.navigating.set(false);
+      }
+    });
+  }
+
+  private clearNavSpinnerTimer(): void {
+    if (this.navSpinnerTimer !== null) {
+      clearTimeout(this.navSpinnerTimer);
+      this.navSpinnerTimer = null;
+    }
   }
 }
