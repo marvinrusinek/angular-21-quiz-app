@@ -1,0 +1,80 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // Consumers can size via font-size or an explicit width/height on the host.
+  width: 48px;
+  height: 48px;
+}
+
+.google-spinner {
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  // The whole disc rotates; the arc + color are animated on the path below.
+  animation: google-spinner-rotate 2s linear infinite;
+}
+
+.google-spinner__path {
+  stroke-linecap: round;
+  // dash: grows/shrinks the arc (Material indeterminate motion).
+  // colors: cycles the stroke through the four Google brand colors, one per
+  // dash cycle (4 × 1.5s = 6s).
+  animation:
+    google-spinner-dash 1.5s ease-in-out infinite,
+    google-spinner-colors 6s ease-in-out infinite;
+}
+
+@keyframes google-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes google-spinner-dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35px;
+  }
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124px;
+  }
+}
+
+@keyframes google-spinner-colors {
+  0% {
+    stroke: #4285f4;  // Google blue
+  }
+  25% {
+    stroke: #ea4335;  // Google red
+  }
+  50% {
+    stroke: #fbbc05;  // Google yellow
+  }
+  75% {
+    stroke: #34a853;  // Google green
+  }
+  100% {
+    stroke: #4285f4;  // back to blue
+  }
+}
+
+// Respect users who prefer reduced motion: keep a gentle, slow spin (still
+// communicates "loading") without the fast dash/rotation.
+@media (prefers-reduced-motion: reduce) {
+  .google-spinner {
+    animation-duration: 4s;
+  }
+
+  .google-spinner__path {
+    animation:
+      none;
+    stroke: #4285f4;
+    stroke-dasharray: 60, 200;
+  }
+}

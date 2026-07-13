@@ -3,9 +3,25 @@
 @let progress = progressSig();
 
 <ng-container>
+  <!-- Before the first question is ready, show the Google loading spinner. -->
+  @if (!(qa && qa.options && qa.options.length > 0)) {
+    <div
+      class="quiz-loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading"
+      i18n-aria-label
+    >
+      <app-google-spinner />
+    </div>
+  }
+
   @if (qa && qa.options && qa.options.length > 0) {
     <div class="animation-shell">
-      <div class="anim-host" [@changeRoute]="questionIndex">
+      <div
+        class="anim-host"
+        [@changeRoute]="questionIndex"
+      >
         <div class="quiz-card-wrapper">
           <mat-card class="quiz-card">
             <codelab-quiz-header />
@@ -13,13 +29,20 @@
             <mat-card-content>
               <codelab-scoreboard />
 
-              <ng-content></ng-content>
-
               <codelab-quiz-content
                 [questionIndex]="questionIndex"
                 [questionToDisplay$]="questionToDisplay$"
-                [explanationToDisplay]="explanationToDisplay()"
-                [displayState$]="displayState$" />
+              >
+                <!-- Projected heading: lands in codelab-quiz-content's
+                     <ng-content select="[quiz-projected-content]"> slot and is
+                     filled via contentChild('qText') there. -->
+                <h3
+                  #qText
+                  quiz-projected-content
+                  aria-live="polite"
+                  aria-atomic="true"
+                ></h3>
+              </codelab-quiz-content>
 
               <codelab-quiz-question
                 [questionPayload]="qa"
@@ -31,13 +54,19 @@
                 [shouldRenderOptions]="shouldRenderOptions()"
                 [questionToDisplay$]="questionToDisplay$"
                 [explanationToDisplay]="explanationToDisplay()"
-                (events)="handleQuizQuestionEvent($event)" />
+                (events)="handleQuizQuestionEvent($event)"
+              />
             </mat-card-content>
 
             <mat-card-footer>
               <!-- Row 1: Selection Message (left) + Navigation (right) -->
               <section class="footer-row-1">
-                <div class="message-area" role="status" aria-live="polite" aria-atomic="true">
+                <div
+                  class="message-area"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
                   @if (selectionMessage(); as message) {
                     <span class="instructions-message">{{ message }}</span>
                   }
@@ -46,23 +75,48 @@
                 @if (showPaging()) {
                   <div class="nav-buttons">
                     @if (shouldShowPrevButton()) {
-                      <button type="button" class="nav-btn" (click)="advanceToPreviousQuestion()"
-                        matTooltip="« Previous Question" i18n-matTooltip matTooltipPosition="above" aria-label="Previous Question" i18n-aria-label>
+                      <button
+                        type="button"
+                        class="nav-btn"
+                        (click)="advanceToPreviousQuestion()"
+                        matTooltip="« Previous Question"
+                        i18n-matTooltip
+                        matTooltipPosition="above"
+                        aria-label="Previous Question"
+                        i18n-aria-label
+                      >
                         <i class="material-icons">navigate_before</i>
                       </button>
                     }
 
                     @if (shouldShowRestartButton()) {
-                      <button type="button" class="nav-btn restart-btn" (click)="restartQuiz()" matTooltip="Restart Quiz"
-                        i18n-matTooltip matTooltipPosition="above" aria-label="Restart Quiz" i18n-aria-label>
+                      <button
+                        type="button"
+                        class="nav-btn restart-btn"
+                        (click)="restartQuiz()"
+                        matTooltip="Restart Quiz"
+                        i18n-matTooltip
+                        matTooltipPosition="above"
+                        aria-label="Restart Quiz"
+                        i18n-aria-label
+                      >
                         <i class="material-icons">replay</i>
                       </button>
                     }
 
                     @if (shouldShowNextButton()) {
-                      <button type="button" class="nav-btn" #nextButton="matTooltip"
-                        [disabled]="!nextButtonEnabled()" (click)="advanceToNextQuestion()"
-                        matTooltip="Next Question »" i18n-matTooltip matTooltipPosition="above" aria-label="Next Question" i18n-aria-label>
+                      <button
+                        type="button"
+                        class="nav-btn"
+                        #nextButton="matTooltip"
+                        [disabled]="!nextButtonEnabled()"
+                        (click)="advanceToNextQuestion()"
+                        matTooltip="Next Question »"
+                        i18n-matTooltip
+                        matTooltipPosition="above"
+                        aria-label="Next Question"
+                        i18n-aria-label
+                      >
                         <i class="material-icons">navigate_next</i>
                       </button>
                     }
@@ -73,45 +127,65 @@
               <!-- Show Results Button (when applicable) -->
               @if (shouldShowResultsButton) {
                 <section class="show-results-section">
-                  <button type="button" (click)="advanceToResults()" class="show-results-btn" aria-label="Show Results" i18n-aria-label>
+                  <button
+                    type="button"
+                    (click)="advanceToResults()"
+                    class="show-results-btn"
+                    aria-label="Show Results"
+                    i18n-aria-label
+                  >
                     <i class="material-icons">score</i>
                     <strong i18n>Show Results</strong>
                   </button>
                 </section>
               }
 
-                @if (showPaging()) {
-                  <!-- Row 2: Pagination Dots (center) + Progress (right) -->
-                  <section class="footer-row-2">
-                    <div class="paging-dots">
-                      @for (q of questionsList(); track q.questionText) {
-                        <div class="dot" [ngClass]="getDotClass($index)" [class.timed-out]="isDotTimedOut($index)" [class.disabled]="!isDotClickable($index)"
-                          (click)="navigateToDot($index)"
-                          role="button"
-                          [attr.tabindex]="isDotClickable($index) ? 0 : -1"
-                          [attr.aria-disabled]="!isDotClickable($index)"
-                          [attr.aria-label]="'Go to question ' + ($index + 1)"
-                          [attr.aria-current]="questionIndex === $index ? 'step' : null"
-                          (keydown.enter)="navigateToDot($index)"
-                          (keydown.space)="$event.preventDefault(); navigateToDot($index)">
-                        </div>
-                      }
-                    </div>
-                    <span class="progress-inline" [class.is-complete]="progress >= 100">({{ progress }}% complete)</span>
-                  </section>
-
-                  <!-- Row 3: Animated striped progress bar -->
-                  <div class="quiz-progress"
-                    [class.is-complete]="progress >= 100"
-                    role="progressbar"
-                    [attr.aria-valuenow]="progress"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    aria-label="Quiz progress"
-                    i18n-aria-label>
-                    <div class="quiz-progress__fill" [style.width.%]="progress"></div>
+              @if (showPaging()) {
+                <!-- Row 2: Pagination Dots (center) + Progress (right) -->
+                <section class="footer-row-2">
+                  <div class="paging-dots">
+                    @for (q of questionsList(); track q.questionText) {
+                      <div
+                        class="dot"
+                        [ngClass]="getDotClass($index)"
+                        [class.timed-out]="isDotTimedOut($index)"
+                        [class.disabled]="!isDotClickable($index)"
+                        (click)="navigateToDot($index)"
+                        role="button"
+                        [attr.tabindex]="isDotClickable($index) ? 0 : -1"
+                        [attr.aria-disabled]="!isDotClickable($index)"
+                        [attr.aria-label]="'Go to question ' + ($index + 1)"
+                        [attr.aria-current]="questionIndex === $index ? 'step' : null"
+                        (keydown.enter)="navigateToDot($index)"
+                        (keydown.space)="$event.preventDefault(); navigateToDot($index)"
+                      ></div>
+                    }
                   </div>
-                }
+                  <span
+                    class="progress-inline"
+                    [class.is-complete]="progress >= 100"
+                  >
+                    ({{ progress }}% complete)
+                  </span>
+                </section>
+
+                <!-- Row 3: Animated striped progress bar -->
+                <div
+                  class="quiz-progress"
+                  [class.is-complete]="progress >= 100"
+                  role="progressbar"
+                  [attr.aria-valuenow]="progress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-label="Quiz progress"
+                  i18n-aria-label
+                >
+                  <div
+                    class="quiz-progress__fill"
+                    [style.width.%]="progress"
+                  ></div>
+                </div>
+              }
             </mat-card-footer>
           </mat-card>
         </div>

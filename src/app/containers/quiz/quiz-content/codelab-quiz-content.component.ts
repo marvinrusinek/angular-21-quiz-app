@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  contentChild,
   DestroyRef,
   effect,
   ElementRef,
@@ -70,7 +71,10 @@ export class CodelabQuizContentComponent implements OnInit {
 
   // ── viewChilds ──────────────────────────────────────────────────
   readonly quizQuestionComponent = viewChild(QuizQuestionComponent);
-  readonly qText = viewChild<ElementRef<HTMLHeadingElement>>('qText');
+  // PROJECTED heading: the <h3 #qText quiz-projected-content> is projected in by
+  // quiz.component into this component's <ng-content> slot, so it's CONTENT (not
+  // view) — it must be queried with contentChild, or the heading writer no-ops.
+  readonly qText = contentChild<ElementRef<HTMLHeadingElement>>('qText');
 
   // ── outputs ─────────────────────────────────────────────────────
   readonly isContentAvailableChange = output<boolean>();

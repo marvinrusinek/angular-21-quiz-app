@@ -1,6 +1,57 @@
 @use '../../../variables' as vars;
 @use 'sass:color';
 
+// Loading state shown before the first question is ready — center the Google
+// spinner in the quiz area.
+.quiz-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 0;
+}
+
+// Question / FET heading. The <h3> is now PROJECTED from THIS template into
+// <codelab-quiz-content>'s <ng-content>, so it carries this component's
+// encapsulation — its styles must live here (the receiving component's scoped
+// h3 rule can't reach projected content).
+h3 {
+  display: block;
+  font-family: vars.$font-stack;
+  font-size: 30px;
+  font-weight: 500;
+  margin: 5px 0;
+  padding: 10px 15px;
+  background-color: var(--bg-option, vars.$light-gray);
+  border: 2px solid vars.$vivid-blue;
+  color: var(--text-option, vars.$dark-brown);
+  width: 100%;
+  max-width: 615px;
+  height: auto;
+  box-sizing: border-box;
+  line-height: 1.35;
+  position: relative;
+  z-index: 1;
+  // Break long unbreakable tokens (e.g. code identifiers in a FET like
+  // "provideHttpClient(withInterceptors([...]))") so they wrap inside the box
+  // instead of spilling past the border.
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  &:empty {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  h3 {
+    font-size: 22px;
+    padding: 8px 12px;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
 :host {
   display: block;
   min-height: 100vh;

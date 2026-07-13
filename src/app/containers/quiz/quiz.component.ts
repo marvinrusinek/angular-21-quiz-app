@@ -1,6 +1,15 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, 
-  computed, DestroyRef, inject, OnInit, signal, viewChild, ViewEncapsulation
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+  ViewEncapsulation,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -38,9 +47,13 @@ import { TimerService } from '../../shared/services/features/timer/timer.service
 
 import { CodelabQuizContentComponent } from './quiz-content/codelab-quiz-content.component';
 import { CodelabQuizHeaderComponent } from './quiz-header/quiz-header.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../components/dialogs/confirm-dialog/confirm-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../components/dialogs/confirm-dialog/confirm-dialog.component';
 import { QuizQuestionComponent } from '../../components/question/quiz-question/quiz-question.component';
 import { ScoreboardComponent } from '../scoreboard/scoreboard.component';
+import { GoogleSpinnerComponent } from '../../components/google-spinner/google-spinner.component';
 import { SharedOptionComponent } from '../../components/question/answer/shared-option-component/shared-option.component';
 
 import { QUESTION_ROUTE_REGEX } from '../../shared/constants/route-patterns';
@@ -66,7 +79,8 @@ type AnimationState = 'animationStarted' | 'none';
     QuizQuestionComponent,
     CodelabQuizHeaderComponent,
     CodelabQuizContentComponent,
-    ScoreboardComponent
+    ScoreboardComponent,
+    GoogleSpinnerComponent,
   ],
   templateUrl: './quiz.component.html',
   styleUrls: ['./quiz.component.scss'],
@@ -77,8 +91,8 @@ type AnimationState = 'animationStarted' | 'none';
     '(window:keydown)': 'onGlobalKey($event)',
     '(window:focus)': 'onWindowFocus()',
     '(window:scroll)': 'onWindowScroll()',
-    '(window:resize)': 'onWindowResize()'
-  }
+    '(window:resize)': 'onWindowResize()',
+  },
 })
 export class QuizComponent implements OnInit, AfterViewInit {
   // ── injects ─────────────────────────────────────────────────────
@@ -168,12 +182,14 @@ export class QuizComponent implements OnInit, AfterViewInit {
             return {
               question: urlQ,
               options: urlQ.options,
-              explanation: urlQ.explanation ?? ''
+              explanation: urlQ.explanation ?? '',
             };
           }
         }
       }
-    } catch (err: unknown) { swallow('quiz.component.ts', err); /* non-browser env */ }
+    } catch (err: unknown) {
+      swallow('quiz.component.ts', err); /* non-browser env */
+    }
 
     if (!payload?.question) return payload;
 
@@ -187,7 +203,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
         return {
           question: correctQ,
           options: correctQ.options ?? [],
-          explanation: correctQ.explanation ?? ''
+          explanation: correctQ.explanation ?? '',
         };
       }
     }
@@ -218,15 +234,11 @@ export class QuizComponent implements OnInit, AfterViewInit {
     // this does NOT change which question text renders.
     if (opts.length === 0) {
       const canonical = this.quizService.questions ?? [];
-      const match = canonical.find(
-        (q: QuizQuestion) => norm(q?.questionText) === norm(baseText)
-      );
+      const match = canonical.find((q: QuizQuestion) => norm(q?.questionText) === norm(baseText));
       opts = match?.options ?? [];
     }
 
-    const numCorrect = opts.filter(
-      (o: any) => isOptionCorrect(o)
-    ).length;
+    const numCorrect = opts.filter((o: any) => isOptionCorrect(o)).length;
     if (numCorrect <= 1 || opts.length === 0) return baseText;
 
     const suffix = numCorrect === 1 ? 'answer is' : 'answers are';
@@ -470,22 +482,21 @@ export class QuizComponent implements OnInit, AfterViewInit {
     // Guard against accidental clicks mid-quiz — restart wipes every
     // answer + reschedules the timer. A themed confirm dialog matches
     // the app (incl. dark mode) instead of the native confirm() box.
-    const ref = this.dialog.open<
+    const ref = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
       ConfirmDialogComponent,
-      ConfirmDialogData,
-      boolean
-    >(ConfirmDialogComponent, {
-      width: '360px',
-      panelClass: 'themed-confirm-dialog',
-      autoFocus: 'dialog',
-      data: {
-        title: 'Restart the quiz?',
-        message: 'Your progress will be lost.',
-        confirmText: 'Restart',
-        cancelText: 'Cancel',
-        confirmColor: 'warn'
+      {
+        width: '360px',
+        panelClass: 'themed-confirm-dialog',
+        autoFocus: 'dialog',
+        data: {
+          title: 'Restart the quiz?',
+          message: 'Your progress will be lost.',
+          confirmText: 'Restart',
+          cancelText: 'Cancel',
+          confirmColor: 'warn',
+        },
       }
-    });
+    );
 
     ref.afterClosed().subscribe((confirmed) => {
       if (!confirmed) return;
@@ -542,7 +553,9 @@ export class QuizComponent implements OnInit, AfterViewInit {
           }
         }
       }
-    } catch (err: unknown) { swallow('quiz.component.ts', err); /* ignore */ }
+    } catch (err: unknown) {
+      swallow('quiz.component.ts', err); /* ignore */
+    }
 
     this.updateProgressValue();
   }
@@ -555,9 +568,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
     index: number,
     options?: { forceRecompute?: boolean }
   ): 'correct' | 'wrong' | 'pending' {
-    return this.dotStatusService.getQuestionStatusSimple(
-      { index, ...this._dotParams, options }
-    );
+    return this.dotStatusService.getQuestionStatusSimple({ index, ...this._dotParams, options });
   }
 
   updateDotStatus(index: number): void {
@@ -618,8 +629,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
     const el = document.createElement('div');
     el.style.cssText =
       'position:fixed;bottom:20px;left:0;right:0;margin:0 auto;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.95);box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;justify-content:center;align-items:center;cursor:pointer;animation:scrollBounce 2s infinite;';
-    el.innerHTML =
-      `<i class="material-icons" style="font-size:32px;color:${INFO_ICON_COLOR};">keyboard_arrow_down</i>`;
+    el.innerHTML = `<i class="material-icons" style="font-size:32px;color:${INFO_ICON_COLOR};">keyboard_arrow_down</i>`;
     el.addEventListener('click', () => this.scrollToBottom());
     document.body.appendChild(el);
     this.scrollIndicatorEl = el;
@@ -646,7 +656,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
       currentQuestionIndex: this.currentQuestionIndex(),
       optionsToDisplay: this.optionsToDisplaySig(),
       currentQuestion: this.currentQuestion(),
-      questionsArray: this.questionsArray()
+      questionsArray: this.questionsArray(),
     };
   }
 }
