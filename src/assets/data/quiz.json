@@ -3577,6 +3577,204 @@
           "explanation": "Pipes are for lightweight, reusable formatting that leaves source data unchanged and keeps templates clean, and a custom pipe centralizes a repeated transformation. They should stay side-effect free; heavy business logic or data fetching belongs in services or components, not in a pipe that runs during rendering."
         }
       ]
+    },
+    {
+      "quizId": "design-patterns",
+      "milestone": "Design Patterns",
+      "summary": "Apply proven design patterns to build scalable, maintainable Angular architecture.",
+      "image": "assets/images/design-patterns.svg",
+      "difficulty": "advanced",
+      "facts": [
+        "Design patterns are shared, proven solutions to recurring problems; they give a team a common vocabulary and a maintainable structure, not a performance boost.",
+        "A Facade service coordinates several underlying services behind one simple API, so components depend on the facade instead of the tangle beneath it.",
+        "RxJS Observables and Subjects are Angular’s built-in expression of the Observer pattern: subscribers react to values emitted over time."
+      ],
+      "questions": [
+        {
+          "questionText": "What problem do software design patterns primarily solve?",
+          "options": [
+            {
+              "text": "They make an application run faster by optimizing the compiler at runtime."
+            },
+            {
+              "text": "They provide proven, reusable solutions to recurring design problems, improving maintainability and communication.",
+              "correct": true
+            },
+            {
+              "text": "They eliminate the need to write tests."
+            },
+            {
+              "text": "They guarantee an application will never contain bugs."
+            }
+          ],
+          "explanation": "Design patterns capture battle-tested approaches to problems that recur across projects. They don't speed up runtime or remove bugs; their value is a shared vocabulary and a maintainable structure that makes systems easier to reason about, extend, and discuss across a team."
+        },
+        {
+          "questionText": "Composition is generally preferred over inheritance when designing Angular components. True or False?",
+          "options": [
+            {
+              "text": "True",
+              "correct": true
+            },
+            {
+              "text": "False"
+            }
+          ],
+          "explanation": "Composition, building behavior by combining small components, directives, and services, keeps pieces loosely coupled and independently reusable. Deep inheritance hierarchies tightly bind subclasses to base-class decisions and grow brittle. Angular's model (inputs, outputs, content projection, DI) is built around composition, which scales better."
+        },
+        {
+          "questionText": "An architecture that separates data-fetching 'container' components from stateless 'presentational' components mainly improves what?",
+          "options": [
+            {
+              "text": "Bundle size, by removing all services."
+            },
+            {
+              "text": "Runtime speed, by disabling change detection."
+            },
+            {
+              "text": "Type safety, by removing interfaces."
+            },
+            {
+              "text": "Maintainability and testability, by isolating business and data logic from pure rendering.",
+              "correct": true
+            }
+          ],
+          "explanation": "Splitting smart (data and orchestration) from presentational (rendering) components concentrates business logic where it can be tested without a DOM and keeps UI pieces reusable and predictable. It's a separation-of-concerns win, not a bundle-size or change-detection mechanism."
+        },
+        {
+          "questionText": "A component needs data that requires coordinating three services with intricate logic. Which pattern gives the component a single, clean API and hides that complexity?",
+          "options": [
+            {
+              "text": "The Facade pattern, a service that exposes a simple interface and orchestrates the underlying services internally.",
+              "correct": true
+            },
+            {
+              "text": "The Adapter pattern, converting one interface into another."
+            },
+            {
+              "text": "The Strategy pattern, swapping interchangeable algorithms."
+            },
+            {
+              "text": "The Factory pattern, centralizing object creation."
+            }
+          ],
+          "explanation": "A Facade service wraps several collaborating services behind one simple, intention-revealing API. Components depend only on the facade, not on the tangle of services beneath it, which reduces coupling and component complexity and keeps the orchestration easy to change or test in one place."
+        },
+        {
+          "questionText": "In which situations is the Strategy pattern a natural fit? Select all that apply.",
+          "options": [
+            {
+              "text": "Selecting one of several interchangeable validation rules at runtime.",
+              "correct": true
+            },
+            {
+              "text": "Converting a third-party library's data shape into your app's model."
+            },
+            {
+              "text": "Supporting multiple sorting or pricing algorithms chosen by configuration.",
+              "correct": true
+            },
+            {
+              "text": "Swapping a behavior at runtime without changing the code that uses it.",
+              "correct": true
+            }
+          ],
+          "explanation": "Strategy encapsulates a family of interchangeable behaviors behind a common interface so the consumer can pick one at runtime without branching logic. Validation rules, sorting, and pricing are classic cases. Converting an incompatible data shape is the Adapter pattern, not Strategy."
+        },
+        {
+          "questionText": "You must integrate a legacy REST API whose response shape doesn't match your app's models, and you want to isolate that mismatch. Which pattern applies?",
+          "options": [
+            {
+              "text": "The Observer pattern, reacting to emitted events over time."
+            },
+            {
+              "text": "The Facade pattern, simplifying your own internal services."
+            },
+            {
+              "text": "The Adapter pattern, a layer that converts the external interface into the shape your app expects.",
+              "correct": true
+            },
+            {
+              "text": "The Singleton pattern, ensuring a single instance."
+            }
+          ],
+          "explanation": "An Adapter wraps an incompatible external interface and translates it into the shape your app expects, keeping the mismatch in one isolated place. If the API changes, only the adapter changes while your components and models stay stable, which isolates external dependencies."
+        },
+        {
+          "questionText": "Angular's use of RxJS Observables and Subjects for event-driven, reactive communication is an example of which pattern?",
+          "options": [
+            {
+              "text": "The Adapter pattern."
+            },
+            {
+              "text": "The Observer pattern, where subscribers react to values a subject emits over time.",
+              "correct": true
+            },
+            {
+              "text": "The Facade pattern."
+            },
+            {
+              "text": "The Template Method pattern."
+            }
+          ],
+          "explanation": "Observables and Subjects implement the Observer pattern: producers emit values and any number of subscribers react as those values arrive. This decouples the source of events from their consumers and underpins Angular’s reactive, event-driven communication."
+        },
+        {
+          "questionText": "When deciding WHERE application state should live, which guidelines hold? Select all that apply.",
+          "options": [
+            {
+              "text": "All state should live in one global store regardless of scope, for consistency."
+            },
+            {
+              "text": "State used by only one component should stay local to that component.",
+              "correct": true
+            },
+            {
+              "text": "State shared by several components is better held in a service, for example via a signal or observable.",
+              "correct": true
+            },
+            {
+              "text": "State scope should match how widely it is actually needed, not be global by default.",
+              "correct": true
+            }
+          ],
+          "explanation": "State should live at the narrowest scope that needs it: local for single-component state, a shared service for cross-component state. Defaulting everything to a global store adds coupling and complexity you may not need. Right-sizing state scope is a core architectural decision."
+        },
+        {
+          "questionText": "The Adapter pattern's primary purpose is to create new objects at runtime based on configuration. True or False?",
+          "options": [
+            {
+              "text": "True"
+            },
+            {
+              "text": "False",
+              "correct": true
+            }
+          ],
+          "explanation": "That describes the Factory pattern, not the Adapter. The Adapter's purpose is to convert one interface into another so incompatible components can work together, such as wrapping a third-party API. Distinguishing create versus convert is key to choosing the right pattern."
+        },
+        {
+          "questionText": "You're building an extensible checkout that must support multiple payment providers added over time. Which approaches fit well? Select all that apply.",
+          "options": [
+            {
+              "text": "Define a common payment interface and select the provider's implementation at runtime (Strategy).",
+              "correct": true
+            },
+            {
+              "text": "Wrap each third-party provider SDK behind an adapter so the app depends on your interface, not theirs (Adapter).",
+              "correct": true
+            },
+            {
+              "text": "Hard-code a large if/else per provider throughout the checkout components."
+            },
+            {
+              "text": "Expose a single PaymentFacade so components don't coordinate providers directly (Facade).",
+              "correct": true
+            }
+          ],
+          "explanation": "Extensibility comes from programming to interfaces: Strategy to swap provider implementations, Adapter to isolate each third-party SDK, and a Facade to give components one clean entry point. Scattering provider-specific if/else through components is the rigid anti-pattern these patterns solve."
+        }
+      ]
     }
   ],
   "resources": [

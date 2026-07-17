@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" role="img"
+     aria-label="Four common Angular design patterns: Facade (one clean API over many services), Strategy (swap behaviors at runtime), Adapter (convert an incompatible interface), and Observer (react to values emitted over time)">
+  <defs>
+    <style>
+      .box   { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .accent{ fill:#dd0031; }
+      .name  { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+               fill:#1a1a1a; font-size:19px; }
+      .role  { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#5a5a5a;
+               font-size:13px; }
+      .title { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+               fill:#1a1a1a; font-size:23px; text-anchor:middle; }
+      .sub   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+               font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="600" height="360" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="300" y="34">Angular Design Patterns</text>
+  <text class="sub"   x="300" y="56">Proven solutions for scalable, maintainable architecture</text>
+
+  <!-- Card: Facade (top-left) -->
+  <rect class="box" x="30" y="82" width="258" height="118" rx="12"/>
+  <rect class="accent" x="48" y="106" width="6" height="42" rx="3"/>
+  <text class="name" x="70" y="122">Facade</text>
+  <text class="role" x="70" y="146">One clean API over</text>
+  <text class="role" x="70" y="164">many services.</text>
+
+  <!-- Card: Strategy (top-right) -->
+  <rect class="box" x="312" y="82" width="258" height="118" rx="12"/>
+  <rect class="accent" x="330" y="106" width="6" height="42" rx="3"/>
+  <text class="name" x="352" y="122">Strategy</text>
+  <text class="role" x="352" y="146">Swap interchangeable</text>
+  <text class="role" x="352" y="164">behaviors at runtime.</text>
+
+  <!-- Card: Adapter (bottom-left) -->
+  <rect class="box" x="30" y="218" width="258" height="118" rx="12"/>
+  <rect class="accent" x="48" y="242" width="6" height="42" rx="3"/>
+  <text class="name" x="70" y="258">Adapter</text>
+  <text class="role" x="70" y="282">Convert an incompatible</text>
+  <text class="role" x="70" y="300">external interface.</text>
+
+  <!-- Card: Observer (bottom-right) -->
+  <rect class="box" x="312" y="218" width="258" height="118" rx="12"/>
+  <rect class="accent" x="330" y="242" width="6" height="42" rx="3"/>
+  <text class="name" x="352" y="258">Observer</text>
+  <text class="role" x="352" y="282">Subscribers react to</text>
+  <text class="role" x="352" y="300">values over time.</text>
+</svg>
