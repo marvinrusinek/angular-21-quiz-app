@@ -3181,6 +3181,204 @@
           "explanation": "providedIn:'root' registers the service with the root injector as one lazily-created singleton, and because the provider is declared on the service itself, the bundler can drop it entirely when it is never injected. This is why providedIn:'root' is the recommended default scope for most services."
         }
       ]
+    },
+    {
+      "quizId": "directives",
+      "milestone": "Directives",
+      "summary": "Use Angular directives and control flow to build clean, dynamic templates.",
+      "image": "assets/images/directives.svg",
+      "difficulty": "beginner",
+      "facts": [
+        "Angular has three directive types: components (a directive with a template), structural directives that change DOM layout, and attribute directives that change an element's look or behavior.",
+        "The newer control-flow blocks (@if, @for, @switch) are built into the template syntax and replace the older *ngIf/*ngFor/*ngSwitch structural directives.",
+        "ng-container groups elements and hosts structural logic without rendering any element of its own, which keeps the DOM clean."
+      ],
+      "questions": [
+        {
+          "questionText": "Angular has three kinds of directives. Which trio is correct?",
+          "options": [
+            {
+              "text": "Components, structural directives, and attribute directives.",
+              "correct": true
+            },
+            {
+              "text": "Services, pipes, and guards."
+            },
+            {
+              "text": "Modules, components, and templates."
+            },
+            {
+              "text": "Inputs, outputs, and lifecycle hooks."
+            }
+          ],
+          "explanation": "Directives add behavior to elements. Angular has three types: components (a directive with a template), structural directives that change DOM layout by adding or removing elements, and attribute directives that change an existing element's appearance or behavior. Services, pipes, and guards play different roles."
+        },
+        {
+          "questionText": "What is the key difference between a structural directive and an attribute directive?",
+          "options": [
+            {
+              "text": "A structural directive adds or removes elements from the DOM, while an attribute directive changes an existing element's look or behavior.",
+              "correct": true
+            },
+            {
+              "text": "A structural directive only works on a <div>, while an attribute directive works anywhere."
+            },
+            {
+              "text": "Structural directives run on the server and attribute directives run in the browser."
+            },
+            {
+              "text": "There is no real difference; the names are interchangeable."
+            }
+          ],
+          "explanation": "Structural directives (like @if and @for) reshape the DOM by creating or destroying elements, while attribute directives (like ngClass and ngStyle) leave the structure intact and modify an existing element. Deciding whether you need to restructure or restyle points you to the right tool."
+        },
+        {
+          "questionText": "Structural directives can add or remove elements from the DOM. True or False?",
+          "options": [
+            {
+              "text": "True",
+              "correct": true
+            },
+            {
+              "text": "False"
+            }
+          ],
+          "explanation": "That is what makes them 'structural': directives like @if and @for change the structure of the page by inserting or removing elements based on your data, rather than only restyling what is already there."
+        },
+        {
+          "questionText": "You want a 'Welcome back' banner to appear only when a user is logged in. Which control-flow block fits?",
+          "options": [
+            {
+              "text": "@if, which renders its content only when the condition is true and removes it otherwise.",
+              "correct": true
+            },
+            {
+              "text": "@for, which repeats content for each item in a collection."
+            },
+            {
+              "text": "@switch, which picks one branch from several based on a value."
+            },
+            {
+              "text": "ngStyle, which sets inline styles on an element."
+            }
+          ],
+          "explanation": "@if conditionally includes or excludes a block based on a boolean. When the user is logged out the banner isn't merely hidden, it isn't in the DOM at all, which is cleaner and lighter than rendering it and toggling visibility."
+        },
+        {
+          "questionText": "Which statements about the @for block are correct? Select all that apply.",
+          "options": [
+            {
+              "text": "It renders a piece of template once for each item in a collection.",
+              "correct": true
+            },
+            {
+              "text": "Its track expression helps Angular identify items so it can reuse DOM nodes efficiently.",
+              "correct": true
+            },
+            {
+              "text": "It can provide an @empty block to show when the collection has no items.",
+              "correct": true
+            },
+            {
+              "text": "It is the right choice for showing a single element based on a boolean."
+            }
+          ],
+          "explanation": "@for repeats template content across a collection, uses a track expression so Angular can match items to existing DOM nodes and avoid needless re-creation, and offers an @empty block for the no-items case. Showing a single element on a boolean is @if's job."
+        },
+        {
+          "questionText": "You need to apply a CSS class only when a form field is invalid. Which is the most appropriate tool?",
+          "options": [
+            {
+              "text": "ngClass, which toggles one or more CSS classes based on a condition.",
+              "correct": true
+            },
+            {
+              "text": "@for, which repeats an element per item."
+            },
+            {
+              "text": "ng-container, which groups elements without adding DOM."
+            },
+            {
+              "text": "A template reference variable."
+            }
+          ],
+          "explanation": "ngClass is an attribute directive that adds or removes classes from an expression, such as an 'invalid' class when a control fails validation. It changes appearance without altering DOM structure, which is exactly an attribute directive's role."
+        },
+        {
+          "questionText": "You want to apply an @if to a group of elements without wrapping them in an extra &lt;div&gt; that would appear in the DOM. What should you use?",
+          "options": [
+            {
+              "text": "ng-container, a grouping element that applies structural logic but renders no element of its own.",
+              "correct": true
+            },
+            {
+              "text": "ng-template, a block that is only rendered when explicitly referenced."
+            },
+            {
+              "text": "An extra <div> with display:none."
+            },
+            {
+              "text": "ngStyle on each element."
+            }
+          ],
+          "explanation": "ng-container is an invisible grouping wrapper: it lets you attach structural control flow to several elements at once without emitting a real DOM node. This keeps the rendered markup clean and avoids stray wrappers that can break layouts or CSS."
+        },
+        {
+          "questionText": "When is creating a custom attribute directive a good choice? Select all that apply.",
+          "options": [
+            {
+              "text": "To reuse the same DOM behavior, such as a highlight-on-hover effect, across many elements.",
+              "correct": true
+            },
+            {
+              "text": "To encapsulate small, cross-cutting behavior so components stay simple.",
+              "correct": true
+            },
+            {
+              "text": "To keep repeated logic in one place instead of copying it into every component.",
+              "correct": true
+            },
+            {
+              "text": "Whenever you need to display a completely new section of UI with its own template."
+            }
+          ],
+          "explanation": "Custom attribute directives shine for reusable, cross-cutting behavior attached to existing elements (highlighting, autofocus, tracking), keeping that logic in one place. When you instead need a new piece of UI with its own template, that is a component's job."
+        },
+        {
+          "questionText": "In which scenarios is an attribute directive (rather than a structural one) the natural choice? Select all that apply.",
+          "options": [
+            {
+              "text": "Highlighting a field's border red when validation fails.",
+              "correct": true
+            },
+            {
+              "text": "Applying a 'dark-mode' class to an element based on a setting.",
+              "correct": true
+            },
+            {
+              "text": "Changing a button's style when it is disabled.",
+              "correct": true
+            },
+            {
+              "text": "Removing a section of the page entirely when a feature flag is off."
+            }
+          ],
+          "explanation": "Attribute directives change how an existing element looks or behaves (error styling, theme classes, disabled-state styles) without touching structure. Removing a whole section based on a flag changes structure, so that is a structural directive (@if)."
+        },
+        {
+          "questionText": "Attribute directives typically modify the appearance or behavior of an existing element rather than adding or removing elements. True or False?",
+          "options": [
+            {
+              "text": "True",
+              "correct": true
+            },
+            {
+              "text": "False"
+            }
+          ],
+          "explanation": "Attribute directives (ngClass, ngStyle, custom highlight directives) operate on an element already in the DOM, adjusting its classes, styles, or behavior. Adding or removing elements is the job of structural directives, and separating these responsibilities is a core directive concept."
+        }
+      ]
     }
   ],
   "resources": [
