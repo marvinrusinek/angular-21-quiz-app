@@ -636,6 +636,19 @@ export class ExplanationFormatterService {
     return [];
   }
 
+  // Lowercases only the first letter of the leading word, leaving acronyms and
+  // camelCase/PascalCase identifiers (OnPush, RxJS, TypeScript, HTTP) untouched so
+  // the FET reads naturally after "… correct because" without corrupting a name.
+  private lowercaseLead(text: string): string {
+    const m = (text ?? '').match(/^(\s*)(\S+)([\s\S]*)$/);
+    if (!m) return text;
+    const [, ws, word, tail] = m;
+    const first = word.charAt(0);
+    if (first < 'A' || first > 'Z') return text;   // first char isn't an uppercase letter
+    if (/[A-Z]/.test(word.slice(1))) return text;  // internal caps -> identifier/acronym
+    return ws + first.toLowerCase() + word.slice(1) + tail;
+  }
+
   formatExplanation(
     question: QuizQuestion,
     correctOptionIndices: number[] | null | undefined,
@@ -673,6 +686,10 @@ export class ExplanationFormatterService {
     // DIAGNOSTIC: Log stack trace for Q1 to identify which caller produces wrong indices
     if (indices.length === 0) return e;
 
+    // Body that follows the "… correct because" prefix: lowercase its leading
+    // letter so the composed FET reads as one natural sentence.
+    const eLead = this.lowercaseLead(e);
+
     // Multi-answer
     const qTextNorm = (question?.questionText ?? '').toLowerCase();
     const isExplicitMulti = qTextNorm.includes('all that apply') || qTextNorm.includes('select multiple');
@@ -691,7 +708,7 @@ export class ExplanationFormatterService {
           ? `${indices.slice(0, -1).join(', ')}, and ${indices.slice(-1)}`
           : indices.join(' and ');
 
-      const result = `Options ${optionsText} are correct because ${e}`;
+      const result = `Options ${optionsText} are correct because ${eLead}`;
       return result;
     }
 
@@ -724,8 +741,8 @@ export class ExplanationFormatterService {
         .toLowerCase();
       const isTrueFalse = tfOpts.length === 2 && (tfCorrect === 'true' || tfCorrect === 'false');
       const result = isTrueFalse
-        ? `The statement is ${tfCorrect} because ${e}`
-        : `Option ${targetIndex} is correct because ${e}`;
+        ? `The statement is ${tfCorrect} because ${eLead}`
+        : `Option ${targetIndex} is correct because ${eLead}`;
       return result;
     }
 

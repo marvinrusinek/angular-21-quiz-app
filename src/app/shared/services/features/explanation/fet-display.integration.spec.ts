@@ -154,7 +154,9 @@ describe('FET display integration', () => {
 
       it('formats a 2-answer multi explanation with "Options A and B are correct because ..."', () => {
         const result = service.formatExplanation(multiAnswerQ, [2, 4], multiAnswerQ.explanation, 1);
-        expect(result).toBe('Options 2 and 4 are correct because Both 2 and 4 are even.');
+        // The explanation body's leading letter is lowercased so it reads as one
+        // sentence after "… correct because" ("Both" -> "both").
+        expect(result).toBe('Options 2 and 4 are correct because both 2 and 4 are even.');
       });
 
       it('formats a 3-answer multi explanation with "Options A, B and C ..."', () => {
@@ -170,7 +172,7 @@ describe('FET display integration', () => {
           explanation: 'Primes have exactly two divisors.'
         };
         const result = service.formatExplanation(q, [1, 2, 4], q.explanation, 0);
-        expect(result).toBe('Options 1, 2, and 4 are correct because Primes have exactly two divisors.');
+        expect(result).toBe('Options 1, 2, and 4 are correct because primes have exactly two divisors.');
       });
 
       it('returns the raw explanation when correctIndices is empty', () => {
@@ -246,7 +248,7 @@ describe('FET display integration', () => {
         const indices = service.getCorrectOptionIndices(multiAnswerQ, multiAnswerQ.options, 1);
         const formatted = service.formatExplanation(multiAnswerQ, indices, multiAnswerQ.explanation, 1);
         service.storeFormattedExplanation(1, formatted, multiAnswerQ, multiAnswerQ.options);
-        expect(service.getFormattedSync(1)).toBe('Options 2 and 4 are correct because Both 2 and 4 are even.');
+        expect(service.getFormattedSync(1)).toBe('Options 2 and 4 are correct because both 2 and 4 are even.');
       });
     });
   });
