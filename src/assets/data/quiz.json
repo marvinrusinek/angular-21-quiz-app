@@ -2986,7 +2986,7 @@
     },
     {
       "quizId": "dependency-injection-advanced",
-      "milestone": "Advanced Dependency Injection",
+      "milestone": "Advanced DI",
       "summary": "Master Angular's DI system: injectors, providers, and smart scoping choices.",
       "image": "assets/images/dependency-injection-advanced.svg",
       "difficulty": "advanced",
