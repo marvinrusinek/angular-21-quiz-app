@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1784320762327,
+  "timestamp": 1784321943570,
   "index": "/angular-21-quiz-app/index.html",
   "assetGroups": [
     {
@@ -44,6 +44,7 @@
         "/angular-21-quiz-app/assets/images/change-detection.svg",
         "/angular-21-quiz-app/assets/images/codelab_logo.jpeg",
         "/angular-21-quiz-app/assets/images/component-architecture.svg",
+        "/angular-21-quiz-app/assets/images/dependency-injection-advanced.svg",
         "/angular-21-quiz-app/assets/images/email.svg",
         "/angular-21-quiz-app/assets/images/http.svg",
         "/angular-21-quiz-app/assets/images/performance.svg",
@@ -72,6 +73,7 @@
     "/angular-21-quiz-app/assets/images/change-detection.svg": "22a324716dbc2086e2071541ad1779644e058f91",
     "/angular-21-quiz-app/assets/images/codelab_logo.jpeg": "f9feb096c6d94292acf3b2f5f9ea7b4aee5dc2a3",
     "/angular-21-quiz-app/assets/images/component-architecture.svg": "bb6fef17e03646d953e43851be63b11c7c2a5cad",
+    "/angular-21-quiz-app/assets/images/dependency-injection-advanced.svg": "24f0adce3baa3f0b5643bff0b25960946672eb7b",
     "/angular-21-quiz-app/assets/images/email.svg": "e46897d41697bcfad9487b1ae1cfdcf8fc68008e",
     "/angular-21-quiz-app/assets/images/http.svg": "8b7ea38772d5ee3faa3316abe36ae70a6b03f644",
     "/angular-21-quiz-app/assets/images/performance.svg": "24adfe789f60008a313f0a55f1c96bcc1dee4c8a",

@@ -2983,6 +2983,204 @@
           "explanation": "Reuse comes from composition, shared directives/services, and presentational components decoupled from data sources — not from piling screen-specific flags onto a shared component."
         }
       ]
+    },
+    {
+      "quizId": "dependency-injection-advanced",
+      "milestone": "Advanced Dependency Injection",
+      "summary": "Master Angular's DI system: injectors, providers, and smart scoping choices.",
+      "image": "assets/images/dependency-injection-advanced.svg",
+      "difficulty": "advanced",
+      "facts": [
+        "Angular has two parallel injector trees: the EnvironmentInjector hierarchy (platform to root to route) and the ElementInjector hierarchy that follows the component tree.",
+        "A class is its own DI token, which is why non-class dependencies (config objects, primitives, interfaces) need an InjectionToken to be injected.",
+        "providedIn: 'root' services are tree-shakable: if nothing injects a service, the bundler can drop it from the build."
+      ],
+      "questions": [
+        {
+          "questionText": "Dependency Injection is Angular's implementation of Inversion of Control. What is the primary architectural benefit it provides?",
+          "options": [
+            {
+              "text": "A class declares the dependencies it needs and Angular supplies them, so the class isn't coupled to how they're created.",
+              "correct": true
+            },
+            {
+              "text": "It makes every service a global variable accessible from anywhere."
+            },
+            {
+              "text": "It automatically converts synchronous code into asynchronous code."
+            },
+            {
+              "text": "It removes the need to write any services."
+            }
+          ],
+          "explanation": "Inversion of Control means a class no longer constructs its own dependencies; it declares what it needs and the injector supplies them. This decouples the class from concrete implementations, so you can swap or mock dependencies and test it in isolation."
+        },
+        {
+          "questionText": "In a modern Angular app, when is the inject() function especially useful compared to constructor parameter injection?",
+          "options": [
+            {
+              "text": "When you need a dependency outside a constructor, such as in a field initializer, a functional guard/interceptor, or a reusable helper.",
+              "correct": true
+            },
+            {
+              "text": "Only inside HTML templates."
+            },
+            {
+              "text": "When you want to bypass the injector entirely."
+            },
+            {
+              "text": "inject() and constructor injection can never be used in the same class."
+            }
+          ],
+          "explanation": "inject() resolves a dependency from the current injection context without a constructor parameter, which makes it ideal for field initializers, functional route guards/interceptors, and shared helper functions. Both styles use the same injector."
+        },
+        {
+          "questionText": "Because dependencies are injected rather than created inside a class, you can replace a real service with a mock in tests without modifying the class under test. True or False?",
+          "options": [
+            {
+              "text": "True",
+              "correct": true
+            },
+            {
+              "text": "False"
+            }
+          ],
+          "explanation": "Injecting dependencies means the class receives them from outside, so a test can supply a fake implementation through the injector while the class stays unchanged. This is a core reason DI improves testability and keeps units loosely coupled."
+        },
+        {
+          "questionText": "You want the token LoggerService to resolve to an already-registered ConsoleLoggerService (the same singleton, not a new instance). Which provider recipe fits?",
+          "options": [
+            {
+              "text": "useExisting, which aliases the token to an existing provider so both share one instance.",
+              "correct": true
+            },
+            {
+              "text": "useClass, which creates a separate new instance of the class."
+            },
+            {
+              "text": "useValue, which provides a fixed static value."
+            },
+            {
+              "text": "useFactory, which runs a function to build a value."
+            }
+          ],
+          "explanation": "useExisting aliases one token to another, so both resolve to the same single instance, which is useful for exposing a service under an interface token. useClass would create a distinct second instance, useValue supplies a static value, and useFactory constructs one via a function."
+        },
+        {
+          "questionText": "When is an InjectionToken the right choice for a dependency? Select all that apply.",
+          "options": [
+            {
+              "text": "For non-class values like configuration objects, base URLs, or feature flags.",
+              "correct": true
+            },
+            {
+              "text": "When you need a strongly-typed key for something that has no class to reference.",
+              "correct": true
+            },
+            {
+              "text": "To provide an interface, which has no runtime representation to inject by.",
+              "correct": true
+            },
+            {
+              "text": "Whenever you inject any ordinary service class."
+            }
+          ],
+          "explanation": "Classes act as their own DI tokens, but interfaces, primitives, and config objects don't exist at runtime, so there is nothing to inject by. An InjectionToken creates a unique, strongly-typed key for those non-class dependencies. Injecting a normal service class needs no token."
+        },
+        {
+          "questionText": "A service holds state that must be unique per instance of a particular component (each component instance gets its own copy). Where should it be provided?",
+          "options": [
+            {
+              "text": "In that component's providers array, so each component instance gets its own service instance.",
+              "correct": true
+            },
+            {
+              "text": "In providedIn: 'root', so it is a global singleton."
+            },
+            {
+              "text": "In a shared module imported everywhere."
+            },
+            {
+              "text": "As a useValue provider at the root."
+            }
+          ],
+          "explanation": "Providing a service in a component's providers array creates an instance tied to that component's element injector, so each component instance (and its children) gets its own copy that is destroyed with the component. providedIn:'root' would instead share one global singleton across the whole app."
+        },
+        {
+          "questionText": "Which statements about DI resolution modifiers are correct? Select all that apply.",
+          "options": [
+            {
+              "text": "@Optional lets a dependency resolve to null instead of throwing when no provider is found.",
+              "correct": true
+            },
+            {
+              "text": "@SkipSelf starts the lookup at the parent injector, skipping the current one.",
+              "correct": true
+            },
+            {
+              "text": "@Self restricts resolution to the current injector only, failing if it is not provided there.",
+              "correct": true
+            },
+            {
+              "text": "@Host makes the dependency available to every injector in the application."
+            }
+          ],
+          "explanation": "@Optional turns a missing dependency into null rather than an error, @SkipSelf skips the local injector and resolves from an ancestor, and @Self limits lookup to the current injector. @Host stops the search at the host component instead of broadening availability. Each modifier controls where resolution starts or stops."
+        },
+        {
+          "questionText": "At startup you must build a service differently depending on environment or config values loaded at runtime. Which provider recipe is designed for this?",
+          "options": [
+            {
+              "text": "useFactory, whose function receives injected dependencies and returns the correctly-configured instance.",
+              "correct": true
+            },
+            {
+              "text": "useValue, which can only supply a static, pre-known value."
+            },
+            {
+              "text": "useExisting, which only aliases an existing token."
+            },
+            {
+              "text": "useClass, which always constructs the class the same way."
+            }
+          ],
+          "explanation": "useFactory runs a function (with its own injected deps) to construct the value, so it can branch on runtime configuration or environment data to build the right instance. useValue is static, useClass is fixed construction, and useExisting only aliases another token."
+        },
+        {
+          "questionText": "Which practices lead to a healthier DI setup in a large app? Select all that apply.",
+          "options": [
+            {
+              "text": "Keep services focused on a single responsibility to avoid bloated, do-everything services.",
+              "correct": true
+            },
+            {
+              "text": "Depend on abstractions or tokens where it aids testing and swapping implementations.",
+              "correct": true
+            },
+            {
+              "text": "Break circular dependencies by extracting shared logic or rethinking responsibilities.",
+              "correct": true
+            },
+            {
+              "text": "Provide every service at the component level to be safe."
+            }
+          ],
+          "explanation": "Small, single-responsibility services stay testable and reusable, depending on tokens or abstractions lets you swap and mock implementations, and circular dependencies signal tangled responsibilities that should be refactored. Blanket component-level provisioning needlessly multiplies instances and memory; scope should match actual need."
+        },
+        {
+          "questionText": "A service declared with providedIn: 'root' is a single app-wide instance and can be tree-shaken away if nothing injects it. True or False?",
+          "options": [
+            {
+              "text": "True",
+              "correct": true
+            },
+            {
+              "text": "False"
+            }
+          ],
+          "explanation": "providedIn:'root' registers the service with the root injector as one lazily-created singleton, and because the provider is declared on the service itself, the bundler can drop it entirely when it is never injected. This is why providedIn:'root' is the recommended default scope for most services."
+        }
+      ]
     }
   ],
   "resources": [

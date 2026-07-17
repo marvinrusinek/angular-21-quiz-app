@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 450" role="img"
+     aria-label="Angular injector hierarchy: a dependency request climbs from the component injector up through route, root, and platform injectors until a provider is found">
+  <defs>
+    <marker id="di-up" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#dd0031"/>
+    </marker>
+    <style>
+      .box    { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .root   { fill:#dd0031; }
+      .lbl    { font-family:'Segoe UI',Roboto,Arial,sans-serif; text-anchor:middle;
+                dominant-baseline:middle; }
+      .lbl-d  { fill:#2a2a2a; font-weight:700; font-size:16px; }
+      .lbl-ds { fill:#7a7a7a; font-weight:600; font-size:11.5px; }
+      .lbl-w  { fill:#ffffff; font-weight:700; font-size:16px; }
+      .lbl-ws { fill:#ffe3e7; font-weight:600; font-size:11.5px; }
+      .flow   { stroke:#dd0031; stroke-width:2.6; fill:none; }
+      .side   { fill:#dd0031; font-family:'Segoe UI',Roboto,Arial,sans-serif;
+                font-weight:700; font-size:12.5px; }
+      .title  { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+                fill:#1a1a1a; font-size:23px; text-anchor:middle; }
+      .sub    { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+                font-size:13px; text-anchor:middle; }
+      .cap    { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#7a7a7a;
+                font-size:12px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="620" height="450" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="310" y="34">Angular Dependency Injection</text>
+  <text class="sub"   x="310" y="56">A request climbs the injector hierarchy until a provider is found</text>
+
+  <!-- Platform Injector -->
+  <rect class="box" x="150" y="80" width="300" height="52" rx="12"/>
+  <text class="lbl lbl-d"  x="300" y="99">Platform Injector</text>
+  <text class="lbl lbl-ds" x="300" y="117">bootstraps the app</text>
+
+  <!-- Root Injector (emphasized) -->
+  <rect class="box root" x="150" y="158" width="300" height="52" rx="12"/>
+  <text class="lbl lbl-w"  x="300" y="177">Root Injector</text>
+  <text class="lbl lbl-ws" x="300" y="195">providedIn: 'root' &#183; app-wide singletons</text>
+
+  <!-- Route / Environment Injector -->
+  <rect class="box" x="150" y="236" width="300" height="52" rx="12"/>
+  <text class="lbl lbl-d"  x="300" y="255">Route / Environment Injector</text>
+  <text class="lbl lbl-ds" x="300" y="273">lazy-loaded feature scope</text>
+
+  <!-- Component (Element) Injector -->
+  <rect class="box" x="150" y="314" width="300" height="52" rx="12"/>
+  <text class="lbl lbl-d"  x="300" y="333">Component Injector</text>
+  <text class="lbl lbl-ds" x="300" y="351">providers: [ &#8230; ] &#183; per-component instance</text>
+
+  <!-- Upward resolution arrows between the levels -->
+  <path class="flow" marker-end="url(#di-up)" d="M300 314 L300 288"/>
+  <path class="flow" marker-end="url(#di-up)" d="M300 236 L300 210"/>
+  <path class="flow" marker-end="url(#di-up)" d="M300 158 L300 132"/>
+
+  <!-- Side annotation: resolution direction -->
+  <path class="flow" marker-end="url(#di-up)" d="M492 352 L492 96"/>
+  <text class="side" x="508" y="232" transform="rotate(90 508 232)">resolution bubbles up</text>
+
+  <!-- Caption -->
+  <text class="cap" x="300" y="404">Not found at the top &#8594; NullInjectorError (or null with &#64;Optional)</text>
+</svg>
