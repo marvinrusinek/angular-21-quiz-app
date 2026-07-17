@@ -2789,7 +2789,7 @@
     {
       "quizId": "component-architecture",
       "milestone": "Component Architecture",
-      "summary": "Design scalable Angular apps — smart vs presentational components, communication patterns, content projection, standalone architecture, state, and performance.",
+      "summary": "Design scalable Angular apps with clean component structure and state patterns.",
       "image": "assets/images/component-architecture.svg",
       "difficulty": "advanced",
       "facts": [
