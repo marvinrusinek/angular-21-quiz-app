@@ -10,8 +10,11 @@ import { QuizSelectionComponent } from
 import { ResultsComponent } from '../containers/results/results.component';
 import { BuildYourInterviewComponent } from
     '../containers/interview/build-your-interview/build-your-interview.component';
+import { InterviewSessionComponent } from
+    '../containers/interview/interview-session/interview-session.component';
 
 import { QuizGuard } from './guards/quiz-guard';
+import { InterviewSessionGuard } from './guards/interview-session-guard';
 
 export const routes: Routes = [
   {
@@ -39,11 +42,17 @@ export const routes: Routes = [
     component: ResultsComponent
   },
 
-  // Interview Mode — the Build Your Interview configuration page. The guarded
-  // session + results routes are added in later milestones.
+  // Interview Mode — Build Your Interview configuration page.
   {
     path: 'interview',
     component: BuildYourInterviewComponent
+  },
+  // URL-less Interview session (no question index in the URL). Guarded: requires
+  // an active generated assessment; direct/stale access redirects to the builder.
+  {
+    path: 'interview/session',
+    component: InterviewSessionComponent,
+    canActivate: [InterviewSessionGuard]
   },
 
   // Backward compatibility redirects

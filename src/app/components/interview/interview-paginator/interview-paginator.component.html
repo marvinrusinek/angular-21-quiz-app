@@ -1,0 +1,51 @@
+<nav class="interview-paginator" aria-label="Interview questions" i18n-aria-label>
+  <button
+    type="button"
+    class="pg-nav pg-prev"
+    [disabled]="atStart()"
+    (click)="goPrevious()"
+    aria-label="Previous question"
+    i18n-aria-label
+  >
+    <span aria-hidden="true">‹</span> <span i18n>Prev</span>
+  </button>
+
+  <!-- Desktop / tablet: windowed numeric pages -->
+  <ol class="pg-pages">
+    @for (item of items(); track item.kind === 'page' ? 'p' + item.index : item.key) {
+      @if (item.kind === 'page') {
+        <li>
+          <button
+            type="button"
+            class="pg-page"
+            [class.current]="isCurrent(item.index)"
+            [class.answered]="isAnswered(item.index)"
+            [attr.aria-current]="isCurrent(item.index) ? 'true' : null"
+            [attr.aria-label]="pageLabel(item.index)"
+            (click)="select.emit(item.index)"
+          >
+            {{ item.index + 1 }}
+          </button>
+        </li>
+      } @else {
+        <li class="pg-ellipsis" aria-hidden="true">…</li>
+      }
+    }
+  </ol>
+
+  <!-- Mobile: compact position indicator (CSS-toggled) -->
+  <span class="pg-compact">
+    <span i18n>Question</span> {{ currentIndex() + 1 }} <span i18n>of</span> {{ total() }}
+  </span>
+
+  <button
+    type="button"
+    class="pg-nav pg-next"
+    [disabled]="atEnd()"
+    (click)="goNext()"
+    aria-label="Next question"
+    i18n-aria-label
+  >
+    <span i18n>Next</span> <span aria-hidden="true">›</span>
+  </button>
+</nav>

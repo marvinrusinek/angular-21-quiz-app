@@ -1,0 +1,53 @@
+@if (payload(); as qa) {
+  <div class="interview-session">
+    <header class="interview-session__bar">
+      <h1 class="interview-session__title" i18n>Interview</h1>
+      <!-- Total-countdown timer lands in the next milestone. -->
+    </header>
+
+    <app-interview-paginator
+      [total]="total()"
+      [currentIndex]="currentIndex()"
+      [answered]="answeredIndices()"
+      (select)="onNavigate($event)"
+    />
+
+    <div class="interview-card">
+      <codelab-quiz-content
+        [questionIndex]="currentIndex()"
+        [questionToDisplay$]="questionToDisplay$"
+      >
+        <!-- Projected heading — always the question text during an interview
+             (feedback deferred), never the FET. -->
+        <h3
+          #qText
+          quiz-projected-content
+          aria-live="polite"
+          aria-atomic="true"
+        ></h3>
+      </codelab-quiz-content>
+
+      <codelab-quiz-question
+        [questionPayload]="qa"
+        [question]="qa.question"
+        [options]="qa.options"
+        [explanation]="''"
+        [currentQuestionIndex]="currentIndex()"
+        [displayState$]="displayState$"
+        [shouldRenderOptions]="true"
+        [questionToDisplay$]="questionToDisplay$"
+        [explanationToDisplay]="''"
+        (events)="handleQuizQuestionEvent($event)"
+      />
+    </div>
+
+    <footer class="interview-session__footer">
+      <span class="interview-session__progress">
+        {{ answeredIndices().size }} / {{ total() }} <span i18n>answered</span>
+      </span>
+      <!-- Submit + confirmation dialog land in the next milestone. -->
+    </footer>
+  </div>
+} @else {
+  <p class="loading-message" role="status" aria-live="polite" i18n>Preparing&hellip;</p>
+}

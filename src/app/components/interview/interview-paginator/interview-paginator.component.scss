@@ -1,0 +1,114 @@
+.interview-paginator {
+  --pg-accent: #007aff;
+  --pg-text: #1a1a1a;
+  --pg-muted: #6a6a6a;
+  --pg-border: #d0d0d0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 4px;
+
+  .pg-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pg-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--pg-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  .pg-pages {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pg-page {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 6px;
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pg-text);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+
+    // Answered: an underline marker (NOT color alone) so it reads without color.
+    &.answered {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 2px;
+    }
+
+    // Current question: filled accent + bold, clearly distinct.
+    &.current {
+      background: var(--pg-accent);
+      border-color: var(--pg-accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--pg-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  .pg-ellipsis {
+    min-width: 20px;
+    text-align: center;
+    color: var(--pg-muted);
+    user-select: none;
+  }
+
+  // The compact indicator is mobile-only.
+  .pg-compact {
+    display: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pg-text);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Narrow viewports: hide the numeric strip, show the compact indicator.
+@media (max-width: 600px) {
+  .interview-paginator {
+    .pg-pages {
+      display: none;
+    }
+    .pg-compact {
+      display: inline;
+    }
+  }
+}
+
+[data-theme='dark'] .interview-paginator {
+  --pg-accent: #4c9dff;
+  --pg-text: #f0f0f0;
+  --pg-muted: #9a9a9a;
+  --pg-border: #3d3d3d;
+}

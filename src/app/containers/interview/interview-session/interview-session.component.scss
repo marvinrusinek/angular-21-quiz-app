@@ -1,0 +1,52 @@
+.interview-session {
+  --is-surface: #fff;
+  --is-border: #e0e0e0;
+  --is-text: #1a1a1a;
+  --is-muted: #6a6a6a;
+
+  max-width: 820px;
+  margin: 16px auto;
+  padding: 0 12px;
+  color: var(--is-text);
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  &__progress {
+    color: var(--is-muted);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.interview-card {
+  border: 1px solid var(--is-border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--is-surface);
+}
+
+[data-theme='dark'] .interview-session {
+  --is-surface: #1e1e1e;
+  --is-border: #363636;
+  --is-text: #f0f0f0;
+  --is-muted: #a0a0a0;
+}
