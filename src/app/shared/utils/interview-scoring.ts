@@ -1,5 +1,6 @@
 import { GeneratedAssessment } from '../models/GeneratedAssessment.model';
 import { InterviewResult, InterviewTopicScore } from '../models/InterviewResult.model';
+import { QuizQuestion } from '../models/QuizQuestion.model';
 
 function setsEqual(a: Set<number>, b: Set<number>): boolean {
   if (a.size !== b.size) return false;
@@ -7,6 +8,21 @@ function setsEqual(a: Set<number>, b: Set<number>): boolean {
     if (!b.has(v)) return false;
   }
   return true;
+}
+
+// A question is correct only when the selected optionIds EXACTLY match the set
+// of correct optionIds (a partial multi-answer is incorrect; unanswered is
+// incorrect). Shared by scoring and the per-question Review.
+export function isAnswerCorrect(question: QuizQuestion, selectedIds: number[]): boolean {
+  const selected = new Set((selectedIds ?? []).filter((id) => id != null));
+  if (selected.size === 0) return false;
+  const correctIds = new Set(
+    (question.options ?? [])
+      .filter((o) => o.correct === true)
+      .map((o) => o.optionId)
+      .filter((id): id is number => id != null)
+  );
+  return setsEqual(selected, correctIds);
 }
 
 /**
@@ -33,17 +49,10 @@ export function computeInterviewResult(
   const perTopicMap = new Map<string, { title: string; correct: number; total: number }>();
 
   questions.forEach((q, i) => {
-    const selected = new Set((answersByIndex[i] ?? []).filter((id) => id != null));
-    const correctIds = new Set(
-      (q.options ?? [])
-        .filter((o) => o.correct === true)
-        .map((o) => o.optionId)
-        .filter((id): id is number => id != null)
-    );
-
-    const isAnswered = selected.size > 0;
+    const selectedIds = answersByIndex[i] ?? [];
+    const isAnswered = selectedIds.filter((id) => id != null).length > 0;
     if (isAnswered) answered++;
-    const isCorrect = isAnswered && setsEqual(selected, correctIds);
+    const isCorrect = isAnswerCorrect(q, selectedIds);
     if (isCorrect) correct++;
 
     const quizId = q.sourceQuizId ?? 'unknown';

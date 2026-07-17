@@ -43,6 +43,15 @@
     </div>
 
     <div class="interview-results__actions">
+      @if (!showReview()) {
+        <button type="button" class="ir-btn" (click)="toggleReview()" [attr.aria-expanded]="false" i18n>
+          Review Answers
+        </button>
+      } @else {
+        <button type="button" class="ir-btn" (click)="toggleReview()" [attr.aria-expanded]="true" i18n>
+          Hide Review
+        </button>
+      }
       <button type="button" class="ir-btn ir-btn--primary" (click)="buildAnother()" i18n>
         Build Another Assessment
       </button>
@@ -50,5 +59,15 @@
         Return to Quiz Selection
       </button>
     </div>
+
+    @if (showReview()) {
+      <section class="interview-results__review" aria-label="Answer review" i18n-aria-label>
+        <h2 class="interview-results__review-heading" i18n>Review</h2>
+        <app-interview-review
+          [questions]="reviewQuestions()"
+          [answersByIndex]="answersByIndex()"
+        />
+      </section>
+    }
   </div>
 }

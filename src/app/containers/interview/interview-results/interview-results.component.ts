@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  signal,
   ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -11,6 +12,7 @@ import { Router } from '@angular/router';
 import { formatMMSS } from '../../../shared/utils/format-time';
 import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
+import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
 
 /**
  * Interview Results ("Assessment Complete"). Self-contained score summary +
@@ -21,7 +23,7 @@ import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-tog
 @Component({
   selector: 'codelab-interview-results',
   standalone: true,
-  imports: [CommonModule, ThemeToggleComponent],
+  imports: [CommonModule, ThemeToggleComponent, InterviewReviewComponent],
   templateUrl: './interview-results.component.html',
   styleUrls: ['./interview-results.component.scss'],
   encapsulation: ViewEncapsulation.None,
@@ -32,7 +34,16 @@ export class InterviewResultsComponent {
   private readonly router = inject(Router);
 
   readonly result = this.session.result;
+  readonly assessment = this.session.assessment;
+  readonly answersByIndex = this.session.answersByIndex;
   readonly timeUsed = computed(() => formatMMSS(this.result()?.timeUsedSeconds ?? 0));
+
+  readonly reviewQuestions = computed(() => this.assessment()?.questions ?? []);
+  readonly showReview = signal(false);
+
+  toggleReview(): void {
+    this.showReview.update((v) => !v);
+  }
 
   buildAnother(): void {
     this.session.clear();

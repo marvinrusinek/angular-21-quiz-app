@@ -1,0 +1,64 @@
+<div class="interview-review">
+  <div class="rv-filters" role="group" aria-label="Filter review" i18n-aria-label>
+    <button
+      type="button"
+      class="rv-filter"
+      [class.active]="filter() === 'all'"
+      [attr.aria-pressed]="filter() === 'all'"
+      (click)="setFilter('all')"
+    >
+      <span i18n>All</span> ({{ items().length }})
+    </button>
+    <button
+      type="button"
+      class="rv-filter"
+      [class.active]="filter() === 'correct'"
+      [attr.aria-pressed]="filter() === 'correct'"
+      (click)="setFilter('correct')"
+    >
+      <span i18n>Correct</span> ({{ correctCount() }})
+    </button>
+    <button
+      type="button"
+      class="rv-filter"
+      [class.active]="filter() === 'incorrect'"
+      [attr.aria-pressed]="filter() === 'incorrect'"
+      (click)="setFilter('incorrect')"
+    >
+      <span i18n>Incorrect</span> ({{ incorrectCount() }})
+    </button>
+  </div>
+
+  @for (item of filtered(); track item.number) {
+    <article class="rv-item" [class]="'rv-status-' + item.status">
+      <header class="rv-item__head">
+        <span class="rv-num">{{ item.number }}</span>
+        <span class="rv-question" [innerHTML]="item.questionText"></span>
+        <span class="rv-badge" [class]="'rv-badge--' + item.status">
+          @switch (item.status) {
+            @case ('correct') { <span i18n>Correct</span> }
+            @case ('incorrect') { <span i18n>Incorrect</span> }
+            @default { <span i18n>Unanswered</span> }
+          }
+        </span>
+      </header>
+
+      <ul class="rv-options">
+        @for (opt of item.options; track opt.text) {
+          <li class="rv-option" [class]="optionClass(opt)">
+            <span class="rv-option__text" [innerHTML]="opt.text"></span>
+            @if (optionLabel(opt)) {
+              <span class="rv-option__label">{{ optionLabel(opt) }}</span>
+            }
+          </li>
+        }
+      </ul>
+
+      @if (item.explanation) {
+        <p class="rv-explanation" [innerHTML]="item.explanation"></p>
+      }
+    </article>
+  } @empty {
+    <p class="rv-empty" i18n>No questions match this filter.</p>
+  }
+</div>
