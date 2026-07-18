@@ -110,5 +110,14 @@ mat-card-header {
         white-space: normal;
       }
     }
+
+    // Keyboard + dark-mode icons: pin to the top-right so they sit on the same
+    // row as the logo, instead of stacking below it in the column layout.
+    .header-actions {
+      position: absolute;
+      top: 22px;
+      right: 12px;
+      margin: 0;
+    }
   }
 }
