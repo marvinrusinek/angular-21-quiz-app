@@ -1,5 +1,19 @@
 @use '../../../../variables' as vars;
 
+// When "Enter Full Screen" is active, center the assessment vertically on the
+// screen (the page requests fullscreen on <html>, so this targets the session
+// inside it). Content taller than the viewport simply scrolls. Separate rules
+// per prefix so an unknown pseudo-class can't invalidate the whole selector.
+@mixin fs-center {
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+:fullscreen .interview-session { @include fs-center; }
+:-webkit-full-screen .interview-session { @include fs-center; }
+
 .interview-session {
   --is-surface: #fff;
   --is-border: #e0e0e0;

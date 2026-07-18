@@ -675,11 +675,23 @@ button.mat-mdc-menu-trigger {
 // Confirm dialog (rendered in the CDK overlay, outside component scope).
 // The overlay sits under <html data-theme>, so the theme custom props
 // resolve here for both light and dark without a per-theme rule.
-.themed-confirm-dialog .mat-mdc-dialog-surface {
-  background-color: var(--bg-card) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-card);
-  border-radius: 12px;
+.themed-confirm-dialog {
+  .mat-mdc-dialog-surface {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+  }
+
+  // Material sets explicit (light-theme) colors on the title/content, which
+  // leave dark-mode text illegible. Force them to the themed text color.
+  .mat-mdc-dialog-title,
+  .mat-mdc-dialog-content,
+  .mat-mdc-dialog-content p,
+  .mat-mdc-dialog-content dt,
+  .mat-mdc-dialog-content dd {
+    color: var(--text-primary) !important;
+  }
 }
 
 // Keyboard shortcuts dialog (same overlay theming approach as above).
