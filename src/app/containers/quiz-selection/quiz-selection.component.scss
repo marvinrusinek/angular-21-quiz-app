@@ -686,6 +686,7 @@
 
   .interview-tile__footer {
     display: flex;
+    justify-content: center;   // center the "Start Building" CTA in the tile
   }
 
   .interview-tile__cta {
