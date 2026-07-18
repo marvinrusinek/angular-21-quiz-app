@@ -289,9 +289,31 @@ export class QuizSelectionComponent implements OnInit {
     this.router.navigate(['/interview']);
   }
 
+  // Tile background image. `quiz.image` comes from assets/data/quiz.json, which
+  // we treat as UNTRUSTED input. Concatenating a raw value straight into a CSS
+  // url() is a CSS-injection sink: a value containing ")" closes the url() early
+  // and everything after it is parsed as further CSS declarations. We therefore
+  // allow only same-origin relative asset paths or https: URLs, reject any value
+  // carrying CSS/quote metacharacters, and emit the result inside double quotes.
+  // All 20 images in the shipped dataset satisfy this, so rendering is unchanged;
+  // a rejected value degrades to no background rather than injecting CSS.
+  private static readonly SAFE_IMAGE_URL =
+    /^(?:assets\/[\w\-./]+|https:\/\/[\w\-.]+\/[\w\-./%]*)$/i;
+
+  private safeImageUrl(raw: unknown): string | null {
+    if (typeof raw !== 'string') return null;
+    const value = raw.trim();
+    // Characters that could break out of url(...) or inject a new declaration.
+    if (!value || /["'()\\;\s]/.test(value)) return null;
+    return QuizSelectionComponent.SAFE_IMAGE_URL.test(value) ? value : null;
+  }
+
   getQuizTileStyles(quiz: Quiz): QuizTileStyles {
+    const image = this.safeImageUrl(quiz?.image);
     return {
-      background: 'url(' + quiz.image + ') no-repeat center 10px',
+      background: image
+        ? `url("${image}") no-repeat center 10px`
+        : 'none no-repeat center 10px',
       'background-size': '300px 210px'
     };
   }

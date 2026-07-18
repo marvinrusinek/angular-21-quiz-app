@@ -22,7 +22,14 @@
               "baseHref": "/angular-21-quiz-app/",
               "extractLicenses": true,
               "namedChunks": false,
-              "optimization": true,
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              },
               "outputHashing": "all",
               "sourceMap": false,
               "serviceWorker": "ngsw-config.json"

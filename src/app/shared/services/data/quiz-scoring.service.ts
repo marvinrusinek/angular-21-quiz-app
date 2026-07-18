@@ -285,7 +285,6 @@ export class QuizScoringService {
     // questions in our map, ignore the zero and re-derive from the map.
     // This prevents navigation-triggered accidental resets.
     if (safeValue === 0 && this.questionCorrectness.size > 0) {
-      localStorage.setItem('DEBUG_sendCorrectCount_BLOCKED', new Error().stack || 'no stack');
       const trueCount = Array.from(this.questionCorrectness.values())
         .filter(v => v === true).length;
       if (trueCount > 0) {
@@ -310,7 +309,6 @@ export class QuizScoringService {
   // ═══════════════════════════════════════════════════════════════════════
 
   resetScore(quizId?: string): void {
-    localStorage.setItem('DEBUG_resetScore', new Error().stack || 'no stack');
     this.questionCorrectness.clear();
     this._confirmedCorrectClicks.clear();
     this.saveQuestionCorrectness();  // clear persistence

@@ -8,6 +8,42 @@
     <meta name="theme-color" content="#1e88e5"/>
     <link rel="icon" type="image/x-icon" href="favicon.ico"/>
 
+    <!-- Content Security Policy. GitHub Pages cannot serve custom HTTP headers,
+         so this is delivered as a meta tag — equivalent for every directive the
+         app needs except `frame-ancestors`, which is header-only and therefore
+         NOT enforceable here (see the security notes in the repo).
+
+         script-src is strict: 'self' with NO 'unsafe-inline' and NO 'unsafe-eval'.
+         The production build emits only external same-origin module scripts, so
+         an injected <script> or a javascript: URL cannot execute. This is the
+         layer that turns a hypothetical sanitizer bypass into a non-event.
+
+         style-src needs 'unsafe-inline': Angular Material and Angular animations
+         set inline style attributes at runtime, and the build inlines critical
+         CSS. This is a known, accepted limitation — it does not permit scripts.
+
+         The remote hosts below are exactly what the app loads today:
+           fonts.googleapis.com / gstatic  → Material Icons @import (app.component.scss)
+           raw.githubusercontent.com       → 9 legacy quiz tile images + result images,
+                                             and the Scoreboard/Calligraphy @font-face
+                                             files declared in _variables.scss
+           cdn.jsdelivr.net                → quiz sound effects (howler) -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' data: https://fonts.gstatic.com https://raw.githubusercontent.com;
+      img-src 'self' data: https://raw.githubusercontent.com;
+      media-src 'self' https://cdn.jsdelivr.net;
+      connect-src 'self' https://cdn.jsdelivr.net;
+      worker-src 'self';
+      manifest-src 'self';
+      object-src 'none';
+      frame-src 'none';
+      base-uri 'self';
+      form-action 'self'
+    "/>
+
     <!-- Self-hosted Material Icons font. Preloaded + declared here (stable,
          unhashed URL) so it's fetched with high priority at startup — this stops
          the cold-start "blank mat-icons until the font loads" race on app restart.

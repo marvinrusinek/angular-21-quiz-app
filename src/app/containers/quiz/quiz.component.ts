@@ -639,7 +639,17 @@ export class QuizComponent implements OnInit, AfterViewInit {
     const el = document.createElement('div');
     el.style.cssText =
       'position:fixed;bottom:20px;left:0;right:0;margin:0 auto;z-index:9999;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.95);box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;justify-content:center;align-items:center;cursor:pointer;animation:scrollBounce 2s infinite;';
-    el.innerHTML = `<i class="material-icons" style="font-size:32px;color:${INFO_ICON_COLOR};">keyboard_arrow_down</i>`;
+    // Build the icon with DOM APIs rather than innerHTML. The markup was a fixed
+    // literal (INFO_ICON_COLOR is a module constant, no user/quiz data), so this
+    // is not an XSS fix — it removes the app's last raw innerHTML write, which is
+    // exactly what a Trusted Types policy (require-trusted-types-for 'script')
+    // rejects at runtime. Rendered output is byte-for-byte equivalent.
+    const icon = document.createElement('i');
+    icon.className = 'material-icons';
+    icon.style.fontSize = '32px';
+    icon.style.color = INFO_ICON_COLOR;
+    icon.textContent = 'keyboard_arrow_down';
+    el.appendChild(icon);
     el.addEventListener('click', () => this.scrollToBottom());
     document.body.appendChild(el);
     this.scrollIndicatorEl = el;

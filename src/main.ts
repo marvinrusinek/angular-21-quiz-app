@@ -19,8 +19,7 @@ import { ANSWER_COMPONENT } from './app/shared/tokens/answer-component.token';
 import { PwaUpdateService } from './app/shared/services/pwa-update.service';
 import { GlobalErrorHandler, installGlobalErrorLogging } from './app/shared/utils/error-logging';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
-import { Quiz } from './app/shared/models/Quiz.model';
-import { QuizResource } from './app/shared/models/QuizResource.model';
+import { validateQuizData } from './app/shared/utils/quiz-data-validation';
 
 installGlobalErrorLogging();
 
@@ -44,10 +43,19 @@ bootstrapApplication(AppComponent, {
     provideAppInitializer(async () => {
       const http = inject(HttpClient);
       try {
-        const data = await firstValueFrom(
-          http.get<{ quizzes: Quiz[]; resources: QuizResource[] }>('assets/data/quiz.json')
-        );
-        setQuizDataCache(data?.quizzes ?? [], data?.resources ?? []);
+        const data = await firstValueFrom(http.get<unknown>('assets/data/quiz.json'));
+        // Treat the fetched dataset as untrusted input and validate its shape
+        // before it reaches the cache. Well-formed data passes through untouched
+        // (same objects, same order); malformed entries are dropped rather than
+        // being handed to consumers that would throw on them during construction.
+        const { quizzes, resources, problems } = validateQuizData(data);
+        if (problems.length > 0) {
+          console.warn(
+            `[bootstrap] quiz data validation found ${problems.length} problem(s)`,
+            problems.slice(0, 20)
+          );
+        }
+        setQuizDataCache(quizzes, resources);
       } catch (err: any) {
         console.error('[bootstrap] failed to load assets/data/quiz.json', err);
         setQuizDataCache([], []);

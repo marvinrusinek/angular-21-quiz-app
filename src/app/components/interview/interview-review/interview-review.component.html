@@ -46,7 +46,12 @@
       <ul class="rv-options">
         @for (opt of item.options; track opt.text) {
           <li class="rv-option" [class]="optionClass(opt)">
-            <span class="rv-option__text" [innerHTML]="opt.text"></span>
+            <!-- Option text is PLAIN TEXT (unlike questionText/explanation, which
+                 are authored HTML). Interpolation matches how options render
+                 everywhere else (interview-options, option-item, accordion) and
+                 keeps literal tags such as "<div>" visible instead of being
+                 parsed away — and it removes an HTML sink we don't need. -->
+            <span class="rv-option__text">{{ opt.text }}</span>
             @if (optionLabel(opt)) {
               <span class="rv-option__label">{{ optionLabel(opt) }}</span>
             }

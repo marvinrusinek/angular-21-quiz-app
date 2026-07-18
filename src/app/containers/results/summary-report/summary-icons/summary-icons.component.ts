@@ -38,6 +38,16 @@ export class SummaryIconsComponent {
       &hashtags=quiz&url=${encodeURIComponent(codelabUrl)}`;
   });
 
+  // Print the results. This replaces an href="javascript:window.print()" URL.
+  // A `javascript:` URL is a hard blocker for any Content-Security-Policy (it
+  // only runs under script-src 'unsafe-inline'), so moving it to a click handler
+  // is what makes a strict script-src possible. Behaviour is identical, and the
+  // anchor keeps its href so it stays keyboard-focusable and Enter-activatable.
+  onPrint(event: Event): void {
+    event.preventDefault();
+    window.print();
+  }
+
   // Custom URI encoding that preserves % and / for better readability
   // in email and social media shares
   private encodeShareText(text: string): string {

@@ -736,18 +736,12 @@ export class QuizDataService {
     this.questionType = question.type;
   }
 
-  submitQuiz(quiz: Quiz): Observable<any> {
-    const submitUrl = `${this.quizUrl}/results/${quiz.quizId}`;
-    return this.http.post(submitUrl, quiz).pipe(
-      catchError((error: HttpErrorResponse) =>
-        throwError(
-          () =>
-            new Error(`Error submitting quiz ${quiz.quizId}: ` + error.message)
-        )
-      ),
-      distinctUntilChanged()
-    );
-  }
+  // NOTE: a submitQuiz() method used to live here. It POSTed the whole quiz to
+  // `assets/data/quiz.json/results/<quizId>` — a nonsensical URL built from the
+  // static asset path — and had no callers anywhere in the app. It was a leftover
+  // from a server-backed ancestor of this project. Removed because it was the
+  // only outbound HTTP write in an otherwise backend-less, static-hosted SPA, and
+  // leaving it invited someone to wire it up to a non-existent endpoint.
 
   private syncSelectedQuizState(
     quizId: string,
