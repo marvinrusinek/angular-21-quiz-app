@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1784399172025,
+  "timestamp": 1784400416076,
   "index": "/angular-21-quiz-app/index.html",
   "assetGroups": [
     {
@@ -23,7 +23,7 @@
         "/angular-21-quiz-app/chunk-X5OAFKYO.js",
         "/angular-21-quiz-app/chunk-YS2HRUXP.js",
         "/angular-21-quiz-app/index.html",
-        "/angular-21-quiz-app/main-PBQVELFA.js",
+        "/angular-21-quiz-app/main-OEYOOCHF.js",
         "/angular-21-quiz-app/manifest.webmanifest",
         "/angular-21-quiz-app/polyfills-UIC2AE2I.js",
         "/angular-21-quiz-app/styles-C6E2VMK4.css"
@@ -109,8 +109,8 @@
     "/angular-21-quiz-app/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/angular-21-quiz-app/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/angular-21-quiz-app/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/angular-21-quiz-app/index.html": "f56620d6134a3901736ebacd8aeb6103cc76ede7",
-    "/angular-21-quiz-app/main-PBQVELFA.js": "70320240137030b4e77b3217a8b2a61dee69ef86",
+    "/angular-21-quiz-app/index.html": "f306905c137afe7e6ddc73599c96117993ad6623",
+    "/angular-21-quiz-app/main-OEYOOCHF.js": "fceaf91743f13bfea5c6d754fd8baf2f63afe0be",
     "/angular-21-quiz-app/manifest.webmanifest": "3c96a7bad35ef45fa2b23bfc68f7e0bdcd0c3090",
     "/angular-21-quiz-app/media/codelab_logo-67WJRSK2.jpeg": "f9feb096c6d94292acf3b2f5f9ea7b4aee5dc2a3",
     "/angular-21-quiz-app/media/material-icons-X6JW33VP.woff2": "d22573acfb7163487f48c8fcbd593f2ec5b9e729",
