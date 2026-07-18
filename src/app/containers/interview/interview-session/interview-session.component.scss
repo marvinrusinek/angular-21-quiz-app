@@ -14,6 +14,22 @@
 :fullscreen .interview-session { @include fs-center; }
 :-webkit-full-screen .interview-session { @include fs-center; }
 
+// Align the header, integrity toolbar, and footer content to the SAME left/right
+// edges as the question TEXT box (the blue-bordered .interview-question inside
+// the card). The card is max-width 680 + 1px border + 22px padding, so its inner
+// (blue box) edges sit 23px in from the card's outer edge. Matching the card's
+// max-width + centering, plus a 23px inset, lines these rows up with the question
+// text on the left and right. (Mobile resets this — see the media query below.)
+@mixin align-to-question-text {
+  width: 100%;          // hold the 680 cap in fullscreen's flex column — without
+  max-width: 680px;     // an explicit width, auto side-margins disable stretch and
+  margin-left: auto;    // a narrow row (header/footer) shrinks to its content width
+  margin-right: auto;   // and mis-centers instead of tracking the question box.
+  padding-left: 23px;
+  padding-right: 23px;
+  box-sizing: border-box;
+}
+
 .interview-session {
   --is-surface: #fff;
   --is-border: #e0e0e0;
@@ -26,6 +42,7 @@
   color: var(--is-text);
 
   &__bar {
+    @include align-to-question-text;   // title → blue-box left, meta → blue-box right
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -50,6 +67,7 @@
   // 3 columns so the Submit button is CENTERED and the "N / N answered"
   // indicator is right-justified (works whether or not the button is present).
   &__footer {
+    @include align-to-question-text;   // "N / N answered" → blue-box right edge
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
@@ -131,6 +149,7 @@
 // the question + options always render inside a clearly visible box, in light
 // and dark. (The topic quiz's glassmorphism card read white-on-white here.)
 .interview-session .interview-question-box {
+  width: 100%;              // hold the 680 cap in fullscreen's flex column too
   max-width: 680px;
   margin: 12px auto;
   padding: 22px;
@@ -148,23 +167,22 @@
   -webkit-touch-callout: none;   // suppress the iOS long-press copy callout
 }
 
-// Optional fullscreen button + calm focus-change status (Integrity Mode).
-// Spans the session width so the button sits on the LEFT, directly under the
-// "Angular Assessment" title (status stays on the right).
+// Optional fullscreen button + centered "Question X of Y" + calm focus-change
+// status (Integrity Mode). A 3-column grid keeps the button on the LEFT (aligned
+// under the title / to the question-text left border), the progress indicator
+// CENTERED in the row, and the status on the RIGHT — regardless of whether the
+// button or status is present.
 .interview-integrity {
-  display: flex;
+  @include align-to-question-text;   // button → blue-box left, edges track the text
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
   margin: 4px 0 0;
 
-  // Match the mobile header's inset so the button lines up under the title.
-  @media (max-width: 600px) {
-    padding: 0 14px;
-  }
-
   .ai-fullscreen-btn {
+    grid-column: 1;
+    justify-self: start;
     padding: 6px 14px;
     border: 1px solid var(--is-border);
     border-radius: 8px;
@@ -178,8 +196,15 @@
     &:focus-visible { outline: 2px solid vars.$vivid-blue; outline-offset: 2px; }
   }
 
+  // "Question X of Y" — centered in the row (center grid column).
+  .interview-progress {
+    grid-column: 2;
+    justify-self: center;
+  }
+
   .ai-focus-status {
-    margin-left: auto;
+    grid-column: 3;
+    justify-self: end;
     font-size: 13px;
     font-weight: 600;
     color: var(--is-muted);
@@ -205,6 +230,12 @@
   line-height: 1.35;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+// Position the numeric paginator just below the question box.
+app-interview-paginator {
+  display: block;
+  margin-top: 5px;
 }
 
 [data-theme='dark'] .interview-session {
@@ -235,39 +266,28 @@
     padding: 10px 12px;
   }
 
-  // Header: title (top-left) shares its row with the dark-mode toggle pinned to
-  // the top-right corner. Below, "Question X of Y" sits on the left and the
-  // timer is pushed to the right. The 14px inset aligns the header content with
-  // the question box's INNER content (the option rows), matching the footer —
-  // NOT the box's outer border, which is 14px wider and looked misaligned.
-  .interview-session__bar {
-    position: relative;
-    padding: 0 14px;
-  }
-
-  // Dark-mode toggle → top-right corner, aligned with the option rows' right edge
-  // (14px in from the box's outer border, matching the padded header content).
-  // Nudged up 5px for better vertical alignment with the title.
-  .interview-session__theme {
-    position: absolute;
-    top: -5px;
-    right: 14px;
-  }
-
-  .interview-session__meta {
-    width: 100%;
-    gap: 14px;
-  }
-
-  .interview-timer {
-    margin-left: auto;   // timer takes the right slot on the second row
-  }
-
-  // Inset the footer to match the question box's INNER content (its options are
-  // inset by the box's 14px padding), so "X / N answered" lines up with the
-  // right border of the option rows rather than the box's outer edge.
+  // On mobile the question box fills the width; its blue border sits 15px in
+  // (14px padding + 1px border). Drop the desktop max-width and match that inset
+  // so the header (title left, timer + toggle right), the integrity row (Enter
+  // Full Screen left, "Question X of Y" centered, status right) and the footer
+  // ("N / N answered" right) all track the question-text edges.
+  .interview-session__bar,
+  .interview-integrity,
   .interview-session__footer {
-    padding: 0 14px;
+    max-width: 100%;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  // Timer + dark-mode toggle. On a narrow phone the title fills the first row and
+  // this wraps below it; margin-left:auto keeps it pinned to the RIGHT edge (the
+  // question-text right border) rather than left-aligning on the wrapped line.
+  .interview-session__meta {
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .interview-session__footer {
     gap: 8px;
   }
 

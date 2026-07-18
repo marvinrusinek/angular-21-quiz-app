@@ -4,10 +4,6 @@
       <h1 class="interview-session__title" i18n>Angular Assessment</h1>
 
       <div class="interview-session__meta">
-        <span class="interview-progress">
-          <span i18n>Question</span> {{ currentIndex() + 1 }} <span i18n>of</span> {{ total() }}
-        </span>
-
         <span
           class="interview-timer"
           [class.interview-timer--low]="isLowTime()"
@@ -24,7 +20,8 @@
     </header>
 
     <!-- Assessment Integrity Mode: optional fullscreen + a calm focus-change
-         status. A browser-based DETERRENT only — not a secure lockdown. -->
+         status. A browser-based DETERRENT only — not a secure lockdown. The
+         "Question X of Y" indicator is centered on this row. -->
     <div class="interview-integrity">
       @if (fullscreenSupported) {
         <button
@@ -36,6 +33,11 @@
           Enter Full Screen
         </button>
       }
+
+      <span class="interview-progress">
+        <span i18n>Question</span> {{ currentIndex() + 1 }} <span i18n>of</span> {{ total() }}
+      </span>
+
       @if (focusChanges() > 0) {
         <span class="ai-focus-status" role="status" aria-live="polite">
           <ng-container i18n>Focus changes recorded:</ng-container> {{ focusChanges() }}
