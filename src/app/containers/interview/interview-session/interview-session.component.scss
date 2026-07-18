@@ -149,14 +149,20 @@
 }
 
 // Optional fullscreen button + calm focus-change status (Integrity Mode).
+// Spans the session width so the button sits on the LEFT, directly under the
+// "Angular Assessment" title (status stays on the right).
 .interview-integrity {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  max-width: 680px;
-  margin: 4px auto 0;
+  margin: 4px 0 0;
+
+  // Match the mobile header's inset so the button lines up under the title.
+  @media (max-width: 600px) {
+    padding: 0 14px;
+  }
 
   .ai-fullscreen-btn {
     padding: 6px 14px;
