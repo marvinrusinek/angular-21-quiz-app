@@ -1,14 +1,17 @@
 <nav class="interview-paginator" aria-label="Interview questions" i18n-aria-label>
-  <button
-    type="button"
-    class="pg-nav pg-prev"
-    [disabled]="atStart()"
-    (click)="goPrevious()"
-    aria-label="Previous question"
-    i18n-aria-label
-  >
-    <span aria-hidden="true">‹</span> <span i18n>Prev</span>
-  </button>
+  <!-- Hidden on the first question (nothing to go back to), mirroring how the
+       Next button is hidden on the last question. -->
+  @if (!atStart()) {
+    <button
+      type="button"
+      class="pg-nav pg-prev"
+      (click)="goPrevious()"
+      aria-label="Previous question"
+      i18n-aria-label
+    >
+      <span aria-hidden="true">‹</span> <span i18n>Prev</span>
+    </button>
+  }
 
   <!-- Desktop / tablet: windowed numeric pages -->
   <ol class="pg-pages">
