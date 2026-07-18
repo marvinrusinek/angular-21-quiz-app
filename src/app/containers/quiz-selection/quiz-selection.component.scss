@@ -170,11 +170,30 @@
   .achievements-summary-row {
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;   // keep "Achievements X/N" and the accessed note on ONE line
+    flex-wrap: wrap;     // on narrow screens let the accessed note reflow instead of squishing the badge
     align-items: center;
     justify-content: center;
-    gap: 16px;           // space between the badge and the accessed note
+    gap: 8px 16px;       // row/column gap
     margin: 0 auto 14px;
+
+    // The "Achievements X / N" badge must never shrink — it always stays on one line.
+    codelab-achievements-summary {
+      flex: 0 0 auto;
+    }
+
+    // Mobile: the badge stays on one line; the "You accessed…" note is too long
+    // to sit beside it on a phone, so it reflows to its own CENTERED line below
+    // (cleaner than cramming both onto one tight row).
+    @media (max-width: 600px) {
+      justify-content: center;
+      gap: 6px 12px;
+
+      .accessed-banner {
+        font-size: 13px;
+        width: 100%;
+        text-align: center;
+      }
+    }
   }
 
   // Catalog summary stats row

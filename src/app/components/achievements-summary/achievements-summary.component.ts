@@ -38,6 +38,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       background: var(--bg-secondary, #f5f5f5);
       font-size: 13px;
       color: var(--text-primary, #212121);
+      white-space: nowrap;   // keep "Achievements X / N" on ONE line (never wraps)
     }
 
     .achievements-summary__icon {
