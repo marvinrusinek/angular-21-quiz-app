@@ -18,6 +18,17 @@
   &:hover {
     opacity: 0.8;
   }
+
+  // Center the Material Icon glyph and let it follow the button's font-size
+  // (overrides the global .material-icons 24px so it scales down on mobile).
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .material-icons {
+    font-size: inherit;
+    line-height: 1;
+  }
 }
 
 @media (max-width: 600px) {
