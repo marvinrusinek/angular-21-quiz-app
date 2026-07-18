@@ -85,9 +85,16 @@ mat-card-header {
     flex-direction: column !important;
     align-items: center !important;
 
+    // Left-align the logo LINK (the <a> is the flex child, not the img) so it
+    // lines up with the question box's left edge, overriding the header's column
+    // centering. The header's flex-start content edge already matches the box.
+    > a {
+      align-self: flex-start;
+    }
+
     .header-image {
       position: static !important;
-      margin: 0 auto;
+      margin: 0;
       display: block;
     }
 
