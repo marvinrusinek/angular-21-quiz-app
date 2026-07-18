@@ -43,8 +43,11 @@
 
 .io-text {
   flex: 1 1 auto;
+  min-width: 0;              // let the flex item shrink so long text wraps
   font-size: 16px;
   line-height: 1.4;
+  overflow-wrap: anywhere;  // break long unbreakable strings instead of overflowing
+  word-break: break-word;
 }
 
 // Neutral selected marker — NO correctness color (no green/red).

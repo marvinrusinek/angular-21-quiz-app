@@ -120,6 +120,7 @@
   max-width: 680px;
   margin: 12px auto;
   padding: 22px;
+  box-sizing: border-box;   // padding stays inside the width (no overflow)
   background: var(--is-surface);
   border: 1px solid var(--is-border);
   border-radius: 14px;
@@ -151,4 +152,26 @@
   --is-border: #363636;
   --is-text: #f0f0f0;
   --is-muted: #a0a0a0;
+}
+
+// ── mobile ─────────────────────────────────────────────────────────
+// Make the question box + options span close to the screen width: trim the
+// outer gutters and the box's inner padding, and let the box fill its row.
+@media (max-width: 600px) {
+  .interview-session {
+    padding: 0 8px;
+  }
+
+  .interview-session .interview-question-box {
+    max-width: 100%;
+    margin: 12px 0;   // fill the width instead of centering at a fixed max
+    padding: 14px;
+  }
+
+  // The 22px question type is large on a phone; ease it down so long questions
+  // don't dominate the screen.
+  .interview-question {
+    font-size: 18px;
+    padding: 10px 12px;
+  }
 }
