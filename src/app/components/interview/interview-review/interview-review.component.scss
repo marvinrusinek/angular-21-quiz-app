@@ -75,6 +75,9 @@
 
 .rv-question {
   flex: 1 1 auto;
+  min-width: 0;              // allow the flex item to shrink so long text wraps
+  overflow-wrap: anywhere;  // break long unbreakable strings instead of overflowing
+  word-break: break-word;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -122,6 +125,15 @@
     background: rgba(214, 69, 69, 0.12);
   }
 
+  // Option text: take the remaining space and wrap long content instead of
+  // forcing the row (and the whole review) wider than the screen.
+  &__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   &__label {
     flex: 0 0 auto;
     font-size: 11px;
@@ -139,6 +151,8 @@
   color: var(--rv-text);
   font-size: 14px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rv-empty {
