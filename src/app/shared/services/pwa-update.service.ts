@@ -60,9 +60,9 @@ export class PwaUpdateService {
   }
 
   private activateAndReload(): void {
-    const reload = window.confirm('A new version of the quiz is available. Reload to update?');
-    if (!reload) return;
-
+    // Silent auto-reload: activate the freshly downloaded version and reload
+    // straight onto it, with no confirm prompt. The owner opted into this so a
+    // new deploy is picked up automatically (no manual refresh / cache clearing).
     this.swUpdate
       .activateUpdate()
       .then(() => document.location.reload())
