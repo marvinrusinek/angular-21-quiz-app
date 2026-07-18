@@ -177,16 +177,20 @@
 
   // Header: title (top-left) shares its row with the dark-mode toggle pinned to
   // the top-right corner. Below, "Question X of Y" sits on the left and the
-  // timer is pushed to the right, all aligned with the question box's borders.
+  // timer is pushed to the right. The 14px inset aligns the header content with
+  // the question box's INNER content (the option rows), matching the footer —
+  // NOT the box's outer border, which is 14px wider and looked misaligned.
   .interview-session__bar {
     position: relative;
+    padding: 0 14px;
   }
 
-  // Dark-mode toggle → top-right corner, aligned with the box's right border.
+  // Dark-mode toggle → top-right corner, aligned with the option rows' right edge
+  // (14px in from the box's outer border, matching the padded header content).
   .interview-session__theme {
     position: absolute;
     top: 0;
-    right: 0;
+    right: 14px;
   }
 
   .interview-session__meta {
