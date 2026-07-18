@@ -95,16 +95,10 @@
 /* ─────────────────────────────────────────────
    FONT IMPORTS
 ───────────────────────────────────────────────*/
-@font-face {
-  font-family: 'Material Icons';
-  font-style: normal;
-  font-weight: 400;
-  // Self-hosted (was an external gstatic CDN URL) so the PWA service worker
-  // caches it and it's always available offline. The CDN font was intermittently
-  // failing to load on mobile, leaving mat-icons blank.
-  src: url('assets/fonts/material-icons.woff2') format('woff2');
-  font-display: block;
-}
+// NOTE: the Material Icons @font-face is declared INLINE in index.html (with a
+// matching <link rel="preload">) so the font is fetched with high priority at
+// startup and its URL stays stable (unhashed) — this prevents the cold-start
+// "blank icons until the font loads" race, especially on app restart.
 
 .material-icons {
   font-family: 'Material Icons';

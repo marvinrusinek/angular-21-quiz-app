@@ -7,8 +7,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="theme-color" content="#1e88e5"/>
     <link rel="icon" type="image/x-icon" href="favicon.ico"/>
-    <!-- Material Icons font is self-hosted (see styles.scss @font-face) so the PWA
-         works offline and icons don't intermittently fail to load on mobile. -->
+
+    <!-- Self-hosted Material Icons font. Preloaded + declared here (stable,
+         unhashed URL) so it's fetched with high priority at startup — this stops
+         the cold-start "blank mat-icons until the font loads" race on app restart.
+         The service worker also prefetches it (ngsw-config), so it's instantly
+         available offline. -->
+    <link rel="preload" href="assets/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+      @font-face {
+        font-family: 'Material Icons';
+        font-style: normal;
+        font-weight: 400;
+        src: url('assets/fonts/material-icons.woff2') format('woff2');
+        font-display: block;
+      }
+    </style>
 
     <link rel="manifest" href="manifest.webmanifest">
   </head>
