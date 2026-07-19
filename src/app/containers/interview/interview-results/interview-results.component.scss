@@ -1,3 +1,31 @@
+// When the assessment is submitted while still in Full Screen, the results land
+// on a full-height viewport and would otherwise sit at the very top. Center them
+// on screen the same way the session itself is centered (see the matching
+// fs-center block in interview-session.component.scss), so finishing in Full
+// Screen doesn't jump the content to a corner.
+//
+// Content taller than the viewport simply scrolls (min-height, not height).
+// Separate rules per prefix so an unknown pseudo-class can't invalidate both.
+// NOTE the vertical padding: this rule's `margin: 0 auto` replaces the base
+// `margin: 20px auto`, which removes the top gap. While the content is short
+// that is invisible (centering supplies the space), but as soon as "Review
+// Answers" expands the content past the viewport the container grows, centering
+// stops having any effect, and the title would sit flush against the top edge.
+// The padding keeps a consistent gap in BOTH states; box-sizing keeps it inside
+// the 100vh so it can't introduce a scrollbar on its own.
+@mixin ir-fs-center {
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+:fullscreen .interview-results { @include ir-fs-center; }
+:-webkit-full-screen .interview-results { @include ir-fs-center; }
+
 .interview-results {
   --ir-surface: #fff;
   --ir-border: #e0e0e0;
@@ -49,7 +77,9 @@
   }
 
   &__review {
-    margin-top: 26px;
+    // 26px + 20px — extra breathing room between the action buttons and the
+    // review list when "Review Answers" expands it.
+    margin-top: 46px;
   }
 
   &__review-heading {
