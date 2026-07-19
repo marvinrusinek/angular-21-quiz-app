@@ -131,3 +131,51 @@ kbd {
     font-size: 12px;
   }
 }
+
+// ── additions for the Interview Mode content ──────────────────────────
+// Key groups can hold several keycaps (e.g. the four arrow keys, or
+// "Shift + Tab"), so let them wrap instead of squeezing the description.
+.ksd-shortcuts {
+  dt {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  dd {
+    flex: 1 1 auto;
+  }
+}
+
+// The "+" joining two keycaps (Shift + Tab)
+.ksd-plus {
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// "(Focus Change Recorded)" — flags that Esc has a recorded side effect.
+.ksd-flag {
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// Short clarifying note under a section (e.g. "arrows do not change question").
+.ksd-note {
+  margin: 8px 0 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  // On a phone the four arrow keycaps + description won't sit on one line.
+  .ksd-shortcuts .ksd-row {
+    flex-wrap: wrap;
+  }
+
+  .ksd-flag {
+    white-space: normal;
+  }
+}

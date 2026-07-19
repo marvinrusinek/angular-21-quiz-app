@@ -64,6 +64,44 @@
     gap: 18px;
   }
 
+  // Keyboard-shortcuts button — mirrors the topic-quiz header control
+  // (quiz-header.component.scss) so both surfaces share one design language.
+  // Deliberately scoped under __meta: this component uses ViewEncapsulation.None,
+  // so an unscoped `.keyboard-shortcuts-btn` rule would leak out and restyle the
+  // topic-quiz header's own button.
+  &__meta .keyboard-shortcuts-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 50%;
+    background: var(--theme-toggle-bg);
+    color: var(--theme-toggle-color);
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    &:focus-visible {
+      outline: 2px solid vars.$vivid-blue;
+      outline-offset: 2px;
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+    }
+  }
+
   // 3 columns so the Submit button is CENTERED and the "N / N answered"
   // indicator is right-justified (works whether or not the button is present).
   &__footer {

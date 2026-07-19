@@ -15,6 +15,22 @@
           <span class="interview-timer__value">{{ timeRemaining() }}</span>
         </span>
 
+        <!-- Same design language + order as the topic-quiz header
+             (quiz-header.component.html): shortcuts button, then theme toggle. -->
+        <button
+          #shortcutsBtn
+          type="button"
+          class="keyboard-shortcuts-btn"
+          (click)="openKeyboardShortcuts()"
+          matTooltip="Keyboard shortcuts"
+          i18n-matTooltip
+          matTooltipPosition="below"
+          aria-label="Open keyboard shortcuts"
+          i18n-aria-label
+        >
+          <mat-icon>keyboard</mat-icon>
+        </button>
+
         <codelab-theme-toggle class="interview-session__theme" />
       </div>
     </header>

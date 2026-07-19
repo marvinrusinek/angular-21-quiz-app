@@ -1,79 +1,194 @@
 <h2 mat-dialog-title id="ksd-title" class="ksd-title">
   <mat-icon aria-hidden="true">keyboard</mat-icon>
-  <span i18n>Keyboard Shortcuts</span>
+  @if (isInterview) {
+    <span i18n>Assessment Keyboard Shortcuts</span>
+  } @else {
+    <span i18n>Keyboard Shortcuts</span>
+  }
 </h2>
 
 <mat-dialog-content class="ksd-content">
-  <p id="ksd-desc" class="ksd-subtitle" i18n>
-    Use these keyboard shortcuts to answer questions and move through the quiz.
-  </p>
+  @if (isInterview) {
+    <!-- ── INTERVIEW MODE ──────────────────────────────────────────────
+         Documents ONLY interactions that actually work in the assessment.
+         Interview Mode has no global key handler (unlike the topic quiz), so
+         there is deliberately no "press ← for the previous question" entry —
+         navigation is done by moving focus to the paginator and pressing Enter. -->
+    <p id="ksd-desc" class="ksd-subtitle" i18n>
+      Move through the assessment with the keyboard. Answers are never revealed
+      during the assessment, so there are no check-answer or explanation shortcuts.
+    </p>
 
-  <!-- Number Keys -->
-  <section class="ksd-section" aria-labelledby="ksd-number-heading">
-    <h3 id="ksd-number-heading" class="ksd-section-heading">
-      <mat-icon aria-hidden="true">keyboard</mat-icon>
-      <span i18n>Number Keys</span>
-    </h3>
+    <!-- Moving around -->
+    <section class="ksd-section" aria-labelledby="ksd-int-nav-heading">
+      <h3 id="ksd-int-nav-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">swap_horiz</mat-icon>
+        <span i18n>Moving Around</span>
+      </h3>
 
-    <dl class="ksd-shortcuts">
-      <div class="ksd-row">
-        <dt><kbd>1</kbd></dt>
-        <dd i18n>Select option 1</dd>
-      </div>
-      <div class="ksd-row">
-        <dt><kbd>2</kbd></dt>
-        <dd i18n>Select option 2</dd>
-      </div>
-      <div class="ksd-row">
-        <dt><kbd>3</kbd></dt>
-        <dd i18n>Select option 3</dd>
-      </div>
-      <div class="ksd-row">
-        <dt><kbd>4</kbd></dt>
-        <dd i18n>Select option 4</dd>
-      </div>
-    </dl>
-  </section>
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd aria-label="Tab key" i18n-aria-label>Tab</kbd></dt>
+          <dd i18n>Move to the next control (options, pagination, Submit)</dd>
+        </div>
+        <div class="ksd-row">
+          <dt>
+            <kbd aria-label="Shift key" i18n-aria-label>Shift</kbd>
+            <span class="ksd-plus" aria-hidden="true">+</span>
+            <kbd aria-label="Tab key" i18n-aria-label>Tab</kbd>
+          </dt>
+          <dd i18n>Move to the previous control</dd>
+        </div>
+        <div class="ksd-row">
+          <dt><kbd aria-label="Enter key" i18n-aria-label>Enter</kbd></dt>
+          <dd i18n>Activate the focused button or control</dd>
+        </div>
+      </dl>
 
-  <!-- Navigation -->
-  <section class="ksd-section" aria-labelledby="ksd-nav-heading">
-    <h3 id="ksd-nav-heading" class="ksd-section-heading">
-      <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-      <span i18n>Navigation</span>
-    </h3>
+      <p class="ksd-note" i18n>
+        To change question, Tab to the pagination controls and press Enter.
+      </p>
+    </section>
 
-    <dl class="ksd-shortcuts">
-      <div class="ksd-row">
-        <dt><kbd aria-label="Left arrow key" i18n-aria-label>&larr;</kbd></dt>
-        <dd>
-          <mat-icon class="ksd-inline-icon" aria-hidden="true">arrow_back</mat-icon>
-          <span i18n>Previous Question</span>
-        </dd>
-      </div>
-      <div class="ksd-row">
-        <dt><kbd aria-label="Right arrow key" i18n-aria-label>&rarr;</kbd></dt>
-        <dd>
-          <mat-icon class="ksd-inline-icon" aria-hidden="true">arrow_forward</mat-icon>
-          <span i18n>Next Question</span>
-        </dd>
-      </div>
-    </dl>
-  </section>
+    <!-- Answer options -->
+    <section class="ksd-section" aria-labelledby="ksd-int-options-heading">
+      <h3 id="ksd-int-options-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">radio_button_checked</mat-icon>
+        <span i18n>Answer Options</span>
+      </h3>
 
-  <!-- General -->
-  <section class="ksd-section" aria-labelledby="ksd-general-heading">
-    <h3 id="ksd-general-heading" class="ksd-section-heading">
-      <mat-icon aria-hidden="true">close</mat-icon>
-      <span i18n>General</span>
-    </h3>
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt>
+            <kbd aria-label="Up arrow key" i18n-aria-label>&uarr;</kbd>
+            <kbd aria-label="Down arrow key" i18n-aria-label>&darr;</kbd>
+            <kbd aria-label="Left arrow key" i18n-aria-label>&larr;</kbd>
+            <kbd aria-label="Right arrow key" i18n-aria-label>&rarr;</kbd>
+          </dt>
+          <dd i18n>
+            Move between answer options on a single-answer question
+          </dd>
+        </div>
+      </dl>
 
-    <dl class="ksd-shortcuts">
-      <div class="ksd-row">
-        <dt><kbd>Esc</kbd></dt>
-        <dd i18n>Close dialog</dd>
-      </div>
-    </dl>
-  </section>
+      <p class="ksd-note" i18n>
+        Arrow keys move between options — they do not change question.
+        On multi-answer questions, use Tab to reach each option.
+      </p>
+    </section>
+
+    <!-- Full Screen -->
+    <section class="ksd-section" aria-labelledby="ksd-int-fs-heading">
+      <h3 id="ksd-int-fs-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">fullscreen_exit</mat-icon>
+        <span i18n>Full Screen</span>
+      </h3>
+
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd aria-label="Escape key" i18n-aria-label>Esc</kbd></dt>
+          <dd>
+            <!-- &ngsp; keeps a real space in the text content (Angular strips
+                 inter-element whitespace), so screen readers don't read this as
+                 "Exit Full Screen(Focus Change Recorded)". -->
+            <span i18n>Exit Full Screen</span>&ngsp;<strong class="ksd-flag" i18n>(Focus Change Recorded)</strong>
+          </dd>
+        </div>
+      </dl>
+
+      <p class="ksd-note" i18n>
+        Leaving Full Screen is recorded as a focus change on your results. It
+        never affects your score.
+      </p>
+    </section>
+
+    <!-- General -->
+    <section class="ksd-section" aria-labelledby="ksd-int-general-heading">
+      <h3 id="ksd-int-general-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">close</mat-icon>
+        <span i18n>General</span>
+      </h3>
+
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd aria-label="Escape key" i18n-aria-label>Esc</kbd></dt>
+          <dd i18n>Close this dialog</dd>
+        </div>
+      </dl>
+    </section>
+  } @else {
+    <!-- ── TOPIC QUIZ (unchanged) ─────────────────────────────────────── -->
+    <p id="ksd-desc" class="ksd-subtitle" i18n>
+      Use these keyboard shortcuts to answer questions and move through the quiz.
+    </p>
+
+    <!-- Number Keys -->
+    <section class="ksd-section" aria-labelledby="ksd-number-heading">
+      <h3 id="ksd-number-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">keyboard</mat-icon>
+        <span i18n>Number Keys</span>
+      </h3>
+
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd>1</kbd></dt>
+          <dd i18n>Select option 1</dd>
+        </div>
+        <div class="ksd-row">
+          <dt><kbd>2</kbd></dt>
+          <dd i18n>Select option 2</dd>
+        </div>
+        <div class="ksd-row">
+          <dt><kbd>3</kbd></dt>
+          <dd i18n>Select option 3</dd>
+        </div>
+        <div class="ksd-row">
+          <dt><kbd>4</kbd></dt>
+          <dd i18n>Select option 4</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- Navigation -->
+    <section class="ksd-section" aria-labelledby="ksd-nav-heading">
+      <h3 id="ksd-nav-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+        <span i18n>Navigation</span>
+      </h3>
+
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd aria-label="Left arrow key" i18n-aria-label>&larr;</kbd></dt>
+          <dd>
+            <mat-icon class="ksd-inline-icon" aria-hidden="true">arrow_back</mat-icon>
+            <span i18n>Previous Question</span>
+          </dd>
+        </div>
+        <div class="ksd-row">
+          <dt><kbd aria-label="Right arrow key" i18n-aria-label>&rarr;</kbd></dt>
+          <dd>
+            <mat-icon class="ksd-inline-icon" aria-hidden="true">arrow_forward</mat-icon>
+            <span i18n>Next Question</span>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- General -->
+    <section class="ksd-section" aria-labelledby="ksd-general-heading">
+      <h3 id="ksd-general-heading" class="ksd-section-heading">
+        <mat-icon aria-hidden="true">close</mat-icon>
+        <span i18n>General</span>
+      </h3>
+
+      <dl class="ksd-shortcuts">
+        <div class="ksd-row">
+          <dt><kbd>Esc</kbd></dt>
+          <dd i18n>Close dialog</dd>
+        </div>
+      </dl>
+    </section>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="ksd-actions">

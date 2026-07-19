@@ -7,11 +7,14 @@ import {
   inject,
   OnDestroy,
   OnInit,
+  viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 
 import { Option } from '../../../shared/models/Option.model';
@@ -23,6 +26,10 @@ import { AssessmentIntegrityService } from '../../../shared/services/features/in
 import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { InterviewTimerService } from '../../../shared/services/features/timer/interview-timer.service';
 import { AssessmentIntegrityWarningDialogComponent } from '../../../components/dialogs/assessment-integrity-warning-dialog/assessment-integrity-warning-dialog.component';
+import {
+  KeyboardShortcutsDialogComponent,
+  KeyboardShortcutsDialogData
+} from '../../../components/dialogs/keyboard-shortcuts-dialog/keyboard-shortcuts-dialog.component';
 
 import { InterviewPaginatorComponent } from '../../../components/interview/interview-paginator/interview-paginator.component';
 import { InterviewOptionsComponent } from '../../../components/interview/interview-options/interview-options.component';
@@ -52,6 +59,8 @@ import {
   standalone: true,
   imports: [
     CommonModule,
+    MatIconModule,
+    MatTooltipModule,
     InterviewPaginatorComponent,
     InterviewOptionsComponent,
     ThemeToggleComponent
@@ -69,6 +78,9 @@ export class InterviewSessionComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject(ElementRef<HTMLElement>);
+
+  // Focus is returned here when the keyboard-shortcuts dialog closes.
+  private readonly shortcutsBtn = viewChild<ElementRef<HTMLButtonElement>>('shortcutsBtn');
 
   readonly currentIndex = this.session.currentIndex;
   readonly total = this.session.total;
@@ -216,6 +228,46 @@ export class InterviewSessionComponent implements OnInit, OnDestroy {
       this.warningOpen = false;
       this.integrity.acknowledgeWarning();
     });
+  }
+
+  /**
+   * Open the shared keyboard-shortcuts dialog in INTERVIEW mode. Same component,
+   * config and design language as the topic-quiz header — only `data.mode`
+   * differs, so the two surfaces never duplicate a template.
+   *
+   * Accessibility:
+   *  - `autoFocus: 'dialog'` puts initial focus inside the dialog (on the
+   *    container, so the title is announced rather than a button label).
+   *  - MatDialog installs a focus trap; Tab/Shift+Tab stay within the dialog.
+   *  - Escape closes it (MatDialog default).
+   *  - `restoreFocus: true` returns focus to whatever was focused on open; the
+   *    explicit refocus below guarantees it lands back on the shortcuts button
+   *    even if something else moved focus while the dialog was open.
+   *
+   * Keyboard isolation: Interview Mode registers NO global key handler (unlike
+   * the topic quiz's runOnGlobalKey), so there is nothing to switch off. The
+   * focus trap is what keeps keystrokes — including the arrow keys that move
+   * between radio options — from reaching the assessment behind the dialog.
+   */
+  openKeyboardShortcuts(): void {
+    const ref = this.dialog.open(KeyboardShortcutsDialogComponent, {
+      panelClass: 'keyboard-shortcuts-dialog',
+      width: '90vw',
+      maxWidth: '460px',
+      autoFocus: 'dialog',
+      restoreFocus: true,
+      ariaLabelledBy: 'ksd-title',
+      ariaDescribedBy: 'ksd-desc',
+      // Material leaves this false by default; setting it makes assistive tech
+      // treat the dialog as modal and ignore the assessment behind it.
+      ariaModal: true,
+      data: { mode: 'interview' } as KeyboardShortcutsDialogData
+    });
+
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.shortcutsBtn()?.nativeElement?.focus());
   }
 
   // Optional, user-initiated fullscreen (browsers require a gesture). No-op if
