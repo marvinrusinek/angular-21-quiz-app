@@ -188,7 +188,6 @@
   }
 </mat-card>
 
-<!-- Scroll Indicator (Fixed position relative to viewport) -->
-<div class="scroll-indicator" (click)="scrollDown()" [class.hidden]="!showScrollIndicator()">
-  <i class="material-icons">keyboard_arrow_down</i>
-</div>
+<!-- Elevator scroll cue: pages down / flips to up + pages up (shared with Quiz
+     Selection + Interview Results). -->
+<app-scroll-down-indicator />

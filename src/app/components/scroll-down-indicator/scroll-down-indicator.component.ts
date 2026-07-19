@@ -1,57 +1,96 @@
 import {
-  ChangeDetectionStrategy, Component, input, OnInit, signal
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  OnInit,
+  signal
 } from '@angular/core';
 
+/**
+ * A subtle floating scroll cue pinned to the bottom-centre of the screen. Shown
+ * only while the page is scrollable; it points DOWN when there is more content
+ * below and flips to UP once the bottom is reached, so it doubles as a "back to
+ * top" control.
+ *
+ * Mirrors the Interview Results scroll cue. Behaves like an elevator: each click
+ * pages ~a screenful in the current direction. The direction flips at the
+ * extremes (bottom → up, top → down) and PERSISTS in between, so repeated clicks
+ * keep travelling the same way instead of reversing after one press.
+ *  - real <button> (keyboard-activable), direction-aware aria-label + title
+ *  - a gentle idle bounce nudges down until the user scrolls or clicks, then
+ *    stops (also disabled under prefers-reduced-motion, in the SCSS)
+ *  - native smooth scrolling only — no library
+ */
 @Component({
   selector: 'app-scroll-down-indicator',
   standalone: true,
   template: `
-    @if (showIndicator()) {
-      <div class="scroll-indicator" (click)="scrollDown()">
-        <i class="material-icons">keyboard_arrow_down</i>
-      </div>
+    @if (visible()) {
+      <button
+        type="button"
+        class="scroll-indicator"
+        [class.scroll-indicator--up]="direction() === 'up'"
+        [class.scroll-indicator--bounce]="!hasInteracted()"
+        (click)="onClick()"
+        [attr.aria-label]="direction() === 'up' ? upAria : downAria"
+        [attr.title]="direction() === 'up' ? upTitle : downTitle"
+      >
+        <i class="material-icons" aria-hidden="true">{{
+          direction() === 'up' ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+        }}</i>
+      </button>
     }
   `,
   styleUrls: ['./scroll-down-indicator.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '(window:scroll)': 'onWindowScroll()',
-    '(window:resize)': 'onWindowResize()'
-  }
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScrollDownIndicatorComponent implements OnInit {
-  targetSelector = input<string>('');
-  readonly showIndicator = signal(false);
+  // Shown only when the page can actually scroll.
+  readonly visible = signal(false);
+  // Travel direction. Flips at the extremes, persists in between.
+  readonly direction = signal<'down' | 'up'>('down');
+  // Idle bounce runs until the first user scroll or click.
+  readonly hasInteracted = signal(false);
+
+  // Bound via [attr.] (dynamic), so labels use $localize rather than template i18n.
+  readonly downAria = $localize`Scroll down`;
+  readonly upAria = $localize`Scroll back to top`;
+  readonly downTitle = $localize`Scroll down`;
+  readonly upTitle = $localize`Back to top`;
 
   ngOnInit(): void {
-    setTimeout(() => this.check(), 300);
+    // Defer the first measure so fonts/images have laid out.
+    setTimeout(() => this.recompute(), 300);
   }
 
+  // A genuine user scroll ends the idle bounce and updates direction.
+  @HostListener('window:scroll')
   onWindowScroll(): void {
-    this.check();
+    if (!this.hasInteracted()) this.hasInteracted.set(true);
+    this.recompute();
   }
 
+  // Resize changes what's scrollable but is not a user "interaction".
+  @HostListener('window:resize')
   onWindowResize(): void {
-    this.check();
+    this.recompute();
   }
 
-  check(): void {
-    const el = this.targetSelector
-      ? document.querySelector(this.targetSelector())
-      : document.documentElement;
-    if (!el) {
-      this.showIndicator.set(false);
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    const shouldShow = (rect.bottom - window.innerHeight) > 20;
-    this.showIndicator.set(shouldShow);
+  private recompute(): void {
+    const doc = document.documentElement;
+    const scrollable = doc.scrollHeight - window.innerHeight;
+    this.visible.set(scrollable > 20);          // hide entirely on non-scrolling pages
+
+    // 4px slack for sub-pixel rounding. Only the extremes change direction; in
+    // between we keep the current one so repeated clicks travel the same way.
+    if (window.scrollY >= scrollable - 4) this.direction.set('up');
+    else if (window.scrollY <= 4) this.direction.set('down');
   }
 
-  scrollDown(): void {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'smooth'
-    });
+  onClick(): void {
+    this.hasInteracted.set(true);
+    const step = Math.round(window.innerHeight * 0.85);
+    const top = this.direction() === 'up' ? -step : step;
+    window.scrollBy({ top, left: 0, behavior: 'smooth' });
   }
 }

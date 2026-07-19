@@ -53,6 +53,7 @@ import { AccordionComponent } from './accordion/accordion.component';
 import { AchievementUnlockedComponent } from '../../components/achievement-unlocked/achievement-unlocked.component';
 import { AchievementsCatalogComponent } from '../../components/achievements-catalog/achievements-catalog.component';
 import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
+import { ScrollDownIndicatorComponent } from '../../components/scroll-down-indicator/scroll-down-indicator.component';
 import { QuizFactComponent } from '../../components/quiz-fact/quiz-fact.component';
 import { ChallengeComponent } from './challenge/challenge.component';
 import { ReturnComponent } from './return/return.component';
@@ -74,6 +75,7 @@ import { swallow } from '../../shared/utils/error-logging';
     AchievementUnlockedComponent,
     AchievementsCatalogComponent,
     BackToTopComponent,
+    ScrollDownIndicatorComponent,
     QuizFactComponent,
     AccordionComponent,
     ChallengeComponent,
@@ -85,7 +87,6 @@ import { swallow } from '../../shared/utils/error-logging';
   styleUrls: ['./results.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '(window:scroll)': 'onWindowScroll()',
     '(document:click)': 'onDocumentClick($event)',
     '(document:keydown.escape)': 'onEscapeKey()',
   },
@@ -130,7 +131,6 @@ export class ResultsComponent implements OnInit {
     () => this.quizData.find((quiz) => quiz.quizId === this.quizId())?.facts ?? []
   );
 
-  readonly showScrollIndicator = signal(true);
 
   // Tracks whether ngOnInit already applied a synchronous snapshot, so the
   // finalResult$ effect skips re-applying when the observable later emits.
@@ -212,10 +212,6 @@ export class ResultsComponent implements OnInit {
     // Always show the catalog with the current earned/locked state (even on a
     // refresh, when no new achievement is being announced).
     this.achievementsCatalog.set(this.achievementService.catalog());
-  }
-
-  onWindowScroll(): void {
-    this.showScrollIndicator.set(window.scrollY < 100);
   }
 
   toggleMenu(): void {
@@ -333,10 +329,6 @@ export class ResultsComponent implements OnInit {
     this.quizId.set('');
     this.indexOfQuizId.set(0);
     this.router.navigate(['/select/']);
-  }
-
-  scrollDown(): void {
-    window.scrollBy({ top: 500, behavior: 'smooth' });
   }
 
   private restoreActiveSection(): 'score' | 'report' | 'summary' | 'highscores' | 'resources' {

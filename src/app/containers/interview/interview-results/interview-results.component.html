@@ -57,10 +57,10 @@
           type="button"
           class="ir-scroll-cue"
           [class.ir-scroll-cue--bounce]="!hasInteracted()"
-          [class.ir-scroll-cue--up]="atBottom()"
+          [class.ir-scroll-cue--up]="direction() === 'up'"
           (click)="onCueClick()"
-          [attr.aria-label]="atBottom() ? cueUpAria : cueDownAria"
-          [attr.title]="atBottom() ? cueUpTitle : cueDownTitle"
+          [attr.aria-label]="direction() === 'up' ? cueUpAria : cueDownAria"
+          [attr.title]="direction() === 'up' ? cueUpTitle : cueDownTitle"
         >
           <svg
             class="ir-scroll-cue__icon"
@@ -70,9 +70,9 @@
             aria-hidden="true"
             focusable="false"
           >
-            <!-- chevron-up at the bottom of the page, chevron-down otherwise -->
+            <!-- chevron-up while travelling up, chevron-down otherwise -->
             <path
-              [attr.d]="atBottom() ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'"
+              [attr.d]="direction() === 'up' ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
