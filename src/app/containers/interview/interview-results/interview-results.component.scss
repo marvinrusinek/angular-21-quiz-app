@@ -210,6 +210,88 @@
   }
 }
 
+// ── Review scroll cue ─────────────────────────────────────────────────
+// A subtle chevron FLOATING at the bottom-center of the screen, shown once the
+// answer review is open, hinting the review is below. Mirrors the app's existing
+// floating scroll indicator (a small themed circle), not a primary CTA.
+.ir-scroll-cue-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 25px;              // ~25px from the bottom of the screen
+  display: flex;
+  justify-content: center;   // centered horizontally
+  pointer-events: none;      // only the button itself is interactive
+  z-index: 50;
+}
+
+.ir-scroll-cue {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--ir-border);
+  border-radius: 50%;
+  background: var(--ir-surface);    // faint themed circle so it reads over content
+  color: var(--ir-muted);           // subtle; themed (light/dark) via the CSS var
+  cursor: pointer;
+  opacity: 0.9;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  transition: opacity 0.2s ease, color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+    color: var(--ir-accent);
+    transform: translateY(3px) scale(1.08);   // hover-only nudge (down)
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.24);
+  }
+
+  // In the "back to top" state the hover nudge points up, matching the icon.
+  &--up:hover {
+    transform: translateY(-3px) scale(1.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ir-accent);
+    outline-offset: 2px;
+    opacity: 1;
+  }
+
+  &__icon {
+    display: block;
+  }
+
+  // Optional idle bounce — a gentle, infrequent nudge until the user interacts.
+  // The animation lives mostly at rest (bounce only in the last ~25%), so it
+  // reads as "every few seconds", not constant motion.
+  &--bounce {
+    animation: ir-cue-bounce 2.6s ease-in-out infinite;
+  }
+
+  // Hover must win over the idle bounce.
+  &--bounce:hover {
+    animation: none;
+  }
+}
+
+@keyframes ir-cue-bounce {
+  0%,
+  75%,
+  100% { transform: translateY(0); }
+  82% { transform: translateY(4px); }
+  90% { transform: translateY(2px); }
+}
+
+// Respect users who prefer reduced motion: no idle bounce, no hover translate.
+@media (prefers-reduced-motion: reduce) {
+  .ir-scroll-cue--bounce { animation: none; }
+  .ir-scroll-cue:hover { transform: none; }
+}
+
 @media (max-width: 600px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
