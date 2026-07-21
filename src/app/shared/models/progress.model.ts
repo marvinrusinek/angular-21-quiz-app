@@ -30,4 +30,10 @@ export interface ProgressSummary {
   byDifficulty: DifficultyProgress[];
   strongestQuiz: QuizProgressSummary | null;
   weakestQuiz: QuizProgressSummary | null;
+  /** Mean of the best completed score (percent) across completed quizzes; 0 when none. */
+  averageScore: number;
+  /** Number of completed quizzes whose best score is 100% (all questions correct); 0 when none. */
+  perfectScores: number;
+  /** Total questions across completed quizzes, counting each quiz's best attempt once; 0 when none. */
+  questionsCompleted: number;
 }

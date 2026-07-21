@@ -48,9 +48,29 @@ export class ProgressService {
       Object.prototype.hasOwnProperty.call(best, quiz.quizId);
 
     const totalCount = list.length;
-    const completedCount = list.filter(isCompleted).length;
+    const completed = list.filter(isCompleted);
+    const completedCount = completed.length;
     const completionPercentage =
       totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    // New summary metrics — all derived from the SAME best-score store + quiz
+    // list, using each quiz's BEST completed attempt (best[] already holds the
+    // highest recorded percentage, so retakes never double-count). No new
+    // storage, no separate calculation path.
+    const bestScores = completed
+      .map((quiz) => best[quiz.quizId])
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    const averageScore = bestScores.length
+      ? Math.round(bestScores.reduce((sum, v) => sum + v, 0) / bestScores.length)
+      : 0;
+    // Perfect = best score is 100% (all questions correct). Scores are stored as
+    // rounded 0–100 percentages, so 100 is exactly a perfect attempt.
+    const perfectScores = bestScores.filter((v) => v === 100).length;
+    // Total questions across completed quizzes (best attempt each, counted once).
+    const questionsCompleted = completed.reduce(
+      (sum, quiz) => sum + (quiz.questions?.length ?? 0),
+      0
+    );
 
     // Only difficulties actually present in the data, in canonical order.
     const byDifficulty: DifficultyProgress[] = [];
@@ -101,7 +121,10 @@ export class ProgressService {
       completionPercentage,
       byDifficulty,
       strongestQuiz,
-      weakestQuiz
+      weakestQuiz,
+      averageScore,
+      perfectScores,
+      questionsCompleted
     };
   }
 }

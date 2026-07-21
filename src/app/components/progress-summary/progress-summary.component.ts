@@ -84,6 +84,24 @@ import { ProgressSummary } from '../../shared/models/progress.model';
             </dl>
           }
 
+          <!-- Key stats (derived in ProgressService). Shown beneath the existing
+               progress info; always present so 0-values appear when nothing is
+               completed yet. -->
+          <dl class="progress-summary__stats" aria-label="Key stats" i18n-aria-label>
+            <div class="progress-summary__stat">
+              <dt class="progress-summary__stat-label" i18n>Average Score</dt>
+              <dd class="progress-summary__stat-value">{{ s.averageScore }}%</dd>
+            </div>
+            <div class="progress-summary__stat">
+              <dt class="progress-summary__stat-label" i18n>Perfect Scores</dt>
+              <dd class="progress-summary__stat-value">{{ s.perfectScores }}</dd>
+            </div>
+            <div class="progress-summary__stat">
+              <dt class="progress-summary__stat-label" i18n>Questions Completed</dt>
+              <dd class="progress-summary__stat-value">{{ s.questionsCompleted }}</dd>
+            </div>
+          </dl>
+
           @if (s.strongestQuiz || s.weakestQuiz) {
             <dl class="progress-summary__rows progress-summary__rows--highlights">
               @if (s.strongestQuiz; as strong) {
@@ -135,6 +153,46 @@ import { ProgressSummary } from '../../shared/models/progress.model';
       margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid var(--border-color, #e0e0e0);
+    }
+
+    /* Three understated stat cells beneath the progress rows. */
+    .progress-summary__stats {
+      margin: 12px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .progress-summary__stat {
+      margin: 0;
+      /* column-reverse: DOM is label→value (screen readers hear "Average Score,
+         80%"), but the value shows on top like a stat tile. */
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .progress-summary__stat-value {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--text-primary, #212121);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-summary__stat-label {
+      margin: 0;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: var(--text-secondary, #555555);
     }
 
     /* Details variant lives inside the expansion panel: drop the card chrome and

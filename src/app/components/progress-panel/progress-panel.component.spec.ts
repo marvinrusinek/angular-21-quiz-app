@@ -16,6 +16,9 @@ function summary(overrides: Partial<ProgressSummary> = {}): ProgressSummary {
     ],
     strongestQuiz: { quizId: 'di', milestone: 'Dependency Injection', bestScore: 100 },
     weakestQuiz: { quizId: 'rx', milestone: 'RxJS', bestScore: 60 },
+    averageScore: 80,
+    perfectScores: 1,
+    questionsCompleted: 30,
     ...overrides
   };
 }

@@ -165,4 +165,64 @@ describe('ProgressService', () => {
     expect(JSON.stringify(input)).toBe(snapshot);
     expect(input.length).toBe(5);
   });
+
+  // ── averageScore / perfectScores / questionsCompleted ─────────────
+  // All three read the SAME best-score store as everything above, using each
+  // quiz's best attempt (best[] already holds the highest recorded percentage).
+  const quizN = (quizId: string, difficulty: string, n: number): Quiz =>
+    ({
+      quizId,
+      milestone: quizId,
+      difficulty,
+      questions: Array.from({ length: n }, () => ({}))
+    }) as unknown as Quiz;
+
+  it('reports all three metrics as 0 when nothing is completed', () => {
+    const s = service.getProgressSummary(ALL);
+    expect(s.averageScore).toBe(0);
+    expect(s.perfectScores).toBe(0);
+    expect(s.questionsCompleted).toBe(0);
+  });
+
+  it('averageScore = mean of best completed scores (rounded), ignoring incomplete', () => {
+    setBestScores({ b1: 80, i1: 100 });   // mean 90; the other 3 are incomplete
+    expect(service.getProgressSummary(ALL).averageScore).toBe(90);
+  });
+
+  it('one completed quiz → averageScore equals that quiz score', () => {
+    setBestScores({ b1: 73 });
+    expect(service.getProgressSummary(ALL).averageScore).toBe(73);
+  });
+
+  it('perfectScores counts only quizzes whose best score is exactly 100%', () => {
+    setBestScores({ b1: 100, i1: 100, a1: 90, b2: 99 });
+    expect(service.getProgressSummary(ALL).perfectScores).toBe(2);
+  });
+
+  it('uses the BEST attempt on retakes for average + perfect (never double-counts)', () => {
+    bestScores.recordBestScore('b1', 60);
+    bestScores.recordBestScore('b1', 90);   // better retake wins
+    bestScores.recordBestScore('b1', 70);   // worse retake ignored
+    const s = service.getProgressSummary(ALL);
+    expect(s.completedCount).toBe(1);        // one quiz, not three attempts
+    expect(s.averageScore).toBe(90);
+
+    bestScores.recordBestScore('i1', 95);
+    bestScores.recordBestScore('i1', 100);   // a later perfect retake counts
+    expect(service.getProgressSummary(ALL).perfectScores).toBe(1);
+    expect(service.getProgressSummary(ALL).averageScore).toBe(95);  // (90 + 100) / 2
+  });
+
+  it('questionsCompleted sums questions of completed quizzes (best attempt once)', () => {
+    const catalog = [quizN('x1', 'beginner', 10), quizN('x2', 'beginner', 10), quizN('x3', 'advanced', 8)];
+    setBestScores({ x1: 100, x2: 50 });      // x3 not completed
+    expect(service.getProgressSummary(catalog).questionsCompleted).toBe(20);  // 10 + 10
+  });
+
+  it('questionsCompleted does not accumulate repeated attempts of the same quiz', () => {
+    const catalog = [quizN('x1', 'beginner', 10)];
+    bestScores.recordBestScore('x1', 50);
+    bestScores.recordBestScore('x1', 80);    // two attempts, one quiz
+    expect(service.getProgressSummary(catalog).questionsCompleted).toBe(10);  // counted once
+  });
 });

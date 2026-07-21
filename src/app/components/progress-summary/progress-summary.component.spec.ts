@@ -11,6 +11,9 @@ function summary(overrides: Partial<ProgressSummary> = {}): ProgressSummary {
     byDifficulty: [],
     strongestQuiz: null,
     weakestQuiz: null,
+    averageScore: 0,
+    perfectScores: 0,
+    questionsCompleted: 0,
     ...overrides
   };
 }
@@ -97,6 +100,26 @@ describe('ProgressSummaryComponent', () => {
     expect(text()).toContain('100%');
   });
 
+  it('renders the Average Score / Perfect Scores / Questions Completed stats', () => {
+    set(summary({ completedCount: 3, averageScore: 82, perfectScores: 1, questionsCompleted: 30 }));
+    const labels = Array.from(
+      fixture.nativeElement.querySelectorAll('.progress-summary__stat-label')
+    ).map((el) => (el as HTMLElement).textContent!.trim());
+    const values = Array.from(
+      fixture.nativeElement.querySelectorAll('.progress-summary__stat-value')
+    ).map((el) => (el as HTMLElement).textContent!.trim());
+    expect(labels).toEqual(['Average Score', 'Perfect Scores', 'Questions Completed']);
+    expect(values).toEqual(['82%', '1', '30']);
+  });
+
+  it('shows 0 metrics when nothing is completed (no NaN / negatives)', () => {
+    set(summary({ completedCount: 0, averageScore: 0, perfectScores: 0, questionsCompleted: 0 }));
+    const values = Array.from(
+      fixture.nativeElement.querySelectorAll('.progress-summary__stat-value')
+    ).map((el) => (el as HTMLElement).textContent!.trim());
+    expect(values).toEqual(['0%', '0', '0']);
+  });
+
   describe('details variant', () => {
     const setDetails = (s: ProgressSummary): void => {
       fixture.componentRef.setInput('summary', s);
@@ -122,9 +145,14 @@ describe('ProgressSummaryComponent', () => {
       // A progress bar element with accessible attributes is rendered.
       const bar = fixture.nativeElement.querySelector('.progress-summary__bar[role="progressbar"]');
       expect(bar?.getAttribute('aria-valuenow')).toBe('60');
-      // Header-owned pieces stay out of the body: no heading, no "Completed X / Y" row.
+      // Header-owned pieces stay out of the body: no heading, no "Completed X / Y"
+      // row. Check the row LABEL specifically (the stats use a different class),
+      // so the "Questions Completed" stat doesn't false-positive here.
       expect(fixture.nativeElement.querySelector('.progress-summary__heading')).toBeNull();
-      expect(text()).not.toContain('Completed');
+      const rowLabels = Array.from(
+        fixture.nativeElement.querySelectorAll('.progress-summary__label')
+      ).map((el) => (el as HTMLElement).textContent!.trim());
+      expect(rowLabels).not.toContain('Completed');
     });
   });
 });
