@@ -49,7 +49,8 @@ test.describe('Interview Mode', () => {
     // review shows per-question answers + explanations
     await page.locator('button:has-text("Review Answers")').click();
     await expect(page.locator('.rv-item')).toHaveCount(10);
-    await expect(page.locator('.rv-filter')).toHaveCount(3);
+    // All / Incorrect / Correct / Skipped (Flagged is hidden until flagging ships).
+    await expect(page.locator('.rv-filter')).toHaveCount(4);
   });
 
   test('deferred feedback: no correctness or explanation during the assessment', async ({ page }) => {

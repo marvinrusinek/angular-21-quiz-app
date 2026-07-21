@@ -156,8 +156,21 @@
 }
 
 .rv-empty {
-  color: var(--rv-muted);
-  font-style: italic;
+  padding: 24px 8px;
+  text-align: center;
+
+  &__heading {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--rv-text);
+  }
+
+  &__message {
+    margin: 0;
+    color: var(--rv-muted);
+    font-style: italic;
+  }
 }
 
 [data-theme='dark'] .interview-review {

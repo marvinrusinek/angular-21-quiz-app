@@ -1,32 +1,19 @@
 <div class="interview-review">
-  <div class="rv-filters" role="group" aria-label="Filter review" i18n-aria-label>
-    <button
-      type="button"
-      class="rv-filter"
-      [class.active]="filter() === 'all'"
-      [attr.aria-pressed]="filter() === 'all'"
-      (click)="setFilter('all')"
-    >
-      <span i18n>All</span> ({{ items().length }})
-    </button>
-    <button
-      type="button"
-      class="rv-filter"
-      [class.active]="filter() === 'correct'"
-      [attr.aria-pressed]="filter() === 'correct'"
-      (click)="setFilter('correct')"
-    >
-      <span i18n>Correct</span> ({{ correctCount() }})
-    </button>
-    <button
-      type="button"
-      class="rv-filter"
-      [class.active]="filter() === 'incorrect'"
-      [attr.aria-pressed]="filter() === 'incorrect'"
-      (click)="setFilter('incorrect')"
-    >
-      <span i18n>Incorrect</span> ({{ incorrectCount() }})
-    </button>
+  <!-- Filter chips: data-driven from REVIEW_FILTERS. Only-one-active is conveyed
+       by aria-pressed; the count comes from the same predicate as the list. -->
+  <div class="rv-filters" role="group" aria-label="Filter review answers" i18n-aria-label>
+    @for (f of visibleFilters(); track f.id) {
+      <button
+        type="button"
+        class="rv-filter"
+        [class.active]="filter() === f.id"
+        [attr.aria-pressed]="filter() === f.id"
+        [attr.aria-label]="f.label + ', ' + counts()[f.id] + ' questions'"
+        (click)="setFilter(f.id)"
+      >
+        <span aria-hidden="true">{{ f.label }} ({{ counts()[f.id] }})</span>
+      </button>
+    }
   </div>
 
   @for (item of filtered(); track item.number) {
@@ -64,6 +51,12 @@
       }
     </article>
   } @empty {
-    <p class="rv-empty" i18n>No questions match this filter.</p>
+    <!-- Friendly, filter-specific empty state (never a blank page). -->
+    <div class="rv-empty" role="status">
+      @if (activeFilter().emptyHeading) {
+        <p class="rv-empty__heading">{{ activeFilter().emptyHeading }}</p>
+      }
+      <p class="rv-empty__message">{{ activeFilter().emptyMessage }}</p>
+    </div>
   }
 </div>
