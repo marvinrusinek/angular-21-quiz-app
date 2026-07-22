@@ -32,19 +32,59 @@
         <ng-container i18n>Focus changes:</ng-container> {{ r.focusChanges }}
       </p>
 
-      @if (r.perTopic.length > 0) {
+      @if (analytics().topics.length > 0) {
         <h2 class="topics-heading" i18n>Topic Performance</h2>
         <ul class="topic-list">
-          @for (t of r.perTopic; track t.quizId) {
-            <li class="topic-row">
-              <span class="topic-name">{{ t.title }}</span>
+          @for (t of analytics().topics; track t.topicId) {
+            <li
+              class="topic-row"
+              [class]="'topic-row--' + t.band"
+              [attr.aria-label]="t.topicName + ': ' + t.correct + ' of ' + t.total + ' correct, ' + t.percentage + ' percent'"
+            >
+              <span class="topic-name">{{ t.topicName }}</span>
               <span class="topic-bar" aria-hidden="true">
                 <span class="topic-bar__fill" [style.width.%]="t.percentage"></span>
               </span>
-              <span class="topic-score">{{ t.correct }}/{{ t.total }} · {{ t.percentage }}%</span>
+              <span class="topic-score" aria-hidden="true">
+                {{ t.correct }}/{{ t.total }} · {{ t.percentage }}%
+              </span>
             </li>
           }
         </ul>
+
+        <!-- Strongest / Needs Review — shown only when topics genuinely differ. -->
+        @if (analytics().strongestTopics.length > 0 || analytics().weakestTopics.length > 0) {
+          <div class="topic-highlights">
+            @if (analytics().strongestTopics.length > 0) {
+              <section class="topic-highlight" aria-labelledby="ir-strongest">
+                <h3 id="ir-strongest" class="topic-highlight__heading" i18n>Strongest Topics</h3>
+                <ul class="topic-highlight__list">
+                  @for (t of analytics().strongestTopics; track t.topicId) {
+                    <li class="topic-highlight__item topic-highlight__item--strong">
+                      <span class="topic-highlight__mark" aria-hidden="true">✓</span>
+                      <span>{{ t.topicName }}</span>
+                      <span class="topic-highlight__pct">{{ t.percentage }}%</span>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+            @if (analytics().weakestTopics.length > 0) {
+              <section class="topic-highlight" aria-labelledby="ir-needs-review">
+                <h3 id="ir-needs-review" class="topic-highlight__heading" i18n>Needs Review</h3>
+                <ul class="topic-highlight__list">
+                  @for (t of analytics().weakestTopics; track t.topicId) {
+                    <li class="topic-highlight__item topic-highlight__item--weak">
+                      <span class="topic-highlight__mark" aria-hidden="true">•</span>
+                      <span>{{ t.topicName }}</span>
+                      <span class="topic-highlight__pct">{{ t.percentage }}%</span>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+          </div>
+        }
       }
     </div>
 

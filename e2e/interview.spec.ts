@@ -31,10 +31,18 @@ test.describe('Interview Mode', () => {
     await configureAndStart(page, '10');
     await expect(page.locator('.interview-session__title')).toHaveText(/Angular Assessment/);
 
-    // answer every question, advancing with Next
+    // Answer every question, advancing with Next. Click the option LABEL (the
+    // visible control) rather than force-checking the hidden input, and confirm
+    // the selection registered (io-selected) before advancing — Next is gated on
+    // the answer, so this avoids a race with the zoneless change detection.
     for (let i = 1; i <= 10; i++) {
-      await page.locator('.io-input').first().check({ force: true });
-      if (i < 10) await page.locator('.pg-next').first().click();
+      const firstOption = page.locator('.io-option').first();
+      await firstOption.click();
+      await expect(firstOption).toHaveClass(/io-selected/);
+      if (i < 10) {
+        await page.locator('.pg-next').first().click();
+        await expect(page.locator('.interview-progress')).toContainText(`Question ${i + 1}`);
+      }
     }
 
     // last question → Submit Assessment (confirm dialog)

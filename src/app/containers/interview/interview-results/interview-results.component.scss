@@ -33,6 +33,14 @@
   --ir-muted: #6a6a6a;
   --ir-accent: #007aff;
 
+  // Performance bands (muted, not bright). Bar-fill colours for the graphical
+  // indicator; text shades are darker so the labelled percentages stay AA.
+  --ir-band-strong: #3aa564;
+  --ir-band-moderate: #cf9016;
+  --ir-band-weak: #d75a54;
+  --ir-band-strong-text: #2f8f4a;
+  --ir-band-weak-text: #c0392b;
+
   max-width: 680px;
   margin: 20px auto;
   padding: 0 12px;
@@ -186,6 +194,81 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+
+  // Colour the bar fill by performance band (graphical indicator; the numeric
+  // score text always conveys the same info for a11y).
+  &--strong .topic-bar__fill { background: var(--ir-band-strong); }
+  &--moderate .topic-bar__fill { background: var(--ir-band-moderate); }
+  &--weak .topic-bar__fill { background: var(--ir-band-weak); }
+}
+
+// Strongest / Needs Review — two compact columns that stack on mobile.
+.topic-highlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ir-border);
+}
+
+.topic-highlight__heading {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ir-muted);
+}
+
+.topic-highlight__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.topic-highlight__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ir-text);
+
+  .topic-highlight__pct {
+    margin-left: auto;
+    color: var(--ir-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .topic-highlight__mark {
+    flex: none;
+    font-weight: 700;
+  }
+
+  &--strong .topic-highlight__mark { color: var(--ir-band-strong-text); }
+  &--weak .topic-highlight__mark { color: var(--ir-band-weak-text); }
+}
+
+// Mobile: stack each topic row (name over score) — no horizontal scrolling.
+@media (max-width: 600px) {
+  .topic-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name score'
+      'bar  bar';
+    row-gap: 6px;
+
+    .topic-name { grid-area: name; }
+    .topic-score { grid-area: score; text-align: right; }
+    .topic-bar { grid-area: bar; }
+  }
+
+  .topic-highlights {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ir-btn {
@@ -302,4 +385,11 @@
   --ir-text: #f0f0f0;
   --ir-muted: #a0a0a0;
   --ir-accent: #4c9dff;
+
+  // Lighter band shades for the dark surface (still muted, AA on #1e1e1e).
+  --ir-band-strong: #57c877;
+  --ir-band-moderate: #e0a94a;
+  --ir-band-weak: #f07a72;
+  --ir-band-strong-text: #6fd68c;
+  --ir-band-weak-text: #f28b84;
 }

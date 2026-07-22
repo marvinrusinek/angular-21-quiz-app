@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 
 import { formatMMSS } from '../../../shared/utils/format-time';
 import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
+import { InterviewAnalyticsService } from '../../../shared/services/features/interview/interview-analytics.service';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
 
@@ -35,11 +36,16 @@ import { InterviewReviewComponent } from '../../../components/interview/intervie
 export class InterviewResultsComponent {
   private readonly session = inject(InterviewSessionService);
   private readonly router = inject(Router);
+  private readonly analyticsService = inject(InterviewAnalyticsService);
 
   readonly result = this.session.result;
   readonly assessment = this.session.assessment;
   readonly answersByIndex = this.session.answersByIndex;
   readonly timeUsed = computed(() => formatMMSS(this.result()?.timeUsedSeconds ?? 0));
+
+  // Topic Performance analytics — REUSES result.perTopic (no re-scoring). Derives
+  // per-topic bands + strongest / needs-review from the immutable result model.
+  readonly analytics = computed(() => this.analyticsService.analyze(this.result()));
 
   readonly reviewQuestions = computed(() => this.assessment()?.questions ?? []);
   readonly showReview = signal(false);
