@@ -39,6 +39,12 @@
          after the overall result + Topic Performance and before Review Answers. -->
     <app-performance-trends class="interview-results__trends" [trends]="trends()" />
 
+    <!-- Small link to the per-topic breakdown on the History page (not the full
+         Topic Trends dashboard, which would crowd this page). -->
+    <p class="interview-results__topic-trends-link">
+      <a routerLink="/interview/history" fragment="topic-trends" i18n>View Topic Trends</a>
+    </p>
+
     <!-- Interview Readiness — coaching estimate. After Performance Trends, before
          Review Answers; the current interview result stays the primary result. -->
     <app-interview-readiness class="interview-results__readiness" [readiness]="readiness()" />

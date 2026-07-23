@@ -8,6 +8,7 @@ import {
 } from '../../../models/interview-readiness.model';
 import { getQuizData } from '../../../quiz-data-cache';
 import { eligibleInterviewTopicIds } from '../../../utils/interview-topics';
+import { aggregateTopicPercentages } from '../../../utils/interview-topic-history';
 import { QuizDataService } from '../../data/quizdata.service';
 import { InterviewHistoryService } from './interview-history.service';
 
@@ -24,6 +25,9 @@ export const READINESS_WEIGHTS: Readonly<Record<InterviewReadinessFactor, number
 const RECENT_WINDOW = 5;
 // A factor value at/above this reads as a strength; below it, a limitation.
 const WEAK_FACTOR = 60;
+
+// Re-exported for existing importers; the canonical home is interview-topic-history.
+export { aggregateTopicPercentages } from '../../../utils/interview-topic-history';
 
 const clamp100 = (n: number): number => Math.max(0, Math.min(100, n));
 const round = (n: number): number => Math.round(n);
@@ -137,38 +141,6 @@ export function uniquePracticedTopics(
     }
   }
   return [...set];
-}
-
-interface AggregatedTopic {
-  topicId: string;
-  topicName: string;
-  correct: number;
-  total: number;
-  percentage: number;   // raw: correct/total across ALL attempts
-}
-
-/** Aggregate topicPerformance history by topic (raw correct/total sums). */
-export function aggregateTopicPercentages(
-  attempts: readonly InterviewAttemptHistoryEntry[]
-): AggregatedTopic[] {
-  const map = new Map<string, { topicName: string; correct: number; total: number }>();
-  for (const a of attempts) {
-    for (const t of a.topicPerformance) {
-      if (!(t.total > 0)) continue;   // skip empty/invalid topic samples
-      const cur = map.get(t.topicId) ?? { topicName: t.topicName, correct: 0, total: 0 };
-      cur.correct += t.correct;
-      cur.total += t.total;
-      cur.topicName = t.topicName || cur.topicName;
-      map.set(t.topicId, cur);
-    }
-  }
-  return [...map.entries()].map(([topicId, v]) => ({
-    topicId,
-    topicName: v.topicName,
-    correct: v.correct,
-    total: v.total,
-    percentage: v.total > 0 ? (v.correct / v.total) * 100 : 0
-  }));
 }
 
 /** Score → band. */

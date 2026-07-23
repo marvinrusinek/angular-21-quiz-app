@@ -1,0 +1,145 @@
+@if (trends(); as t) {
+  <section class="topic-trends" aria-labelledby="topic-trends-heading">
+    <h2 id="topic-trends-heading" class="topic-trends__heading" i18n>Topic Trends</h2>
+
+    @if (!hasTopics()) {
+      <p class="topic-trends__empty" role="status" i18n>
+        Topic-level history is not available for the retained interviews.
+        Complete another Interview Mode assessment to begin tracking topic trends.
+      </p>
+    } @else {
+      <!-- Compact summary. -->
+      <dl class="tt-summary" aria-label="Topic trends summary" i18n-aria-label>
+        <div><dt i18n>Topics Tracked</dt><dd>{{ t.trackedCount }}</dd></div>
+        <div><dt i18n>Improving</dt><dd>{{ t.improvingCount }}</dd></div>
+        <div><dt i18n>Holding Steady</dt><dd>{{ t.steadyCount }}</dd></div>
+        <div><dt i18n>Needs Attention</dt><dd>{{ t.needsAttentionCount }}</dd></div>
+      </dl>
+
+      <!-- Client-side filters. -->
+      <div class="tt-filters" role="group" aria-label="Filter topics by trend" i18n-aria-label>
+        @for (f of filters(); track f.id) {
+          <button
+            type="button"
+            class="tt-filter"
+            [class.tt-filter--active]="filter() === f.id"
+            [attr.aria-pressed]="filter() === f.id"
+            (click)="setFilter(f.id)"
+          >
+            {{ f.label }} <span class="tt-filter__count">({{ f.count }})</span>
+          </button>
+        }
+      </div>
+
+      @if (allInsufficient()) {
+        <p class="topic-trends__note" role="status" i18n>
+          Complete more interviews with repeated topics to establish directional trends.
+        </p>
+      }
+
+      @if (visibleTopics().length === 0) {
+        <p class="topic-trends__none" role="status" i18n>No topics match this filter.</p>
+      } @else {
+        <ul class="tt-list">
+          @for (topic of visibleTopics(); track topic.topicId) {
+            <li class="tt-card" [class]="'tt-card--' + topic.direction">
+              <!-- Accessible one-sentence equivalent of the whole card + chart. -->
+              <p class="tt-card__sr">{{ ariaSummary(topic) }}</p>
+
+              <div class="tt-card__head">
+                <h3 class="tt-card__name">{{ topic.topicName }}</h3>
+                <div class="tt-card__badges" aria-hidden="true">
+                  <!-- Strength and trend are SEPARATE concepts. -->
+                  <span class="tt-badge" [class]="'tt-badge--band-' + topic.strengthBand">{{ bandLabel(topic.strengthBand) }}</span>
+                  <span class="tt-badge" [class]="'tt-badge--dir-' + topic.direction">{{ directionLabel(topic.direction) }}</span>
+                </div>
+              </div>
+
+              <dl class="tt-card__metrics" aria-hidden="true">
+                <div><dt i18n>Latest</dt><dd>{{ topic.latestPercentage }}%</dd></div>
+                <div>
+                  <dt i18n>Previous</dt>
+                  <dd>{{ topic.previousPercentage === null ? '—' : topic.previousPercentage + '%' }}</dd>
+                </div>
+                <div>
+                  <dt i18n>Change</dt>
+                  <dd [class.tt-up]="(topic.change ?? 0) > 0" [class.tt-down]="(topic.change ?? 0) < 0">
+                    {{ changeLabel(topic.change) }}
+                  </dd>
+                </div>
+                <div><dt i18n>Overall</dt><dd>{{ topic.averagePercentage }}%</dd></div>
+              </dl>
+
+              @if (sparkline(topic.points); as spark) {
+                <svg
+                  class="tt-spark"
+                  [attr.viewBox]="spark.vb"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  [attr.aria-label]="ariaSummary(topic)"
+                >
+                  <path class="tt-spark__line" [attr.d]="spark.line" />
+                  @for (p of spark.points; track $index) {
+                    <circle
+                      class="tt-spark__dot"
+                      [class.tt-spark__dot--latest]="p.latest"
+                      [attr.cx]="p.cx"
+                      [attr.cy]="p.cy"
+                      [attr.r]="p.latest ? 3 : 2"
+                    />
+                  }
+                </svg>
+              }
+
+              <p class="tt-card__sample">{{ sampleText(topic) }}</p>
+              <p class="tt-card__explanation">{{ topic.explanation }}</p>
+
+              <button
+                type="button"
+                class="tt-card__toggle"
+                [attr.aria-expanded]="isExpanded(topic.topicId)"
+                [attr.aria-controls]="'tt-history-' + topic.topicId"
+                (click)="toggle(topic.topicId)"
+              >
+                {{ isExpanded(topic.topicId) ? 'Hide details' : 'View Details' }}
+              </button>
+
+              @if (isExpanded(topic.topicId)) {
+                <div class="tt-history" [id]="'tt-history-' + topic.topicId">
+                  <table class="tt-history__table">
+                    <caption class="tt-card__sr">{{ topic.topicName }} appearance history</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" i18n>Date</th>
+                        <th scope="col" i18n>Score</th>
+                        <th scope="col" i18n>Correct</th>
+                        <th scope="col"><span class="tt-card__sr" i18n>Interview</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of topic.points; track p.attemptId) {
+                        <tr>
+                          <td><time [attr.datetime]="p.completedAt">{{ formatDate(p.completedAt) }}</time></td>
+                          <td>{{ p.percentage }}%</td>
+                          <td>{{ p.correct }}/{{ p.total }}</td>
+                          <td>
+                            <a
+                              class="tt-history__link"
+                              [routerLink]="['/interview/history', p.attemptId]"
+                              [attr.aria-label]="'View Interview number ' + p.attemptNumber"
+                              i18n-aria-label
+                            >View Interview #{{ p.attemptNumber }}</a>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+}

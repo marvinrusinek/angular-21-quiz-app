@@ -168,6 +168,45 @@ test.describe('Interview Mode', () => {
     await expect(page.locator('.readiness__score')).toHaveCount(0);
   });
 
+  test('topic trends: more-data-needed → direction after a repeat → expand → linked summary → cleared', async ({ page }) => {
+    // 1. First interview → topics appear as "More data needed".
+    await page.goto('/interview');
+    await configureAndStart(page, '10');
+    await answerAllAndSubmit(page, 10);
+
+    await page.locator('a:has-text("View Topic Trends")').click();
+    await expect(page).toHaveURL(/\/interview\/history#topic-trends/);
+    await expect(page.locator('.topic-trends__heading')).toHaveText(/Topic Trends/);
+    await expect(page.locator('.tt-badge--dir-insufficient').first()).toContainText('More data needed');
+    await expect(page.locator('.topic-trends__note')).toContainText('repeated topics');
+
+    // 2. Second interview (same topics repeat) → a topic gets a direction + change.
+    await page.locator('a:has-text("Build an Interview")').first().click();
+    await expect(page).toHaveURL(/\/interview$/);
+    await configureAndStart(page, '10');
+    await answerAllAndSubmit(page, 10);
+    await page.locator('a:has-text("View Topic Trends")').click();
+    await page.locator('#topic-trends').scrollIntoViewIfNeeded();
+
+    // A directional (non-insufficient) card now exists with numeric change text.
+    const directional = page.locator('.tt-card:not(.tt-card--insufficient)').first();
+    await expect(directional).toBeVisible();
+    await expect(directional.locator('.tt-card__metrics')).toContainText('%');
+
+    // 3. Expand a topic → history table + link to the historical interview summary.
+    await directional.locator('.tt-card__toggle').click();
+    await expect(directional.locator('.tt-history__table')).toBeVisible();
+    await directional.locator('.tt-history__link').first().click();
+    await expect(page).toHaveURL(/\/interview\/history\/.+/);
+    await expect(page.locator('.ihd__readonly')).toContainText('Read Only');   // no session restored
+
+    // 4. Clearing history removes Topic Trends automatically (no separate store).
+    await page.evaluate(() => localStorage.removeItem('interviewAttemptHistory:v1'));
+    await page.goto('/interview/history');
+    await expect(page.locator('.interview-history__empty')).toBeVisible();
+    await expect(page.locator('.topic-trends')).toHaveCount(0);
+  });
+
   test('deferred feedback: no correctness or explanation during the assessment', async ({ page }) => {
     await page.goto('/interview');
     await configureAndStart(page, '10');

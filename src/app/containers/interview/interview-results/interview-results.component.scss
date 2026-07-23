@@ -94,6 +94,20 @@
     display: block;
   }
 
+  // Small "View Topic Trends" link beneath Performance Trends.
+  &__topic-trends-link {
+    margin: 10px 0 0;
+    font-size: 13px;
+
+    a {
+      color: var(--ir-accent);
+      font-weight: 600;
+      text-decoration: none;
+
+      &:focus-visible { outline: 2px solid var(--ir-accent); outline-offset: 2px; }
+    }
+  }
+
   // Gateway to the read-only Interview History. Centered, subtle — not a primary
   // CTA (the action buttons below remain the primary controls).
   &__history-link {
