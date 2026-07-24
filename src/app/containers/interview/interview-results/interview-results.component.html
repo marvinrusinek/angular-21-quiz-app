@@ -58,42 +58,6 @@
       <a class="ir-btn" routerLink="/interview/history" i18n>View Interview History</a>
     </div>
 
-    <!-- Subtle scroll cue: appears ONLY once the review has been opened, hinting
-         that the answer review is below. Smooth-scrolls to it; not a primary
-         CTA, so it doesn't compete with the action buttons. -->
-    @if (showReview()) {
-      <div class="ir-scroll-cue-wrap">
-        <button
-          type="button"
-          class="ir-scroll-cue"
-          [class.ir-scroll-cue--bounce]="!hasInteracted()"
-          [class.ir-scroll-cue--up]="direction() === 'up'"
-          (click)="onCueClick()"
-          [attr.aria-label]="direction() === 'up' ? cueUpAria : cueDownAria"
-          [attr.title]="direction() === 'up' ? cueUpTitle : cueDownTitle"
-        >
-          <svg
-            class="ir-scroll-cue__icon"
-            viewBox="0 0 24 24"
-            width="30"
-            height="30"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <!-- chevron-up while travelling up, chevron-down otherwise -->
-            <path
-              [attr.d]="direction() === 'up' ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-    }
-
     <div class="interview-results__actions">
       @if (!showReview()) {
         <button type="button" class="ir-btn" (click)="toggleReview()" [attr.aria-expanded]="false" i18n>
@@ -115,7 +79,6 @@
     @if (showReview()) {
       <section class="interview-results__review" aria-label="Answer review" i18n-aria-label>
         <h2
-          #reviewHeading
           id="interview-review-heading"
           class="interview-results__review-heading"
           tabindex="-1"
@@ -130,5 +93,10 @@
         />
       </section>
     }
+
+    <!-- Elevator scroll chevron — same shared cue as History list / detail.
+         Always available on this long page (self-hides when not scrollable), not
+         only after Review Answers is opened. -->
+    <app-scroll-down-indicator />
   </div>
 }

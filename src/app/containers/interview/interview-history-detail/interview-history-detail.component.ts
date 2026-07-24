@@ -19,6 +19,7 @@ import { InterviewAnalyticsService } from '../../../shared/services/features/int
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { TopicPerformanceListComponent } from '../../../components/interview/topic-performance/topic-performance-list.component';
 import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
+import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
 
 /**
  * Read-only historical Interview summary. Reopens the details for ONE past
@@ -40,7 +41,8 @@ import { InterviewReviewComponent } from '../../../components/interview/intervie
     RouterLink,
     ThemeToggleComponent,
     TopicPerformanceListComponent,
-    InterviewReviewComponent
+    InterviewReviewComponent,
+    ScrollDownIndicatorComponent
   ],
   templateUrl: './interview-history-detail.component.html',
   styleUrls: ['./interview-history-detail.component.scss'],

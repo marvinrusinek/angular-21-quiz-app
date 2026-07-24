@@ -73,6 +73,11 @@
     <div class="ihd__actions">
       <a class="ih-btn" routerLink="/interview/history" i18n>Back to Interview History</a>
     </div>
+
+    <!-- Elevator scroll chevron — same shared cue as the History list / Results.
+         Self-contained + self-hides on non-scrolling pages. The detail page is now
+         long (retained Review Answers), so it earns the cue. -->
+    <app-scroll-down-indicator />
   } @else {
     <!-- Unknown / removed id — never a broken page. -->
     <div class="ihd__notfound" role="status">

@@ -110,6 +110,12 @@ describe('InterviewHistoryDetailComponent', () => {
     expect(el.querySelector('.ihd-context__line')?.textContent).toContain('Attempt 2 of 3');
   });
 
+  it('includes the shared elevator scroll chevron on a found detail page', () => {
+    seed([entry('a1', 1)]);
+    const el = render('a1').nativeElement as HTMLElement;
+    expect(el.querySelector('app-scroll-down-indicator')).not.toBeNull();
+  });
+
   it('shows a not-found state for an unknown id', () => {
     seed([entry('a1', 1)]);
     const el = render('does-not-exist').nativeElement as HTMLElement;
