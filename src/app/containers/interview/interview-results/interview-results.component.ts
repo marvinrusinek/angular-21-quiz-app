@@ -20,6 +20,7 @@ import { TopicPerformanceListComponent } from '../../../components/interview/top
 import { InterviewReadinessComponent } from '../../../components/interview/interview-readiness/interview-readiness.component';
 import { InterviewReadinessService } from '../../../shared/services/features/interview/interview-readiness.service';
 import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
+import { InterviewCertificateStatusComponent } from '../../../components/interview/interview-certificate-status/interview-certificate-status.component';
 
 /**
  * Interview Results ("Assessment Complete"). Self-contained score summary +
@@ -38,7 +39,8 @@ import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-in
     PerformanceTrendsComponent,
     TopicPerformanceListComponent,
     InterviewReadinessComponent,
-    ScrollDownIndicatorComponent
+    ScrollDownIndicatorComponent,
+    InterviewCertificateStatusComponent
   ],
   templateUrl: './interview-results.component.html',
   styleUrls: ['./interview-results.component.scss'],

@@ -18,6 +18,8 @@ import { InterviewHistoryComponent } from
     '../containers/interview/interview-history/interview-history.component';
 import { InterviewHistoryDetailComponent } from
     '../containers/interview/interview-history-detail/interview-history-detail.component';
+import { InterviewCertificateComponent } from
+    '../containers/interview/interview-certificate/interview-certificate.component';
 
 import { QuizGuard } from './guards/quiz-guard';
 import { InterviewSessionGuard } from './guards/interview-session-guard';
@@ -78,6 +80,12 @@ export const routes: Routes = [
   {
     path: 'interview/history/:id',
     component: InterviewHistoryDetailComponent
+  },
+  // Angular Interview Master Certificate — the certificate view. Read-only and
+  // deep-linkable; shows a friendly locked state until it has been unlocked.
+  {
+    path: 'interview/certificate',
+    component: InterviewCertificateComponent
   },
 
   // Backward compatibility redirects

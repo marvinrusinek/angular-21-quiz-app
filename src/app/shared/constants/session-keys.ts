@@ -42,3 +42,10 @@ export const SK_ASSESSMENT_INTEGRITY = 'assessmentIntegrity';
 // it is long-term analytics data whose schema is versioned independently, and it
 // is kept fully separate from topic-quiz progress/best-score/achievement stores.
 export const SK_INTERVIEW_HISTORY = 'interviewAttemptHistory:v1';
+
+// Angular Interview Master Certificate — a durable localStorage record of the
+// ONE issued certificate (unlocked flag, issue date, stable certificate id, and
+// an optional user-entered recipient name). Eligibility is NOT persisted here —
+// it is recomputed from the reused Achievements / Readiness / History sources, so
+// this store never duplicates achievement, readiness, or interview-history state.
+export const SK_INTERVIEW_CERTIFICATE = 'interviewCertificate:v1';

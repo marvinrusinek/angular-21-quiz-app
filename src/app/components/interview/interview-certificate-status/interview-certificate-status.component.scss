@@ -1,0 +1,171 @@
+// Inherits the Interview Results `--ir-*` tokens (CSS custom properties cascade
+// by DOM, independent of encapsulation) with local fallbacks so it also works
+// standalone. Calm + professional, not a game reward.
+.ic-status {
+  --ir-surface: var(--ir-surface, #fff);
+  --ir-border: var(--ir-border, #e0e0e0);
+  --ir-text: var(--ir-text, #1a1a1a);
+  --ir-muted: var(--ir-muted, #6a6a6a);
+  --ir-accent: var(--ir-accent, #007aff);
+
+  border: 1px solid var(--ir-border);
+  border-radius: 12px;
+  background: var(--ir-surface);
+  color: var(--ir-text);
+  padding: 16px 18px;
+}
+
+.ic-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0);
+  white-space: nowrap; border: 0;
+}
+
+// ── unlocked card ─────────────────────────────────────────────────────
+.ic-status--unlocked {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  .ic-status__badge { font-size: 30px; line-height: 1; }
+  .ic-status__body { flex: 1 1 auto; min-width: 0; }
+  .ic-status__title { margin: 0; font-size: 17px; font-weight: 800; }
+  .ic-status__sub { margin: 2px 0 0; font-size: 13px; color: var(--ir-muted); }
+}
+
+.ic-status__cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--ir-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover { filter: brightness(1.05); }
+  &:focus-visible { outline: 2px solid var(--ir-accent); outline-offset: 2px; }
+}
+
+// ── progress checklist ────────────────────────────────────────────────
+.ic-status--progress {
+  .ic-status__title { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+  .ic-status__hint { margin: 0 0 12px; font-size: 13px; color: var(--ir-muted); }
+}
+
+.ic-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ic-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  &__mark {
+    flex: none;
+    width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--ir-border);
+    color: var(--ir-muted);
+    font-size: 13px;
+    font-weight: 700;
+
+    &--met {
+      border-color: #36a34a;
+      background: rgba(54, 163, 74, 0.14);
+      color: #2f8f4a;
+    }
+  }
+
+  &__text { display: flex; flex-direction: column; }
+  &__label { font-size: 14px; font-weight: 600; }
+  &__detail { font-size: 12px; color: var(--ir-muted); font-variant-numeric: tabular-nums; }
+}
+
+// ── celebration dialog (subtle) ───────────────────────────────────────
+.ic-dialog__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  animation: ic-fade 0.2s ease-out;
+}
+
+.ic-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  width: min(92vw, 420px);
+  padding: 26px 24px;
+  border-radius: 16px;
+  background: var(--ir-surface, #fff);
+  color: var(--ir-text, #1a1a1a);
+  border: 1px solid var(--ir-border, #e0e0e0);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: ic-pop 0.24s ease-out;
+
+  &:focus-visible { outline: 2px solid var(--ir-accent, #007aff); outline-offset: 3px; }
+
+  &__mark { font-size: 40px; }
+  &__title { margin: 8px 0 8px; font-size: 22px; font-weight: 800; }
+  &__text { margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: var(--ir-muted, #6a6a6a); }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+}
+
+.ic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--ir-border, #e0e0e0);
+  border-radius: 10px;
+  background: var(--ir-surface, #fff);
+  color: var(--ir-text, #1a1a1a);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid var(--ir-accent, #007aff); outline-offset: 2px; }
+
+  &--primary {
+    background: var(--ir-accent, #007aff);
+    border-color: var(--ir-accent, #007aff);
+    color: #fff;
+  }
+}
+
+@keyframes ic-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ic-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+// Subtle by design — disable motion entirely for reduced-motion users.
+@media (prefers-reduced-motion: reduce) {
+  .ic-dialog, .ic-dialog__scrim { animation: none; }
+}

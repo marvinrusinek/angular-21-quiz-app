@@ -1,0 +1,60 @@
+@if (unlocked()) {
+  <!-- Earned — a calm, portfolio-style prompt (no game reward flavour). -->
+  <section class="ic-status ic-status--unlocked" aria-labelledby="ic-status-title">
+    <span class="ic-status__badge" aria-hidden="true">🎓</span>
+    <div class="ic-status__body">
+      <h2 id="ic-status-title" class="ic-status__title" i18n>Angular Interview Master</h2>
+      <p class="ic-status__sub" i18n>Certificate unlocked</p>
+    </div>
+    <a class="ic-status__cta" routerLink="/interview/certificate" i18n>View Certificate</a>
+  </section>
+} @else {
+  <!-- Not yet — show exactly what remains, never hide why it's unavailable. -->
+  <section class="ic-status ic-status--progress" aria-labelledby="ic-progress-title">
+    <h2 id="ic-progress-title" class="ic-status__title" i18n>Certificate Progress</h2>
+    <p class="ic-status__hint" i18n>
+      Unlock the Angular Interview Master certificate by mastering the whole app.
+    </p>
+    <ul class="ic-checklist">
+      @for (r of eligibility().requirements; track r.key) {
+        <li class="ic-check" [class.ic-check--met]="r.met">
+          <span class="ic-check__mark" [class.ic-check__mark--met]="r.met" aria-hidden="true">
+            {{ r.met ? '✓' : '○' }}
+          </span>
+          <span class="ic-check__text">
+            <span class="ic-check__label">{{ r.label }}</span>
+            <span class="ic-check__detail">{{ r.detail }}</span>
+          </span>
+          <span class="ic-sr">{{ r.met ? 'Complete' : 'Incomplete' }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+<!-- Subtle unlock celebration. Fades in once; respects reduced motion (SCSS). -->
+@if (showDialog()) {
+  <div class="ic-dialog__scrim" (click)="dismiss()"></div>
+  <div
+    #dialog
+    class="ic-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ic-dialog-title"
+    tabindex="-1"
+  >
+    <span class="ic-dialog__mark" aria-hidden="true">🎓</span>
+    <h2 id="ic-dialog-title" class="ic-dialog__title" i18n>Congratulations!</h2>
+    <p class="ic-dialog__text" i18n>
+      You have completed every Angular achievement and demonstrated strong
+      interview performance. Your Angular Interview Master Certificate has been
+      unlocked.
+    </p>
+    <div class="ic-dialog__actions">
+      <a class="ic-btn ic-btn--primary" routerLink="/interview/certificate" (click)="dismiss()" i18n>
+        View Certificate
+      </a>
+      <button type="button" class="ic-btn" (click)="dismiss()" i18n>Close</button>
+    </div>
+  </div>
+}

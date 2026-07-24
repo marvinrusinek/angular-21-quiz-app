@@ -53,6 +53,12 @@
          Review Answers; the current interview result stays the primary result. -->
     <app-interview-readiness class="interview-results__readiness" [readiness]="readiness()" />
 
+    <hr class="ir-rule" aria-hidden="true" />
+
+    <!-- Angular Interview Master Certificate — progress checklist, or the unlock
+         celebration + "View Certificate" once every requirement is satisfied. -->
+    <app-interview-certificate-status class="interview-results__certificate" />
+
     <!-- Gateway to the full Interview History (read-only record of past attempts). -->
     <div class="interview-results__history-link">
       <a class="ir-btn" routerLink="/interview/history" i18n>View Interview History</a>

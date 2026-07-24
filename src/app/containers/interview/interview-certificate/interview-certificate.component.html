@@ -1,0 +1,104 @@
+<div class="interview-certificate">
+  <!-- Controls — never printed. -->
+  <div class="ic-bar ic-noprint">
+    <a class="ic-btn" routerLink="/interview/history" i18n>← Interview History</a>
+    <codelab-theme-toggle />
+  </div>
+
+  @if (unlocked()) {
+    <!-- The certificate artifact. Semantic: one h1 (the award title), the award
+         statement, and a definition list for the verifiable facts. -->
+    <article class="ic-certificate" aria-labelledby="ic-title">
+      <div class="ic-cert">
+        <header class="ic-cert__brand">
+          <img class="ic-cert__logo" src="assets/images/codelab_logo.jpeg" alt="Codelab" />
+          <span class="ic-cert__seal" aria-hidden="true">★</span>
+          <img class="ic-cert__angular" src="assets/images/angular.svg" alt="Angular" />
+        </header>
+
+        <p class="ic-cert__eyebrow" i18n>Certificate of Achievement</p>
+        <h1 id="ic-title" class="ic-cert__title">{{ title }}</h1>
+
+        <p class="ic-cert__presented" i18n>This certificate is proudly presented to</p>
+
+        <div class="ic-cert__recipient">
+          @if (editingName()) {
+            <div class="ic-name-edit ic-noprint">
+              <label class="ic-sr" for="ic-name" i18n>Your name</label>
+              <input
+                id="ic-name"
+                class="ic-name-input"
+                type="text"
+                maxlength="60"
+                [value]="nameDraft()"
+                (input)="onNameInput($any($event.target).value)"
+                (keyup.enter)="saveName()"
+                placeholder="Your name"
+                i18n-placeholder
+              />
+              <button type="button" class="ic-btn ic-btn--primary" (click)="saveName()" i18n>Save</button>
+              <button type="button" class="ic-btn" (click)="cancelEditName()" i18n>Cancel</button>
+            </div>
+          } @else {
+            <p class="ic-cert__name" [class.ic-cert__name--placeholder]="!recipientName()">
+              {{ recipientName() || 'Angular Developer' }}
+            </p>
+            <button type="button" class="ic-name-btn ic-noprint" (click)="startEditName()">
+              @if (recipientName()) { <ng-container i18n>Edit name</ng-container> }
+              @else { <ng-container i18n>Add your name</ng-container> }
+            </button>
+          }
+        </div>
+
+        <p class="ic-cert__statement" i18n>
+          for completing every Angular achievement, mastering the quizzes, and
+          demonstrating strong performance under interview conditions — earning
+          recognition as an <strong>Angular Interview Master</strong>.
+        </p>
+
+        <dl class="ic-cert__facts">
+          <div class="ic-fact">
+            <dt i18n>Interview Readiness</dt>
+            <dd>{{ tierLabel() }}</dd>
+          </div>
+          <div class="ic-fact">
+            <dt i18n>Interview Score</dt>
+            <dd>{{ score() !== null ? score() + '%' : '—' }}</dd>
+          </div>
+          <div class="ic-fact">
+            <dt i18n>Date Issued</dt>
+            <dd>{{ issuedDate() }}</dd>
+          </div>
+        </dl>
+
+        <footer class="ic-cert__foot">
+          <span class="ic-cert__signature">
+            <span class="ic-cert__signature-name" i18n>Angular Quiz App</span>
+            <span class="ic-cert__signature-role" i18n>Issuing Authority</span>
+          </span>
+          <span class="ic-cert__id">
+            <ng-container i18n>Certificate ID</ng-container>
+            <strong>{{ record()!.certificateId }}</strong>
+          </span>
+        </footer>
+      </div>
+    </article>
+
+    <div class="ic-actions ic-noprint">
+      <button type="button" class="ic-btn ic-btn--primary" (click)="print()" i18n>Print Certificate</button>
+      <a class="ic-btn" routerLink="/interview/results" i18n>Back to Results</a>
+    </div>
+  } @else {
+    <!-- Direct visit before unlocking — a friendly, non-broken state. -->
+    <div class="ic-locked" role="status">
+      <span class="ic-locked__icon" aria-hidden="true">🔒</span>
+      <h1 class="ic-locked__title" i18n>Certificate not yet unlocked</h1>
+      <p class="ic-locked__text" i18n>
+        Earn every achievement, reach the {{ requiredTierLabel }} Interview Readiness
+        tier, and score {{ minScore }}% or higher on an interview to unlock your
+        Angular Interview Master certificate.
+      </p>
+      <a class="ic-btn ic-btn--primary" routerLink="/interview/results" i18n>View your progress</a>
+    </div>
+  }
+</div>
