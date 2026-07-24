@@ -299,6 +299,8 @@
   &__actions {
     margin-top: 16px;
     display: flex;
+    flex-wrap: wrap;
+    gap: 10px;   // space between "Review Answers" and "View Summary"
     justify-content: flex-end;
   }
 }
