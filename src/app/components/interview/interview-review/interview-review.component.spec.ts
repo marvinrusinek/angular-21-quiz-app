@@ -62,9 +62,9 @@ describe('interview-review-status helpers', () => {
   });
 
   it('question type labels (from type or inferred)', () => {
-    expect(getReviewQuestionType(single)).toBe('Single answer');
-    expect(getReviewQuestionType(multi)).toBe('Select all that apply');
-    expect(getReviewQuestionType(tf)).toBe('True or false');
+    expect(getReviewQuestionType(single)).toBe('Single Answer');
+    expect(getReviewQuestionType(multi)).toBe('Multiple Answer');
+    expect(getReviewQuestionType(tf)).toBe('True / False');
   });
 
   it('correct-answer labels + grammatical join', () => {
@@ -126,7 +126,7 @@ describe('InterviewReviewComponent', () => {
   it('31/32/33/34/35/36/37. renders number, topic/type, answer states, missed correct, explanation, unanswered msg, status', () => {
     setup(MIXED, result({ perTopic: [{ quizId: 'q', title: 'Signals', correct: 0, total: 0, percentage: 0 }] as never }));
     // Type labels for each question.
-    expect(el().textContent).toContain('Select all that apply');
+    expect(el().textContent).toContain('Multiple Answer');
     // Q2 (incorrect multi): C selected-correct, E correct-missed, D neutral.
     const q2 = component.items()[1];
     expect(q2.options.find((o) => o.text === 'C')!.state).toBe('correct-selected');

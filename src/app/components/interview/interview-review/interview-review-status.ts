@@ -49,26 +49,28 @@ export function getReviewOptionLabel(state: InterviewReviewOptionState): string 
   }
 }
 
-/** Human question-type label. Uses `type` when present, else infers from the
- *  options (multiple correct → select-all; true/false pair → true/false). */
+/** Human question-type label for the post-assessment Review — descriptive
+ *  ("Multiple Answer"), not the pre-answer instruction ("Select all that
+ *  apply"). Uses `type` when present, else infers from the options (multiple
+ *  correct → Multiple Answer; true/false pair → True / False). */
 export function getReviewQuestionType(question: QuizQuestion): string {
   switch (question.type) {
     case QuestionType.TrueFalse:
-      return $localize`True or false`;
+      return $localize`True / False`;
     case QuestionType.MultipleAnswer:
-      return $localize`Select all that apply`;
+      return $localize`Multiple Answer`;
     case QuestionType.SingleAnswer:
-      return $localize`Single answer`;
+      return $localize`Single Answer`;
     default:
       break;
   }
   const options = question.options ?? [];
-  if (options.filter((o) => o.correct === true).length > 1) return $localize`Select all that apply`;
+  if (options.filter((o) => o.correct === true).length > 1) return $localize`Multiple Answer`;
   const texts = options.map((o) => (o.text ?? '').trim().toLowerCase());
   if (texts.length === 2 && texts.includes('true') && texts.includes('false')) {
-    return $localize`True or false`;
+    return $localize`True / False`;
   }
-  return $localize`Single answer`;
+  return $localize`Single Answer`;
 }
 
 /** The visible texts of the correct option(s). */
