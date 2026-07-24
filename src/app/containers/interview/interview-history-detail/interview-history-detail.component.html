@@ -53,7 +53,7 @@
       @if (hasReview()) {
         <!-- Retained per-question review — reuses the read-only Review Answers
              list. Embedded: the detail header already shows attempt #/date/%. -->
-        <section class="ihd-review" aria-labelledby="ihd-review-heading">
+        <section id="review" class="ihd-review" aria-labelledby="ihd-review-heading">
           <h2 id="ihd-review-heading" class="ihd-review__heading" i18n>Review Answers</h2>
           <app-interview-review
             [questions]="reviewQuestions()"

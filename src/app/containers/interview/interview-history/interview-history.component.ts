@@ -1,9 +1,13 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
+  ElementRef,
   inject,
   signal,
+  viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -56,6 +60,43 @@ interface HistoryCard {
 export class InterviewHistoryComponent {
   private readonly history = inject(InterviewHistoryService);
   private readonly readinessService = inject(InterviewReadinessService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // The interviews list section — the scroll target for the quick-jump link and
+  // what the visibility observer watches.
+  private readonly interviewsSection = viewChild<ElementRef<HTMLElement>>('interviewsSection');
+
+  // Whether the interviews list is at least partly in the viewport. Starts true
+  // so the jump link never flashes before the observer measures; the observer
+  // flips it to false while the list is below the fold.
+  private readonly interviewsVisible = signal(true);
+
+  // The quick-jump link shows only when there IS history and the list isn't
+  // currently visible (i.e. the user would otherwise have to scroll to reach it).
+  readonly showJumpLink = computed(() => this.hasHistory() && !this.interviewsVisible());
+
+  constructor() {
+    afterNextRender(() => this.observeInterviews());
+  }
+
+  /** Smooth-scroll to the interviews list. */
+  jumpToInterviews(): void {
+    this.interviewsSection()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Track whether the interviews list is on-screen so the jump link hides once
+  // the user reaches it (and never shows when the list already fits above the
+  // fold). No-op where IntersectionObserver is unavailable.
+  private observeInterviews(): void {
+    const el = this.interviewsSection()?.nativeElement;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => this.interviewsVisible.set(entries.some((e) => e.isIntersecting)),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    this.destroyRef.onDestroy(() => observer.disconnect());
+  }
 
   // Summary metrics — reuse the shared trends (same source as Performance Trends).
   readonly trends = this.history.trends;

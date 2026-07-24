@@ -100,6 +100,54 @@ describe('InterviewHistoryComponent', () => {
     expect(link?.getAttribute('href')).toContain('/interview/history/att-1');
   });
 
+  it('shows a direct "Review Answers" shortcut (deep-linked to #review) only when answers were retained', () => {
+    const withReview: InterviewAttemptHistoryEntry = {
+      ...entry(70, 1),
+      review: [
+        {
+          questionText: 'Q', explanation: '',
+          options: [{ optionId: 1, text: 'A', correct: true }],
+          selectedOptionIds: [1]
+        }
+      ]
+    };
+    seed([withReview, entry(80, 2)]);   // #2 has no review
+    const cards = Array.from((render().nativeElement as HTMLElement).querySelectorAll('.ih-card'));
+    // Newest first → card[0] is #2 (no review), card[1] is #1 (has review).
+    const links = (card: Element) => Array.from(card.querySelectorAll<HTMLAnchorElement>('.ih-card__actions a'));
+    const noReview = links(cards[0]).map((a) => a.textContent?.trim());
+    const hasReview = links(cards[1]);
+    expect(noReview).toEqual(['View Summary']);
+    const review = hasReview.find((a) => a.textContent?.includes('Review Answers'));
+    expect(review).toBeTruthy();
+    expect(review!.getAttribute('href')).toContain('/interview/history/att-1#review');
+  });
+
+  it('orders the page summary → interviews → readiness → topic trends', () => {
+    seed([entry(70, 1)]);
+    const el = render().nativeElement as HTMLElement;
+    const nodes = ['.ih-summary', '#interviews', '.interview-history__readiness', '#topic-trends'].map(
+      (sel) => el.querySelector(sel)
+    );
+    nodes.forEach((n) => expect(n).not.toBeNull());
+    // The interviews list contains the cards, and each section precedes the next.
+    expect(el.querySelector('#interviews .ih-card')).not.toBeNull();
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const rel = nodes[i]!.compareDocumentPosition(nodes[i + 1]!);
+      expect(rel & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it('jumpToInterviews smooth-scrolls the interviews section into view', () => {
+    seed([entry(70, 1)]);
+    const fixture = render();
+    const section = (fixture.nativeElement as HTMLElement).querySelector('#interviews') as HTMLElement;
+    const scroll = jest.fn();
+    section.scrollIntoView = scroll;
+    fixture.componentInstance.jumpToInterviews();
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
+
   it('16. filters are real buttons and actions are real links (keyboard-operable)', () => {
     seed([entry(70, 1)]);
     const el = render().nativeElement as HTMLElement;

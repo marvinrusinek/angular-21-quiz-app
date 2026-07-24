@@ -34,22 +34,28 @@
       </div>
     </dl>
 
-    <!-- Compact readiness summary (full breakdown lives on the Results page). -->
-    <div class="interview-history__readiness">
-      <app-interview-readiness [readiness]="readiness()" [compact]="true" />
-    </div>
+    <!-- Quick jump to the interviews list — shown only while the list is below
+         the fold (an IntersectionObserver hides it once the list is in view). -->
+    @if (showJumpLink()) {
+      <p class="interview-history__jump">
+        <button type="button" class="ih-jump-link" (click)="jumpToInterviews()">
+          <ng-container i18n>Jump to Interviews</ng-container>
+          <span class="ih-jump-link__arrow" aria-hidden="true">↓</span>
+        </button>
+      </p>
+    }
 
-    <hr class="ih-rule" aria-hidden="true" />
-
-    <!-- Topic Trends — per-topic direction/strength across attempts. -->
-    <div id="topic-trends" class="interview-history__topic-trends">
-      <app-interview-topic-trends [trends]="topicTrends()" />
-    </div>
-
-    <hr class="ih-rule" aria-hidden="true" />
-
-    <!-- Filter (client-side): All / Submitted / Time Expired. -->
-    <div class="ih-filters" role="group" aria-label="Filter interviews by completion" i18n-aria-label>
+    <!-- Interviews list — placed right after the summary (above Readiness /
+         Topic Trends) so your past interviews are the primary content. -->
+    <section
+      #interviewsSection
+      id="interviews"
+      class="interview-history__interviews"
+      aria-label="Your interviews"
+      i18n-aria-label
+    >
+      <!-- Filter (client-side): All / Submitted / Time Expired. -->
+      <div class="ih-filters" role="group" aria-label="Filter interviews by completion" i18n-aria-label>
       @for (f of filters; track f.id) {
         <button
           type="button"
@@ -113,6 +119,19 @@
             }
 
             <div class="ih-card__actions">
+              <!-- Direct shortcut to this attempt's answers — deep-links straight
+                   to the Review Answers section (the detail page scrolls to it).
+                   Shown only when a per-question review was retained. -->
+              @if (c.entry.review?.length) {
+                <a
+                  class="ih-btn ih-btn--primary"
+                  [routerLink]="['/interview/history', c.entry.id]"
+                  fragment="review"
+                  [attr.aria-label]="'Review answers for Interview #' + c.number"
+                  i18n-aria-label
+                  i18n
+                >Review Answers</a>
+              }
               <a
                 class="ih-btn"
                 [routerLink]="['/interview/history', c.entry.id]"
@@ -125,6 +144,21 @@
         }
       </ul>
     }
+    </section>
+
+    <hr class="ih-rule" aria-hidden="true" />
+
+    <!-- Compact readiness summary (full breakdown lives on the Results page). -->
+    <div class="interview-history__readiness">
+      <app-interview-readiness [readiness]="readiness()" [compact]="true" />
+    </div>
+
+    <hr class="ih-rule" aria-hidden="true" />
+
+    <!-- Topic Trends — per-topic direction/strength across attempts. -->
+    <div id="topic-trends" class="interview-history__topic-trends">
+      <app-interview-topic-trends [trends]="topicTrends()" />
+    </div>
 
     <div class="interview-history__footer">
       <a class="ih-btn" routerLink="/interview" i18n>Build an Interview</a>

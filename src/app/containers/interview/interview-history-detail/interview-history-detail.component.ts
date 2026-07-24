@@ -1,11 +1,12 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, ViewportScroller } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -53,6 +54,17 @@ export class InterviewHistoryDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly history = inject(InterviewHistoryService);
   private readonly analyticsService = inject(InterviewAnalyticsService);
+  private readonly viewport = inject(ViewportScroller);
+
+  constructor() {
+    // Deep-link support: arriving with #review (e.g. the "Review Answers"
+    // shortcut on a History card) scrolls straight to the answers once rendered.
+    afterNextRender(() => {
+      if (this.route.snapshot.fragment === 'review' && this.hasReview()) {
+        this.viewport.scrollToAnchor('review');
+      }
+    });
+  }
 
   private readonly params = toSignal(this.route.paramMap, { initialValue: null });
   readonly id = computed(() => this.params()?.get('id') ?? null);

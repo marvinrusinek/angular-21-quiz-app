@@ -90,6 +90,9 @@ describe('InterviewHistoryDetailComponent', () => {
     // Review list renders; the "not retained" note does not.
     expect(el.querySelector('.ihd-note')).toBeNull();
     expect(el.querySelector('.ihd-review__heading')?.textContent).toContain('Review Answers');
+    // The section carries the #review anchor so the History card shortcut can
+    // deep-link straight to it.
+    expect(el.querySelector('#review.ihd-review')).not.toBeNull();
     expect(el.querySelector('.rv-item')).not.toBeNull();
     expect(el.textContent).toContain('What is a signal?');
     // Embedded on this page: the review's own header meta is suppressed (the
