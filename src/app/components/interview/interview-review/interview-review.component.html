@@ -5,7 +5,7 @@
 
   <!-- Header meta — shown only when available (from the submitted result / the
        just-recorded attempt). Read-only context, never editable. -->
-  @if (result(); as r) {
+  @if (!embedded() && result(); as r) {
     <p class="rv-meta">
       @if (attemptNumber() !== null) {
         <span class="rv-meta__item"><ng-container i18n>Interview</ng-container> #{{ attemptNumber() }}</span>

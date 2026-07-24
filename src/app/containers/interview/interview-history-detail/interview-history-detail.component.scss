@@ -149,6 +149,21 @@
   }
 }
 
+.ihd-review {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ir-border);
+
+  &__heading {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ir-muted);
+  }
+}
+
 .ihd-note {
   margin: 16px 0 0;
   padding: 10px 14px;

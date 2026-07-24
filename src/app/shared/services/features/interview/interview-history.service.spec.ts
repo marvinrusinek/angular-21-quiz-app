@@ -7,12 +7,16 @@ import {
 } from '../../../models/interview-history.model';
 import { SK_INTERVIEW_HISTORY } from '../../../constants/session-keys';
 import {
+  buildReviewSnapshot,
   filterAttempts,
   InterviewHistoryService,
   summarizeTrends,
   validateAttemptEntry,
-  validateHistoryStore
+  validateHistoryStore,
+  validateReviewSnapshots
 } from './interview-history.service';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { QuestionType } from '../../../models/question-type.enum';
 
 // ── factories ─────────────────────────────────────────────────────────
 function topic(quizId: string, correct: number, total: number): InterviewTopicScore {
@@ -195,6 +199,75 @@ describe('InterviewHistoryService — persistence', () => {
     const tp = svc.history()[0].topicPerformance;
     expect(tp.map((t) => t.topicId).sort()).toEqual(['forms', 'http']);
     expect(tp.find((t) => t.topicId === 'forms')).toMatchObject({ correct: 4, total: 5, percentage: 80 });
+  });
+});
+
+describe('per-question review snapshot', () => {
+  // Q1 single (A correct), Q2 multi (C+E correct) with a topic + type.
+  const questions: QuizQuestion[] = [
+    {
+      questionText: 'Q1', explanation: 'E1', type: QuestionType.SingleAnswer, sourceQuizId: 'topicA',
+      options: [{ text: 'A', correct: true, optionId: 1 }, { text: 'B', optionId: 2 }]
+    },
+    {
+      questionText: 'Q2', explanation: 'E2', type: QuestionType.MultipleAnswer, sourceQuizId: 'topicB',
+      options: [{ text: 'C', correct: true, optionId: 3 }, { text: 'D', optionId: 4 }, { text: 'E', correct: true, optionId: 5 }]
+    }
+  ];
+
+  it('buildReviewSnapshot captures options, correctness, topic/type and the selection', () => {
+    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3] });
+    expect(snap).toHaveLength(2);
+    expect(snap[0]).toMatchObject({
+      questionText: 'Q1', explanation: 'E1', type: QuestionType.SingleAnswer, sourceQuizId: 'topicA',
+      selectedOptionIds: [1]
+    });
+    expect(snap[0].options).toEqual([
+      { optionId: 1, text: 'A', correct: true },
+      { optionId: 2, text: 'B', correct: false }
+    ]);
+    // Unanswered → empty selection; options with no id are dropped.
+    expect(buildReviewSnapshot(questions, {})[1].selectedOptionIds).toEqual([]);
+  });
+
+  it('record(...) persists the snapshot when the live source is supplied', () => {
+    localStorage.clear();
+    const svc = freshService();
+    svc.record(makeResult(50), 'att-r', { questions, answersByIndex: { 0: [1], 1: [3, 5] } });
+    const saved = svc.history()[0];
+    expect(saved.review).toBeDefined();
+    expect(saved.review).toHaveLength(2);
+    expect(saved.review![1].selectedOptionIds).toEqual([3, 5]);
+  });
+
+  it('record(...) without a source leaves review undefined (compact, back-compat)', () => {
+    localStorage.clear();
+    const svc = freshService();
+    svc.record(makeResult(50), 'att-n');
+    expect(svc.history()[0].review).toBeUndefined();
+  });
+
+  it('validateReviewSnapshots round-trips a persisted snapshot and drops junk', () => {
+    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3, 5] });
+    const roundTripped = validateReviewSnapshots(JSON.parse(JSON.stringify(snap)));
+    expect(roundTripped).toEqual(snap);
+    // Non-array / empty → undefined (falls back to the "not retained" note).
+    expect(validateReviewSnapshots(undefined)).toBeUndefined();
+    expect(validateReviewSnapshots('nope')).toBeUndefined();
+    expect(validateReviewSnapshots([])).toBeUndefined();
+    // A selection referencing an unknown option id is dropped.
+    const tampered = [{ questionText: 'Q', explanation: '', options: [{ optionId: 1, text: 'A', correct: true }], selectedOptionIds: [1, 99] }];
+    expect(validateReviewSnapshots(tampered)![0].selectedOptionIds).toEqual([1]);
+    // A question with no valid options is unusable → dropped.
+    expect(validateReviewSnapshots([{ questionText: 'Q', options: [] }])).toBeUndefined();
+  });
+
+  it('validateAttemptEntry keeps a valid review and legacy entries stay review-free', () => {
+    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3, 5] });
+    const withReview = validateAttemptEntry({ ...entry(50), review: JSON.parse(JSON.stringify(snap)) });
+    expect(withReview?.review).toEqual(snap);
+    // Legacy entry (no review key) validates fine with review undefined.
+    expect(validateAttemptEntry(entry(50))?.review).toBeUndefined();
   });
 });
 

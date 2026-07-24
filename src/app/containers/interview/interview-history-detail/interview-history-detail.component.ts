@@ -12,11 +12,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { formatDuration } from '../../../shared/utils/format-time';
 import { InterviewResult } from '../../../shared/models/InterviewResult.model';
 import { InterviewDifficulty } from '../../../shared/models/AssessmentConfig.model';
+import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { InterviewAttemptHistoryEntry } from '../../../shared/models/interview-history.model';
 import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
 import { InterviewAnalyticsService } from '../../../shared/services/features/interview/interview-analytics.service';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { TopicPerformanceListComponent } from '../../../components/interview/topic-performance/topic-performance-list.component';
+import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
 
 /**
  * Read-only historical Interview summary. Reopens the details for ONE past
@@ -25,13 +27,21 @@ import { TopicPerformanceListComponent } from '../../../components/interview/top
  * InterviewAnalyticsService + the Topic Performance presentation.
  *
  * Strictly historical + read-only: no session, no timer, no answer controls, no
- * path back into an active interview. Per-question answer review is NOT retained
- * in history (compact-storage design), so the page says so explicitly.
+ * path back into an active interview. When the attempt retained a per-question
+ * review snapshot it reopens the read-only Review Answers list (reusing
+ * InterviewReviewComponent); legacy attempts without one show the "not retained"
+ * note instead.
  */
 @Component({
   selector: 'codelab-interview-history-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ThemeToggleComponent, TopicPerformanceListComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ThemeToggleComponent,
+    TopicPerformanceListComponent,
+    InterviewReviewComponent
+  ],
   templateUrl: './interview-history-detail.component.html',
   styleUrls: ['./interview-history-detail.component.scss'],
   encapsulation: ViewEncapsulation.None,
@@ -60,10 +70,39 @@ export class InterviewHistoryDetailComponent {
 
   readonly entry = computed<InterviewAttemptHistoryEntry | null>(() => this.found()?.entry ?? null);
 
-  // Reconstruct a result to reuse the analytics pipeline (topic bands, highlights).
-  readonly analytics = computed(() => {
+  // Reconstruct an InterviewResult once — reused for both the analytics pipeline
+  // (topic bands, highlights) and the Review Answers summary/topic-name lookup.
+  readonly result = computed<InterviewResult | null>(() => {
     const e = this.entry();
-    return e ? this.analyticsService.analyze(toResult(e)) : null;
+    return e ? toResult(e) : null;
+  });
+
+  readonly analytics = computed(() => {
+    const r = this.result();
+    return r ? this.analyticsService.analyze(r) : null;
+  });
+
+  // Whether this attempt retained a per-question review snapshot.
+  readonly hasReview = computed(() => (this.entry()?.review?.length ?? 0) > 0);
+
+  // Rebuild the read-only Review inputs from the stored snapshot. These are inert
+  // plain-data QuizQuestion/answers shapes — never a live/scoreable session.
+  readonly reviewQuestions = computed<QuizQuestion[]>(() =>
+    (this.entry()?.review ?? []).map((s) => ({
+      questionText: s.questionText,
+      explanation: s.explanation,
+      type: s.type,
+      sourceQuizId: s.sourceQuizId,
+      options: s.options.map((o) => ({ optionId: o.optionId, text: o.text, correct: o.correct }))
+    }))
+  );
+
+  readonly reviewAnswers = computed<Record<number, number[]>>(() => {
+    const out: Record<number, number[]> = {};
+    (this.entry()?.review ?? []).forEach((s, i) => {
+      out[i] = [...s.selectedOptionIds];
+    });
+    return out;
   });
 
   // Performance context — reuse the shared trends (no independent recalculation).
@@ -92,16 +131,22 @@ export class InterviewHistoryDetailComponent {
   }
 }
 
-// Reconstruct an InterviewResult from a compact history entry. Only the fields
-// the historical summary actually displays are meaningful; answered/unanswered
-// and focusChanges are not retained and are not shown.
+// Reconstruct an InterviewResult from a compact history entry. When a review
+// snapshot was retained, answered/unanswered/incorrect are derived accurately
+// from it (a question with no selection is unanswered, not incorrect). Without
+// one, we fall back to treating every question as answered — focusChanges is not
+// retained and is not shown.
 function toResult(e: InterviewAttemptHistoryEntry): InterviewResult {
+  const unanswered = e.review
+    ? e.review.filter((q) => (q.selectedOptionIds?.length ?? 0) === 0).length
+    : 0;
+  const answered = Math.max(0, e.totalQuestions - unanswered);
   return {
     total: e.totalQuestions,
-    answered: e.totalQuestions,
-    unanswered: 0,
+    answered,
+    unanswered,
     correct: e.score,
-    incorrect: Math.max(0, e.totalQuestions - e.score),
+    incorrect: Math.max(0, answered - e.score),
     percentage: e.percentage,
     timeUsedSeconds: e.durationSeconds ?? 0,
     timeRemainingSeconds: 0,

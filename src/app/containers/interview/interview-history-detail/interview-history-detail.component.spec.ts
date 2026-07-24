@@ -63,10 +63,38 @@ describe('InterviewHistoryDetailComponent', () => {
     expect(ro?.getAttribute('aria-label')).toContain('Read only');
   });
 
-  it('10. states that per-question review was not retained (read-only, no session)', () => {
+  it('10. states that per-question review was not retained for a legacy entry', () => {
     seed([entry('a1', 1)]);
     const el = render('a1').nativeElement as HTMLElement;
     expect(el.querySelector('.ihd-note')?.textContent).toContain('Detailed answer review was not retained');
+    expect(el.querySelector('app-interview-review')).toBeNull();
+  });
+
+  it('reopens the read-only Review Answers list when a review snapshot was retained', () => {
+    const withReview: InterviewAttemptHistoryEntry = {
+      ...entry('a1', 1),
+      review: [
+        {
+          questionText: 'What is a signal?', explanation: 'A reactive primitive.',
+          sourceQuizId: 'forms',
+          options: [
+            { optionId: 1, text: 'A value', correct: true },
+            { optionId: 2, text: 'A pipe', correct: false }
+          ],
+          selectedOptionIds: [2]   // answered, wrong
+        }
+      ]
+    };
+    seed([withReview]);
+    const el = render('a1').nativeElement as HTMLElement;
+    // Review list renders; the "not retained" note does not.
+    expect(el.querySelector('.ihd-note')).toBeNull();
+    expect(el.querySelector('.ihd-review__heading')?.textContent).toContain('Review Answers');
+    expect(el.querySelector('.rv-item')).not.toBeNull();
+    expect(el.textContent).toContain('What is a signal?');
+    // Embedded on this page: the review's own header meta is suppressed (the
+    // detail header already shows attempt #/date/score).
+    expect(el.querySelector('.rv-meta')).toBeNull();
   });
 
   it('reuses the shared Topic Performance component', () => {

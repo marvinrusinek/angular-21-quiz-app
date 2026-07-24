@@ -1,10 +1,12 @@
 /**
  * Interview Mode performance history — the durable, versioned analytics data
- * behind the Performance Trends chart. Compact by design: it stores per-attempt
- * SCORES and per-topic tallies only, NEVER the full questions, options,
- * explanations or review payload. Kept fully separate from topic-quiz progress /
- * best-score / achievement stores (its own SK_INTERVIEW_HISTORY key).
+ * behind the Performance Trends chart. Compact by design: each attempt stores
+ * per-attempt SCORES and per-topic tallies, plus an OPTIONAL per-question review
+ * snapshot (added so the History detail page can reopen the read-only Review
+ * Answers list). Kept fully separate from topic-quiz progress / best-score /
+ * achievement stores (its own SK_INTERVIEW_HISTORY key).
  */
+import { QuestionType } from './question-type.enum';
 
 /** Retention window: only the latest N completed attempts are kept. */
 export const INTERVIEW_HISTORY_MAX = 20;
@@ -25,6 +27,26 @@ export interface InterviewTopicHistoryEntry {
   percentage: number;    // 0–100
 }
 
+/** One option within a retained per-question review snapshot. Plain data only —
+ *  no live Option behaviour (selected/highlight/feedback/etc. are never kept). */
+export interface InterviewReviewOptionSnapshot {
+  optionId: number;
+  text: string;
+  correct: boolean;
+}
+
+/** One question's retained review data — enough to rebuild the read-only Review
+ *  Answers list for a past attempt: the question, its options + correctness, the
+ *  explanation, and the user's selection (empty = unanswered). */
+export interface InterviewReviewQuestionSnapshot {
+  questionText: string;
+  explanation: string;
+  type?: QuestionType;          // preserved when known; else inferred at render
+  sourceQuizId?: string;        // topic attribution (maps to topicPerformance id)
+  options: InterviewReviewOptionSnapshot[];
+  selectedOptionIds: number[];  // the user's picks (may be empty)
+}
+
 /** One completed Interview Mode attempt. */
 export interface InterviewAttemptHistoryEntry {
   id: string;                    // stable, unique per attempt (dedup anchor)
@@ -42,6 +64,9 @@ export interface InterviewAttemptHistoryEntry {
   configuredDifficulty?: string;
   selectedTopicIds: string[];
   topicPerformance: InterviewTopicHistoryEntry[];
+  // Optional per-question review snapshot. Present on attempts recorded once this
+  // shipped; absent on legacy entries (which fall back to "not retained").
+  review?: InterviewReviewQuestionSnapshot[];
 }
 
 /** The persisted store shape. */

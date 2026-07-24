@@ -236,7 +236,10 @@ export class InterviewSessionService {
     // idempotent, so a manual submit racing a timer-expiry submit records one
     // attempt, and a Results re-render / refresh / Review toggle never re-enters
     // here. History is compact analytics only; it never touches topic-quiz state.
-    this.history.record(result, this._attemptId);
+    this.history.record(result, this._attemptId, {
+      questions: assessment.questions ?? [],
+      answersByIndex: this._answersByIndex()
+    });
     // Submitted → no longer resumable; drop the persisted active session.
     this.persist();
     return result;

@@ -50,10 +50,24 @@
         </p>
       </section>
 
-      <!-- Per-question review is intentionally not retained (compact history). -->
-      <p class="ihd-note" role="note" i18n>
-        Detailed answer review was not retained for this interview.
-      </p>
+      @if (hasReview()) {
+        <!-- Retained per-question review — reuses the read-only Review Answers
+             list. Embedded: the detail header already shows attempt #/date/%. -->
+        <section class="ihd-review" aria-labelledby="ihd-review-heading">
+          <h2 id="ihd-review-heading" class="ihd-review__heading" i18n>Review Answers</h2>
+          <app-interview-review
+            [questions]="reviewQuestions()"
+            [answersByIndex]="reviewAnswers()"
+            [result]="result()"
+            [embedded]="true"
+          />
+        </section>
+      } @else {
+        <!-- Legacy attempt recorded before per-question review was retained. -->
+        <p class="ihd-note" role="note" i18n>
+          Detailed answer review was not retained for this interview.
+        </p>
+      }
     </div>
 
     <div class="ihd__actions">

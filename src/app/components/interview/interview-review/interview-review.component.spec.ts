@@ -216,4 +216,13 @@ describe('InterviewReviewComponent', () => {
     setup(MIXED);
     expect(chipIds()).toEqual(['all', 'incorrect', 'unanswered', 'correct']);
   });
+
+  it('embedded mode hides the header meta but keeps the review list', () => {
+    setup(MIXED, result());
+    expect(el().querySelector('.rv-meta')).not.toBeNull();   // shown by default
+    fixture.componentRef.setInput('embedded', true);
+    fixture.detectChanges();
+    expect(el().querySelector('.rv-meta')).toBeNull();       // suppressed when embedded
+    expect(itemEls().length).toBeGreaterThan(0);             // list still renders
+  });
 });

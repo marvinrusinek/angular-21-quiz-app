@@ -1,12 +1,16 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { InterviewResult } from '../../../models/InterviewResult.model';
+import { QuizQuestion } from '../../../models/QuizQuestion.model';
+import { QuestionType } from '../../../models/question-type.enum';
 import {
   INTERVIEW_HISTORY_MAX,
   INTERVIEW_HISTORY_VERSION,
   InterviewAttemptHistoryEntry,
   InterviewAttemptHistoryStore,
   InterviewCompletionReason,
+  InterviewReviewOptionSnapshot,
+  InterviewReviewQuestionSnapshot,
   InterviewTopicHistoryEntry,
   InterviewTrendDirection,
   InterviewTrendPoint,
@@ -23,6 +27,13 @@ const TREND_THRESHOLD = 5;
 
 const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clampPct = (v: number): number => Math.max(0, Math.min(100, Math.round(v)));
+
+/** The live questions + answers needed to snapshot a per-question review at
+ *  submission. Passed straight from the session; never stored raw. */
+export interface InterviewReviewSource {
+  questions: readonly QuizQuestion[];
+  answersByIndex: Record<number, number[]>;
+}
 
 /**
  * Owns Interview Mode performance history end-to-end: reading + validating the
@@ -64,7 +75,11 @@ export class InterviewHistoryService {
    * survives service recreation / reloads / a freshly reconstructed result
    * object, not just repeated calls with the same in-memory object.
    */
-  record(result: InterviewResult | null | undefined, attemptId?: string): void {
+  record(
+    result: InterviewResult | null | undefined,
+    attemptId?: string,
+    reviewSource?: InterviewReviewSource
+  ): void {
     if (!result) return;
     if (result === this.lastRecorded) return;   // same in-memory result → no-op
     // Durable guard: this attempt is already in the persisted history.
@@ -74,7 +89,7 @@ export class InterviewHistoryService {
     }
     this.lastRecorded = result;
 
-    const entry = this.toEntry(result, attemptId);
+    const entry = this.toEntry(result, attemptId, reviewSource);
     // Append + keep only the latest N (drops the oldest, preserves order).
     const attempts = [...this._history(), entry].slice(-INTERVIEW_HISTORY_MAX);
     this._history.set(attempts);
@@ -94,7 +109,11 @@ export class InterviewHistoryService {
   }
 
   // ── internals ───────────────────────────────────────────────────
-  private toEntry(result: InterviewResult, attemptId?: string): InterviewAttemptHistoryEntry {
+  private toEntry(
+    result: InterviewResult,
+    attemptId?: string,
+    reviewSource?: InterviewReviewSource
+  ): InterviewAttemptHistoryEntry {
     // Reuse Topic Performance analytics rather than re-deriving topic tallies.
     const topicPerformance: InterviewTopicHistoryEntry[] = this.analytics
       .analyze(result)
@@ -109,6 +128,12 @@ export class InterviewHistoryService {
     const total = Math.max(0, result.total);
     const score = Math.max(0, Math.min(result.correct, total));   // never exceed total
 
+    // Optional per-question snapshot — only when the live source was supplied.
+    // Undefined otherwise (JSON.stringify omits it), so the entry stays compact.
+    const review = reviewSource
+      ? buildReviewSnapshot(reviewSource.questions, reviewSource.answersByIndex)
+      : undefined;
+
     return {
       id: attemptId && attemptId.length > 0 ? attemptId : this.nextId(),
       attemptNumber: this.nextAttemptNumber(),
@@ -120,7 +145,8 @@ export class InterviewHistoryService {
       durationSeconds: Math.max(0, Math.floor(result.timeUsedSeconds ?? 0)),
       configuredDifficulty: result.difficulty,
       selectedTopicIds: [...(result.topicIds ?? [])],
-      topicPerformance
+      topicPerformance,
+      review
     };
   }
 
@@ -252,6 +278,9 @@ export function validateAttemptEntry(raw: unknown): InterviewAttemptHistoryEntry
         .filter((t): t is InterviewTopicHistoryEntry => t !== null)
     : [];
 
+  // Optional per-question review snapshot — undefined for legacy entries.
+  const review = validateReviewSnapshots(e['review']);
+
   return {
     id: e['id'],
     attemptNumber,
@@ -264,7 +293,105 @@ export function validateAttemptEntry(raw: unknown): InterviewAttemptHistoryEntry
     configuredDifficulty:
       typeof e['configuredDifficulty'] === 'string' ? e['configuredDifficulty'] : undefined,
     selectedTopicIds,
-    topicPerformance
+    topicPerformance,
+    review
+  };
+}
+
+// ── per-question review snapshot (build + validate) ───────────────────
+
+const QUESTION_TYPES: readonly QuestionType[] = [
+  QuestionType.SingleAnswer,
+  QuestionType.MultipleAnswer,
+  QuestionType.TrueFalse
+];
+const isQuestionType = (v: unknown): v is QuestionType =>
+  typeof v === 'string' && (QUESTION_TYPES as readonly string[]).includes(v);
+
+/**
+ * Build a compact, plain-data review snapshot from the live questions + answers
+ * at submission. Keeps only what the read-only Review Answers list needs
+ * (question/explanation text, each option's id/text/correctness, topic + type,
+ * the user's selection) — never live Option/QuizQuestion behaviour. Pure.
+ */
+export function buildReviewSnapshot(
+  questions: readonly QuizQuestion[],
+  answersByIndex: Record<number, number[]>
+): InterviewReviewQuestionSnapshot[] {
+  return (questions ?? []).map((q, i) => {
+    const options: InterviewReviewOptionSnapshot[] = (q.options ?? [])
+      .filter((o) => o.optionId != null)
+      .map((o) => ({
+        optionId: o.optionId as number,
+        text: o.text ?? '',
+        correct: o.correct === true
+      }));
+    const selectedOptionIds = (answersByIndex?.[i] ?? []).filter(
+      (id): id is number => id != null
+    );
+    return {
+      questionText: q.questionText ?? '',
+      explanation: q.explanation ?? '',
+      type: q.type,
+      sourceQuizId: q.sourceQuizId,
+      options,
+      selectedOptionIds
+    };
+  });
+}
+
+/**
+ * Validate an untrusted persisted review payload. Returns a clean array, or
+ * `undefined` when absent/empty/malformed (so the detail page falls back to the
+ * "not retained" note rather than rendering a broken review). Never throws.
+ */
+export function validateReviewSnapshots(
+  raw: unknown
+): InterviewReviewQuestionSnapshot[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const clean = raw
+    .map(validateReviewQuestion)
+    .filter((q): q is InterviewReviewQuestionSnapshot => q !== null);
+  return clean.length > 0 ? clean : undefined;
+}
+
+function validateReviewQuestion(raw: unknown): InterviewReviewQuestionSnapshot | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const q = raw as Record<string, unknown>;
+
+  const options = Array.isArray(q['options'])
+    ? q['options']
+        .map(validateReviewOption)
+        .filter((o): o is InterviewReviewOptionSnapshot => o !== null)
+    : [];
+  if (options.length === 0) return null;   // a question with no options is unusable
+
+  // Selection must reference real option ids from THIS question.
+  const validIds = new Set(options.map((o) => o.optionId));
+  const selectedOptionIds = Array.isArray(q['selectedOptionIds'])
+    ? q['selectedOptionIds'].filter(
+        (id): id is number => isFiniteNum(id) && validIds.has(Math.round(id))
+      ).map((id) => Math.round(id as number))
+    : [];
+
+  return {
+    questionText: typeof q['questionText'] === 'string' ? q['questionText'] : '',
+    explanation: typeof q['explanation'] === 'string' ? q['explanation'] : '',
+    type: isQuestionType(q['type']) ? q['type'] : undefined,
+    sourceQuizId: typeof q['sourceQuizId'] === 'string' ? q['sourceQuizId'] : undefined,
+    options,
+    selectedOptionIds
+  };
+}
+
+function validateReviewOption(raw: unknown): InterviewReviewOptionSnapshot | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  if (!isFiniteNum(o['optionId'])) return null;
+  return {
+    optionId: Math.round(o['optionId']),
+    text: typeof o['text'] === 'string' ? o['text'] : '',
+    correct: o['correct'] === true
   };
 }
 

@@ -84,6 +84,10 @@ export class InterviewReviewComponent {
   // Future-ready: when a flagging feature ships, set this true (or populate
   // item.flagged) and the Flagged chip appears with no other change.
   readonly flaggingEnabled = input<boolean>(false);
+  // Embedded mode: hide the internal header meta (attempt #, date, score, etc.)
+  // when the host page already shows that context (e.g. the Interview History
+  // detail page). Purely presentational; the review list is unchanged.
+  readonly embedded = input<boolean>(false);
 
   readonly filter = signal<ReviewFilterId>('all');
 
