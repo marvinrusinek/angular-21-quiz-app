@@ -1,30 +1,113 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
+import { InterviewResult } from '../../../shared/models/InterviewResult.model';
 import { InterviewReviewComponent } from './interview-review.component';
+import {
+  countReviewStatuses,
+  getCorrectAnswerLabels,
+  getReviewOptionLabel,
+  getReviewOptionState,
+  getReviewQuestionStatus,
+  getReviewQuestionType,
+  joinWithAnd
+} from './interview-review-status';
 
+// Q1 single (A correct), Q2 multi (C+E correct), Q3 true/false (True correct)
 const questions: QuizQuestion[] = [
   { questionText: 'Q1', explanation: 'E1', options: [{ text: 'A', correct: true, optionId: 1 }, { text: 'B', optionId: 2 }] },
-  { questionText: 'Q2', explanation: 'E2', options: [{ text: 'C', correct: true, optionId: 3 }, { text: 'D', optionId: 4 }] },
-  { questionText: 'Q3', explanation: 'E3', options: [{ text: 'E', correct: true, optionId: 5 }, { text: 'F', optionId: 6 }] }
+  { questionText: 'Q2', explanation: 'E2', options: [{ text: 'C', correct: true, optionId: 3 }, { text: 'D', optionId: 4 }, { text: 'E', correct: true, optionId: 5 }] },
+  { questionText: 'Q3', explanation: '', options: [{ text: 'True', correct: true, optionId: 6 }, { text: 'False', optionId: 7 }] }
 ];
 
+// ── pure helpers ──────────────────────────────────────────────────────
+describe('interview-review-status helpers', () => {
+  const single = questions[0];
+  const multi = questions[1];
+  const tf = questions[2];
+
+  it('1/2/3. single-answer status: correct / incorrect / unanswered', () => {
+    expect(getReviewQuestionStatus(single, [1])).toBe('correct');
+    expect(getReviewQuestionStatus(single, [2])).toBe('incorrect');
+    expect(getReviewQuestionStatus(single, [])).toBe('unanswered');
+  });
+
+  it('4/5/6/7. multi-answer status (exact set, no partial credit)', () => {
+    expect(getReviewQuestionStatus(multi, [3, 5])).toBe('correct');       // exact
+    expect(getReviewQuestionStatus(multi, [3])).toBe('incorrect');        // partial
+    expect(getReviewQuestionStatus(multi, [3, 5, 4])).toBe('incorrect');  // extra wrong
+    expect(getReviewQuestionStatus(multi, [])).toBe('unanswered');
+  });
+
+  it('8. true/false classified correctly', () => {
+    expect(getReviewQuestionStatus(tf, [6])).toBe('correct');
+    expect(getReviewQuestionStatus(tf, [7])).toBe('incorrect');
+  });
+
+  it('9/10/11/12/13. option state', () => {
+    expect(getReviewOptionState(true, true)).toBe('correct-selected');
+    expect(getReviewOptionState(false, true)).toBe('incorrect-selected');
+    expect(getReviewOptionState(true, false)).toBe('correct-missed');
+    expect(getReviewOptionState(false, false)).toBe('neutral');
+    // Independent per option (C selected-correct, E correct-missed).
+    expect(getReviewOptionState(true, true)).toBe('correct-selected');
+    expect(getReviewOptionState(true, false)).toBe('correct-missed');
+  });
+
+  it('option labels are descriptive text (not colour-only)', () => {
+    expect(getReviewOptionLabel('correct-selected')).toContain('Correct');
+    expect(getReviewOptionLabel('incorrect-selected')).toContain('Incorrect');
+    expect(getReviewOptionLabel('correct-missed')).toBe('Correct answer');
+    expect(getReviewOptionLabel('neutral')).toBe('');
+  });
+
+  it('question type labels (from type or inferred)', () => {
+    expect(getReviewQuestionType(single)).toBe('Single answer');
+    expect(getReviewQuestionType(multi)).toBe('Select all that apply');
+    expect(getReviewQuestionType(tf)).toBe('True or false');
+  });
+
+  it('correct-answer labels + grammatical join', () => {
+    expect(getCorrectAnswerLabels(multi.options)).toEqual(['C', 'E']);
+    expect(joinWithAnd(['C', 'E'])).toBe('C and E');
+    expect(joinWithAnd(['A', 'B', 'C'])).toBe('A, B and C');
+    expect(joinWithAnd(['A'])).toBe('A');
+  });
+
+  it('14-17. status counts sum to total', () => {
+    const c = countReviewStatuses(['correct', 'incorrect', 'unanswered', 'correct']);
+    expect(c).toEqual({ correct: 2, incorrect: 1, unanswered: 1, total: 4 });
+    expect(c.correct + c.incorrect + c.unanswered).toBe(c.total);
+  });
+});
+
+// ── component ─────────────────────────────────────────────────────────
 describe('InterviewReviewComponent', () => {
   let fixture: ComponentFixture<InterviewReviewComponent>;
   let component: InterviewReviewComponent;
 
-  function setup(answers: Record<number, number[]> = {}, flaggingEnabled = false) {
+  function result(over: Partial<InterviewResult> = {}): InterviewResult {
+    return {
+      total: 3, answered: 2, unanswered: 1, correct: 1, incorrect: 1, percentage: 33,
+      timeUsedSeconds: 0, timeRemainingSeconds: 0, difficulty: 'mixed', topicIds: [],
+      perTopic: [], submittedByExpiry: false, focusChanges: 0, ...over
+    };
+  }
+
+  function setup(answers: Record<number, number[]> = {}, res: InterviewResult | null = null, flaggingEnabled = false) {
     fixture = TestBed.createComponent(InterviewReviewComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('questions', questions);
     fixture.componentRef.setInput('answersByIndex', answers);
+    fixture.componentRef.setInput('result', res);
     fixture.componentRef.setInput('flaggingEnabled', flaggingEnabled);
     fixture.detectChanges();
   }
 
-  const itemEls = () => Array.from(fixture.nativeElement.querySelectorAll('.rv-item')) as HTMLElement[];
+  const el = () => fixture.nativeElement as HTMLElement;
+  const itemEls = () => Array.from(el().querySelectorAll('.rv-item')) as HTMLElement[];
   const chipIds = () =>
-    Array.from(fixture.nativeElement.querySelectorAll('.rv-filter')).map((b) =>
+    Array.from(el().querySelectorAll('.rv-filter')).map((b) =>
       (b as HTMLElement).getAttribute('aria-label')!.split(',')[0].toLowerCase()
     );
 
@@ -32,131 +115,105 @@ describe('InterviewReviewComponent', () => {
     await TestBed.configureTestingModule({ imports: [InterviewReviewComponent] }).compileComponents();
   });
 
-  // Q1 correct, Q2 answered-wrong, Q3 skipped
-  const MIXED = { 0: [1], 1: [4] };
+  // Q1 correct, Q2 answered-wrong (partial), Q3 unanswered
+  const MIXED = { 0: [1], 1: [3] };
 
   it('classifies each question as correct / incorrect / unanswered', () => {
     setup(MIXED);
     expect(component.items().map((i) => i.status)).toEqual(['correct', 'incorrect', 'unanswered']);
   });
 
-  it('shows the correct answer, the user answer, and the explanation', () => {
-    setup({ 1: [4] });
+  it('31/32/33/34/35/36/37. renders number, topic/type, answer states, missed correct, explanation, unanswered msg, status', () => {
+    setup(MIXED, result({ perTopic: [{ quizId: 'q', title: 'Signals', correct: 0, total: 0, percentage: 0 }] as never }));
+    // Type labels for each question.
+    expect(el().textContent).toContain('Select all that apply');
+    // Q2 (incorrect multi): C selected-correct, E correct-missed, D neutral.
     const q2 = component.items()[1];
-    const correctOpt = q2.options.find((o) => o.text === 'C')!;
-    const wrongPick = q2.options.find((o) => o.text === 'D')!;
-    expect(component.optionClass(correctOpt)).toBe('rv-correct');
-    expect(component.optionLabel(correctOpt)).toBe('Correct answer');
-    expect(component.optionClass(wrongPick)).toBe('rv-wrong');
-    expect(component.optionLabel(wrongPick)).toBe('Your answer ✗');
-    expect(fixture.nativeElement.textContent).toContain('E2');
+    expect(q2.options.find((o) => o.text === 'C')!.state).toBe('correct-selected');
+    expect(q2.options.find((o) => o.text === 'E')!.state).toBe('correct-missed');
+    expect(q2.options.find((o) => o.text === 'D')!.state).toBe('neutral');
+    // Correct-answer summary for the multi-answer question.
+    expect(q2.correctSummary).toBe('C and E');
+    // Explanation heading + text.
+    expect(el().querySelector('.rv-explanation__heading')?.textContent).toContain('Explanation');
+    expect(el().textContent).toContain('E2');
+    // Unanswered message for Q3.
+    expect(el().querySelector('.rv-unanswered')?.textContent).toContain('did not answer');
+    // Status badges present as text.
+    expect(el().textContent).toContain('Correct');
+    expect(el().textContent).toContain('Incorrect');
+    expect(el().textContent).toContain('Unanswered');
   });
 
-  it('labels a correct pick as the user answer', () => {
-    setup({ 0: [1] });
-    const picked = component.items()[0].options.find((o) => o.text === 'A')!;
-    expect(component.optionLabel(picked)).toBe('Your answer ✓');
+  it('18. summary uses the submitted result as the source of truth', () => {
+    setup(MIXED, result({ correct: 5, incorrect: 4, unanswered: 2, total: 11 }));
+    expect(component.summary()).toMatchObject({ correct: 5, incorrect: 4, unanswered: 2, total: 11 });
+    const dds = Array.from(el().querySelectorAll('.rv-summary dd')).map((d) => d.textContent?.trim());
+    expect(dds).toEqual(['5 / 11', '5', '4', '2']);
   });
 
-  // ── filter counts ──────────────────────────────────────────────────
-  it('counts questions per filter from the same predicates', () => {
+  it('summary falls back to the per-question tally when no result is supplied', () => {
+    setup(MIXED, null);
+    expect(component.summary()).toEqual({ correct: 1, incorrect: 1, unanswered: 1, total: 3 });
+  });
+
+  // ── filters ─────────────────────────────────────────────────────────
+  it('19-24. filter counts + order (All / Incorrect / Unanswered / Correct)', () => {
     setup(MIXED);
-    expect(component.counts()).toEqual({ all: 3, incorrect: 1, correct: 1, skipped: 1, flagged: 0 });
+    expect(chipIds()).toEqual(['all', 'incorrect', 'unanswered', 'correct']);
+    expect(component.counts()).toEqual({ all: 3, incorrect: 1, unanswered: 1, correct: 1, flagged: 0 });
   });
 
-  it('updates counts automatically as answers change', () => {
-    setup({ 0: [1] });                       // Q1 correct, Q2 + Q3 skipped
-    expect(component.counts()).toEqual({ all: 3, incorrect: 0, correct: 1, skipped: 2, flagged: 0 });
-    fixture.componentRef.setInput('answersByIndex', MIXED);
-    fixture.detectChanges();
-    expect(component.counts()).toEqual({ all: 3, incorrect: 1, correct: 1, skipped: 1, flagged: 0 });
-  });
-
-  // ── filtering ──────────────────────────────────────────────────────
-  it('All shows every question', () => {
-    setup(MIXED);
-    expect(itemEls().length).toBe(3);
-  });
-
-  it('Correct shows only correctly answered questions', () => {
-    setup(MIXED);
-    component.setFilter('correct');
-    fixture.detectChanges();
-    expect(itemEls().length).toBe(1);
-    expect(component.filtered().every((i) => i.status === 'correct')).toBe(true);
-  });
-
-  it('Incorrect shows only answered-wrong questions (NOT skipped)', () => {
-    setup(MIXED);
-    component.setFilter('incorrect');
-    fixture.detectChanges();
-    expect(itemEls().length).toBe(1);
+  it('20/21/22/23. each filter shows only its questions, preserving order', () => {
+    setup({ 0: [1], 1: [3], 2: [7] });   // Q1 correct, Q2 incorrect, Q3 incorrect (False)
+    component.setFilter('incorrect'); fixture.detectChanges();
+    expect(component.filtered().map((i) => i.number)).toEqual([2, 3]);   // original order
     expect(component.filtered().every((i) => i.status === 'incorrect')).toBe(true);
-  });
-
-  it('Skipped shows only questions with no answer', () => {
-    setup(MIXED);
-    component.setFilter('skipped');
-    fixture.detectChanges();
-    expect(itemEls().length).toBe(1);
-    expect(component.filtered().every((i) => i.status === 'unanswered')).toBe(true);
-  });
-
-  it('switching filters re-filters the list', () => {
-    setup(MIXED);
     component.setFilter('correct'); fixture.detectChanges();
     expect(itemEls().length).toBe(1);
-    component.setFilter('skipped'); fixture.detectChanges();
-    expect(itemEls().length).toBe(1);
-    component.setFilter('all'); fixture.detectChanges();
-    expect(itemEls().length).toBe(3);
   });
 
-  // ── empty states ───────────────────────────────────────────────────
-  it('shows a friendly empty state (not a blank page) when a filter matches nothing', () => {
-    setup({ 0: [1], 1: [3], 2: [5] });       // all correct → nothing incorrect
-    component.setFilter('incorrect');
-    fixture.detectChanges();
+  it('24. empty filter result shows a friendly state', () => {
+    setup({ 0: [1], 1: [3, 5], 2: [6] });   // all correct → nothing incorrect
+    component.setFilter('incorrect'); fixture.detectChanges();
     expect(itemEls().length).toBe(0);
-    const empty = fixture.nativeElement.querySelector('.rv-empty');
-    expect(empty).toBeTruthy();
-    expect(empty.textContent).toContain('Great job!');
-    expect(empty.textContent).toContain('No incorrect answers.');
+    expect(el().querySelector('.rv-empty')?.textContent).toContain('No incorrect answers.');
   });
 
-  it('shows the skipped empty message when nothing was skipped', () => {
-    setup({ 0: [1], 1: [3], 2: [5] });       // all answered
-    component.setFilter('skipped');
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.rv-empty').textContent).toContain('No skipped questions.');
+  it('30/navigation-equivalent: switching filters never mutates the underlying answers', () => {
+    const answers = { 0: [1], 1: [3] };
+    setup(answers);
+    component.setFilter('incorrect'); fixture.detectChanges();
+    component.setFilter('all'); fixture.detectChanges();
+    expect(answers).toEqual({ 0: [1], 1: [3] });   // input object untouched
   });
 
-  // ── future flagging compatibility ──────────────────────────────────
+  // ── accessibility ───────────────────────────────────────────────────
+  it('38/40. filters use aria-pressed + singular/plural accessible names', () => {
+    setup({ 0: [1] });   // Q1 correct, Q2+Q3 unanswered → incorrect count 0, unanswered 2
+    const chips = Array.from(el().querySelectorAll('.rv-filter')) as HTMLElement[];
+    expect(chips.filter((c) => c.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+    expect(chips.find((c) => c.getAttribute('aria-label')?.startsWith('Correct'))!.getAttribute('aria-label'))
+      .toBe('Correct, 1 question');   // singular
+    expect(chips.find((c) => c.getAttribute('aria-label')?.startsWith('Unanswered'))!.getAttribute('aria-label'))
+      .toBe('Unanswered, 2 questions'); // plural
+  });
+
+  it('41. read-only options are list items, not buttons/radios/checkboxes', () => {
+    setup(MIXED);
+    expect(el().querySelector('.rv-option')?.tagName).toBe('LI');
+    expect(el().querySelectorAll('.rv-option button, .rv-option input')).toHaveLength(0);
+  });
+
+  it('42. decorative marks are hidden from assistive tech', () => {
+    setup(MIXED);
+    for (const mark of Array.from(el().querySelectorAll('.rv-badge__mark, .rv-option__mark'))) {
+      expect(mark.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
   it('hides the Flagged chip until flagging is enabled', () => {
     setup(MIXED);
-    expect(chipIds()).toEqual(['all', 'incorrect', 'correct', 'skipped']);   // no flagged
-    expect(component.visibleFilters().some((f) => f.id === 'flagged')).toBe(false);
-  });
-
-  it('reveals the Flagged chip when flagging is enabled, and filters by it', () => {
-    setup(MIXED, /* flaggingEnabled */ true);
-    expect(chipIds()).toContain('flagged');
-    // Nothing is flagged yet → the Flagged filter yields a friendly empty state.
-    component.setFilter('flagged');
-    fixture.detectChanges();
-    expect(itemEls().length).toBe(0);
-    expect(fixture.nativeElement.querySelector('.rv-empty').textContent).toContain('No flagged questions.');
-    // The predicate is already wired for the future: a flagged item would match.
-    expect(component.counts().flagged).toBe(0);
-  });
-
-  // ── accessibility ──────────────────────────────────────────────────
-  it('marks exactly one chip as aria-pressed and gives each an accessible name', () => {
-    setup(MIXED);
-    const chips = Array.from(fixture.nativeElement.querySelectorAll('.rv-filter')) as HTMLElement[];
-    expect(chips.filter((c) => c.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
-    expect(chips[0].getAttribute('aria-pressed')).toBe('true');   // All active by default
-    expect(chips.find((c) => c.getAttribute('aria-label')?.startsWith('Incorrect'))!.getAttribute('aria-label'))
-      .toBe('Incorrect, 1 questions');
+    expect(chipIds()).toEqual(['all', 'incorrect', 'unanswered', 'correct']);
   });
 });

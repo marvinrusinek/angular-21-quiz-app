@@ -1,4 +1,46 @@
 <div class="interview-review">
+  <p class="rv-intro" i18n>
+    Review your submitted answers, the correct responses, and the explanation for each question.
+  </p>
+
+  <!-- Header meta — shown only when available (from the submitted result / the
+       just-recorded attempt). Read-only context, never editable. -->
+  @if (result(); as r) {
+    <p class="rv-meta">
+      @if (attemptNumber() !== null) {
+        <span class="rv-meta__item"><ng-container i18n>Interview</ng-container> #{{ attemptNumber() }}</span>
+      }
+      @if (completedAt()) {
+        <span class="rv-meta__item">
+          <time [attr.datetime]="completedAt()">{{ formatDate(completedAt()!) }}</time>
+        </span>
+      }
+      <span class="rv-meta__item">{{ r.percentage }}%</span>
+      <span class="rv-meta__item">{{ completionReason() }}</span>
+      <span class="rv-meta__item">{{ r.difficulty | titlecase }}</span>
+    </p>
+  }
+
+  <!-- Compact summary — the submitted result is the source of truth. -->
+  <dl class="rv-summary" aria-label="Review summary" i18n-aria-label>
+    <div>
+      <dt i18n>Score</dt>
+      <dd>{{ summary().correct }} / {{ summary().total }}</dd>
+    </div>
+    <div>
+      <dt i18n>Correct</dt>
+      <dd class="rv-summary__correct">{{ summary().correct }}</dd>
+    </div>
+    <div>
+      <dt i18n>Incorrect</dt>
+      <dd class="rv-summary__incorrect">{{ summary().incorrect }}</dd>
+    </div>
+    <div>
+      <dt i18n>Unanswered</dt>
+      <dd class="rv-summary__unanswered">{{ summary().unanswered }}</dd>
+    </div>
+  </dl>
+
   <!-- Filter chips: data-driven from REVIEW_FILTERS. Only-one-active is conveyed
        by aria-pressed; the count comes from the same predicate as the list. -->
   <div class="rv-filters" role="group" aria-label="Filter review answers" i18n-aria-label>
@@ -8,10 +50,13 @@
         class="rv-filter"
         [class.active]="filter() === f.id"
         [attr.aria-pressed]="filter() === f.id"
-        [attr.aria-label]="f.label + ', ' + counts()[f.id] + ' questions'"
+        [attr.aria-label]="filterAria(f)"
         (click)="setFilter(f.id)"
       >
-        <span aria-hidden="true">{{ f.label }} ({{ counts()[f.id] }})</span>
+        <span class="rv-filter__text" aria-hidden="true">
+          {{ f.label }}
+          <span class="rv-filter__count">{{ counts()[f.id] }}</span>
+        </span>
       </button>
     }
   </div>
@@ -19,35 +64,68 @@
   @for (item of filtered(); track item.number) {
     <article class="rv-item" [class]="'rv-status-' + item.status">
       <header class="rv-item__head">
-        <span class="rv-num">{{ item.number }}</span>
-        <span class="rv-question" [innerHTML]="item.questionText"></span>
+        <span class="rv-num" aria-hidden="true">{{ item.number }}</span>
+        <div class="rv-item__headings">
+          @if (item.topicName || item.typeLabel) {
+            <p class="rv-topic-type">
+              @if (item.topicName) { <span class="rv-topic">{{ item.topicName }}</span> }
+              @if (item.topicName && item.typeLabel) { <span aria-hidden="true"> · </span> }
+              @if (item.typeLabel) { <span class="rv-type">{{ item.typeLabel }}</span> }
+            </p>
+          }
+          <h3 class="rv-question">
+            <span class="rv-sr" i18n>Question {{ item.number }}: </span>
+            <span [innerHTML]="item.questionText"></span>
+          </h3>
+        </div>
         <span class="rv-badge" [class]="'rv-badge--' + item.status">
           @switch (item.status) {
-            @case ('correct') { <span i18n>Correct</span> }
-            @case ('incorrect') { <span i18n>Incorrect</span> }
-            @default { <span i18n>Unanswered</span> }
+            @case ('correct') {
+              <span class="rv-badge__mark" aria-hidden="true">✓</span><span i18n>Correct</span>
+            }
+            @case ('incorrect') {
+              <span class="rv-badge__mark" aria-hidden="true">✕</span><span i18n>Incorrect</span>
+            }
+            @default {
+              <span class="rv-badge__mark" aria-hidden="true">—</span><span i18n>Unanswered</span>
+            }
           }
         </span>
       </header>
 
+      @if (item.status === 'unanswered') {
+        <p class="rv-unanswered" role="note" i18n>You did not answer this question.</p>
+      }
+
       <ul class="rv-options">
         @for (opt of item.options; track opt.text) {
-          <li class="rv-option" [class]="optionClass(opt)">
+          <li class="rv-option" [class]="opt.cssClass">
             <!-- Option text is PLAIN TEXT (unlike questionText/explanation, which
-                 are authored HTML). Interpolation matches how options render
-                 everywhere else (interview-options, option-item, accordion) and
-                 keeps literal tags such as "<div>" visible instead of being
-                 parsed away — and it removes an HTML sink we don't need. -->
+                 are authored HTML). Interpolation keeps literal tags visible and
+                 removes an HTML sink we don't need. -->
             <span class="rv-option__text">{{ opt.text }}</span>
-            @if (optionLabel(opt)) {
-              <span class="rv-option__label">{{ optionLabel(opt) }}</span>
+            @if (opt.label) {
+              <span class="rv-option__label">
+                @if (opt.mark) { <span class="rv-option__mark" aria-hidden="true">{{ opt.mark }}</span> }
+                {{ opt.label }}
+              </span>
             }
           </li>
         }
       </ul>
 
+      @if (item.correctSummary) {
+        <p class="rv-correct-summary">
+          <span class="rv-correct-summary__label" i18n>Correct answers:</span>
+          {{ item.correctSummary }}
+        </p>
+      }
+
       @if (item.explanation) {
-        <p class="rv-explanation" [innerHTML]="item.explanation"></p>
+        <div class="rv-explanation">
+          <h4 class="rv-explanation__heading" i18n>Explanation</h4>
+          <div class="rv-explanation__body" [innerHTML]="item.explanation"></div>
+        </div>
       }
     </article>
   } @empty {

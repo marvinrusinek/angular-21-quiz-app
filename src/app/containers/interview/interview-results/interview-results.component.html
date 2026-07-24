@@ -120,10 +120,13 @@
           class="interview-results__review-heading"
           tabindex="-1"
           i18n
-        >Review</h2>
+        >Review Answers</h2>
         <app-interview-review
           [questions]="reviewQuestions()"
           [answersByIndex]="answersByIndex()"
+          [result]="result()"
+          [attemptNumber]="latestAttempt()?.attemptNumber ?? null"
+          [completedAt]="latestAttempt()?.completedAt ?? null"
         />
       </section>
     }

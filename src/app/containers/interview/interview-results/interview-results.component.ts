@@ -72,6 +72,9 @@ export class InterviewResultsComponent {
   readonly readiness = this.readinessService.readiness;
 
   readonly reviewQuestions = computed(() => this.assessment()?.questions ?? []);
+  // The just-recorded attempt (last in history) — supplies Review's header meta
+  // (attempt number + date). Read-only; never mutated.
+  readonly latestAttempt = computed(() => this.history.history().at(-1) ?? null);
   readonly showReview = signal(false);
 
   // The Review heading — the scroll target. The cue is only shown once the

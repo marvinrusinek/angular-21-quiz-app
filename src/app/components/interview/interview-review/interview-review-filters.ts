@@ -11,7 +11,7 @@
  */
 export type ReviewStatus = 'correct' | 'incorrect' | 'unanswered';
 
-export type ReviewFilterId = 'all' | 'incorrect' | 'correct' | 'skipped' | 'flagged';
+export type ReviewFilterId = 'all' | 'incorrect' | 'unanswered' | 'correct' | 'flagged';
 
 /** The minimal per-question shape a filter needs (a subset of ReviewItem). */
 export interface ReviewFilterItem {
@@ -32,8 +32,8 @@ export interface ReviewFilterDef {
 }
 
 /**
- * Order matches the requested chip order: All, Incorrect, Correct, Skipped,
- * Flagged. `$localize` keeps the labels/messages translatable.
+ * Chip order: All, Incorrect, Unanswered, Correct, Flagged. `$localize` keeps
+ * the labels/messages translatable.
  */
 export const REVIEW_FILTERS: readonly ReviewFilterDef[] = [
   {
@@ -52,8 +52,17 @@ export const REVIEW_FILTERS: readonly ReviewFilterDef[] = [
     requiresFlagging: false,
     // Answered but wrong — including partially-correct multi-answer scored wrong
     // (status is 'incorrect' whenever the answer wasn't fully correct AND at
-    // least one option was chosen). Skipped questions are NOT included here.
+    // least one option was chosen). Unanswered questions are NOT included here.
     match: (item) => item.status === 'incorrect'
+  },
+  {
+    id: 'unanswered',
+    label: $localize`Unanswered`,
+    emptyHeading: '',
+    emptyMessage: $localize`No unanswered questions.`,
+    requiresFlagging: false,
+    // No answer recorded before submission / timeout.
+    match: (item) => item.status === 'unanswered'
   },
   {
     id: 'correct',
@@ -62,15 +71,6 @@ export const REVIEW_FILTERS: readonly ReviewFilterDef[] = [
     emptyMessage: $localize`No correct answers yet.`,
     requiresFlagging: false,
     match: (item) => item.status === 'correct'
-  },
-  {
-    id: 'skipped',
-    label: $localize`Skipped`,
-    emptyHeading: '',
-    emptyMessage: $localize`No skipped questions.`,
-    requiresFlagging: false,
-    // No answer recorded before submission / timeout.
-    match: (item) => item.status === 'unanswered'
   },
   {
     id: 'flagged',

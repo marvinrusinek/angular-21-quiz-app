@@ -207,6 +207,58 @@ test.describe('Interview Mode', () => {
     await expect(page.locator('.topic-trends')).toHaveCount(0);
   });
 
+  test('review answers: summary, statuses, unanswered handling, filters, read-only', async ({ page }) => {
+    await page.goto('/interview');
+    await configureAndStart(page, '10');
+
+    // Answer the first 8 (first option each), then jump to the last question
+    // (direct paginator jumps aren't gated) leaving Q9 + Q10 unanswered.
+    for (let i = 1; i <= 8; i++) {
+      await page.locator('.io-option').first().click();
+      if (i < 8) {
+        await page.locator('.pg-next').first().click();
+        await expect(page.locator('.interview-progress')).toContainText(`Question ${i + 1}`);
+      }
+    }
+    await page.locator('.pg-page[aria-label^="Go to question 10,"]').click();
+    await page.locator('.show-results-btn').click();
+    await expect(page.getByText('Submit Assessment?')).toBeVisible();
+    await page.locator('button:has-text("Submit Assessment")').last().click();
+    await page.waitForURL('**/interview/results');
+
+    const score = await page.locator('.score-pct').innerText();
+
+    await page.locator('button:has-text("Review Answers")').click();
+    await expect(page.locator('.interview-results__review-heading')).toHaveText(/Review Answers/);
+    await expect(page.locator('.rv-item')).toHaveCount(10);
+
+    // Summary (from the submitted result): 2 unanswered; counts sum to 10.
+    await expect(page.locator('.rv-summary__unanswered')).toHaveText('2');
+    const nums = await page.locator('.rv-summary dd').allInnerTexts();
+    // nums[0] = "X / 10"; correct+incorrect+unanswered = 10.
+    const [c, inc, un] = [nums[1], nums[2], nums[3]].map((n) => parseInt(n, 10));
+    expect(c + inc + un).toBe(10);
+
+    // Filter chips in the new order.
+    await expect(page.locator('.rv-filter')).toHaveCount(4);
+
+    // Unanswered filter → the 2 skipped questions, each with the message + a
+    // highlighted correct answer, and read-only (no interactive controls).
+    await page.locator('.rv-filter', { hasText: 'Unanswered' }).click();
+    await expect(page.locator('.rv-item')).toHaveCount(2);
+    await expect(page.locator('.rv-unanswered').first()).toContainText('did not answer');
+    await expect(page.locator('.rv-item').first().locator('.rv-correct').first()).toBeVisible();
+    await expect(page.locator('.rv-option button, .rv-option input')).toHaveCount(0);
+
+    // Explanation section is present.
+    await page.locator('.rv-filter', { hasText: 'All' }).click();
+    await expect(page.locator('.rv-explanation__heading').first()).toContainText('Explanation');
+
+    // Returning to Results (Hide Review) leaves the score unchanged.
+    await page.locator('button:has-text("Hide Review")').click();
+    await expect(page.locator('.score-pct')).toHaveText(score);
+  });
+
   test('deferred feedback: no correctness or explanation during the assessment', async ({ page }) => {
     await page.goto('/interview');
     await configureAndStart(page, '10');
