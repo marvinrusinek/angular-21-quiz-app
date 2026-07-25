@@ -1,10 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import {
-  ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree
+  ActivatedRouteSnapshot,
+  CanActivate,
+  Router,
+  RouterStateSnapshot,
+  UrlTree,
 } from '@angular/router';
 
 import { Quiz } from '../../shared/models/Quiz.model';
-
 import { QuizDataService } from '../../shared/services/data/quizdata.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
 
@@ -14,33 +17,22 @@ export class QuizGuard implements CanActivate {
   private readonly quizService = inject(QuizService);
   private readonly router = inject(Router);
 
-  canActivate(
-    route: ActivatedRouteSnapshot,
-    _state: RouterStateSnapshot
-  ): boolean | UrlTree {
+  canActivate(route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): boolean | UrlTree {
     const quizId = route.params['quizId'];
     const questionParam = route.params['questionIndex'];
 
-    if (!quizId) {
-      return this.router.createUrlTree(['/quiz']);
-    }
+    if (!quizId) return this.router.createUrlTree(['/quiz']);
 
     const normalized = this.normalizeQuestionIndex(questionParam, quizId);
     if (normalized instanceof UrlTree) return normalized;
 
     const knownQuiz = this.findKnownQuiz(quizId);
-    if (!knownQuiz) {
-      // Let resolver load quiz
-      return true;
-    }
+    if (!knownQuiz) return true; // let resolver load quiz
 
     return this.evaluateQuestionRequest(knownQuiz, normalized, quizId);
   }
 
-  private normalizeQuestionIndex(
-    questionParam: unknown,
-    quizId: string
-  ): number | UrlTree {
+  private normalizeQuestionIndex(questionParam: unknown, quizId: string): number | UrlTree {
     if (questionParam == null) {
       return this.router.createUrlTree(['/quiz/question', quizId, 1]);
     }
@@ -75,9 +67,7 @@ export class QuizGuard implements CanActivate {
     const serviceQuestionsCount = this.quizService.questions?.length ?? 0;
     const total = Math.max(quizQuestionsCount, serviceQuestionsCount, 1);
 
-    if (total <= 0) {
-      return this.router.createUrlTree(['/quiz']);
-    }
+    if (total <= 0) return this.router.createUrlTree(['/quiz']);
 
     const zeroIdx = questionIndex - 1;
     if (zeroIdx >= 0 && zeroIdx < total) return true;
