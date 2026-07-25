@@ -1,8 +1,13 @@
 /**
  * Angular Interview Master Certificate — a reward for sustained MASTERY across
- * the app, not mere completion. Eligibility is derived by REUSING the existing
- * Achievements, Interview Readiness, and Interview History systems (never a
- * second calculation). Only the issued certificate itself is persisted here.
+ * the app. Eligibility (as of the 2026-07 revision) is TWO requirements, both
+ * REUSING existing state — never a second calculation:
+ *   1. the Angular Explorer achievement is earned (which itself already requires
+ *      every other achievement, including Interview Master → highest readiness
+ *      tier + ≥90% score, so those are NOT re-checked here), AND
+ *   2. at least REQUIRED_CERTIFICATE_INTERVIEWS completed interviews exist in the
+ *      validated Interview History.
+ * Only the issued certificate itself is persisted here.
  */
 import { InterviewReadinessBand } from './interview-readiness.model';
 
@@ -12,35 +17,32 @@ export const INTERVIEW_CERTIFICATE_VERSION = 1 as const;
 /** Human-facing certificate title. */
 export const CERTIFICATE_TITLE = 'Angular Interview Master';
 
-/** Minimum best Interview Mode score (percentage) required. Configurable. */
+/**
+ * Interview-Master thresholds. Kept here as the SINGLE source of that bar —
+ * AchievementService's Interview Master rule imports them. The certificate no
+ * longer checks these directly (they are implied by Angular Explorer), so they
+ * are NOT duplicated in the certificate eligibility rule.
+ */
 export const CERTIFICATE_MIN_SCORE = 90;
-
-/** Required Interview Readiness tier — the HIGHEST band (90–100). Configurable. */
 export const CERTIFICATE_REQUIRED_BAND: InterviewReadinessBand = 'interview-ready';
+
+/** Completed interviews required for the certificate. Centralized (no magic numbers). */
+export const REQUIRED_CERTIFICATE_INTERVIEWS = 5;
 
 /** Certificate id prefix, e.g. `AQ-2026-000128`. */
 export const CERTIFICATE_ID_PREFIX = 'AQ';
 
-/** The three eligibility requirements, in display order. */
-export type CertificateRequirementKey = 'achievements' | 'readiness' | 'score';
-
-/** One requirement's state for the progress checklist. */
-export interface CertificateRequirement {
-  key: CertificateRequirementKey;
-  met: boolean;
-  label: string;    // "All achievements unlocked"
-  detail: string;   // "6 / 6 earned", "Interview Readiness: Strong (need Interview Ready)"
-}
-
-/** A reactive snapshot of eligibility — drives both the progress UI and unlock. */
-export interface CertificateEligibility {
-  eligible: boolean;
-  requirements: CertificateRequirement[];
-  achievementsEarned: number;
-  achievementsTotal: number;
-  readinessBand: InterviewReadinessBand | null;
-  readinessReady: boolean;      // ≥ 2 completed interviews (an authoritative score)
-  bestScore: number | null;     // best retained interview percentage
+/**
+ * Reactive certificate progress — produced by the certificate service, rendered
+ * (never recalculated) by the Results + Interview Builder UIs.
+ */
+export interface InterviewCertificateProgress {
+  angularExplorerEarned: boolean;   // the achievement source of truth
+  completedInterviews: number;      // from the validated Interview History
+  requiredInterviews: number;       // REQUIRED_CERTIFICATE_INTERVIEWS
+  interviewsRemaining: number;      // max(required - completed, 0)
+  isEligible: boolean;              // both requirements satisfied
+  isUnlocked: boolean;              // persisted certificate state
 }
 
 /**

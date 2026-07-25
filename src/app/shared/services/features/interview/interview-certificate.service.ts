@@ -2,19 +2,16 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 
 import {
   CERTIFICATE_ID_PREFIX,
-  CERTIFICATE_MIN_SCORE,
-  CERTIFICATE_REQUIRED_BAND,
-  CertificateEligibility,
-  CertificateRequirement,
   INTERVIEW_CERTIFICATE_VERSION,
-  InterviewCertificateRecord
+  InterviewCertificateProgress,
+  InterviewCertificateRecord,
+  REQUIRED_CERTIFICATE_INTERVIEWS
 } from '../../../models/interview-certificate.model';
 import { InterviewReadinessBand } from '../../../models/interview-readiness.model';
 import { SK_INTERVIEW_CERTIFICATE } from '../../../constants/session-keys';
 import { readLocalJson, removeLocalKey, writeLocalJson } from '../../../utils/local-storage';
 
 import { AchievementService } from '../../achievements/achievement.service';
-import { InterviewReadinessService } from './interview-readiness.service';
 import { InterviewHistoryService } from './interview-history.service';
 
 // Display labels for readiness bands (kept local so this feature doesn't reach
@@ -34,18 +31,20 @@ export function readinessBandLabel(band: InterviewReadinessBand | null): string 
 
 /**
  * Owns the Angular Interview Master Certificate: eligibility (by REUSING the
- * Achievements, Interview Readiness, and Interview History services — never a
- * second calculation), a once-only unlock, persistence of the issued
- * certificate, and stable id generation.
+ * Achievements + Interview History services — never a second calculation), a
+ * once-only unlock, persistence of the issued certificate, and stable id
+ * generation.
  *
- * Eligibility is recomputed live from those sources, so it always reflects new
- * achievements / interviews and is never stored. Only the issued certificate
- * (unlock flag + date + id + optional name) is persisted, under its own key.
+ * Eligibility = the Angular Explorer achievement is earned (which already implies
+ * every other achievement, incl. Interview Master) AND ≥ REQUIRED_CERTIFICATE_
+ * INTERVIEWS completed interviews. Readiness / score / Interview Master formulas
+ * are NOT re-checked here — they are subsumed by Angular Explorer. Progress is
+ * recomputed live and never stored; only the issued certificate (unlock flag +
+ * date + id + optional name) is persisted, under its own key.
  */
 @Injectable({ providedIn: 'root' })
 export class InterviewCertificateService {
   private readonly achievements = inject(AchievementService);
-  private readonly readinessService = inject(InterviewReadinessService);
   private readonly historyService = inject(InterviewHistoryService);
 
   private readonly _record = signal<InterviewCertificateRecord | null>(this.load());
@@ -57,22 +56,38 @@ export class InterviewCertificateService {
   readonly unlocked = computed(() => this._record()?.unlocked === true);
 
   /**
-   * Live eligibility snapshot. Reactive to Interview History / Readiness (both
-   * signal-derived); achievement state is read fresh on each recompute. Drives
-   * the Results-page progress checklist and gates unlock().
+   * Live certificate progress. Reactive to Interview History (signal-derived);
+   * the Angular Explorer achievement is read fresh on each recompute. Drives the
+   * Results + Builder progress UIs and gates unlock().
    */
-  readonly eligibility = computed<CertificateEligibility>(() => this.computeEligibility());
+  readonly progress = computed<InterviewCertificateProgress>(() => {
+    // Angular Explorer is the achievement source of truth (implies all others).
+    const angularExplorerEarned = this.achievements.earnedIds().has('angular-explorer');
+    // Completed interviews = the validated history length (submitted / time-expired
+    // attempts only; abandoned/unfinished sessions were never recorded).
+    const completedInterviews = this.historyService.history().length;
+    const interviewsRemaining = Math.max(REQUIRED_CERTIFICATE_INTERVIEWS - completedInterviews, 0);
+
+    return {
+      angularExplorerEarned,
+      completedInterviews,
+      requiredInterviews: REQUIRED_CERTIFICATE_INTERVIEWS,
+      interviewsRemaining,
+      isEligible: angularExplorerEarned && completedInterviews >= REQUIRED_CERTIFICATE_INTERVIEWS,
+      isUnlocked: this._record()?.unlocked === true
+    };
+  });
 
   /**
    * Unlock the certificate exactly once, persisting it. Idempotent: if already
    * unlocked it returns the existing record (stable id, unchanged date). Returns
    * null when not yet eligible. Once issued, the certificate stays unlocked even
-   * if later state changes — the reward is permanent.
+   * if later history shrinks — the reward is permanent.
    */
   unlock(): InterviewCertificateRecord | null {
     const existing = this._record();
     if (existing?.unlocked) return existing;          // already issued — stable
-    if (!this.eligibility().eligible) return null;    // requirements not yet met
+    if (!this.progress().isEligible) return null;     // requirements not yet met
 
     const now = new Date().toISOString();
     const record: InterviewCertificateRecord = {
@@ -110,58 +125,6 @@ export class InterviewCertificateService {
   }
 
   // ── internals ───────────────────────────────────────────────────
-  private computeEligibility(): CertificateEligibility {
-    // 1. Achievements — the Achievements system is the source of truth.
-    const { earned, total } = this.achievements.summary();
-    const achievementsMet = total > 0 && earned >= total;
-
-    // 2. Interview Readiness — reuse the existing readiness estimate (signal).
-    const readiness = this.readinessService.readiness();
-    const readinessReady = readiness?.status === 'ready';
-    const band = readiness?.band ?? null;
-    const readinessMet = readinessReady && band === CERTIFICATE_REQUIRED_BAND;
-
-    // 3. Strong interview score — best retained percentage (reuses history/result).
-    const bestScore = this.historyService.trends().best;
-    const scoreMet = (bestScore ?? 0) >= CERTIFICATE_MIN_SCORE;
-
-    const requirements: CertificateRequirement[] = [
-      {
-        key: 'achievements',
-        met: achievementsMet,
-        label: $localize`All achievements unlocked`,
-        detail: $localize`${earned} / ${total} earned`
-      },
-      {
-        key: 'readiness',
-        met: readinessMet,
-        label: $localize`Interview Readiness: highest tier`,
-        detail: readinessReady
-          ? $localize`Currently ${readinessBandLabel(band)} (need ${readinessBandLabel(CERTIFICATE_REQUIRED_BAND)})`
-          : $localize`Complete more interviews for a readiness rating`
-      },
-      {
-        key: 'score',
-        met: scoreMet,
-        label: $localize`Strong interview score`,
-        detail:
-          bestScore == null
-            ? $localize`No interviews yet (need ${CERTIFICATE_MIN_SCORE}%)`
-            : $localize`Best ${bestScore}% (need ${CERTIFICATE_MIN_SCORE}%)`
-      }
-    ];
-
-    return {
-      eligible: achievementsMet && readinessMet && scoreMet,
-      requirements,
-      achievementsEarned: earned,
-      achievementsTotal: total,
-      readinessBand: band,
-      readinessReady,
-      bestScore
-    };
-  }
-
   private load(): InterviewCertificateRecord | null {
     return validateCertificateRecord(readLocalJson<unknown>(SK_INTERVIEW_CERTIFICATE, null));
   }

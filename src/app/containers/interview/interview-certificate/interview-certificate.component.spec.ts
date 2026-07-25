@@ -2,52 +2,42 @@ import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import {
-  CertificateEligibility,
-  InterviewCertificateRecord
-} from '../../../shared/models/interview-certificate.model';
+import { InterviewCertificateRecord } from '../../../shared/models/interview-certificate.model';
+import { InterviewReadiness, InterviewReadinessBand } from '../../../shared/models/interview-readiness.model';
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
+import { InterviewReadinessService } from '../../../shared/services/features/interview/interview-readiness.service';
+import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
 import { InterviewCertificateComponent } from './interview-certificate.component';
 
 const recordSig = signal<InterviewCertificateRecord | null>(null);
-const eligibilitySig = signal<CertificateEligibility>(eligibility());
+const readinessSig = signal<InterviewReadiness | null>({ band: 'interview-ready' } as InterviewReadiness);
+const trendsSig = signal<{ best: number | null }>({ best: 95 });
 const setRecipientName = jest.fn();
 
-function eligibility(over: Partial<CertificateEligibility> = {}): CertificateEligibility {
-  return {
-    eligible: true,
-    requirements: [],
-    achievementsEarned: 6,
-    achievementsTotal: 6,
-    readinessBand: 'interview-ready',
-    readinessReady: true,
-    bestScore: 95,
-    ...over
-  };
+function band(b: InterviewReadinessBand | null): void {
+  readinessSig.set(b === null ? null : ({ band: b } as InterviewReadiness));
 }
 
 const serviceStub = {
   record: recordSig,
   unlocked: computed(() => recordSig()?.unlocked === true),
-  eligibility: eligibilitySig,
   setRecipientName
 } as unknown as InterviewCertificateService;
 
 function issued(over: Partial<InterviewCertificateRecord> = {}): InterviewCertificateRecord {
-  return {
-    version: 1,
-    unlocked: true,
-    unlockedAt: '2026-07-24T15:00:00.000Z',
-    certificateId: 'AQ-2026-000128',
-    ...over
-  };
+  return { version: 1, unlocked: true, unlockedAt: '2026-07-24T15:00:00.000Z', certificateId: 'AQ-2026-000128', ...over };
 }
 
 function render(): ComponentFixture<InterviewCertificateComponent> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [InterviewCertificateComponent],
-    providers: [provideRouter([]), { provide: InterviewCertificateService, useValue: serviceStub }]
+    providers: [
+      provideRouter([]),
+      { provide: InterviewCertificateService, useValue: serviceStub },
+      { provide: InterviewReadinessService, useValue: { readiness: readinessSig } },
+      { provide: InterviewHistoryService, useValue: { trends: trendsSig } }
+    ]
   });
   const fixture = TestBed.createComponent(InterviewCertificateComponent);
   fixture.detectChanges();
@@ -57,7 +47,8 @@ function render(): ComponentFixture<InterviewCertificateComponent> {
 describe('InterviewCertificateComponent', () => {
   beforeEach(() => {
     recordSig.set(null);
-    eligibilitySig.set(eligibility());
+    band('interview-ready');
+    trendsSig.set({ best: 95 });
     setRecipientName.mockClear();
   });
 
@@ -68,18 +59,16 @@ describe('InterviewCertificateComponent', () => {
     expect(el.querySelector('.ic-cert')).toBeNull();
   });
 
-  it('renders the certificate with title, id, tier, score and date once unlocked', () => {
+  it('57. renders the certificate with title, id, tier, score and date once unlocked', () => {
     recordSig.set(issued());
     const el = render().nativeElement as HTMLElement;
     expect(el.querySelector('.ic-locked')).toBeNull();
     expect(el.querySelector('.ic-cert__title')?.textContent).toContain('Angular Interview Master');
     expect(el.querySelector('.ic-cert__id')?.textContent).toContain('AQ-2026-000128');
-    // Facts: tier label + score + a formatted date.
     const facts = el.querySelector('.ic-cert__facts')?.textContent ?? '';
     expect(facts).toContain('Interview Ready');
     expect(facts).toContain('95%');
     expect(facts).toMatch(/2026/);
-    // One semantic h1 for the award title.
     expect(el.querySelectorAll('h1#ic-title')).toHaveLength(1);
   });
 
@@ -116,12 +105,12 @@ describe('InterviewCertificateComponent', () => {
     spy.mockRestore();
   });
 
-  it('falls back to the required tier label if history aged out post-issue', () => {
+  it('falls back to the required tier label + score placeholder if history aged out post-issue', () => {
     recordSig.set(issued());
-    eligibilitySig.set(eligibility({ readinessBand: null, bestScore: null }));
-    const el = render().nativeElement as HTMLElement;
-    const facts = el.querySelector('.ic-cert__facts')?.textContent ?? '';
-    expect(facts).toContain('Interview Ready');   // required tier fallback
+    band(null);
+    trendsSig.set({ best: null });
+    const facts = (render().nativeElement as HTMLElement).querySelector('.ic-cert__facts')?.textContent ?? '';
+    expect(facts).toContain('Interview Ready');   // required-tier fallback
     expect(facts).toContain('—');                 // score placeholder
   });
 });

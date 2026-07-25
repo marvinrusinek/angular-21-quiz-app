@@ -10,14 +10,16 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import {
-  CERTIFICATE_MIN_SCORE,
   CERTIFICATE_REQUIRED_BAND,
-  CERTIFICATE_TITLE
+  CERTIFICATE_TITLE,
+  REQUIRED_CERTIFICATE_INTERVIEWS
 } from '../../../shared/models/interview-certificate.model';
 import {
   InterviewCertificateService,
   readinessBandLabel
 } from '../../../shared/services/features/interview/interview-certificate.service';
+import { InterviewReadinessService } from '../../../shared/services/features/interview/interview-readiness.service';
+import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 
 /**
@@ -39,22 +41,24 @@ import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-tog
 })
 export class InterviewCertificateComponent {
   private readonly certService = inject(InterviewCertificateService);
+  private readonly readinessService = inject(InterviewReadinessService);
+  private readonly historyService = inject(InterviewHistoryService);
 
   readonly title = CERTIFICATE_TITLE;
-  readonly minScore = CERTIFICATE_MIN_SCORE;
-  readonly requiredTierLabel = readinessBandLabel(CERTIFICATE_REQUIRED_BAND);
+  readonly requiredInterviews = REQUIRED_CERTIFICATE_INTERVIEWS;
   readonly record = this.certService.record;
   readonly unlocked = this.certService.unlocked;
-  private readonly eligibility = this.certService.eligibility;
 
-  // Live readiness tier — falls back to the required tier if history has since
-  // aged out (the certificate stays valid; the tier was met when it was issued).
+  // Live readiness tier for display — reuses the readiness service (no re-derive).
+  // Falls back to the required tier if history has since aged out (the
+  // certificate stays valid; the tier was met when it was issued).
   readonly tierLabel = computed(() =>
-    readinessBandLabel(this.eligibility().readinessBand ?? CERTIFICATE_REQUIRED_BAND)
+    readinessBandLabel(this.readinessService.readiness()?.band ?? CERTIFICATE_REQUIRED_BAND)
   );
 
-  // Best interview score (live). Null only if history was cleared post-issue.
-  readonly score = computed(() => this.eligibility().bestScore);
+  // Best interview score (live) from Interview History. Null only if history was
+  // cleared post-issue.
+  readonly score = computed(() => this.historyService.trends().best);
 
   readonly recipientName = computed(() => this.record()?.recipientName ?? '');
 

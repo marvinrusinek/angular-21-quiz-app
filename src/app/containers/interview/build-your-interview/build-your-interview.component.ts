@@ -31,6 +31,7 @@ import {
   INTERVIEW_TOPIC_CATEGORIES,
   INTERVIEW_TOPIC_OTHER_CATEGORY
 } from './interview-topic-categories';
+import { InterviewCertificateCalloutComponent } from '../../../components/interview/interview-certificate-callout/interview-certificate-callout.component';
 
 interface TopicOption {
   id: string;
@@ -58,7 +59,7 @@ interface DifficultyOption {
 @Component({
   selector: 'codelab-build-your-interview',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, InterviewCertificateCalloutComponent],
   templateUrl: './build-your-interview.component.html',
   styleUrls: ['./build-your-interview.component.scss'],
   encapsulation: ViewEncapsulation.None,

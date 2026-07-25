@@ -1,38 +1,53 @@
 @if (unlocked()) {
-  <!-- Earned — a calm, portfolio-style prompt (no game reward flavour). -->
+  <!-- Earned — a calm, portfolio-style prompt (no locked progress shown here). -->
   <section class="ic-status ic-status--unlocked" aria-labelledby="ic-status-title">
     <span class="ic-status__badge" aria-hidden="true">🎓</span>
     <div class="ic-status__body">
       <h2 id="ic-status-title" class="ic-status__title" i18n>Angular Interview Master</h2>
-      <p class="ic-status__sub" i18n>Certificate unlocked</p>
+      <p class="ic-status__sub" i18n>Certificate Unlocked</p>
     </div>
-    <a class="ic-status__cta" routerLink="/interview/certificate" i18n>View Certificate</a>
+    <a class="ic-status__cta" routerLink="/interview/certificate"
+       aria-label="View your Angular Interview Master certificate" i18n-aria-label i18n>View Certificate</a>
   </section>
 } @else {
-  <!-- Not yet — show exactly what remains, never hide why it's unavailable. -->
+  <!-- Not yet — two truthful requirement rows + the single clearest next action. -->
   <section class="ic-status ic-status--progress" aria-labelledby="ic-progress-title">
     <h2 id="ic-progress-title" class="ic-status__title" i18n>Certificate Progress</h2>
-    <p class="ic-status__hint" i18n>
-      Unlock the Angular Interview Master certificate by mastering the whole app.
-    </p>
+
+    <!-- One screen-reader sentence (static content — not a live region). -->
+    <p class="ic-sr">{{ srSummary() }}</p>
+
     <ul class="ic-checklist">
-      @for (r of eligibility().requirements; track r.key) {
-        <li class="ic-check" [class.ic-check--met]="r.met">
-          <span class="ic-check__mark" [class.ic-check__mark--met]="r.met" aria-hidden="true">
-            {{ r.met ? '✓' : '○' }}
-          </span>
-          <span class="ic-check__text">
-            <span class="ic-check__label">{{ r.label }}</span>
-            <span class="ic-check__detail">{{ r.detail }}</span>
-          </span>
-          <span class="ic-sr">{{ r.met ? 'Complete' : 'Incomplete' }}</span>
-        </li>
-      }
+      <li class="ic-check" [class.ic-check--met]="progress().angularExplorerEarned">
+        <span class="ic-check__mark" [class.ic-check__mark--met]="progress().angularExplorerEarned" aria-hidden="true">
+          {{ progress().angularExplorerEarned ? '✓' : '○' }}
+        </span>
+        <span class="ic-check__text">
+          <span class="ic-check__label" i18n>Angular Explorer</span>
+        </span>
+        <span class="ic-check__badge">
+          @if (progress().angularExplorerEarned) { <ng-container i18n>Earned</ng-container> }
+          @else { <ng-container i18n>Locked</ng-container> }
+        </span>
+      </li>
+      <li class="ic-check" [class.ic-check--met]="progress().completedInterviews >= progress().requiredInterviews">
+        <span class="ic-check__mark"
+              [class.ic-check__mark--met]="progress().completedInterviews >= progress().requiredInterviews"
+              aria-hidden="true">
+          {{ progress().completedInterviews >= progress().requiredInterviews ? '✓' : '○' }}
+        </span>
+        <span class="ic-check__text">
+          <span class="ic-check__label" i18n>Interviews completed: {{ progress().completedInterviews }} / {{ progress().requiredInterviews }}</span>
+        </span>
+      </li>
     </ul>
+
+    <p class="ic-status__action">{{ nextAction() }}</p>
   </section>
 }
 
-<!-- Subtle unlock celebration. Fades in once; respects reduced motion (SCSS). -->
+<!-- Subtle unlock celebration. Fades in once; respects reduced motion (SCSS).
+     A live region only for this newly-triggered unlock event. -->
 @if (showDialog()) {
   <div class="ic-dialog__scrim" (click)="dismiss()"></div>
   <div
@@ -44,11 +59,10 @@
     tabindex="-1"
   >
     <span class="ic-dialog__mark" aria-hidden="true">🎓</span>
-    <h2 id="ic-dialog-title" class="ic-dialog__title" i18n>Congratulations!</h2>
+    <h2 id="ic-dialog-title" class="ic-dialog__title" i18n>Certificate Unlocked</h2>
     <p class="ic-dialog__text" i18n>
-      You have completed every Angular achievement and demonstrated strong
-      interview performance. Your Angular Interview Master Certificate has been
-      unlocked.
+      You have unlocked every achievement and completed enough Interview Mode
+      assessments. Your Angular Interview Master Certificate has been issued.
     </p>
     <div class="ic-dialog__actions">
       <a class="ic-btn ic-btn--primary" routerLink="/interview/certificate" (click)="dismiss()" i18n>
