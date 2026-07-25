@@ -25,6 +25,7 @@ import { QuizService } from '../../shared/services/data/quiz.service';
 import { AchievementService } from '../../shared/services/achievements/achievement.service';
 import { AchievementId } from '../../shared/models/achievement.model';
 import { achievementCompletionMessage } from '../../shared/utils/achievement-progress-message';
+import { CertificateEarnedBadgeComponent } from '../../components/interview/certificate-earned-badge/certificate-earned-badge.component';
 import { ProgressService } from '../../shared/services/progress/progress.service';
 import { BestScoreService } from '../../shared/services/progress/best-score.service';
 import { LearningPathService } from '../../shared/services/features/learning-path/learning-path.service';
@@ -70,6 +71,7 @@ import { swallow } from '../../shared/utils/error-logging';
     DifficultyRecommendationComponent,
     BackToTopComponent,
     AchievementsSummaryComponent,
+    CertificateEarnedBadgeComponent,
     ProgressPanelComponent,
     QuizCardProgressComponent,
     CountUpDirective

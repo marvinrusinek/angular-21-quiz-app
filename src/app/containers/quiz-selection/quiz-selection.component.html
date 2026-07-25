@@ -90,6 +90,9 @@
         [total]="achievementsTotal()"
       />
 
+      <!-- 🎖 Certificate Earned — to the right of the count; only once unlocked. -->
+      <app-certificate-earned-badge />
+
       @if (hasAccessedQuizzes()) {
         <!-- Headline stays INLINE with the "Achievements X / N" badge (row 1). -->
         <span class="accessed-banner">{{
