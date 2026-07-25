@@ -81,7 +81,7 @@ export class ReturnComponent implements OnInit {
 
     // Mark as completed (checkmark) whenever the quiz was actually finished,
     // regardless of score. The 100% distinction is surfaced separately via the
-    // Perfect Score / Angular Master achievements, not the tile checkmark.
+    // Perfect Score achievement, not the tile checkmark.
     const snapshot = readSessionJson<{ total?: number; correct?: number }>('finalResult', {});
     const isCompleted = (snapshot.total ?? 0) > 0;
     if (id) {

@@ -26,7 +26,12 @@ import { AchievementDefinition } from '../../shared/models/achievement.model';
         <ul class="achievement-unlocked__list">
           @for (achievement of achievements(); track achievement.id) {
             <li class="achievement-unlocked__item">
-              <span class="achievement-unlocked__name">{{ achievement.name }}</span>
+              <span class="achievement-unlocked__name">
+                @if (achievement.icon) {
+                  <span class="achievement-unlocked__emoji" aria-hidden="true">{{ achievement.icon }}</span>
+                }
+                {{ achievement.name }}
+              </span>
               <span class="achievement-unlocked__desc">{{ achievement.description }}</span>
             </li>
           }
@@ -80,6 +85,10 @@ import { AchievementDefinition } from '../../shared/models/achievement.model';
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary, #212121);
+    }
+
+    .achievement-unlocked__emoji {
+      margin-right: 4px;
     }
 
     .achievement-unlocked__desc {

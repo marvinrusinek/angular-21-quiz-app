@@ -8,9 +8,15 @@ import {
   EarnedAchievement
 } from '../../models/achievement.model';
 import { ACHIEVEMENT_DEFINITIONS } from '../../constants/achievements';
+import {
+  CERTIFICATE_MIN_SCORE,
+  CERTIFICATE_REQUIRED_BAND
+} from '../../models/interview-certificate.model';
 import { SK_QUIZ_ACHIEVEMENTS } from '../../constants/session-keys';
 import { readLocalJson, writeLocalJson } from '../../utils/local-storage';
 import { BestScores, BestScoreService } from '../progress/best-score.service';
+import { InterviewReadinessService } from '../features/interview/interview-readiness.service';
+import { InterviewHistoryService } from '../features/interview/interview-history.service';
 
 /**
  * Centralized, backend-free achievement engine. It owns the ONLY durable state
@@ -26,6 +32,10 @@ export class AchievementService {
   readonly definitions: readonly AchievementDefinition[] = ACHIEVEMENT_DEFINITIONS;
 
   private readonly bestScoreService = inject(BestScoreService);
+  // Interview Master reuses these two services (no re-derivation of readiness or
+  // interview score here). No cycle: neither injects AchievementService.
+  private readonly readiness = inject(InterviewReadinessService);
+  private readonly interviewHistory = inject(InterviewHistoryService);
 
   /**
    * Record a completed quiz's score, keeping the BEST per quiz. A later, lower
@@ -47,9 +57,22 @@ export class AchievementService {
     const earnedIds = new Set<AchievementId>(earned.map(e => e.id));
 
     const newly: AchievementDefinition[] = [];
+
+    // Data-driven achievements first (everything except the meta Explorer).
     for (const def of this.definitions) {
+      if (def.id === 'angular-explorer') continue;         // meta — handled below
       if (earnedIds.has(def.id)) continue;                 // already earned → never twice
       if (this.isSatisfied(def.id, quizzes, best)) newly.push(def);
+    }
+
+    // Angular Explorer is a META achievement: it unlocks once EVERY other
+    // achievement is earned — including any earned in THIS same pass — so the
+    // final milestone and Explorer can unlock together.
+    const explorer = this.definitions.find(d => d.id === 'angular-explorer');
+    if (explorer && !earnedIds.has('angular-explorer')) {
+      const earnedAfter = new Set<AchievementId>([...earnedIds, ...newly.map(d => d.id)]);
+      const others = this.definitions.filter(d => d.id !== 'angular-explorer');
+      if (others.every(d => earnedAfter.has(d.id))) newly.push(explorer);
     }
 
     if (newly.length > 0) {
@@ -89,10 +112,8 @@ export class AchievementService {
     switch (id) {
       case 'perfect-score':
         return quizzes.some(isPerfect);
-      case 'angular-explorer':
-        return quizzes.length > 0 && quizzes.every(isCompleted);
-      case 'angular-master':
-        return quizzes.length > 0 && quizzes.every(isPerfect);
+      case 'interview-master':
+        return this.isInterviewMaster();
       case 'beginner-complete':
       case 'intermediate-complete':
       case 'advanced-complete': {
@@ -100,9 +121,26 @@ export class AchievementService {
         const group = inDifficulty(difficulty);
         return group.length > 0 && group.every(isCompleted);  // zero quizzes → not awarded
       }
+      // 'angular-explorer' is meta (handled in evaluate), never data-driven here.
       default:
         return false;
     }
+  }
+
+  /**
+   * Interview Master — the highest Interview Readiness tier AND a strong
+   * Interview Mode score. REUSES InterviewReadinessService + InterviewHistoryService
+   * (no second calculation), and shares the SAME bar as the Interview Master
+   * Certificate so the two stay in lock-step.
+   */
+  private isInterviewMaster(): boolean {
+    const readiness = this.readiness.readiness();
+    const best = this.interviewHistory.trends().best;
+    return (
+      readiness?.status === 'ready' &&
+      readiness.band === CERTIFICATE_REQUIRED_BAND &&
+      (best ?? 0) >= CERTIFICATE_MIN_SCORE
+    );
   }
 
   // ── persisted state (safe reads) ───────────────────────────────

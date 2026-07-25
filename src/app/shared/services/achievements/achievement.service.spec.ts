@@ -1,8 +1,12 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { AchievementService } from './achievement.service';
 import { Quiz } from '../../models/Quiz.model';
 import { SK_QUIZ_ACHIEVEMENTS, SK_QUIZ_BEST_SCORES } from '../../constants/session-keys';
+import { InterviewReadiness, InterviewReadinessBand } from '../../models/interview-readiness.model';
+import { InterviewReadinessService } from '../features/interview/interview-readiness.service';
+import { InterviewHistoryService } from '../features/interview/interview-history.service';
 
 /** Minimal quiz factory — only the fields the achievement rules read. */
 function quiz(quizId: string, difficulty?: string): Quiz {
@@ -14,113 +18,150 @@ const INTERMEDIATE = [quiz('i1', 'intermediate')];
 const ADVANCED = [quiz('a1', 'advanced')];
 const ALL: Quiz[] = [...BEGINNER, ...INTERMEDIATE, ...ADVANCED];
 
+// ── signal-backed interview stubs (Interview Master reuses these services) ──
+const readinessSig = signal<InterviewReadiness | null>(null);
+const trendsSig = signal<{ best: number | null }>({ best: null });
+
+function makeReadiness(band: InterviewReadinessBand, status: 'ready' | 'insufficient' = 'ready'): InterviewReadiness {
+  return {
+    status, score: band === 'interview-ready' ? 92 : 80, band,
+    recentPerformance: 90, consistency: 85, rawConsistency: 85, topicCoverage: 80, topicStrength: 80,
+    coverageAvailable: true, practicedTopicCount: 5, eligibleTopicCount: 5,
+    strongestFactor: 'recent-performance', limitingFactor: 'topic-strength',
+    explanation: '', recommendations: [], attemptsUsed: 5, totalAttempts: 5
+  };
+}
+
+/** Put the interview signals into (or out of) the Interview Master state. */
+function setInterviewMastery(on: boolean): void {
+  readinessSig.set(on ? makeReadiness('interview-ready') : null);
+  trendsSig.set({ best: on ? 95 : null });
+}
+
 describe('AchievementService', () => {
   let service: AchievementService;
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({});
+    readinessSig.set(null);
+    trendsSig.set({ best: null });
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: InterviewReadinessService, useValue: { readiness: readinessSig } },
+        { provide: InterviewHistoryService, useValue: { trends: trendsSig } }
+      ]
+    });
     service = TestBed.inject(AchievementService);
   });
 
+  const ids = (defs: { id: string }[]): string[] => defs.map((d) => d.id);
   const earnedIds = (): string[] => [...service.earnedIds()];
 
   // 1
-  it('earns nothing when no quizzes have been completed', () => {
-    const newly = service.evaluate(ALL);
-    expect(newly).toEqual([]);
+  it('earns nothing when nothing has been completed', () => {
+    expect(service.evaluate(ALL)).toEqual([]);
     expect(earnedIds()).toEqual([]);
   });
 
   // 2
   it('awards Perfect Score for a single 100% quiz', () => {
     service.recordQuizResult('b1', 100);
-    const newly = service.evaluate(ALL);
-    expect(newly.map(a => a.id)).toContain('perfect-score');
+    expect(ids(service.evaluate(ALL))).toContain('perfect-score');
   });
 
   // 3
   it('does NOT award Perfect Score for a completed-but-imperfect quiz', () => {
     service.recordQuizResult('b1', 80);
-    const newly = service.evaluate(ALL);
-    expect(newly.map(a => a.id)).not.toContain('perfect-score');
+    expect(ids(service.evaluate(ALL))).not.toContain('perfect-score');
   });
 
   // 4
   it('awards Beginner Complete only when every beginner quiz is completed', () => {
     service.recordQuizResult('b1', 50);
-    expect(service.evaluate(ALL).map(a => a.id)).not.toContain('beginner-complete');
+    expect(ids(service.evaluate(ALL))).not.toContain('beginner-complete');
     service.recordQuizResult('b2', 10);
-    expect(service.evaluate(ALL).map(a => a.id)).toContain('beginner-complete');
+    expect(ids(service.evaluate(ALL))).toContain('beginner-complete');
   });
 
+  // ── Interview Master (reuses readiness + interview score) ──────────────
   // 5
-  it('awards Angular Explorer only when every quiz is completed (any score)', () => {
-    for (const q of ALL) service.recordQuizResult(q.quizId, 20);
-    const ids = service.evaluate(ALL).map(a => a.id);
-    expect(ids).toContain('angular-explorer');
-    expect(ids).toContain('beginner-complete');
-    expect(ids).toContain('intermediate-complete');
-    expect(ids).toContain('advanced-complete');
+  it('awards Interview Master at the highest readiness tier AND a strong score', () => {
+    setInterviewMastery(true);
+    expect(ids(service.evaluate(ALL))).toContain('interview-master');
   });
 
   // 6
-  it('awards Angular Master only when every quiz is 100%', () => {
-    for (const q of ALL) service.recordQuizResult(q.quizId, 100);
-    expect(service.evaluate(ALL).map(a => a.id)).toContain('angular-master');
+  it('does NOT award Interview Master below the bar (tier / score / insufficient)', () => {
+    readinessSig.set(makeReadiness('strong'));   // not the highest tier
+    trendsSig.set({ best: 95 });
+    expect(ids(service.evaluate(ALL))).not.toContain('interview-master');
+
+    readinessSig.set(makeReadiness('interview-ready'));
+    trendsSig.set({ best: 89 });                 // score below 90
+    expect(ids(service.evaluate(ALL))).not.toContain('interview-master');
+
+    readinessSig.set(makeReadiness('interview-ready', 'insufficient'));  // one attempt only
+    trendsSig.set({ best: 95 });
+    expect(ids(service.evaluate(ALL))).not.toContain('interview-master');
   });
 
+  // ── Angular Explorer (meta: unlock every OTHER achievement) ────────────
   // 7
-  it('does NOT award Angular Master if any quiz is below 100%', () => {
-    for (const q of ALL) service.recordQuizResult(q.quizId, 100);
-    service.recordQuizResult('i1', 90);  // best is still 100 → master should hold
-    // now a genuinely imperfect quiz
-    localStorage.clear();
-    for (const q of ALL) service.recordQuizResult(q.quizId, q.quizId === 'a1' ? 90 : 100);
-    expect(service.evaluate(ALL).map(a => a.id)).not.toContain('angular-master');
+  it('does NOT award Angular Explorer just for completing every quiz', () => {
+    for (const q of ALL) service.recordQuizResult(q.quizId, 20);   // completes, no 100%, no interview
+    const earned = ids(service.evaluate(ALL));
+    expect(earned).toContain('beginner-complete');
+    expect(earned).not.toContain('angular-explorer');   // perfect-score + interview-master still missing
   });
 
   // 8
+  it('awards Angular Explorer once (and together with) the final missing achievement', () => {
+    for (const q of ALL) service.recordQuizResult(q.quizId, 100);   // perfect-score + all difficulty completes
+    expect(ids(service.evaluate(ALL))).not.toContain('angular-explorer');   // interview-master still missing
+    // Earning the last one (Interview Master) unlocks Explorer in the SAME pass.
+    setInterviewMastery(true);
+    const finalPass = ids(service.evaluate(ALL));
+    expect(finalPass).toContain('interview-master');
+    expect(finalPass).toContain('angular-explorer');
+    expect(earnedIds()).toEqual(
+      expect.arrayContaining([
+        'perfect-score', 'beginner-complete', 'intermediate-complete',
+        'advanced-complete', 'interview-master', 'angular-explorer'
+      ])
+    );
+  });
+
+  // 9
   it('is idempotent — a second evaluate with no new progress returns []', () => {
     service.recordQuizResult('b1', 100);
     expect(service.evaluate(ALL).length).toBeGreaterThan(0);
     expect(service.evaluate(ALL)).toEqual([]);
   });
 
-  // 9
+  // 10
   it('never awards the same achievement twice across evaluations', () => {
     service.recordQuizResult('b1', 100);
     service.evaluate(ALL);
-    service.recordQuizResult('b2', 100);  // more progress, but perfect-score already earned
-    const newly = service.evaluate(ALL);
-    expect(newly.map(a => a.id)).not.toContain('perfect-score');
-    expect(earnedIds().filter(id => id === 'perfect-score').length).toBe(1);
-  });
-
-  // 10
-  it('keeps the BEST score — a lower later attempt does not lower it', () => {
-    service.recordQuizResult('b1', 100);
-    service.recordQuizResult('b1', 40);
-    const best = JSON.parse(localStorage.getItem(SK_QUIZ_BEST_SCORES) ?? '{}');
-    expect(best.b1).toBe(100);
+    service.recordQuizResult('b2', 100);
+    expect(ids(service.evaluate(ALL))).not.toContain('perfect-score');
+    expect(earnedIds().filter((id) => id === 'perfect-score').length).toBe(1);
   });
 
   // 11
-  it('raises the stored score when a later attempt is higher', () => {
+  it('keeps the BEST score — a lower later attempt does not lower it', () => {
+    service.recordQuizResult('b1', 100);
     service.recordQuizResult('b1', 40);
-    service.recordQuizResult('b1', 90);
-    const best = JSON.parse(localStorage.getItem(SK_QUIZ_BEST_SCORES) ?? '{}');
-    expect(best.b1).toBe(90);
+    expect(JSON.parse(localStorage.getItem(SK_QUIZ_BEST_SCORES) ?? '{}').b1).toBe(100);
   });
 
   // 12
   it('does not award a difficulty achievement when zero quizzes exist for it', () => {
     const onlyBeginner = [...BEGINNER];
     for (const q of onlyBeginner) service.recordQuizResult(q.quizId, 100);
-    const ids = service.evaluate(onlyBeginner).map(a => a.id);
-    expect(ids).toContain('beginner-complete');
-    expect(ids).not.toContain('intermediate-complete');
-    expect(ids).not.toContain('advanced-complete');
+    const earned = ids(service.evaluate(onlyBeginner));
+    expect(earned).toContain('beginner-complete');
+    expect(earned).not.toContain('intermediate-complete');
+    expect(earned).not.toContain('advanced-complete');
   });
 
   // 13
@@ -131,29 +172,30 @@ describe('AchievementService', () => {
   });
 
   // 14
-  it('ignores unknown/duplicate ids and non-numeric best scores when reading', () => {
+  it('ignores unknown/duplicate ids when reading', () => {
     localStorage.setItem(SK_QUIZ_ACHIEVEMENTS, JSON.stringify([
       { id: 'perfect-score', earnedAt: '2020-01-01T00:00:00.000Z' },
-      { id: 'perfect-score', earnedAt: '2020-01-02T00:00:00.000Z' },  // dup
-      { id: 'not-a-real-achievement', earnedAt: 'x' }                 // junk
+      { id: 'perfect-score', earnedAt: '2020-01-02T00:00:00.000Z' },
+      { id: 'angular-master', earnedAt: 'x' },   // retired id → dropped
+      { id: 'not-a-real-achievement', earnedAt: 'x' }
     ]));
-    expect(earnedIds()).toEqual(['perfect-score']);  // deduped, junk dropped
+    expect(earnedIds()).toEqual(['perfect-score']);
   });
 
   // 15
-  it('does not revoke a previously earned achievement when new quizzes are added', () => {
-    for (const q of ALL) service.recordQuizResult(q.quizId, 20);
-    expect(service.evaluate(ALL).map(a => a.id)).toContain('angular-explorer');
-    // A new, uncompleted quiz appears in the catalog.
-    const withNew = [...ALL, quiz('b3', 'beginner')];
-    service.evaluate(withNew);  // explorer no longer "satisfied" but must NOT be revoked
+  it('does not revoke Angular Explorer when a new, uncompleted quiz is added', () => {
+    for (const q of ALL) service.recordQuizResult(q.quizId, 100);
+    setInterviewMastery(true);
+    expect(ids(service.evaluate(ALL))).toContain('angular-explorer');
+    // A new beginner quiz appears — beginner-complete/explorer no longer "satisfied"
+    // but earned achievements are NEVER revoked.
+    service.evaluate([...ALL, quiz('b3', 'beginner')]);
     expect(earnedIds()).toContain('angular-explorer');
   });
 
-  // Extra: seeds best scores from legacy highScoresLocal on first evaluate.
+  // 16
   it('seeds best scores from legacy highScoresLocal when none stored yet', () => {
     localStorage.setItem('highScoresLocal', JSON.stringify([{ quizId: 'b1', score: 100 }]));
-    const newly = service.evaluate(ALL);
-    expect(newly.map(a => a.id)).toContain('perfect-score');
+    expect(ids(service.evaluate(ALL))).toContain('perfect-score');
   });
 });

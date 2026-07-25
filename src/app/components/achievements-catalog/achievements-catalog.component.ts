@@ -48,7 +48,12 @@ import { AchievementView } from '../../shared/models/achievement.model';
                   {{ achievement.earned ? '✓' : '🔒' }}
                 </span>
                 <span class="achievements-catalog__body">
-                  <span class="achievements-catalog__name">{{ achievement.name }}</span>
+                  <span class="achievements-catalog__name">
+                    @if (achievement.icon) {
+                      <span class="achievements-catalog__emoji" aria-hidden="true">{{ achievement.icon }}</span>
+                    }
+                    {{ achievement.name }}
+                  </span>
                   <span class="achievements-catalog__desc">{{ achievement.description }}</span>
                 </span>
                 <span class="achievements-catalog__badge">
@@ -158,6 +163,10 @@ import { AchievementView } from '../../shared/models/achievement.model';
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary, #212121);
+    }
+
+    .achievements-catalog__emoji {
+      margin-right: 4px;
     }
 
     .achievements-catalog__desc {

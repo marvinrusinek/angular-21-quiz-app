@@ -5,13 +5,15 @@ export type AchievementId =
   | 'beginner-complete'
   | 'intermediate-complete'
   | 'advanced-complete'
-  | 'angular-master';
+  | 'interview-master';
 
 /** UI + evaluation metadata for a single achievement. */
 export interface AchievementDefinition {
   id: AchievementId;
   name: string;
   description: string;
+  /** Decorative emoji icon (presentation only; the name still carries meaning). */
+  icon?: string;
 }
 
 /** The minimal durable record persisted when an achievement is earned. */

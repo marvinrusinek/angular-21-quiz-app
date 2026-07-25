@@ -254,8 +254,8 @@ export class ResultsComponent implements OnInit {
 
     // Mark as completed (checkmark) whenever the quiz was actually finished,
     // regardless of score. A finished quiz has a result snapshot with questions;
-    // the 100% distinction is surfaced separately via the Perfect Score /
-    // Angular Master achievements, not the tile checkmark.
+    // the 100% distinction is surfaced separately via the Perfect Score
+    // achievement, not the tile checkmark.
     const snapshot = this.finalResult();
     const isCompleted = !!snapshot && snapshot.total > 0;
     if (quizId) {
