@@ -80,8 +80,9 @@ describe('DifficultyRecommendationService', () => {
     CATALOG.forEach((q) => (all[q.quizId] = 90));
     const r = rec(all)!;
     expect(r.level).toBe('complete');
-    expect(r.heading).toBe('Excellent work!');
-    expect(r.message).toContain('Interview Mode');
+    expect(r.heading).toBe('Ready for Interview Mode?');
+    // Its own interview-focused prompt — NOT the banner's completion sentence.
+    expect(r.message).toBe('Build a mixed-topic interview and earn Interview Master.');
     expect(r.action).toEqual({ label: 'Build an Interview', kind: 'interview' });
   });
 

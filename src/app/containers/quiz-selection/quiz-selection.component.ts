@@ -23,6 +23,8 @@ import { QuizTileStyles } from '../../shared/models/QuizTileStyles.model';
 import { QuizDataService } from '../../shared/services/data/quizdata.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { AchievementService } from '../../shared/services/achievements/achievement.service';
+import { AchievementId } from '../../shared/models/achievement.model';
+import { achievementCompletionMessage } from '../../shared/utils/achievement-progress-message';
 import { ProgressService } from '../../shared/services/progress/progress.service';
 import { BestScoreService } from '../../shared/services/progress/best-score.service';
 import { LearningPathService } from '../../shared/services/features/learning-path/learning-path.service';
@@ -90,17 +92,25 @@ export class QuizSelectionComponent implements OnInit {
   private readonly sessionEngagement = inject(SessionEngagementService);
   private readonly router = inject(Router);
 
-  // Gates the progress-driven pieces on THIS screen. Starts hidden on a fresh
-  // load and flips true once the user starts using a quiz this session (see
-  // onSelect). In-memory, so a real reload starts clean again — no need to
-  // clear site data. Saved progress in localStorage is untouched.
-  readonly showSelectionProgress = this.sessionEngagement.engaged;
+  // Gates the progress-driven pieces on THIS screen. Shown whenever the user has
+  // ACTUAL progress — engaged this session (tile click), OR has accessed quizzes
+  // before, OR has earned any achievement — so a refresh / in-app navigation
+  // RETAINS the achievements header + per-tile progress. A truly new user (no
+  // progress at all) still starts with a clean, progress-free screen.
+  readonly showSelectionProgress = computed(() =>
+    this.sessionEngagement.engaged() ||
+    this.hasAccessedQuizzes() ||
+    this.achievementsEarned() > 0
+  );
 
   // Compact "Achievements X / N" progress for the catalog header. Populated
   // silently on init (evaluating any achievements the user's existing progress
   // already qualifies for — NO "Unlocked" celebration on this screen).
   readonly achievementsEarned = signal(0);
   readonly achievementsTotal = signal(0);
+  // Earned achievement ids — drives the completion banner off ACTUAL achievement
+  // state (not merely "all quizzes accessed"). Refreshed after each evaluate().
+  readonly achievementsEarnedIds = signal<ReadonlySet<AchievementId>>(new Set());
 
   // ── remaining variables ─────────────────────────────────────────
   readonly quizzes = this.quizDataService.quizzesSig;
@@ -250,14 +260,28 @@ export class QuizSelectionComponent implements OnInit {
     this.accessedCount() === 1 ? 'quiz' : 'quizzes'
   );
 
+  // Completion banner — reflects ACTUAL achievement state, never implying "all
+  // done" at 4 / 6. Once every topic quiz is accessed it guides the user toward
+  // the remaining achievements (Interview Master → Angular Explorer).
   readonly accessedBannerMessage = computed(() => {
     const accessedCount = this.accessedCount();
 
     if (this.allQuizzesAccessed()) {
-      return 'ALL quizzes accessed! You are an Angular master!';
+      return achievementCompletionMessage(this.achievementsEarnedIds());
     }
 
     return `You accessed ${accessedCount} ${this.accessedQuizLabel()}. Keep going!`;
+  });
+
+  // Split the completion message into a headline (sits inline with the
+  // "Achievements X / N" badge) and a subline (its own centered line below).
+  // The message uses '\n' as the split point; states without one are headline-only.
+  readonly completionParts = computed(() => {
+    const msg = achievementCompletionMessage(this.achievementsEarnedIds());
+    const nl = msg.indexOf('\n');
+    return nl === -1
+      ? { headline: msg, subline: '' }
+      : { headline: msg.slice(0, nl), subline: msg.slice(nl + 1) };
   });
 
   private animationStateSignal = signal<AnimationState>('none');
@@ -481,6 +505,7 @@ export class QuizSelectionComponent implements OnInit {
       const { earned, total } = this.achievementService.summary();
       this.achievementsEarned.set(earned);
       this.achievementsTotal.set(total);
+      this.achievementsEarnedIds.set(this.achievementService.earnedIds());
     } catch (err: unknown) { swallow('quiz-selection.component.ts', err); }
   }
 

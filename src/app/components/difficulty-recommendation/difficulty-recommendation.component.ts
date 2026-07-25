@@ -19,8 +19,15 @@ import {
   template: `
     @if (recommendation(); as r) {
       <section class="dr" aria-labelledby="dr-heading" [class.dr--complete]="r.level === 'complete'">
-        <p id="dr-heading" class="dr__heading">{{ r.heading }}</p>
-        <p class="dr__message">{{ r.message }}</p>
+        <p id="dr-heading" class="dr__heading">
+          @if (r.level === 'complete') {
+            <span class="dr__icon" aria-hidden="true">💼</span>
+          }
+          {{ r.heading }}
+        </p>
+        @if (r.message) {
+          <p class="dr__message">{{ r.message }}</p>
+        }
 
         @if (r.action; as a) {
           <button
@@ -62,6 +69,10 @@ import {
       letter-spacing: 0.2px;
       text-transform: none;
       color: var(--text-primary, #212121);
+    }
+
+    .dr__icon {
+      margin-right: 4px;
     }
 
     .dr__message {

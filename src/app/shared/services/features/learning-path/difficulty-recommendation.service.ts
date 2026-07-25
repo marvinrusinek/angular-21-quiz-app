@@ -48,12 +48,15 @@ export class DifficultyRecommendationService {
 
     const completedTotal = list.filter((q) => isCompleted(q.quizId)).length;
 
-    // All quizzes completed → celebratory completion state → Interview Builder.
+    // All quizzes completed → CTA to the Interview Builder. The completion
+    // SENTENCE ("All topic quizzes completed! …") lives on the achievements
+    // banner (single source); this card does NOT repeat it — it gives its own
+    // interview-focused prompt (💼 icon rendered by the component).
     if (completedTotal === total) {
       return {
         level: 'complete',
-        heading: $localize`Excellent work!`,
-        message: $localize`You have completed the Angular learning path. Continue sharpening your skills with Interview Mode.`,
+        heading: $localize`Ready for Interview Mode?`,
+        message: $localize`Build a mixed-topic interview and earn Interview Master.`,
         action: { label: $localize`Build an Interview`, kind: 'interview' }
       };
     }

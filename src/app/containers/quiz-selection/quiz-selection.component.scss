@@ -275,6 +275,18 @@
     color: vars.$green-angular-leaf;
   }
 
+  // Completion subline — a plain centered block on its OWN line, directly below
+  // the "Achievements X / N  All topic quizzes completed!" row.
+  .accessed-subline {
+    max-width: 560px;
+    margin: -8px auto 14px;   // pull up close beneath the badge row
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: vars.$green-angular-leaf;
+  }
+
   .quiz-grid {
     margin: 10px 0 0 15px;
     display: grid;

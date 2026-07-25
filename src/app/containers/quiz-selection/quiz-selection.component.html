@@ -91,9 +91,18 @@
       />
 
       @if (hasAccessedQuizzes()) {
-        <span class="accessed-banner">{{ accessedBannerMessage() }}</span>
+        <!-- Headline stays INLINE with the "Achievements X / N" badge (row 1). -->
+        <span class="accessed-banner">{{
+          allQuizzesAccessed() ? completionParts().headline : accessedBannerMessage()
+        }}</span>
       }
     </div>
+
+    <!-- Completion subline — its OWN centered line below the badge row (a plain
+         block, so it never shares the badge's line regardless of flex behaviour). -->
+    @if (hasAccessedQuizzes() && allQuizzesAccessed() && completionParts().subline) {
+      <p class="accessed-subline">{{ completionParts().subline }}</p>
+    }
 
     <!-- Your Progress — collapsible; hidden until a quiz is In Progress or Completed -->
     <codelab-progress-panel
