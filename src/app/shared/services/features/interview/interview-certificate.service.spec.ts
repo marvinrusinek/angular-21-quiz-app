@@ -159,6 +159,15 @@ describe('InterviewCertificateService — progress model', () => {
     expect(freshService().progress().angularExplorerEarned).toBe(false);
   });
 
+  it('Interview Master status reflects the achievement service', () => {
+    setEarned([...CURRICULUM, 'interview-master']);   // Interview Master but not Explorer
+    const p = freshService().progress();
+    expect(p.interviewMasterEarned).toBe(true);
+    expect(p.angularExplorerEarned).toBe(false);
+    setEarned(CURRICULUM);
+    expect(freshService().progress().interviewMasterEarned).toBe(false);
+  });
+
   it('interviews remaining never becomes negative', () => {
     setEarned(ALL_SIX);
     const svc = freshService();

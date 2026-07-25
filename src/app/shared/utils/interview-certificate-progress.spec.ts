@@ -10,6 +10,7 @@ function progress(over: Partial<InterviewCertificateProgress> = {}): InterviewCe
   const angularExplorerEarned = over.angularExplorerEarned ?? false;
   const interviewsRemaining = Math.max(requiredInterviews - qualifyingInterviewsCompleted, 0);
   return {
+    interviewMasterEarned: over.interviewMasterEarned ?? angularExplorerEarned,
     angularExplorerEarned,
     qualifyingInterviewsCompleted,
     requiredInterviews,

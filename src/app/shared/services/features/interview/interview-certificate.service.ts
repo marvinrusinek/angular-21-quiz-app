@@ -80,7 +80,9 @@ export class InterviewCertificateService {
    */
   readonly progress = computed<InterviewCertificateProgress>(() => {
     // Angular Explorer is the achievement source of truth (implies all others).
-    const angularExplorerEarned = this.achievements.earnedIds().has('angular-explorer');
+    const earned = this.achievements.earnedIds();
+    const interviewMasterEarned = earned.has('interview-master');
+    const angularExplorerEarned = earned.has('angular-explorer');
 
     // Count ONLY completed interviews on/after the qualification date. Interviews
     // predating it (or all of them, if qualification hasn't started) do NOT count,
@@ -93,6 +95,7 @@ export class InterviewCertificateService {
 
     return {
       qualificationStartedAt,
+      interviewMasterEarned,
       angularExplorerEarned,
       qualifyingInterviewsCompleted,
       requiredInterviews: REQUIRED_CERTIFICATE_INTERVIEWS,

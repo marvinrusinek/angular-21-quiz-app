@@ -40,7 +40,8 @@ export interface InterviewCertificateProgress {
   // When the certificate journey began (topic curriculum finished). Undefined
   // until qualification starts; only interviews on/after it count.
   qualificationStartedAt?: string;
-  angularExplorerEarned: boolean;          // the achievement source of truth
+  interviewMasterEarned: boolean;          // the Interview Master achievement
+  angularExplorerEarned: boolean;          // the achievement source of truth (implies all)
   qualifyingInterviewsCompleted: number;   // completed interviews since qualification
   requiredInterviews: number;              // REQUIRED_CERTIFICATE_INTERVIEWS
   interviewsRemaining: number;             // max(required - qualifying, 0)
