@@ -7,8 +7,12 @@ import {
   InterviewCertificateRecord,
   REQUIRED_CERTIFICATE_INTERVIEWS
 } from '../../../models/interview-certificate.model';
+import { AchievementId } from '../../../models/achievement.model';
 import { InterviewReadinessBand } from '../../../models/interview-readiness.model';
-import { SK_INTERVIEW_CERTIFICATE } from '../../../constants/session-keys';
+import {
+  SK_INTERVIEW_CERTIFICATE,
+  SK_INTERVIEW_CERTIFICATE_QUAL
+} from '../../../constants/session-keys';
 import { readLocalJson, removeLocalKey, writeLocalJson } from '../../../utils/local-storage';
 
 import { AchievementService } from '../../achievements/achievement.service';
@@ -42,12 +46,23 @@ export function readinessBandLabel(band: InterviewReadinessBand | null): string 
  * recomputed live and never stored; only the issued certificate (unlock flag +
  * date + id + optional name) is persisted, under its own key.
  */
+// Topic-curriculum achievements — earning ALL of them starts the certificate
+// qualification period.
+const CURRICULUM_ACHIEVEMENTS: readonly AchievementId[] = [
+  'beginner-complete',
+  'intermediate-complete',
+  'advanced-complete'
+];
+
 @Injectable({ providedIn: 'root' })
 export class InterviewCertificateService {
   private readonly achievements = inject(AchievementService);
   private readonly historyService = inject(InterviewHistoryService);
 
   private readonly _record = signal<InterviewCertificateRecord | null>(this.load());
+  // The certificate qualification start date (ISO). Written ONCE the first time
+  // the curriculum is complete; only interviews on/after it count.
+  private readonly _qualStartedAt = signal<string | undefined>(this.loadQualStartedAt());
 
   /** The issued certificate, or null until unlocked. */
   readonly record = this._record.asReadonly();
@@ -56,27 +71,55 @@ export class InterviewCertificateService {
   readonly unlocked = computed(() => this._record()?.unlocked === true);
 
   /**
-   * Live certificate progress. Reactive to Interview History (signal-derived);
-   * the Angular Explorer achievement is read fresh on each recompute. Drives the
+   * Live certificate progress. Reactive to Interview History + the qualification
+   * date (signals); the achievements are read fresh on each recompute. Drives the
    * Results + Builder progress UIs and gates unlock().
+   *
+   * IMPORTANT: this only COUNTS — it never writes the qualification date (a
+   * computed must stay pure). Call ensureQualificationStarted() imperatively.
    */
   readonly progress = computed<InterviewCertificateProgress>(() => {
     // Angular Explorer is the achievement source of truth (implies all others).
     const angularExplorerEarned = this.achievements.earnedIds().has('angular-explorer');
-    // Completed interviews = the validated history length (submitted / time-expired
-    // attempts only; abandoned/unfinished sessions were never recorded).
-    const completedInterviews = this.historyService.history().length;
-    const interviewsRemaining = Math.max(REQUIRED_CERTIFICATE_INTERVIEWS - completedInterviews, 0);
+
+    // Count ONLY completed interviews on/after the qualification date. Interviews
+    // predating it (or all of them, if qualification hasn't started) do NOT count,
+    // but stay in Interview History for Readiness / Trends / Topic Trends.
+    const qualificationStartedAt = this._qualStartedAt();
+    const qualifyingInterviewsCompleted = qualificationStartedAt
+      ? this.historyService.history().filter((e) => e.completedAt >= qualificationStartedAt).length
+      : 0;
+    const interviewsRemaining = Math.max(REQUIRED_CERTIFICATE_INTERVIEWS - qualifyingInterviewsCompleted, 0);
 
     return {
+      qualificationStartedAt,
       angularExplorerEarned,
-      completedInterviews,
+      qualifyingInterviewsCompleted,
       requiredInterviews: REQUIRED_CERTIFICATE_INTERVIEWS,
       interviewsRemaining,
-      isEligible: angularExplorerEarned && completedInterviews >= REQUIRED_CERTIFICATE_INTERVIEWS,
+      isEligible: angularExplorerEarned && qualifyingInterviewsCompleted >= REQUIRED_CERTIFICATE_INTERVIEWS,
       isUnlocked: this._record()?.unlocked === true
     };
   });
+
+  /**
+   * Start the certificate qualification period exactly ONCE — the first time the
+   * topic curriculum (Beginner/Intermediate/Advanced Complete) is complete. Safe
+   * to call on every certificate-surface load: it no-ops if the date is already
+   * set or the curriculum isn't finished yet. This ALSO handles migration —
+   * existing users who finished the curriculum before this feature get their
+   * qualification date on the first evaluation after the update (we deliberately
+   * do NOT infer an older historical date).
+   */
+  ensureQualificationStarted(): void {
+    if (this._qualStartedAt()) return;                 // written once — never overwritten
+    const earned = this.achievements.earnedIds();
+    if (!CURRICULUM_ACHIEVEMENTS.every((id) => earned.has(id))) return;   // not qualified yet
+
+    const now = new Date().toISOString();
+    this._qualStartedAt.set(now);
+    writeLocalJson(SK_INTERVIEW_CERTIFICATE_QUAL, { startedAt: now });
+  }
 
   /**
    * Unlock the certificate exactly once, persisting it. Idempotent: if already
@@ -121,12 +164,21 @@ export class InterviewCertificateService {
    */
   clear(): void {
     this._record.set(null);
+    this._qualStartedAt.set(undefined);
     removeLocalKey(SK_INTERVIEW_CERTIFICATE);
+    removeLocalKey(SK_INTERVIEW_CERTIFICATE_QUAL);
   }
 
   // ── internals ───────────────────────────────────────────────────
   private load(): InterviewCertificateRecord | null {
     return validateCertificateRecord(readLocalJson<unknown>(SK_INTERVIEW_CERTIFICATE, null));
+  }
+
+  /** Load a persisted, valid ISO qualification date (else undefined). */
+  private loadQualStartedAt(): string | undefined {
+    const raw = readLocalJson<{ startedAt?: unknown } | null>(SK_INTERVIEW_CERTIFICATE_QUAL, null);
+    const s = raw?.startedAt;
+    return typeof s === 'string' && !Number.isNaN(Date.parse(s)) ? s : undefined;
   }
 
   private save(record: InterviewCertificateRecord): void {

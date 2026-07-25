@@ -49,3 +49,10 @@ export const SK_INTERVIEW_HISTORY = 'interviewAttemptHistory:v1';
 // it is recomputed from the reused Achievements / Readiness / History sources, so
 // this store never duplicates achievement, readiness, or interview-history state.
 export const SK_INTERVIEW_CERTIFICATE = 'interviewCertificate:v1';
+
+// The certificate QUALIFICATION start date — a single ISO timestamp written ONCE
+// when the topic curriculum (Beginner/Intermediate/Advanced Complete) is first
+// finished. Only interviews completed on/after it count toward the certificate's
+// 5-interview requirement. Kept separate from the issued-certificate record and
+// from Interview History (which is never modified).
+export const SK_INTERVIEW_CERTIFICATE_QUAL = 'interviewCertificateQualifiedAt:v1';

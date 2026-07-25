@@ -37,12 +37,15 @@ export const CERTIFICATE_ID_PREFIX = 'AQ';
  * (never recalculated) by the Results + Interview Builder UIs.
  */
 export interface InterviewCertificateProgress {
-  angularExplorerEarned: boolean;   // the achievement source of truth
-  completedInterviews: number;      // from the validated Interview History
-  requiredInterviews: number;       // REQUIRED_CERTIFICATE_INTERVIEWS
-  interviewsRemaining: number;      // max(required - completed, 0)
-  isEligible: boolean;              // both requirements satisfied
-  isUnlocked: boolean;              // persisted certificate state
+  // When the certificate journey began (topic curriculum finished). Undefined
+  // until qualification starts; only interviews on/after it count.
+  qualificationStartedAt?: string;
+  angularExplorerEarned: boolean;          // the achievement source of truth
+  qualifyingInterviewsCompleted: number;   // completed interviews since qualification
+  requiredInterviews: number;              // REQUIRED_CERTIFICATE_INTERVIEWS
+  interviewsRemaining: number;             // max(required - qualifying, 0)
+  isEligible: boolean;                     // both requirements satisfied
+  isUnlocked: boolean;                     // persisted certificate state
 }
 
 /**

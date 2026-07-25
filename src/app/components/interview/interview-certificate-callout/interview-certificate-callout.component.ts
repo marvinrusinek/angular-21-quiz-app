@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
@@ -41,7 +41,7 @@ import {
             <ng-container i18n>Angular Explorer unlocked</ng-container>
           </p>
         }
-        <p class="icc__line" i18n>Interviews completed: {{ progress().completedInterviews }} / {{ progress().requiredInterviews }}</p>
+        <p class="icc__line" i18n>Interviews completed: {{ progress().qualifyingInterviewsCompleted }} / {{ progress().requiredInterviews }}</p>
         <p class="icc__action">{{ nextAction() }}</p>
       }
     </section>
@@ -83,7 +83,7 @@ import {
     .icc__cta:focus-visible { outline: 2px solid var(--text-link, #3b98fd); outline-offset: 2px; }
   `]
 })
-export class InterviewCertificateCalloutComponent {
+export class InterviewCertificateCalloutComponent implements OnInit {
   private readonly cert = inject(InterviewCertificateService);
 
   readonly unlocked = this.cert.unlocked;
@@ -91,4 +91,10 @@ export class InterviewCertificateCalloutComponent {
 
   readonly nextAction = computed(() => certificateNextAction(this.progress()));
   readonly srSummary = computed(() => certificateAccessibleSummary(this.progress()));
+
+  ngOnInit(): void {
+    // First Builder visit with the curriculum complete starts the qualification
+    // window (so interviews built from here on count). No-op otherwise.
+    this.cert.ensureQualificationStarted();
+  }
 }

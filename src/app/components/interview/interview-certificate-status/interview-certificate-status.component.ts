@@ -48,6 +48,14 @@ export class InterviewCertificateStatusComponent implements OnInit {
   readonly nextAction = computed(() => certificateNextAction(this.progress()));
   readonly srSummary = computed(() => certificateAccessibleSummary(this.progress()));
 
+  // Optional "journey started on …" caption (locale date; '' until qualified).
+  readonly journeyDate = computed(() => {
+    const iso = this.progress().qualificationStartedAt;
+    if (!iso) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  });
+
   // True only for the session in which the certificate was just unlocked here.
   readonly showDialog = signal(false);
 
@@ -61,6 +69,9 @@ export class InterviewCertificateStatusComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Start (or migrate) the certificate qualification period once — the first
+    // time this surface is seen with the topic curriculum complete.
+    this.cert.ensureQualificationStarted();
     // Unlock exactly once, the first time the user reaches Results while eligible.
     if (!this.cert.unlocked() && this.cert.progress().isEligible) {
       const issued = this.cert.unlock();

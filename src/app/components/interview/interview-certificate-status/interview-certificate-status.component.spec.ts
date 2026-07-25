@@ -15,18 +15,19 @@ const unlock = jest.fn<InterviewCertificateRecord | null, []>(() => {
 
 function progress(over: Partial<InterviewCertificateProgress> = {}): InterviewCertificateProgress {
   const angularExplorerEarned = over.angularExplorerEarned ?? false;
-  const completedInterviews = over.completedInterviews ?? 0;
+  const qualifyingInterviewsCompleted = over.qualifyingInterviewsCompleted ?? 0;
   const requiredInterviews = 5;
   return {
-    angularExplorerEarned, completedInterviews, requiredInterviews,
-    interviewsRemaining: Math.max(requiredInterviews - completedInterviews, 0),
-    isEligible: over.isEligible ?? (angularExplorerEarned && completedInterviews >= requiredInterviews),
+    angularExplorerEarned, qualifyingInterviewsCompleted, requiredInterviews,
+    interviewsRemaining: Math.max(requiredInterviews - qualifyingInterviewsCompleted, 0),
+    isEligible: over.isEligible ?? (angularExplorerEarned && qualifyingInterviewsCompleted >= requiredInterviews),
     isUnlocked: over.isUnlocked ?? false,
     ...over
   };
 }
 
-const stub = { unlocked: unlockedSig, progress: progressSig, unlock } as unknown as InterviewCertificateService;
+const ensureQualificationStarted = jest.fn();
+const stub = { unlocked: unlockedSig, progress: progressSig, unlock, ensureQualificationStarted } as unknown as InterviewCertificateService;
 
 function render(): ComponentFixture<InterviewCertificateStatusComponent> {
   TestBed.resetTestingModule();
@@ -47,7 +48,7 @@ describe('InterviewCertificateStatusComponent', () => {
   });
 
   it('28. shows locked progress (two requirement rows) while requirements remain', () => {
-    progressSig.set(progress({ angularExplorerEarned: false, completedInterviews: 2 }));
+    progressSig.set(progress({ angularExplorerEarned: false, qualifyingInterviewsCompleted: 2 }));
     const el = render().nativeElement as HTMLElement;
     expect(el.querySelector('.ic-status--progress')).not.toBeNull();
     expect(el.querySelectorAll('.ic-check')).toHaveLength(2);
@@ -57,22 +58,22 @@ describe('InterviewCertificateStatusComponent', () => {
   });
 
   it('29. shows the correct interviews-completed progress', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     const el = render().nativeElement as HTMLElement;
     expect(el.textContent).toContain('Interviews completed: 3 / 5');
   });
 
   it('30/31. renders singular/plural next action', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 4 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 4 }));
     expect((render().nativeElement as HTMLElement).querySelector('.ic-status__action')?.textContent)
       .toContain('Complete 1 more interview ');
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     expect((render().nativeElement as HTMLElement).querySelector('.ic-status__action')?.textContent)
       .toContain('Complete 2 more interviews');
   });
 
   it('19/unlock: unlocks ONCE and celebrates when eligible and not yet unlocked', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 5 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 5 }));
     const el = render().nativeElement as HTMLElement;
     expect(unlock).toHaveBeenCalledTimes(1);
     expect(el.querySelector('.ic-dialog')).not.toBeNull();
@@ -92,7 +93,7 @@ describe('InterviewCertificateStatusComponent', () => {
   });
 
   it('43/44/45/46. accessible: requirement text present, marks aria-hidden, sr summary present', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     const el = render().nativeElement as HTMLElement;
     // Real text carries state (not colour alone).
     expect(el.querySelector('.ic-check__badge')?.textContent?.trim()).toBeTruthy();
@@ -105,7 +106,7 @@ describe('InterviewCertificateStatusComponent', () => {
   });
 
   it('dismiss() closes the celebration dialog', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 5 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 5 }));
     const fixture = render();
     expect((fixture.nativeElement as HTMLElement).querySelector('.ic-dialog')).not.toBeNull();
     fixture.componentInstance.dismiss();

@@ -30,19 +30,23 @@
           @else { <ng-container i18n>Locked</ng-container> }
         </span>
       </li>
-      <li class="ic-check" [class.ic-check--met]="progress().completedInterviews >= progress().requiredInterviews">
+      <li class="ic-check" [class.ic-check--met]="progress().qualifyingInterviewsCompleted >= progress().requiredInterviews">
         <span class="ic-check__mark"
-              [class.ic-check__mark--met]="progress().completedInterviews >= progress().requiredInterviews"
+              [class.ic-check__mark--met]="progress().qualifyingInterviewsCompleted >= progress().requiredInterviews"
               aria-hidden="true">
-          {{ progress().completedInterviews >= progress().requiredInterviews ? '✓' : '○' }}
+          {{ progress().qualifyingInterviewsCompleted >= progress().requiredInterviews ? '✓' : '○' }}
         </span>
         <span class="ic-check__text">
-          <span class="ic-check__label" i18n>Interviews completed: {{ progress().completedInterviews }} / {{ progress().requiredInterviews }}</span>
+          <span class="ic-check__label" i18n>Interviews completed: {{ progress().qualifyingInterviewsCompleted }} / {{ progress().requiredInterviews }}</span>
         </span>
       </li>
     </ul>
 
     <p class="ic-status__action">{{ nextAction() }}</p>
+
+    @if (journeyDate()) {
+      <p class="ic-status__journey" i18n>Certificate journey started on {{ journeyDate() }}</p>
+    }
   </section>
 }
 

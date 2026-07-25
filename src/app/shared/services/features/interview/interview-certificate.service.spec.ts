@@ -1,7 +1,12 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { SK_INTERVIEW_CERTIFICATE, SK_QUIZ_ACHIEVEMENTS, SK_INTERVIEW_HISTORY } from '../../../constants/session-keys';
+import {
+  SK_INTERVIEW_CERTIFICATE,
+  SK_INTERVIEW_CERTIFICATE_QUAL,
+  SK_QUIZ_ACHIEVEMENTS,
+  SK_INTERVIEW_HISTORY
+} from '../../../constants/session-keys';
 import { AchievementService } from '../../achievements/achievement.service';
 import { InterviewHistoryService } from './interview-history.service';
 import {
@@ -10,18 +15,25 @@ import {
   validateCertificateRecord
 } from './interview-certificate.service';
 
-// ── signal-backed stubs (so `progress` reacts to changes) ──
+// ── signal-backed stubs ──
 const earnedSig = signal<Set<string>>(new Set());
-const historySig = signal<unknown[]>([]);
+const historySig = signal<{ completedAt: string }[]>([]);
 
 const achievementsStub = { earnedIds: () => earnedSig() } as unknown as AchievementService;
-// history() returns the VALIDATED collection; its length is the completed count.
 const historyStub = { history: historySig } as unknown as InterviewHistoryService;
 
-/** Set the two inputs: whether Angular Explorer is earned + how many completed interviews. */
-function setState(explorer: boolean, interviews: number): void {
-  earnedSig.set(new Set(explorer ? ['angular-explorer'] : []));
-  historySig.set(Array.from({ length: interviews }, (_, i) => ({ id: 'att-' + i })));
+const CURRICULUM = ['beginner-complete', 'intermediate-complete', 'advanced-complete'];
+const ALL_SIX = [...CURRICULUM, 'perfect-score', 'interview-master', 'angular-explorer'];
+
+function setEarned(ids: string[]): void {
+  earnedSig.set(new Set(ids));
+}
+function setHistory(completedAts: string[]): void {
+  historySig.set(completedAts.map((completedAt, i) => ({ id: 'att-' + i, completedAt } as { completedAt: string })));
+}
+/** ISO offset from a base ISO by ms. */
+function offset(baseIso: string, ms: number): string {
+  return new Date(Date.parse(baseIso) + ms).toISOString();
 }
 
 function freshService(): InterviewCertificateService {
@@ -35,204 +47,196 @@ function freshService(): InterviewCertificateService {
   return TestBed.inject(InterviewCertificateService);
 }
 
-describe('InterviewCertificateService — eligibility (Angular Explorer + 5 interviews)', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    setState(true, 5);   // default: fully eligible
-  });
+describe('InterviewCertificateService — qualification period', () => {
+  beforeEach(() => { localStorage.clear(); setEarned([]); setHistory([]); });
   afterEach(() => localStorage.clear());
 
-  it('1. locked when Angular Explorer is not earned', () => {
-    setState(false, 5);
-    expect(freshService().progress().isEligible).toBe(false);
-  });
-
-  it('2. locked when fewer than five interviews are completed', () => {
-    setState(true, 4);
-    expect(freshService().progress().isEligible).toBe(false);
-  });
-
-  it('3. locked when Explorer earned but only four interviews', () => {
-    setState(true, 4);
-    const p = freshService().progress();
-    expect(p.angularExplorerEarned).toBe(true);
-    expect(p.isEligible).toBe(false);
-  });
-
-  it('4. locked when five interviews but Explorer not earned', () => {
-    setState(false, 5);
-    const p = freshService().progress();
-    expect(p.completedInterviews).toBe(5);
-    expect(p.isEligible).toBe(false);
-  });
-
-  it('5. eligible when Explorer earned AND five interviews completed', () => {
-    setState(true, 5);
-    expect(freshService().progress().isEligible).toBe(true);
-  });
-
-  it('6. remains eligible when more than five interviews are completed', () => {
-    setState(true, 8);
-    expect(freshService().progress().isEligible).toBe(true);
-  });
-
-  it('7/8/9. only the validated Interview History counts (abandoned/incomplete/invalid never appear there)', () => {
-    // The service reads history() — the ALREADY-validated collection — so its
-    // length is exactly the completed-interview count.
-    setState(true, 3);
-    expect(freshService().progress().completedInterviews).toBe(3);
-  });
-
-  it('10. no interview difficulty distribution is required', () => {
-    // Difficulty is never inspected — five completed of any mix is enough.
-    setState(true, 5);
-    expect(freshService().progress().isEligible).toBe(true);
-  });
-});
-
-describe('InterviewCertificateService — progress model', () => {
-  beforeEach(() => { localStorage.clear(); setState(false, 0); });
-  afterEach(() => localStorage.clear());
-
-  it('11. required interview count is five', () => {
-    expect(freshService().progress().requiredInterviews).toBe(5);
-  });
-
-  it('12. completed count comes from Interview History', () => {
-    setState(true, 3);
-    expect(freshService().progress().completedInterviews).toBe(3);
-  });
-
-  it('13. interviews remaining is calculated correctly', () => {
-    setState(true, 3);
-    expect(freshService().progress().interviewsRemaining).toBe(2);
-  });
-
-  it('14. interviews remaining never becomes negative', () => {
-    setState(true, 8);
-    expect(freshService().progress().interviewsRemaining).toBe(0);
-  });
-
-  it('15. Angular Explorer status reflects the achievement service', () => {
-    setState(true, 0);
-    expect(freshService().progress().angularExplorerEarned).toBe(true);
-    setState(false, 0);
-    expect(freshService().progress().angularExplorerEarned).toBe(false);
-  });
-
-  it('16. isEligible is false when either requirement is incomplete', () => {
-    setState(true, 4);
-    expect(freshService().progress().isEligible).toBe(false);
-    setState(false, 5);
-    expect(freshService().progress().isEligible).toBe(false);
-  });
-
-  it('17. isEligible is true when both requirements are complete', () => {
-    setState(true, 5);
-    expect(freshService().progress().isEligible).toBe(true);
-  });
-
-  it('18. isUnlocked reflects persisted certificate state', () => {
-    setState(true, 5);
+  it('qualification begins only after the final topic-completion achievement', () => {
+    setEarned(['beginner-complete', 'intermediate-complete']);   // advanced missing
     const svc = freshService();
-    expect(svc.progress().isUnlocked).toBe(false);
-    svc.unlock();
-    expect(svc.progress().isUnlocked).toBe(true);
-    expect(freshService().progress().isUnlocked).toBe(true);   // reload
-  });
-});
+    svc.ensureQualificationStarted();
+    expect(svc.progress().qualificationStartedAt).toBeUndefined();
 
-describe('InterviewCertificateService — unlock + persistence', () => {
-  beforeEach(() => { localStorage.clear(); setState(true, 5); });
-  afterEach(() => localStorage.clear());
-
-  it('19. unlocks when the fifth completed interview satisfies the requirement', () => {
-    setState(true, 5);
-    const rec = freshService().unlock();
-    expect(rec).not.toBeNull();
-    expect(rec!.certificateId).toMatch(/^AQ-\d{4}-\d{6}$/);
+    setEarned(CURRICULUM);   // now the curriculum is complete
+    svc.ensureQualificationStarted();
+    expect(svc.progress().qualificationStartedAt).toBeTruthy();
   });
 
-  it('20. unlocks when Angular Explorer becomes earned after five interviews exist', () => {
-    setState(false, 5);
+  it('writes the qualification timestamp only ONCE (never overwritten)', () => {
+    setEarned(CURRICULUM);
     const svc = freshService();
-    expect(svc.unlock()).toBeNull();      // explorer missing
-    setState(true, 5);
-    expect(svc.unlock()).not.toBeNull();  // now eligible
+    svc.ensureQualificationStarted();
+    const first = svc.progress().qualificationStartedAt;
+    svc.ensureQualificationStarted();   // again
+    setEarned(ALL_SIX);
+    svc.ensureQualificationStarted();    // and again with more achievements
+    expect(svc.progress().qualificationStartedAt).toBe(first);
   });
 
-  it('21/22. certificate ID and issue date are generated only once', () => {
-    const svc = freshService();
-    const first = svc.unlock()!;
-    const second = svc.unlock()!;
-    expect(second.certificateId).toBe(first.certificateId);
-    expect(second.unlockedAt).toBe(first.unlockedAt);
-  });
-
-  it('23/24. reloading preserves the certificate ID and issue date', () => {
-    const issued = freshService().unlock()!;
+  it('qualification timestamp survives a reload', () => {
+    setEarned(CURRICULUM);
+    freshService().ensureQualificationStarted();
+    expect(localStorage.getItem(SK_INTERVIEW_CERTIFICATE_QUAL)).not.toBeNull();
     const reloaded = freshService();
-    expect(reloaded.record()!.certificateId).toBe(issued.certificateId);
-    expect(reloaded.record()!.unlockedAt).toBe(issued.unlockedAt);
+    expect(reloaded.progress().qualificationStartedAt).toBeTruthy();
   });
 
-  it('25. subsequent interviews do not regenerate certificate data', () => {
+  it('migration: an existing curriculum-complete user gets the date on the first evaluation', () => {
+    // No qualification key persisted yet (pre-feature), but curriculum is done.
+    setEarned(ALL_SIX);
     const svc = freshService();
-    const first = svc.unlock()!;
-    setState(true, 9);                    // more interviews later
-    const again = svc.unlock()!;
-    expect(again.certificateId).toBe(first.certificateId);
-    expect(again.unlockedAt).toBe(first.unlockedAt);
+    expect(svc.progress().qualificationStartedAt).toBeUndefined();   // nothing inferred
+    svc.ensureQualificationStarted();                                 // first evaluation
+    expect(svc.progress().qualificationStartedAt).toBeTruthy();
   });
 
-  it('27. an already-issued certificate stays unlocked if history later shrinks below five', () => {
+  it('ignores interviews completed BEFORE qualification (18 historical → 0 / 5)', () => {
+    setEarned(ALL_SIX);
+    // 18 old interviews predate the (about-to-be-set) qualification date.
+    setHistory(Array.from({ length: 18 }, (_, i) => `2020-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`));
     const svc = freshService();
+    svc.ensureQualificationStarted();
+    const p = svc.progress();
+    expect(p.qualifyingInterviewsCompleted).toBe(0);
+    expect(p.interviewsRemaining).toBe(5);
+    expect(p.isEligible).toBe(false);
+  });
+
+  it('counts interviews completed ON/AFTER qualification', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory([
+      offset(qual, -60_000),   // before → ignored
+      offset(qual, -1),        // before → ignored
+      qual,                    // exactly at → counts (>=)
+      offset(qual, 60_000),    // after → counts
+      offset(qual, 120_000)    // after → counts
+    ]);
+    expect(svc.progress().qualifyingInterviewsCompleted).toBe(3);
+  });
+
+  it('unlocks after five QUALIFYING interviews (Explorer earned)', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory([
+      offset(qual, -1),                      // pre-qualification → ignored
+      ...Array.from({ length: 5 }, (_, i) => offset(qual, (i + 1) * 60_000))
+    ]);
+    expect(svc.progress().qualifyingInterviewsCompleted).toBe(5);
+    expect(svc.progress().isEligible).toBe(true);
+    expect(svc.unlock()).not.toBeNull();
+  });
+
+  it('regression: NEVER writes Interview History or achievement storage', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    setHistory([offset(svc.progress().qualificationStartedAt!, 1000)]);
     svc.unlock();
-    expect(svc.unlocked()).toBe(true);
-    setState(true, 2);                    // history reduced
-    expect(svc.unlocked()).toBe(true);    // permanent
-    expect(svc.record()).not.toBeNull();
-  });
-
-  it('does not unlock (or persist) while ineligible', () => {
-    setState(true, 4);
-    const svc = freshService();
-    expect(svc.unlock()).toBeNull();
-    expect(localStorage.getItem(SK_INTERVIEW_CERTIFICATE)).toBeNull();
-  });
-
-  it('setRecipientName persists a trimmed name only after unlock', () => {
-    const svc = freshService();
-    svc.setRecipientName('Ada');
-    expect(svc.record()).toBeNull();
-    svc.unlock();
-    svc.setRecipientName('  Ada Lovelace  ');
-    expect(svc.record()!.recipientName).toBe('Ada Lovelace');
-  });
-
-  it('54/regression: never writes achievements / history / best-score storage', () => {
-    const svc = freshService();
-    svc.unlock();
-    svc.setRecipientName('X');
-    expect(localStorage.getItem(SK_QUIZ_ACHIEVEMENTS)).toBeNull();
+    // Only the certificate's own keys are touched.
     expect(localStorage.getItem(SK_INTERVIEW_HISTORY)).toBeNull();
+    expect(localStorage.getItem(SK_QUIZ_ACHIEVEMENTS)).toBeNull();
     expect(localStorage.getItem('quizBestScores')).toBeNull();
   });
 });
 
-describe('generateCertificateId / validateCertificateRecord', () => {
-  it('formats AQ-YYYY-NNNNNN, zero-padded and stable', () => {
-    expect(generateCertificateId('2026-07-24T12:00:00.000Z', () => 0.000128)).toBe('AQ-2026-000128');
-    expect(generateCertificateId('2030-06-15T12:00:00.000Z', () => 0.5)).toMatch(/^AQ-2030-\d{6}$/);
+describe('InterviewCertificateService — progress model', () => {
+  beforeEach(() => { localStorage.clear(); setEarned([]); setHistory([]); });
+  afterEach(() => localStorage.clear());
+
+  it('required interview count is five', () => {
+    expect(freshService().progress().requiredInterviews).toBe(5);
   });
 
-  it('accepts a valid record + rejects junk/non-unlocked/malformed', () => {
+  it('Angular Explorer status reflects the achievement service', () => {
+    setEarned(ALL_SIX);
+    expect(freshService().progress().angularExplorerEarned).toBe(true);
+    setEarned(CURRICULUM);
+    expect(freshService().progress().angularExplorerEarned).toBe(false);
+  });
+
+  it('interviews remaining never becomes negative', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory(Array.from({ length: 8 }, (_, i) => offset(qual, (i + 1) * 1000)));
+    expect(svc.progress().interviewsRemaining).toBe(0);
+  });
+
+  it('isEligible needs BOTH Explorer and five qualifying interviews', () => {
+    setEarned(CURRICULUM);   // explorer NOT earned
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory(Array.from({ length: 6 }, (_, i) => offset(qual, (i + 1) * 1000)));
+    expect(svc.progress().isEligible).toBe(false);   // 6 interviews but no Explorer
+  });
+
+  it('isUnlocked reflects persisted certificate state', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    setHistory(Array.from({ length: 5 }, (_, i) => offset(svc.progress().qualificationStartedAt!, (i + 1) * 1000)));
+    expect(svc.progress().isUnlocked).toBe(false);
+    svc.unlock();
+    expect(svc.progress().isUnlocked).toBe(true);
+    expect(freshService().progress().isUnlocked).toBe(true);
+  });
+});
+
+describe('InterviewCertificateService — unlock persistence', () => {
+  beforeEach(() => { localStorage.clear(); setEarned([]); setHistory([]); });
+  afterEach(() => localStorage.clear());
+
+  function makeEligible(): InterviewCertificateService {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    setHistory(Array.from({ length: 5 }, (_, i) => offset(svc.progress().qualificationStartedAt!, (i + 1) * 1000)));
+    return svc;
+  }
+
+  it('id + issue date are generated once and survive reload', () => {
+    const svc = makeEligible();
+    const first = svc.unlock()!;
+    const again = svc.unlock()!;
+    expect(again.certificateId).toBe(first.certificateId);
+    expect(again.unlockedAt).toBe(first.unlockedAt);
+    const reloaded = freshService();
+    expect(reloaded.record()!.certificateId).toBe(first.certificateId);
+    expect(reloaded.record()!.unlockedAt).toBe(first.unlockedAt);
+  });
+
+  it('stays unlocked if history later shrinks below five', () => {
+    const svc = makeEligible();
+    svc.unlock();
+    setHistory([]);   // history cleared later
+    expect(svc.unlocked()).toBe(true);
+  });
+
+  it('does not unlock while ineligible + never persists', () => {
+    setEarned(CURRICULUM);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    expect(svc.unlock()).toBeNull();
+    expect(localStorage.getItem(SK_INTERVIEW_CERTIFICATE)).toBeNull();
+  });
+});
+
+describe('generateCertificateId / validateCertificateRecord', () => {
+  it('formats AQ-YYYY-NNNNNN, zero-padded', () => {
+    expect(generateCertificateId('2026-07-24T12:00:00.000Z', () => 0.000128)).toBe('AQ-2026-000128');
+  });
+  it('validates records', () => {
     expect(validateCertificateRecord({
-      version: 1, unlocked: true, unlockedAt: '2026-07-24T00:00:00.000Z',
-      certificateId: 'AQ-2026-000001', recipientName: '  Grace  '
-    })).toMatchObject({ unlocked: true, certificateId: 'AQ-2026-000001', recipientName: 'Grace' });
+      version: 1, unlocked: true, unlockedAt: '2026-07-24T00:00:00.000Z', certificateId: 'AQ-2026-000001'
+    })).toMatchObject({ unlocked: true, certificateId: 'AQ-2026-000001' });
     expect(validateCertificateRecord(null)).toBeNull();
     expect(validateCertificateRecord({ unlocked: false, certificateId: 'x', unlockedAt: '2026-07-24' })).toBeNull();
-    expect(validateCertificateRecord({ unlocked: true, certificateId: 'AQ-1', unlockedAt: 'not-a-date' })).toBeNull();
   });
 });

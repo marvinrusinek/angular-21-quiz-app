@@ -11,18 +11,19 @@ const progressSig = signal<InterviewCertificateProgress>(progress());
 
 function progress(over: Partial<InterviewCertificateProgress> = {}): InterviewCertificateProgress {
   const angularExplorerEarned = over.angularExplorerEarned ?? false;
-  const completedInterviews = over.completedInterviews ?? 0;
+  const qualifyingInterviewsCompleted = over.qualifyingInterviewsCompleted ?? 0;
   const requiredInterviews = 5;
   return {
-    angularExplorerEarned, completedInterviews, requiredInterviews,
-    interviewsRemaining: Math.max(requiredInterviews - completedInterviews, 0),
-    isEligible: angularExplorerEarned && completedInterviews >= requiredInterviews,
+    angularExplorerEarned, qualifyingInterviewsCompleted, requiredInterviews,
+    interviewsRemaining: Math.max(requiredInterviews - qualifyingInterviewsCompleted, 0),
+    isEligible: angularExplorerEarned && qualifyingInterviewsCompleted >= requiredInterviews,
     isUnlocked: over.isUnlocked ?? false,
     ...over
   };
 }
 
-const stub = { unlocked: unlockedSig, progress: progressSig } as unknown as InterviewCertificateService;
+const ensureQualificationStarted = jest.fn();
+const stub = { unlocked: unlockedSig, progress: progressSig, ensureQualificationStarted } as unknown as InterviewCertificateService;
 
 function render(): ComponentFixture<InterviewCertificateCalloutComponent> {
   TestBed.resetTestingModule();
@@ -49,19 +50,19 @@ describe('InterviewCertificateCalloutComponent (Interview Builder)', () => {
   });
 
   it('37. reflects Angular Explorer status', () => {
-    progressSig.set(progress({ angularExplorerEarned: false, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: false, qualifyingInterviewsCompleted: 3 }));
     expect((render().nativeElement as HTMLElement).textContent).not.toContain('Angular Explorer unlocked');
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     expect((render().nativeElement as HTMLElement).textContent).toContain('Angular Explorer unlocked');
   });
 
   it('38. displays completed-interview progress', () => {
-    progressSig.set(progress({ completedInterviews: 3 }));
+    progressSig.set(progress({ qualifyingInterviewsCompleted: 3 }));
     expect((render().nativeElement as HTMLElement).textContent).toContain('Interviews completed: 3 / 5');
   });
 
   it('39. displays the correct next action', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     expect((render().nativeElement as HTMLElement).querySelector('.icc__action')?.textContent)
       .toContain('Complete 2 more interviews');
   });
@@ -87,7 +88,7 @@ describe('InterviewCertificateCalloutComponent (Interview Builder)', () => {
   });
 
   it('43/45/46. accessible: decorative marks aria-hidden + sr summary present', () => {
-    progressSig.set(progress({ angularExplorerEarned: true, completedInterviews: 3 }));
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 3 }));
     const el = render().nativeElement as HTMLElement;
     for (const m of Array.from(el.querySelectorAll('[aria-hidden="true"]'))) {
       expect(m.getAttribute('aria-hidden')).toBe('true');

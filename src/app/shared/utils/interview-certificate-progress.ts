@@ -20,7 +20,7 @@ export function certificateNextAction(p: InterviewCertificateProgress): string {
   if (p.isUnlocked || p.isEligible) return '';
 
   const explorer = p.angularExplorerEarned;
-  const interviewsDone = p.completedInterviews >= p.requiredInterviews;
+  const interviewsDone = p.qualifyingInterviewsCompleted >= p.requiredInterviews;
 
   if (explorer && !interviewsDone) {
     const n = p.interviewsRemaining;
@@ -44,7 +44,7 @@ export function certificateAccessibleSummary(p: InterviewCertificateProgress): s
   const explorer = p.angularExplorerEarned
     ? $localize`Angular Explorer unlocked.`
     : $localize`Angular Explorer not yet unlocked.`;
-  const counts = $localize`${p.completedInterviews} of ${p.requiredInterviews} required interviews completed.`;
+  const counts = $localize`${p.qualifyingInterviewsCompleted} of ${p.requiredInterviews} required interviews completed.`;
   const remaining =
     p.interviewsRemaining > 0
       ? $localize`${p.interviewsRemaining} ${interviewsWord(p.interviewsRemaining)} remaining.`
