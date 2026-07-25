@@ -27,7 +27,9 @@ export class AppComponent {
   // one-click reload, so users don't have to hard-refresh to get the new version.
   private readonly pwaUpdate = inject(PwaUpdateService);
 
-  constructor(private router: Router) {
+  private readonly router = inject(Router);
+
+  constructor() {
     // Start watching for new deployed versions (no-op when the SW is disabled,
     // e.g. local dev). Prompts to reload on VERSION_READY.
     this.pwaUpdate.init();
