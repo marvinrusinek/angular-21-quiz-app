@@ -1,6 +1,9 @@
+import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 
 import { QuizGuard } from './quiz-guard';
+import { QuizDataService } from '../../shared/services/data/quizdata.service';
+import { QuizService } from '../../shared/services/data/quiz.service';
 
 describe('QuizGuard', () => {
   let guard: QuizGuard;
@@ -31,7 +34,15 @@ describe('QuizGuard', () => {
       questions: [],
     };
 
-    guard = new QuizGuard(quizDataService, quizService, router as Router);
+    TestBed.configureTestingModule({
+      providers: [
+        QuizGuard,
+        { provide: Router, useValue: router },
+        { provide: QuizDataService, useValue: quizDataService },
+        { provide: QuizService, useValue: quizService },
+      ],
+    });
+    guard = TestBed.inject(QuizGuard);
   });
 
   it('should be created', () => {

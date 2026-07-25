@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree
 } from '@angular/router';
@@ -10,11 +10,9 @@ import { QuizService } from '../../shared/services/data/quiz.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuizGuard implements CanActivate {
-  constructor(
-    private quizDataService: QuizDataService,
-    private quizService: QuizService,
-    private router: Router
-  ) { }
+  private readonly quizDataService = inject(QuizDataService);
+  private readonly quizService = inject(QuizService);
+  private readonly router = inject(Router);
 
   canActivate(
     route: ActivatedRouteSnapshot,
