@@ -1,11 +1,4 @@
 <form [formGroup]="questionForm" (ngSubmit)="onSubmit()">
   <!-- Dynamic component container -->
   <div #dynamicAnswerContainer></div>
-
-  <!-- Loading spinner -->
-  @if (isLoading()) {
-    <div class="loading-spinner" role="status" aria-live="polite" aria-label="Loading" i18n-aria-label>
-      <!-- spinner here -->
-    </div>
-  }
 </form>
