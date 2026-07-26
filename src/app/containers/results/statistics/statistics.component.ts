@@ -149,15 +149,17 @@ export class StatisticsComponent implements OnInit {
       totalElapsedTime = this.timerService.completionTime;
     }
 
+    const qid = this.quizId() || this.quizService.quizId;
     if (totalElapsedTime > 0) {
-      // Fresh path: the timer is populated here. Backfill the known-good value
-      // into the snapshot too, so a later revisit can read it there.
+      // Fresh path: persist the EXACT value we display, durably (localStorage,
+      // keyed by qid) and into the snapshot, so a later revisit can read it back
+      // with the same qid.
+      this.timerService.setDurableCompletionTime(qid, totalElapsedTime);
       this.quizService.patchFinalResultCompletionTime(totalElapsedTime);
     } else {
       // Revisit path: the live timer was cleared on leaving Results. Read the
-      // elapsed time from the durable per-quiz store (the timer writes it at
-      // completion, survives leaving Results), falling back to the snapshot.
-      const qid = this.quizId() || this.quizService.quizId;
+      // elapsed time from the durable per-quiz store (survives leaving Results),
+      // falling back to the snapshot.
       totalElapsedTime =
         this.timerService.getDurableCompletionTime(qid) ||
         this.quizService.getFinalResultSnapshot()?.completionTime ||

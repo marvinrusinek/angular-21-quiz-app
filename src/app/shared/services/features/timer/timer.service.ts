@@ -566,12 +566,6 @@ export class TimerService implements OnDestroy {
 
       this.completionTime = total;
       this.saveTimerState();
-      // Durably record the elapsed time for THIS quiz (localStorage, keyed by
-      // quizId). Unlike the sessionStorage timer state — which is cleared when
-      // the user leaves Results — this survives so a later revisit can show the
-      // real elapsed time. Only positive totals are written, so a revisit (where
-      // the live timer is empty → total 0) never clobbers the stored value.
-      if (total > 0) this.persistDurableCompletionTime(total);
       return total;
     } catch {
       return 0;
@@ -582,10 +576,18 @@ export class TimerService implements OnDestroy {
     return 'quizElapsedTime:' + quizId;
   }
 
-  private persistDurableCompletionTime(total: number): void {
+  /**
+   * Durably records the elapsed time for a quiz (localStorage, keyed by quizId).
+   * Unlike the sessionStorage timer state — cleared when the user leaves Results
+   * — this survives so a later revisit can show the real elapsed time. Called by
+   * the statistics view on the fresh Results page with the SAME value it
+   * displays and the SAME quizId it later reads with, so the round-trip can't
+   * drift. Only positive totals are written, so a revisit never clobbers it.
+   */
+  public setDurableCompletionTime(quizId: string, total: number): void {
+    if (!quizId || !(total > 0)) return;
     try {
-      const quizId = this.quizService?.quizId;
-      if (quizId) localStorage.setItem(this.durableCompletionTimeKey(quizId), String(total));
+      localStorage.setItem(this.durableCompletionTimeKey(quizId), String(total));
     } catch { /* ignore */ }
   }
 
