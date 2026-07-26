@@ -45,7 +45,7 @@ export function buildTopicTrendPoints(
   attempts: readonly InterviewAttemptHistoryEntry[]
 ): Map<string, TopicTrendPoint[]> {
   const map = new Map<string, TopicTrendPoint[]>();
-  attempts.forEach((a, i) => {
+  for (const [i, a] of attempts.entries()) {
     for (const t of a.topicPerformance ?? []) {
       if (!(t.total > 0)) continue;
       const point: TopicTrendPoint = {
@@ -62,7 +62,7 @@ export function buildTopicTrendPoints(
       if (list) list.push(point);
       else map.set(t.topicId, [point]);
     }
-  });
+  }
   return map;
 }
 

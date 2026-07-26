@@ -134,7 +134,7 @@ describe('InterviewHistoryService — persistence', () => {
 
   it('8. attempts remain in chronological (insertion) order', () => {
     const svc = freshService();
-    [30, 55, 42, 91].forEach((p) => svc.record(makeResult(p)));
+    for (const p of [30, 55, 42, 91]) svc.record(makeResult(p));
     expect(svc.history().map((e) => e.score)).toEqual([30, 55, 42, 91]);
   });
 

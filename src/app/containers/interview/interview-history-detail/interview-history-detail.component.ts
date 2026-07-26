@@ -113,9 +113,9 @@ export class InterviewHistoryDetailComponent {
 
   readonly reviewAnswers = computed<Record<number, number[]>>(() => {
     const out: Record<number, number[]> = {};
-    (this.entry()?.review ?? []).forEach((s, i) => {
+    for (const [i, s] of (this.entry()?.review ?? []).entries()) {
       out[i] = [...s.selectedOptionIds];
-    });
+    }
     return out;
   });
 

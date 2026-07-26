@@ -144,10 +144,10 @@ export class AssessmentBuilderService {
 
     const base = Math.floor(count / topicIds.length);
     const remainder = count % topicIds.length;
-    topicIds.forEach((id, i) => {
+    for (const [i, id] of topicIds.entries()) {
       const target = base + (i < remainder ? 1 : 0);
       alloc.set(id, Math.min(target, capacity.get(id) ?? 0));
-    });
+    }
 
     let assigned = [...alloc.values()].reduce((a, b) => a + b, 0);
     while (assigned < count) {

@@ -24,7 +24,7 @@ describe('AssessmentIntegrityService', () => {
   }
 
   function triggerDestroy(): void {
-    destroyCallbacks.forEach((fn) => fn());
+    for (const fn of destroyCallbacks) fn();
   }
 
   function setVisibility(state: 'visible' | 'hidden'): void {

@@ -158,7 +158,9 @@ describe('AssessmentBuilderService', () => {
     const before = JSON.stringify(getQuizData());
     const result = service.build(config('mixed', ['ts', 'templates'], 10));
     // mutate the generated assessment aggressively
-    result.questions.forEach((q) => q.options.forEach((o) => { o.selected = true; o.highlight = true; }));
+    for (const q of result.questions) {
+      for (const o of q.options) { o.selected = true; o.highlight = true; }
+    }
     result.questions[0].options[0].text = 'MUTATED';
     expect(JSON.stringify(getQuizData())).toBe(before);
   });

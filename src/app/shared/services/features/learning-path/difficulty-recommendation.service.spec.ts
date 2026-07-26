@@ -77,7 +77,7 @@ describe('DifficultyRecommendationService', () => {
 
   it('returns the completion state when ALL quizzes are completed', () => {
     const all: Record<string, number> = {};
-    CATALOG.forEach((q) => (all[q.quizId] = 90));
+    for (const q of CATALOG) all[q.quizId] = 90;
     const r = rec(all)!;
     expect(r.level).toBe('complete');
     expect(r.heading).toBe('Ready for Interview Mode?');

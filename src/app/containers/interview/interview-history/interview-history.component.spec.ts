@@ -129,7 +129,7 @@ describe('InterviewHistoryComponent', () => {
     const nodes = ['.ih-summary', '#interviews', '.interview-history__readiness', '#topic-trends'].map(
       (sel) => el.querySelector(sel)
     );
-    nodes.forEach((n) => expect(n).not.toBeNull());
+    for (const n of nodes) expect(n).not.toBeNull();
     // The interviews list contains the cards, and each section precedes the next.
     expect(el.querySelector('#interviews .ih-card')).not.toBeNull();
     for (let i = 0; i < nodes.length - 1; i++) {

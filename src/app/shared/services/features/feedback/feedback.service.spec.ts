@@ -73,7 +73,7 @@ describe('FeedbackService.buildFeedbackMessage — multi-answer win condition', 
       opt(3, 'Charlie', true),
       opt(4, 'Delta', false)
     ];
-    options.forEach((o, i) => (o.selected = selectedFlags[i]));
+    for (const [i, o] of options.entries()) o.selected = selectedFlags[i];
     const selected = options.filter((_, i) => selectedFlags[i]);
     const question = multiQuestion(options);
     return service.buildFeedbackMessage(question, selected, false, false, 0, options, options[targetIdx]);

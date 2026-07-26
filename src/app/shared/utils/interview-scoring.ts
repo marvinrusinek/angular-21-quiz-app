@@ -49,7 +49,7 @@ export function computeInterviewResult(
 
   const perTopicMap = new Map<string, { title: string; correct: number; total: number }>();
 
-  questions.forEach((q, i) => {
+  for (const [i, q] of questions.entries()) {
     const selectedIds = answersByIndex[i] ?? [];
     const isAnswered = selectedIds.filter((id) => id != null).length > 0;
     if (isAnswered) answered++;
@@ -61,7 +61,7 @@ export function computeInterviewResult(
     entry.total++;
     if (isCorrect) entry.correct++;
     perTopicMap.set(quizId, entry);
-  });
+  }
 
   const perTopic: InterviewTopicScore[] = [...perTopicMap.entries()].map(([quizId, e]) => ({
     quizId,

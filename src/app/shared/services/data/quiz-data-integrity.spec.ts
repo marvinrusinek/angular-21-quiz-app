@@ -58,12 +58,12 @@ describe('quiz data integrity (single source: assets/data/quiz.json)', () => {
   it('every question has non-empty text and at least one option', () => {
     const bad: string[] = [];
     for (const quiz of quizzes) {
-      (quiz.questions ?? []).forEach((q, i) => {
+      for (const [i, q] of (quiz.questions ?? []).entries()) {
         if (!(q.questionText ?? '').trim()) bad.push(`${quizId(quiz)} Q${i + 1}: empty text`);
         if (!Array.isArray(q.options) || q.options.length === 0) {
           bad.push(`${quizId(quiz)} Q${i + 1}: no options`);
         }
-      });
+      }
     }
     expect(bad).toEqual([]);
   });
@@ -71,11 +71,11 @@ describe('quiz data integrity (single source: assets/data/quiz.json)', () => {
   it('every question has at least one correct option', () => {
     const bad: string[] = [];
     for (const quiz of quizzes) {
-      (quiz.questions ?? []).forEach((q, i) => {
+      for (const [i, q] of (quiz.questions ?? []).entries()) {
         if ((q.options ?? []).filter(isCorrect).length === 0) {
           bad.push(`${quizId(quiz)} Q${i + 1}: no correct option`);
         }
-      });
+      }
     }
     expect(bad).toEqual([]);
   });
@@ -83,13 +83,13 @@ describe('quiz data integrity (single source: assets/data/quiz.json)', () => {
   it('every option has non-empty text', () => {
     const bad: string[] = [];
     for (const quiz of quizzes) {
-      (quiz.questions ?? []).forEach((q, i) => {
-        (q.options ?? []).forEach((opt, j) => {
+      for (const [i, q] of (quiz.questions ?? []).entries()) {
+        for (const [j, opt] of (q.options ?? []).entries()) {
           if (!String(opt.text ?? '').trim()) {
             bad.push(`${quizId(quiz)} Q${i + 1} option ${j + 1}: empty text`);
           }
-        });
-      });
+        }
+      }
     }
     expect(bad).toEqual([]);
   });

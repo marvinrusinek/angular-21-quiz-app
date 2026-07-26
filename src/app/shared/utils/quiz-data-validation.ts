@@ -57,26 +57,26 @@ function validateOptions(
 ): Option[] {
   const out: Option[] = [];
 
-  raws.forEach((raw, i) => {
+  for (const [i, raw] of raws.entries()) {
     if (!raw || typeof raw !== 'object') {
       problems.push(`${label} option[${i}]: not an object`);
-      return;
+      continue;
     }
     const o = raw as Record<string, unknown>;
 
     if (typeof o['text'] !== 'string') {
       problems.push(`${label} option[${i}]: "text" is missing or not a string`);
-      return;
+      continue;
     }
     // `correct` is optional, but when present it decides scoring — a non-boolean
     // (e.g. the string "false", which is truthy) would silently corrupt results.
     if (o['correct'] !== undefined && typeof o['correct'] !== 'boolean') {
       problems.push(`${label} option[${i}]: "correct" is not a boolean`);
-      return;
+      continue;
     }
 
     out.push(raw as Option);   // pass through by reference
-  });
+  }
 
   return out;
 }
@@ -88,34 +88,34 @@ function validateQuestions(
 ): QuizQuestion[] {
   const out: QuizQuestion[] = [];
 
-  raws.forEach((raw, i) => {
+  for (const [i, raw] of raws.entries()) {
     const label = `quiz "${quizId}" Q${i + 1}`;
 
     if (!raw || typeof raw !== 'object') {
       problems.push(`${label}: not an object`);
-      return;
+      continue;
     }
     const q = raw as Record<string, unknown>;
 
     if (!isNonEmptyString(q['questionText'])) {
       problems.push(`${label}: "questionText" is missing or empty`);
-      return;
+      continue;
     }
     if (typeof q['explanation'] !== 'string') {
       problems.push(`${label}: "explanation" is missing or not a string`);
-      return;
+      continue;
     }
 
     const rawOptions = q['options'];
     if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
       problems.push(`${label}: "options" is missing, not an array, or empty`);
-      return;
+      continue;
     }
 
     const options = validateOptions(rawOptions, label, problems);
     if (options.length === 0) {
       problems.push(`${label}: no valid options remain`);
-      return;
+      continue;
     }
 
     // Report-only checks — these never drop the question, because removing one
@@ -136,7 +136,7 @@ function validateQuestions(
         ? (raw as QuizQuestion)
         : { ...(raw as QuizQuestion), options }
     );
-  });
+  }
 
   return out;
 }
@@ -169,22 +169,22 @@ export function validateQuizData(raw: unknown): QuizDataValidationResult {
   const quizzes: Quiz[] = [];
   const seenIds = new Set<string>();
 
-  rawQuizzes.forEach((raw2, qi) => {
+  for (const [qi, raw2] of rawQuizzes.entries()) {
     if (!raw2 || typeof raw2 !== 'object') {
       problems.push(`quiz[${qi}]: not an object`);
-      return;
+      continue;
     }
     const q = raw2 as Record<string, unknown>;
 
     const quizId = q['quizId'];
     if (!isNonEmptyString(quizId)) {
       problems.push(`quiz[${qi}]: "quizId" is missing or empty`);
-      return;
+      continue;
     }
     if (seenIds.has(quizId)) {
       // Duplicate ids make quizId lookups ambiguous across scoring/progress.
       problems.push(`quiz "${quizId}": duplicate quizId — keeping the first`);
-      return;
+      continue;
     }
     seenIds.add(quizId);
 
@@ -197,7 +197,7 @@ export function validateQuizData(raw: unknown): QuizDataValidationResult {
     const rawQuestions = q['questions'];
     if (rawQuestions !== undefined && !Array.isArray(rawQuestions)) {
       problems.push(`quiz "${quizId}": "questions" is not an array — dropping quiz`);
-      return;
+      continue;
     }
 
     if (Array.isArray(rawQuestions)) {
@@ -211,12 +211,12 @@ export function validateQuizData(raw: unknown): QuizDataValidationResult {
         questions.every((qn, i) => qn === rawQuestions[i]);
       if (!unchanged) {
         quizzes.push({ ...(raw2 as Quiz), questions });
-        return;
+        continue;
       }
     }
 
     quizzes.push(raw2 as Quiz);   // pass through by reference (no-op path)
-  });
+  }
 
   return { quizzes, resources, problems };
 }

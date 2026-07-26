@@ -37,10 +37,10 @@ describe('validateQuizData', () => {
       expect(resources.length).toBe(raw.resources.length);
 
       const mutated: string[] = [];
-      quizzes.forEach((q, i) => {
+      for (const [i, q] of quizzes.entries()) {
         // Identity, not deep-equality: proves nothing was cloned or rebuilt.
         if (q !== raw.quizzes[i]) mutated.push(`quiz[${i}] (${q.quizId}) was not passed through by reference`);
-      });
+      }
       expect(mutated).toEqual([]);
     });
 
