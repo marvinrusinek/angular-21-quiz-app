@@ -89,6 +89,29 @@ export class SummaryReportComponent implements OnInit {
     }
 
     try {
+      // Elapsed time from the LIVE timer (valid on fresh completion).
+      const qid = this.quizId || this.quizService.quizId;
+      let completionTime = this.timerService.calculateTotalElapsedTime(
+        this.timerService.elapsedTimes
+      );
+      if (completionTime === 0 && this.timerService.completionTime > 0) {
+        completionTime = this.timerService.completionTime;
+      }
+
+      if (completionTime > 0) {
+        // Fresh path: persist the displayed value durably (per-quiz) and into
+        // the snapshot, so a later revisit can read it back with the same qid.
+        this.timerService.setDurableCompletionTime(qid, completionTime);
+        this.quizService.patchFinalResultCompletionTime(completionTime);
+      } else {
+        // Revisit path: the live timer was cleared on leaving Results — read the
+        // durable per-quiz value, falling back to the persisted snapshot.
+        completionTime =
+          this.timerService.getDurableCompletionTime(qid) ||
+          this.quizService.getFinalResultSnapshot()?.completionTime ||
+          0;
+      }
+
       // Initialize quizMetadata in initComponent when service data is available
       this.quizMetadata.set({
         totalQuestions: this.quizService.totalQuestions(),
@@ -96,9 +119,7 @@ export class SummaryReportComponent implements OnInit {
         correctAnswersCount: this.quizService.correctAnswersCountSig,
         percentage:
           this.quizService.calculatePercentageOfCorrectlyAnsweredQuestions(),
-        completionTime: this.timerService.calculateTotalElapsedTime(
-          this.timerService.elapsedTimes
-        )
+        completionTime
       });
 
       this.quizDataService.getQuizzes().pipe(take(1)).subscribe((quizzes) => {
