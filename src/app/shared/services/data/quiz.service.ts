@@ -1139,6 +1139,27 @@ export class QuizService {
     } catch (err: unknown) { swallow('quiz.service.ts', err); }
   }
 
+  /**
+   * Backfills the persisted result snapshot's elapsed time from a known-good
+   * LIVE reading (captured while the timer is still populated, on fresh
+   * completion). The results-page builder can race the timer and store 0; this
+   * lets the statistics view — which reads the live timer AFTER it's populated —
+   * repair the snapshot so a later revisit shows the real elapsed time. No-op
+   * for non-positive values or when there is no snapshot to patch.
+   */
+  patchFinalResultCompletionTime(completionTime: number): void {
+    if (!(completionTime > 0)) return;
+    const snapshot = this.getFinalResultSnapshot();
+    if (!snapshot) return;
+    if (snapshot.completionTime && snapshot.completionTime > 0) return;
+
+    const patched: FinalResult = { ...snapshot, completionTime };
+    if (this.finalResultSig()) this.finalResultSig.set(patched);
+    try {
+      sessionStorage.setItem('finalResult', JSON.stringify(patched));
+    } catch (err: unknown) { swallow('quiz.service.ts', err); }
+  }
+
   resetQuizSessionForNewRun(quizId: string): void {
     this.sessionManager.resetQuizSessionForNewRun(this, quizId);
   }

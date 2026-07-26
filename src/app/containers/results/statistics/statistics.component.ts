@@ -139,7 +139,7 @@ export class StatisticsComponent implements OnInit {
       this.quizId.set(this.quizService.quizId || localStorage.getItem('quizId') || '');
     }
 
-    // Calculate elapsed time from array or use completionTime as fallback
+    // Elapsed time from the LIVE timer (valid on fresh completion).
     let totalElapsedTime = this.timerService.calculateTotalElapsedTime(
       this.timerService.elapsedTimes
     );
@@ -149,9 +149,15 @@ export class StatisticsComponent implements OnInit {
       totalElapsedTime = this.timerService.completionTime;
     }
 
-    // Revisit fallback: the live timer is reset when the user leaves Results, so
-    // read the elapsed time captured in the persisted result snapshot.
-    if (totalElapsedTime === 0) {
+    if (totalElapsedTime > 0) {
+      // Fresh path: the timer is populated here (this view reads it AFTER the
+      // results builder, which can race the timer and persist 0). Backfill the
+      // known-good value into the snapshot so a later revisit — when the timer
+      // has been cleared — can read it.
+      this.quizService.patchFinalResultCompletionTime(totalElapsedTime);
+    } else {
+      // Revisit path: the live timer was cleared on leaving Results, so read the
+      // elapsed time captured in the persisted result snapshot.
       totalElapsedTime = this.quizService.getFinalResultSnapshot()?.completionTime ?? 0;
     }
 
