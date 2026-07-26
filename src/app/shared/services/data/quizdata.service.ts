@@ -1,9 +1,15 @@
 ﻿import { inject, Injectable, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 import {
-  catchError, distinctUntilChanged, filter, map, switchMap, take, tap
+  catchError,
+  distinctUntilChanged,
+  filter,
+  map,
+  switchMap,
+  take,
+  tap,
 } from 'rxjs/operators';
 
 import { SK_COMPLETED_QUIZ_IDS, SK_STARTED_QUIZ_IDS } from '../../constants/session-keys';
@@ -29,7 +35,7 @@ export class QuizDataService {
   private readonly http = inject(HttpClient);
 
   // ── remaining variables ─────────────────────────────────────────
-  private quizUrl = 'assets/data/quiz.json';  // single source of truth: { quizzes, resources }
+  private quizUrl = 'assets/data/quiz.json'; // single source of truth: { quizzes, resources }
   question: QuizQuestion | null = null;
   questionType: string | null = null;
 
@@ -45,9 +51,7 @@ export class QuizDataService {
   private readonly currentQuizSig = signal<Quiz | null>(null);
 
   readonly isContentAvailableSig = signal<boolean>(false);
-  public isContentAvailable$: Observable<boolean> =
-    toObservable(this.isContentAvailableSig);
-
+  public isContentAvailable$: Observable<boolean> = toObservable(this.isContentAvailableSig);
 
   // Clear the question cache for a quiz to force fresh shuffle on next load.
   // Call this when starting a quiz to ensure shuffle flag is applied correctly.
@@ -58,8 +62,8 @@ export class QuizDataService {
 
   getQuizzes(): Observable<Quiz[]> {
     return this.quizzes$.pipe(
-      filter((quizzes) => quizzes.length > 0),  // ensure data is loaded
-      take(1)  // ensure it emits only once
+      filter((quizzes) => quizzes.length > 0), // ensure data is loaded
+      take(1) // ensure it emits only once
     );
   }
 
@@ -83,10 +87,10 @@ export class QuizDataService {
         }
 
         // Merge statuses into new data
-        const mergedQuizzes = Array.isArray(quizzes) 
-          ? quizzes.map(q => ({
+        const mergedQuizzes = Array.isArray(quizzes)
+          ? quizzes.map((q) => ({
               ...q,
-              status: existingStatuses.get(q.quizId) || q.status
+              status: existingStatuses.get(q.quizId) || q.status,
             }))
           : [];
 
@@ -118,8 +122,7 @@ export class QuizDataService {
     const quizzes = this.quizzesSig();
 
     // Fallback to your original this.quizzes array if ever needed
-    const source =
-      Array.isArray(quizzes) && quizzes.length > 0 ? quizzes : this.quizzes;
+    const source = Array.isArray(quizzes) && quizzes.length > 0 ? quizzes : this.quizzes;
 
     if (!Array.isArray(source) || source.length === 0) return null;
 
@@ -132,16 +135,14 @@ export class QuizDataService {
     if (!quizId) return;
 
     // Update in the local array
-    const quizIndex = this.quizzes.findIndex(q => q.quizId === quizId);
+    const quizIndex = this.quizzes.findIndex((q) => q.quizId === quizId);
     if (quizIndex >= 0) {
       this.quizzes[quizIndex] = { ...this.quizzes[quizIndex], status };
     }
 
     // Update in the signal
     const currentQuizzes = this.quizzesSig();
-    const updatedQuizzes = currentQuizzes.map(q => 
-      q.quizId === quizId ? { ...q, status } : q
-    );
+    const updatedQuizzes = currentQuizzes.map((q) => (q.quizId === quizId ? { ...q, status } : q));
     this.quizzesSig.set(updatedQuizzes);
   }
 
@@ -166,7 +167,7 @@ export class QuizDataService {
     return this.getQuizzes().pipe(
       map((quizzes: Quiz[]) => quizzes.some((quiz) => quiz.quizId === quizId)),
       catchError(() => {
-        return of(false);  // return `false` to indicate an invalid quiz
+        return of(false); // return `false` to indicate an invalid quiz
       })
     );
   }
@@ -216,9 +217,7 @@ export class QuizDataService {
       map((quizzes) => {
         const quiz = quizzes.find((q) => q.quizId === quizId);
         if (!quiz) {
-          throw new Error(
-            `[QuizDataService] Quiz with ID ${quizId} not found.`
-          );
+          throw new Error(`[QuizDataService] Quiz with ID ${quizId} not found.`);
         }
         return quiz;
       }),
@@ -238,17 +237,18 @@ export class QuizDataService {
     //  When shuffle is ON, ALWAYS delegate to prepareQuizSession
     // This ensures ONE consistent shuffle regardless of which code path calls this
     if (this.quizService.isShuffleEnabled()) {
-      const hasShuffled = this.quizService.shuffledQuestions?.length > 0 && this.quizService.quizId === quizId;
+      const hasShuffled =
+        this.quizService.shuffledQuestions?.length > 0 && this.quizService.quizId === quizId;
       const baseCached = this.baseQuizQuestionCache.get(quizId);
 
       if (hasShuffled && baseCached && baseCached.length > 0) {
         this.quizService.setCanonicalQuestions(quizId, baseCached);
         return of(this.cloneQuestions(this.quizService.shuffledQuestions!));
-      } 
-      
+      }
+
       if (hasShuffled && (!baseCached || baseCached.length === 0)) {
         return this.getQuiz(quizId).pipe(
-          map(quiz => {
+          map((quiz) => {
             const base = (quiz?.questions ?? []).map((q, i) => this.normalizeQuestion(q, i));
             this.baseQuizQuestionCache.set(quizId, base);
             this.quizService.setCanonicalQuestions(quizId, base);
@@ -277,37 +277,29 @@ export class QuizDataService {
         }
 
         // Build normalized base questions (clone options per question)
-        const baseQuestions: QuizQuestion[] = (quiz.questions ?? []).map(
-          (question, index) => this.normalizeQuestion(question, index)
+        const baseQuestions: QuizQuestion[] = (quiz.questions ?? []).map((question, index) =>
+          this.normalizeQuestion(question, index)
         );
 
         this.baseQuizQuestionCache.set(quizId, this.cloneQuestions(baseQuestions));
         this.quizService.setCanonicalQuestions(quizId, baseQuestions);
 
         const shouldShuffle = this.quizService.isShuffleEnabled();
-        const sessionQuestions = this.buildSessionQuestions(
-          quizId,
-          baseQuestions,
-          shouldShuffle
-        );
+        const sessionQuestions = this.buildSessionQuestions(quizId, baseQuestions, shouldShuffle);
 
         this.quizQuestionCache.set(quizId, this.cloneQuestions(sessionQuestions));
-        this.quizService.applySessionQuestions(
-          quizId,
-          this.cloneQuestions(sessionQuestions)
-        );
+        this.quizService.applySessionQuestions(quizId, this.cloneQuestions(sessionQuestions));
         this.syncSelectedQuizState(quizId, sessionQuestions, quiz);
 
         // Assign questions to QuizService so UI can access them
         this.quizService.questions = this.cloneQuestions(sessionQuestions);
-        
+
         // Stamp multi-answer flag for each question
         for (const [_qIndex, question] of this.quizService.questions.entries()) {
           (question as any).isMulti =
             question.type === QuestionType.MultipleAnswer ||
             (Array.isArray(question.options) &&
-              question.options.filter((o: Option) => isOptionCorrect(o))
-                .length > 1);
+              question.options.filter((o: Option) => isOptionCorrect(o)).length > 1);
         }
 
         return this.cloneQuestions(sessionQuestions);
@@ -351,11 +343,7 @@ export class QuizDataService {
     const baseQuestions = this.baseQuizQuestionCache.get(quizId);
 
     if (Array.isArray(baseQuestions) && baseQuestions.length > 0) {
-      const sessionQuestions = this.buildSessionQuestions(
-        quizId,
-        baseQuestions,
-        shouldShuffle
-      );
+      const sessionQuestions = this.buildSessionQuestions(quizId, baseQuestions, shouldShuffle);
 
       this.quizQuestionCache.set(quizId, this.cloneQuestions(sessionQuestions));
       const sessionClone = this.cloneQuestions(sessionQuestions);
@@ -369,11 +357,7 @@ export class QuizDataService {
     return this.getQuiz(quizId).pipe(
       map((quiz) => {
         const base = this.ensureBaseQuestions(quizId, quiz);
-        const sessionQuestions = this.buildSessionQuestions(
-          quizId,
-          base,
-          shouldShuffle
-        );
+        const sessionQuestions = this.buildSessionQuestions(quizId, base, shouldShuffle);
 
         this.quizQuestionCache.set(quizId, this.cloneQuestions(sessionQuestions));
 
@@ -399,10 +383,7 @@ export class QuizDataService {
 
     if (shouldShuffle) {
       this.quizShuffleService.prepareShuffle(quizId, workingSet);
-      const shuffled = this.quizShuffleService.buildShuffledQuestions(
-        quizId,
-        workingSet
-      );
+      const shuffled = this.quizShuffleService.buildShuffledQuestions(quizId, workingSet);
 
       return this.cloneQuestions(shuffled);
     }
@@ -411,15 +392,9 @@ export class QuizDataService {
     return workingSet;
   }
 
-  private sanitizeOptions(
-    options: Option[] = [],
-    questionIndex: number
-  ): Option[] {
+  private sanitizeOptions(options: Option[] = [], questionIndex: number): Option[] {
     // Ensure numeric IDs (idempotent)
-    const withIds = this.quizShuffleService.assignOptionIds(
-      options,
-      questionIndex
-    );
+    const withIds = this.quizShuffleService.assignOptionIds(options, questionIndex);
 
     const toNum = (v: unknown): number | null => {
       if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -431,7 +406,7 @@ export class QuizDataService {
       // Keep value strictly numeric per Option type
       const numericValue =
         toNum(option.value) ??
-        toNum((option as any).text) ??  // in case text is "3"
+        toNum((option as any).text) ?? // in case text is "3"
         index + 1;
 
       return {
@@ -440,29 +415,23 @@ export class QuizDataService {
         correct: isOptionCorrect(option),
         selected: option.selected === true,
         highlight: option.highlight ?? false,
-        showIcon: option.showIcon ?? false
+        showIcon: option.showIcon ?? false,
       };
     });
   }
 
-  private normalizeQuestion(
-    question: QuizQuestion,
-    questionIndex: number
-  ): QuizQuestion {
-    const sanitizedOptions = this.sanitizeOptions(
-      question.options ?? [],
-      questionIndex
-    );
+  private normalizeQuestion(question: QuizQuestion, questionIndex: number): QuizQuestion {
+    const sanitizedOptions = this.sanitizeOptions(question.options ?? [], questionIndex);
     const alignedAnswers = this.quizShuffleService.alignAnswersWithOptions(
       question.answer,
       sanitizedOptions
     );
 
     // Sync correct flag on options based on the newly aligned answers
-    const correctIds = new Set(alignedAnswers.map(a => Number(a.optionId)));
-    const finalOptions = sanitizedOptions.map(o => ({
+    const correctIds = new Set(alignedAnswers.map((a) => Number(a.optionId)));
+    const finalOptions = sanitizedOptions.map((o) => ({
       ...o,
-      correct: correctIds.has(Number(o.optionId))
+      correct: correctIds.has(Number(o.optionId)),
     }));
 
     return {
@@ -474,7 +443,7 @@ export class QuizDataService {
         : undefined,
       selectedOptionIds: Array.isArray(question.selectedOptionIds)
         ? [...question.selectedOptionIds]
-        : undefined
+        : undefined,
     };
   }
 
@@ -492,22 +461,17 @@ export class QuizDataService {
         : undefined,
       selectedOptionIds: Array.isArray(question.selectedOptionIds)
         ? [...question.selectedOptionIds]
-        : undefined
+        : undefined,
     }));
   }
 
-  private cloneQuestion(
-    question: QuizQuestion | undefined | null
-  ): QuizQuestion | null {
+  private cloneQuestion(question: QuizQuestion | undefined | null): QuizQuestion | null {
     if (!question) return null;
 
     return this.cloneQuestions([question])[0] ?? null;
   }
 
-  private ensureBaseQuestions(
-    quizId: string,
-    quiz: Quiz | null
-  ): QuizQuestion[] {
+  private ensureBaseQuestions(quizId: string, quiz: Quiz | null): QuizQuestion[] {
     const cached = this.baseQuizQuestionCache.get(quizId);
     if (Array.isArray(cached) && cached.length > 0) {
       this.quizService.setCanonicalQuestions(quizId, cached);
@@ -515,14 +479,11 @@ export class QuizDataService {
     }
 
     const normalized = (quiz?.questions ?? []).map((question, index) =>
-      this.normalizeQuestion(question, index),
+      this.normalizeQuestion(question, index)
     );
 
     const normalizedClone = this.cloneQuestions(normalized);
-    this.baseQuizQuestionCache.set(
-      quizId,
-      this.cloneQuestions(normalizedClone)
-    );
+    this.baseQuizQuestionCache.set(quizId, this.cloneQuestions(normalizedClone));
     this.quizService.setCanonicalQuestions(quizId, normalizedClone);
 
     return normalizedClone;
@@ -538,7 +499,7 @@ export class QuizDataService {
 
     return this.getQuiz(quizId).pipe(
       map((quiz) => {
-        if (!quiz) return [null, null] as [QuizQuestion | null, Option[] | null];        
+        if (!quiz) return [null, null] as [QuizQuestion | null, Option[] | null];
 
         let questionsToUse = this.quizQuestionCache.get(quizId);
 
@@ -550,10 +511,7 @@ export class QuizDataService {
             this.quizService.isShuffleEnabled()
           );
 
-          this.quizQuestionCache.set(
-            quizId,
-            this.cloneQuestions(sessionQuestions)
-          );
+          this.quizQuestionCache.set(quizId, this.cloneQuestions(sessionQuestions));
           questionsToUse = sessionQuestions;
         }
 
@@ -561,7 +519,8 @@ export class QuizDataService {
           questionIndex < 0 ||
           !Array.isArray(questionsToUse) ||
           questionIndex >= questionsToUse.length
-        ) return [null, null] as [QuizQuestion | null, Option[] | null];
+        )
+          return [null, null] as [QuizQuestion | null, Option[] | null];
 
         const question = this.cloneQuestion(questionsToUse[questionIndex]);
         if (!question) {
@@ -573,14 +532,11 @@ export class QuizDataService {
           correct: isOptionCorrect(option),
           selected: option.selected === true,
           highlight: option.highlight ?? false,
-          showIcon: option.showIcon ?? false
+          showIcon: option.showIcon ?? false,
         }));
 
         question.options = [...options];
-        question.answer = this.quizShuffleService.alignAnswersWithOptions(
-          question.answer,
-          options
-        );
+        question.answer = this.quizShuffleService.alignAnswersWithOptions(question.answer, options);
 
         return [question, options] as [QuizQuestion | null, Option[] | null];
       }),
@@ -626,9 +582,7 @@ export class QuizDataService {
       // Unchanged operators
       distinctUntilChanged(),
       catchError((err) => {
-        return throwError(
-          () => new Error('An error occurred while fetching data: ' + err.message)
-        );
+        return throwError(() => new Error('An error occurred while fetching data: ' + err.message));
       })
     );
   }
@@ -686,8 +640,7 @@ export class QuizDataService {
     return this.getQuiz(quizId).pipe(
       filter((quiz): quiz is Quiz => quiz !== null),
       switchMap((quiz: Quiz) => {
-        const sourceQuestions =
-          this.quizQuestionCache.get(quizId) ?? quiz.questions ?? [];
+        const sourceQuestions = this.quizQuestionCache.get(quizId) ?? quiz.questions ?? [];
 
         const explanationTexts = sourceQuestions.map((q) =>
           typeof q.explanation === 'string' ? q.explanation : ''
@@ -701,17 +654,11 @@ export class QuizDataService {
     );
   }
 
-  async asyncOperationToSetQuestion(
-    quizId: string,
-    currentQuestionIndex: number
-  ): Promise<void> {
+  async asyncOperationToSetQuestion(quizId: string, currentQuestionIndex: number): Promise<void> {
     try {
       if (!quizId || currentQuestionIndex < 0) return;
 
-      const observable = this.fetchQuizQuestionByIdAndIndex(
-        quizId,
-        currentQuestionIndex
-      );
+      const observable = this.fetchQuizQuestionByIdAndIndex(quizId, currentQuestionIndex);
       if (!observable) return;
 
       const question = await firstValueFrom(observable);
@@ -726,13 +673,8 @@ export class QuizDataService {
     if (!Array.isArray(question.options)) return;
     if (question.options.length === 0) return;
 
-    const numCorrectAnswers = question.options.filter(
-      (option) => option?.correct ?? false
-    ).length;
-    question.type =
-      numCorrectAnswers > 1
-        ? QuestionType.MultipleAnswer
-        : QuestionType.SingleAnswer;
+    const numCorrectAnswers = question.options.filter((option) => option?.correct ?? false).length;
+    question.type = numCorrectAnswers > 1 ? QuestionType.MultipleAnswer : QuestionType.SingleAnswer;
     this.questionType = question.type;
   }
 
@@ -762,13 +704,13 @@ export class QuizDataService {
       ...question,
       options: Array.isArray(question.options)
         ? question.options.map((option) => ({ ...option }))
-        : []
+        : [],
     }));
 
     const syncedQuiz: Quiz = {
       ...baseQuiz,
       quizId: baseQuiz.quizId ?? quizId,
-      questions: sanitizedQuestions
+      questions: sanitizedQuestions,
     };
 
     this.setSelectedQuiz(syncedQuiz);
