@@ -90,7 +90,7 @@
             }
 
             <!-- Correct / Incorrect Icons -->
-            @if (!checkIfAnswersAreCorrectFromService(question, i)) {
+            @if (!isQuestionCorrect(question, i)) {
             <i class="material-icons incorrect">clear</i>
             } @else {
             <i class="material-icons correct">done</i>

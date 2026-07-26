@@ -44,6 +44,8 @@ import { QuizDotStatusService } from '../../shared/services/flow/quiz-dot-status
 import { QuizService } from '../../shared/services/data/quiz.service';
 import { QuizStateService } from '../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
+import { TimerService } from '../../shared/services/features/timer/timer.service';
+import { ScoreAnalysisService } from '../../shared/services/features/results/score-analysis.service';
 import { ThemeService } from '../../shared/services/ui/theme.service';
 
 import { AchievementService } from '../../shared/services/achievements/achievement.service';
@@ -98,6 +100,8 @@ export class ResultsComponent implements OnInit {
   private readonly quizService = inject(QuizService);
   private readonly quizStateService = inject(QuizStateService);
   private readonly selectedOptionService = inject(SelectedOptionService);
+  private readonly timerService = inject(TimerService);
+  private readonly scoreAnalysisService = inject(ScoreAnalysisService);
   private readonly achievementService = inject(AchievementService);
   private readonly themeService = inject(ThemeService);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -169,16 +173,32 @@ export class ResultsComponent implements OnInit {
     // Try in-memory snapshot first
     let snapshot = this.quizService.getFinalResultSnapshot();
 
-    // If no snapshot exists, build one from current service state
+    // If no snapshot exists, build one from current service state. This is the
+    // FRESH-completion path: the live selection maps + timer are still valid, so
+    // capture the per-question review analysis and the elapsed time NOW — both
+    // get wiped when the user leaves Results, and the persisted snapshot is what
+    // a revisit reads. (On revisit, getFinalResultSnapshot() returns the saved
+    // snapshot and this branch is skipped, preserving the captured data.)
     if (!snapshot && this.quizService.totalQuestions() > 0) {
       const correct = this.quizService.correctAnswersCountSig();
       const total = this.quizService.totalQuestions();
+
+      // Ensure the selection maps are populated (from the durable store) before
+      // deriving per-question correctness in the current display order.
+      this.selectedOptionService.recoverAnswersForResults();
+      const analysis = this.scoreAnalysisService.buildAnalysis(this.detailedSummaryQuestions());
+      const completionTime =
+        this.timerService.calculateTotalElapsedTime(this.timerService.elapsedTimes) ||
+        this.timerService.completionTime ||
+        0;
+
       snapshot = {
         quizId: this.quizId() || this.quizService.quizId,
         correct,
         total,
         percentage: total > 0 ? Math.round((correct / total) * 100) : 0,
-        analysis: [],
+        analysis,
+        completionTime,
         completedAt: Date.now(),
       };
     }

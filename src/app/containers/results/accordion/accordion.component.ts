@@ -67,18 +67,26 @@ export class AccordionComponent implements OnInit {
   // filtered array's position. Correctness uses the same
   // checkIfAnswersAreCorrectFromService that drives the done/clear icons, so
   // the filter always matches what's shown.
+  // Per-question correctness captured in the persisted result snapshot, keyed by
+  // NORMALIZED question text (identity — not array index), so it survives the
+  // live selection maps being wiped on leave AND any question reordering on
+  // revisit. Empty for legacy snapshots → the live derivation is used instead.
+  private readonly analysisByQuestion = computed<Map<string, boolean>>(() => {
+    const map = new Map<string, boolean>();
+    for (const a of this.quizService.getFinalResultSnapshot()?.analysis ?? []) {
+      if (a?.questionText) map.set(norm(a.questionText), a.wasCorrect);
+    }
+    return map;
+  });
+
   readonly filteredQuestions = computed<{ question: QuizQuestion; index: number }[]>(() => {
     const filter = this.reviewFilter();
     const withIndex = this.questions().map((question, index) => ({ question, index }));
     switch (filter) {
       case 'correct':
-        return withIndex.filter(({ question, index }) =>
-          this.checkIfAnswersAreCorrectFromService(question, index)
-        );
+        return withIndex.filter(({ question, index }) => this.isQuestionCorrect(question, index));
       case 'incorrect':
-        return withIndex.filter(
-          ({ question, index }) => !this.checkIfAnswersAreCorrectFromService(question, index)
-        );
+        return withIndex.filter(({ question, index }) => !this.isQuestionCorrect(question, index));
       default:
         return withIndex;
     }
@@ -86,12 +94,23 @@ export class AccordionComponent implements OnInit {
 
   // Counts shown on the filter buttons (e.g. "Correct (7)").
   readonly correctCount = computed(
-    () =>
-      this.questions().filter((question, index) =>
-        this.checkIfAnswersAreCorrectFromService(question, index)
-      ).length
+    () => this.questions().filter((question, index) => this.isQuestionCorrect(question, index)).length
   );
   readonly incorrectCount = computed(() => this.questions().length - this.correctCount());
+
+  /**
+   * Authoritative per-question correctness for the review. Prefers the persisted
+   * snapshot analysis (captured at completion, matched by question text); falls
+   * back to the live selection-map derivation only when no analysis exists.
+   */
+  isQuestionCorrect(question: QuizQuestion, questionIndex: number): boolean {
+    const map = this.analysisByQuestion();
+    if (map.size > 0 && question?.questionText) {
+      const captured = map.get(norm(question.questionText));
+      if (captured !== undefined) return captured;
+    }
+    return this.checkIfAnswersAreCorrectFromService(question, questionIndex);
+  }
 
   setReviewFilter(filter: ReviewFilter): void {
     this.reviewFilter.set(filter);

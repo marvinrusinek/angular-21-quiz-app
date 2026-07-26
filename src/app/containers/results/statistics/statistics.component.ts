@@ -149,6 +149,12 @@ export class StatisticsComponent implements OnInit {
       totalElapsedTime = this.timerService.completionTime;
     }
 
+    // Revisit fallback: the live timer is reset when the user leaves Results, so
+    // read the elapsed time captured in the persisted result snapshot.
+    if (totalElapsedTime === 0) {
+      totalElapsedTime = this.quizService.getFinalResultSnapshot()?.completionTime ?? 0;
+    }
+
     // Initialize quizMetadata in initComponent when service data is available
     this.quizMetadata.set({
       totalQuestions: this.quizService.totalQuestions(),
