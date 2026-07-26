@@ -9,6 +9,7 @@ import {
   inject,
   OnInit,
   signal,
+  untracked,
   viewChild,
   ViewEncapsulation,
 } from '@angular/core';
@@ -46,7 +47,10 @@ import { QuizService } from '../../shared/services/data/quiz.service';
 import { QuizSetupService } from '../../shared/services/flow/quiz-setup.service';
 import { QuizStateService } from '../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
-import { SelectionMessageService } from '../../shared/services/features/selection-message/selection-message.service';
+import {
+  SHOW_RESULTS_MSG,
+  SelectionMessageService,
+} from '../../shared/services/features/selection-message/selection-message.service';
 import { TimerService } from '../../shared/services/features/timer/timer.service';
 
 import { CodelabQuizContentComponent } from './quiz-content/codelab-quiz-content.component';
@@ -481,18 +485,14 @@ export class QuizComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // One-shot: only the arrival back on the last question restores the message.
-  // Any later click on that question flows through the normal click pipeline.
-  private showResultsMsgRestored = false;
-
   private restoreShowResultsMessageOnReturn(): void {
-    // Read the signals unconditionally so this effect re-runs as the rebuilt
-    // component's state settles (questions arriving, index resolving).
+    // Reactive deps. Reading the message itself is what makes this self-healing:
+    // if the init/reset cascade later stomps it with a baseline, this effect
+    // re-runs and re-asserts, instead of a one-shot write that gets lost.
+    const currentMsg = this.selectionMessage();
     this.quizService.questionsSig();
-    const total = Math.max(this.totalQuestions(), this.quizService.questions?.length || 0);
     const signalIdx = this.currentQuestionIndex();
-
-    if (this.showResultsMsgRestored) return;
+    const total = Math.max(this.totalQuestions(), this.quizService.questions?.length || 0);
     if (total <= 0) return;
 
     const urlIdx = this.getUrlQuestionIndex();
@@ -501,16 +501,24 @@ export class QuizComponent implements OnInit, AfterViewInit {
 
     if (!this.hasReachedResultsThisAttempt()) return;
 
-    this.showResultsMsgRestored = true;
+    // Once the user clicks on the restored question the normal pipeline owns
+    // the message again — stop asserting so we never fight a real selection.
+    if (this.quizStateService._hasUserInteracted?.has(idx)) return;
+    if (currentMsg === SHOW_RESULTS_MSG) return;
 
-    // Deferred + re-asserted: the init/reset cascade re-asserts a baseline
-    // message on later macrotasks, so a single synchronous write is lost.
-    for (const delay of [0, 150, 400]) {
-      setTimeout(() => {
-        this.selectionMessageService.forceNextButtonMessage(idx, { isLastQuestion: true });
-        this.cdRef.markForCheck();
-      }, delay);
-    }
+    untracked(() => {
+      // `selectionMessageSig` is keyed on quizService.currentQuestionIndexSig(),
+      // so an override pushed at `idx` is ignored while that index is still the
+      // stale 0 from the missed NavigationEnd. Repair it first — this is the
+      // same pair of writes the route handler performs, just not skipped.
+      if (this.currentQuestionIndex() !== idx) this.currentQuestionIndex.set(idx);
+      if (this.quizService.getCurrentQuestionIndex() !== idx) {
+        this.quizService.setCurrentQuestionIndex(idx);
+      }
+
+      this.selectionMessageService.forceNextButtonMessage(idx, { isLastQuestion: true });
+      this.cdRef.markForCheck();
+    });
   }
 
   private hasReachedResultsThisAttempt(): boolean {
@@ -736,7 +744,21 @@ export class QuizComponent implements OnInit, AfterViewInit {
   // matching the URL, otherwise Prev/Restart/Show-Results all
   // disappear on direct URL nav to a non-Q1 question.
   private getEffectiveQuestionIndex(): number {
-    return this.currentQuestionIndex();
+    const signalIdx = this.currentQuestionIndex();
+
+    // The URL is authoritative. On a component rebuilt by a navigation that
+    // created it (browser Back from Results, or a direct deep link) the
+    // NavigationEnd that carries the index can fire before this component's
+    // route subscription exists, leaving `currentQuestionIndex` at 0. Every
+    // nav-button computed reads this, which is why a stale 0 kept the Next
+    // button visible on the last question.
+    const urlIdx = this.getUrlQuestionIndex();
+    if (urlIdx < 0) return signalIdx;
+
+    const total = Math.max(this.totalQuestions(), this.quizService.questions?.length || 0);
+    if (total > 0 && urlIdx >= total) return signalIdx;
+
+    return urlIdx;
   }
 
   private createScrollIndicator(): void {

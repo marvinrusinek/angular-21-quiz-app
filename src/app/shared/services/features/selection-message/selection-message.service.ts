@@ -22,7 +22,7 @@ import { swallow } from '../../../utils/error-logging';
 const START_MSG = 'Please start the quiz by selecting an option.';
 const CONTINUE_MSG = 'Please select an option to continue...';
 const NEXT_BTN_MSG = 'Please click the Next button to continue.';
-const SHOW_RESULTS_MSG = 'Please click the Show Results button.';
+export const SHOW_RESULTS_MSG = 'Please click the Show Results button.';
 
 interface OptionSnapshot {
   id: number | string,
