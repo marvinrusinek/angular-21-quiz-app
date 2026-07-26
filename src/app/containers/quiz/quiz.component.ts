@@ -5,6 +5,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   OnInit,
   signal,
@@ -20,7 +21,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 
-import { SK_SAVED_QUESTION_INDEX } from '../../shared/constants/session-keys';
+import {
+  SK_RESULTS_REACHED_ATTEMPT,
+  SK_SAVED_QUESTION_INDEX,
+} from '../../shared/constants/session-keys';
 
 import { Option } from '../../shared/models/Option.model';
 import { QuestionPayload } from '../../shared/models/QuestionPayload.model';
@@ -277,6 +281,10 @@ export class QuizComponent implements OnInit, AfterViewInit {
   constructor() {
     this.quizSetupService.wireConstructor(this);
 
+    // Re-assert SHOW_RESULTS_MSG when the user lands back on the last question
+    // from Results. Runs as the index/total signals settle after the rebuild.
+    effect(() => this.restoreShowResultsMessageOnReturn());
+
     this.destroyRef.onDestroy(() => {
       this.removeScrollIndicator();
       this.quizSetupService.runOnDestroy(this);
@@ -418,9 +426,80 @@ export class QuizComponent implements OnInit, AfterViewInit {
     // or wrong) rather than requiring a fully-correct answer first.
     if (this.quizStateService._hasUserInteracted?.has(idx)) return true;
 
+    // Returning from Results with browser Back rebuilds this component and the
+    // content component, and the latter clears `_hasUserInteracted` on init for
+    // any navigation that is not an F5 reload — so both probes above go blank
+    // even though the user demonstrably finished the quiz. The durable
+    // attempt-scoped marker written on the way to Results survives that
+    // round-trip, so the last question keeps its Show Results button.
+    if (this.hasReachedResultsThisAttempt()) return true;
+
     // Also show Results when timer expired this session on the last
     // unanswered question.
     return this.dotStatusService.timerExpiredUnanswered.has(idx);
+  }
+
+  // ── Results round-trip marker ───────────────────────────────────
+  // Written on the way to Results, read when the user comes back to the last
+  // question. Scoped to `<quizId>|<attemptId>` so it is self-invalidating:
+  // Restart Quiz and a fresh attempt both mint a new attempt id, which stops a
+  // stale marker from surfacing Show Results on an unanswered last question.
+
+  private resultsReachedToken(quizId: string): string {
+    return `${quizId}|${this.quizService.getCurrentAttemptId()}`;
+  }
+
+  private activeQuizId(): string {
+    return (
+      this.quizId() ||
+      this.quizService.quizId ||
+      this.activatedRoute.snapshot.paramMap.get('quizId') ||
+      ''
+    );
+  }
+
+  private markResultsReached(quizId: string): void {
+    try {
+      sessionStorage.setItem(SK_RESULTS_REACHED_ATTEMPT, this.resultsReachedToken(quizId));
+    } catch (err: unknown) {
+      swallow('quiz.component#markResultsReached', err);
+    }
+  }
+
+  // One-shot: only the arrival back on the last question restores the message.
+  // Any later click on that question flows through the normal click pipeline.
+  private showResultsMsgRestored = false;
+
+  private restoreShowResultsMessageOnReturn(): void {
+    if (this.showResultsMsgRestored) return;
+
+    const serviceCount = this.quizService.questions?.length || 0;
+    const total = Math.max(this.totalQuestions(), serviceCount);
+    const idx = this.currentQuestionIndex();
+    if (total <= 0 || idx !== total - 1) return;
+
+    if (!this.hasReachedResultsThisAttempt()) return;
+
+    this.showResultsMsgRestored = true;
+
+    // Deferred: the init/reset cascade re-asserts a baseline message on a
+    // macrotask, so setting this synchronously would be overwritten.
+    setTimeout(() => {
+      this.selectionMessageService.forceNextButtonMessage(idx, { isLastQuestion: true });
+    }, 0);
+  }
+
+  private hasReachedResultsThisAttempt(): boolean {
+    const quizId = this.activeQuizId();
+    if (!quizId) return false;
+
+    try {
+      const stored = sessionStorage.getItem(SK_RESULTS_REACHED_ATTEMPT);
+      return !!stored && stored === this.resultsReachedToken(quizId);
+    } catch (err: unknown) {
+      swallow('quiz.component#hasReachedResultsThisAttempt', err);
+      return false;
+    }
   }
 
   public handleQuizQuestionEvent(event: QuizQuestionEvent): void {
@@ -484,6 +563,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
       this.activatedRoute.snapshot.paramMap.get('quizId') ||
       '';
     if (quizId) {
+      this.markResultsReached(quizId);
       this.router.navigateByUrl(`/quiz/results/${quizId}`);
     }
   }

@@ -10,6 +10,12 @@ export const SK_DISPLAY_MODE = 'displayMode_';
 export const SK_COMPLETED_QUIZ_IDS = 'completedQuizIds';
 export const SK_CORRECT_ANSWERS_COUNT = 'correctAnswersCount';
 export const SK_IS_ANSWERED = 'isAnswered';
+// `<quizId>|<attemptId>` of the attempt that reached the Results page. Lets the
+// quiz's last question re-show the Show Results button + message when the user
+// comes back with browser Back (which rebuilds the component and wipes the
+// in-memory answered evidence). Self-invalidating: Restart / a new attempt mints
+// a new attemptId, so a stale marker stops matching without any explicit clear.
+export const SK_RESULTS_REACHED_ATTEMPT = 'resultsReachedAttempt';
 export const SK_SAVED_QUESTION_INDEX = 'savedQuestionIndex';
 export const SK_SELECTED_OPTIONS_MAP = 'selectedOptionsMap';
 export const SK_SHUFFLED_QUESTIONS = 'shuffledQuestions';
