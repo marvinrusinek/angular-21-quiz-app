@@ -397,8 +397,18 @@ export class QuizComponent implements OnInit, AfterViewInit {
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     const idx = this.getEffectiveQuestionIndex();
-    const isLast = effectiveTotal > 0 && idx === effectiveTotal - 1;
+    // The URL is authoritative for "which question am I on". On a rebuilt
+    // component (browser Back from Results) `getEffectiveQuestionIndex()` can
+    // still read 0 while the payload settles, which would early-return below
+    // and never re-show the button.
+    const urlIdx = this.getUrlQuestionIndex();
+    const isLast =
+      effectiveTotal > 0 && (idx === effectiveTotal - 1 || urlIdx === effectiveTotal - 1);
     if (!isLast) return false;
+
+    // Checked BEFORE the question guard: coming back from Results, this must
+    // not depend on the rebuilt component's question payload having arrived.
+    if (this.hasReachedResultsThisAttempt()) return true;
 
     const question: QuizQuestion | null =
       this.question() ??
@@ -426,14 +436,6 @@ export class QuizComponent implements OnInit, AfterViewInit {
     // or wrong) rather than requiring a fully-correct answer first.
     if (this.quizStateService._hasUserInteracted?.has(idx)) return true;
 
-    // Returning from Results with browser Back rebuilds this component and the
-    // content component, and the latter clears `_hasUserInteracted` on init for
-    // any navigation that is not an F5 reload — so both probes above go blank
-    // even though the user demonstrably finished the quiz. The durable
-    // attempt-scoped marker written on the way to Results survives that
-    // round-trip, so the last question keeps its Show Results button.
-    if (this.hasReachedResultsThisAttempt()) return true;
-
     // Also show Results when timer expired this session on the last
     // unanswered question.
     return this.dotStatusService.timerExpiredUnanswered.has(idx);
@@ -447,6 +449,19 @@ export class QuizComponent implements OnInit, AfterViewInit {
 
   private resultsReachedToken(quizId: string): string {
     return `${quizId}|${this.quizService.getCurrentAttemptId()}`;
+  }
+
+  /** 0-based question index straight off the URL, or -1 when unavailable. */
+  private getUrlQuestionIndex(): number {
+    try {
+      const match = window.location.pathname.match(QUESTION_ROUTE_REGEX);
+      if (!match) return -1;
+      const oneBased = Number(match[1]);
+      return Number.isFinite(oneBased) && oneBased >= 1 ? oneBased - 1 : -1;
+    } catch (err: unknown) {
+      swallow('quiz.component#getUrlQuestionIndex', err);
+      return -1;
+    }
   }
 
   private activeQuizId(): string {
@@ -471,22 +486,31 @@ export class QuizComponent implements OnInit, AfterViewInit {
   private showResultsMsgRestored = false;
 
   private restoreShowResultsMessageOnReturn(): void {
-    if (this.showResultsMsgRestored) return;
+    // Read the signals unconditionally so this effect re-runs as the rebuilt
+    // component's state settles (questions arriving, index resolving).
+    this.quizService.questionsSig();
+    const total = Math.max(this.totalQuestions(), this.quizService.questions?.length || 0);
+    const signalIdx = this.currentQuestionIndex();
 
-    const serviceCount = this.quizService.questions?.length || 0;
-    const total = Math.max(this.totalQuestions(), serviceCount);
-    const idx = this.currentQuestionIndex();
-    if (total <= 0 || idx !== total - 1) return;
+    if (this.showResultsMsgRestored) return;
+    if (total <= 0) return;
+
+    const urlIdx = this.getUrlQuestionIndex();
+    const idx = urlIdx >= 0 ? urlIdx : signalIdx;
+    if (idx !== total - 1) return;
 
     if (!this.hasReachedResultsThisAttempt()) return;
 
     this.showResultsMsgRestored = true;
 
-    // Deferred: the init/reset cascade re-asserts a baseline message on a
-    // macrotask, so setting this synchronously would be overwritten.
-    setTimeout(() => {
-      this.selectionMessageService.forceNextButtonMessage(idx, { isLastQuestion: true });
-    }, 0);
+    // Deferred + re-asserted: the init/reset cascade re-asserts a baseline
+    // message on later macrotasks, so a single synchronous write is lost.
+    for (const delay of [0, 150, 400]) {
+      setTimeout(() => {
+        this.selectionMessageService.forceNextButtonMessage(idx, { isLastQuestion: true });
+        this.cdRef.markForCheck();
+      }, delay);
+    }
   }
 
   private hasReachedResultsThisAttempt(): boolean {

@@ -23,6 +23,7 @@ import { QuizStatus } from '../../shared/models/quiz-status.enum';
 import {
   SK_COMPLETED_QUIZ_IDS,
   SK_DOT_CONFIRMED,
+  SK_RESULTS_REACHED_ATTEMPT,
   SK_SEL_Q,
   SK_SELECTED_OPTIONS_MAP,
   SK_SHUFFLED_QUESTIONS,
@@ -390,6 +391,20 @@ export class ResultsComponent implements OnInit {
 
       // Update the quiz object's status so QuizSelectionComponent can show the icon
       this.quizDataService.updateQuizStatus(id, QuizStatus.COMPLETED);
+
+      // Reaching Results IS the proof that this attempt finished the last
+      // question. Recording it here (not only on the way out of the quiz)
+      // means browser Back can restore the last question's Show Results
+      // button + message no matter which path led here. Attempt-scoped, so
+      // Restart / a new attempt invalidates it without an explicit clear.
+      try {
+        sessionStorage.setItem(
+          SK_RESULTS_REACHED_ATTEMPT,
+          `${id}|${this.quizService.getCurrentAttemptId()}`
+        );
+      } catch (err: unknown) {
+        swallow('results.component#markResultsReached', err);
+      }
     }
   }
 
