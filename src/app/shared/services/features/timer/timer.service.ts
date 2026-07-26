@@ -566,10 +566,46 @@ export class TimerService implements OnDestroy {
 
       this.completionTime = total;
       this.saveTimerState();
+      // Durably record the elapsed time for THIS quiz (localStorage, keyed by
+      // quizId). Unlike the sessionStorage timer state — which is cleared when
+      // the user leaves Results — this survives so a later revisit can show the
+      // real elapsed time. Only positive totals are written, so a revisit (where
+      // the live timer is empty → total 0) never clobbers the stored value.
+      if (total > 0) this.persistDurableCompletionTime(total);
       return total;
     } catch {
       return 0;
     }
+  }
+
+  private durableCompletionTimeKey(quizId: string): string {
+    return 'quizElapsedTime:' + quizId;
+  }
+
+  private persistDurableCompletionTime(total: number): void {
+    try {
+      const quizId = this.quizService?.quizId;
+      if (quizId) localStorage.setItem(this.durableCompletionTimeKey(quizId), String(total));
+    } catch { /* ignore */ }
+  }
+
+  /** Reads the durably-stored elapsed time for a quiz (0 if none/invalid). */
+  public getDurableCompletionTime(quizId: string): number {
+    if (!quizId) return 0;
+    try {
+      const n = Number(localStorage.getItem(this.durableCompletionTimeKey(quizId)));
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Clears the durable elapsed time for a quiz (on restart / fresh start). */
+  public clearDurableCompletionTime(quizId: string): void {
+    if (!quizId) return;
+    try {
+      localStorage.removeItem(this.durableCompletionTimeKey(quizId));
+    } catch { /* ignore */ }
   }
 
   private normalizeQuestionIndex(index: number | null | undefined): number {

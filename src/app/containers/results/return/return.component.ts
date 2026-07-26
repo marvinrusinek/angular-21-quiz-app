@@ -140,6 +140,7 @@ export class ReturnComponent implements OnInit {
     this.quizService.resetQuestions();
     this.explanationTextService.resetExplanationState();
     this.timerService.clearTimerState();
+    this.timerService.clearDurableCompletionTime(this.quizId());
   }
 
   private resetDotStatus(id: string): void {

@@ -150,15 +150,18 @@ export class StatisticsComponent implements OnInit {
     }
 
     if (totalElapsedTime > 0) {
-      // Fresh path: the timer is populated here (this view reads it AFTER the
-      // results builder, which can race the timer and persist 0). Backfill the
-      // known-good value into the snapshot so a later revisit — when the timer
-      // has been cleared — can read it.
+      // Fresh path: the timer is populated here. Backfill the known-good value
+      // into the snapshot too, so a later revisit can read it there.
       this.quizService.patchFinalResultCompletionTime(totalElapsedTime);
     } else {
-      // Revisit path: the live timer was cleared on leaving Results, so read the
-      // elapsed time captured in the persisted result snapshot.
-      totalElapsedTime = this.quizService.getFinalResultSnapshot()?.completionTime ?? 0;
+      // Revisit path: the live timer was cleared on leaving Results. Read the
+      // elapsed time from the durable per-quiz store (the timer writes it at
+      // completion, survives leaving Results), falling back to the snapshot.
+      const qid = this.quizId() || this.quizService.quizId;
+      totalElapsedTime =
+        this.timerService.getDurableCompletionTime(qid) ||
+        this.quizService.getFinalResultSnapshot()?.completionTime ||
+        0;
     }
 
     // Initialize quizMetadata in initComponent when service data is available

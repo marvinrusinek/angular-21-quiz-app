@@ -186,6 +186,7 @@ export class QuizPersistenceService {
       sessionStorage.removeItem('finalResult');
       sessionStorage.removeItem('elapsedTimes');
       sessionStorage.removeItem('completionTime');
+      localStorage.removeItem('quizElapsedTime:' + quizId);
 
       // Drop this quiz from the completed list (we're restarting it)
       const ids = readSessionJson<string[]>(SK_COMPLETED_QUIZ_IDS, []);
