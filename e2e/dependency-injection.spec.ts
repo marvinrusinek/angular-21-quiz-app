@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import {
   diQuiz, HEADING, FEEDBACK, NEXT_BTN, RESULTS_BTN,
-  findQuestionIn, correctIndicesForHeading, correctRowsForHeading,
+  correctIndicesForHeading, correctRowsForHeading,
 } from './helpers';
 
 /**

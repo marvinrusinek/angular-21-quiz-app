@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { Injector } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 import { FET_UNLOCK_WATCHDOG_MS } from '../../../constants/timing';

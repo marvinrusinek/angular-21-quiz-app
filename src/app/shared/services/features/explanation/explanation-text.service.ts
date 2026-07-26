@@ -11,7 +11,6 @@ import { ExplanationDisplayStateService, FETPayload } from './explanation-displa
 import { ExplanationFormatterService } from './explanation-formatter.service';
 import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
-import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 import { swallow } from '../../../utils/error-logging';
 
