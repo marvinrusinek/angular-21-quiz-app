@@ -138,10 +138,17 @@ export class SummaryReportComponent implements OnInit {
       // section switch and produced duplicate rows.
       this.highScores.set(this.quizService.highScores);
 
+      // "Date/Time Completed" must reflect the ORIGINAL completion, not this
+      // render. The snapshot's completedAt is stamped when the results are first
+      // built (fresh completion) and preserved across revisits, so prefer it and
+      // only fall back to now when there is no snapshot.
+      const completedAt = this.quizService.getFinalResultSnapshot()?.completedAt;
+      const attemptDateTime = completedAt ? new Date(completedAt) : new Date();
+
       // Create current score object for display
       this.currentScore.set({
         quizId: this.quizId,
-        attemptDateTime: new Date(),
+        attemptDateTime,
         score: this.quizMetadata().percentage ?? 0,
         totalQuestions: this.quizService.totalQuestions()
       });
