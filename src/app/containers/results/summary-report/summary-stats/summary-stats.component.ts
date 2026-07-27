@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 
 import { QuizMetadata } from '../../../../shared/models/QuizMetadata.model';
 import { QuizScore } from '../../../../shared/models/QuizScore.model';
@@ -7,7 +7,7 @@ import { QuizScore } from '../../../../shared/models/QuizScore.model';
 @Component({
   selector: 'codelab-summary-stats',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [DatePipe],
   templateUrl: './summary-stats.component.html',
   styleUrls: ['./summary-stats.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

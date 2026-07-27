@@ -2,7 +2,7 @@ import {
   ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, OnInit, signal
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgClass, NgOptimizedImage, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {
   FormBuilder, FormGroup, FormsModule, ReactiveFormsModule
@@ -33,7 +33,8 @@ import { swallow } from '../../shared/utils/error-logging';
   selector: 'codelab-quiz-intro',
   standalone: true,
   imports: [
-    CommonModule,
+    NgClass,
+    TitleCasePipe,
     FormsModule,
     MatButtonModule,
     MatCardModule,

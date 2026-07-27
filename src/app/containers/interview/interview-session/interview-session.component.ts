@@ -11,7 +11,6 @@ import {
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -59,7 +58,6 @@ import {
   selector: 'codelab-interview-session',
   standalone: true,
   imports: [
-    CommonModule,
     MatIconModule,
     MatTooltipModule,
     InterviewPaginatorComponent,

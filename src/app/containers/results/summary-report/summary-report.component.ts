@@ -2,7 +2,7 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect,
   inject, input, OnInit, signal
 } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { take } from 'rxjs/operators';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -20,8 +20,8 @@ import { SummaryStatsComponent } from './summary-stats/summary-stats.component';
   selector: 'codelab-results-summary',
   standalone: true,
   imports: [
-    CommonModule,
     DatePipe,
+    NgTemplateOutlet,
     SummaryIconsComponent,
     SummaryStatsComponent,
     MatTooltipModule

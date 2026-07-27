@@ -9,7 +9,7 @@ import {
   Signal,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -59,7 +59,7 @@ interface DifficultyOption {
 @Component({
   selector: 'codelab-build-your-interview',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, InterviewCertificateCalloutComponent],
+  imports: [TitleCasePipe, ReactiveFormsModule, InterviewCertificateCalloutComponent],
   templateUrl: './build-your-interview.component.html',
   styleUrls: ['./build-your-interview.component.scss'],
   encapsulation: ViewEncapsulation.None,

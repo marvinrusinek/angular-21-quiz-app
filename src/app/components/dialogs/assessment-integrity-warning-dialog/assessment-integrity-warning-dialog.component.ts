@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
@@ -31,7 +31,8 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
   `,
   styles: [`
     .aiw-message { margin: 4px 0 0; max-width: 300px; line-height: 1.45; }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AssessmentIntegrityWarningDialogComponent {
   readonly dialogRef = inject(MatDialogRef<AssessmentIntegrityWarningDialogComponent>);

@@ -6,7 +6,7 @@ import {
   signal,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 
 import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { InterviewResult } from '../../../shared/models/InterviewResult.model';
@@ -67,7 +67,7 @@ interface ReviewItem {
 @Component({
   selector: 'app-interview-review',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TitleCasePipe],
   templateUrl: './interview-review.component.html',
   styleUrls: ['./interview-review.component.scss'],
   encapsulation: ViewEncapsulation.None,

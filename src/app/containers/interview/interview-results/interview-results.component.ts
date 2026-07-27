@@ -6,7 +6,7 @@ import {
   signal,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { formatMMSS } from '../../../shared/utils/format-time';
@@ -34,7 +34,7 @@ import { getQuizData } from '../../../shared/quiz-data-cache';
   selector: 'codelab-interview-results',
   standalone: true,
   imports: [
-    CommonModule,
+    TitleCasePipe,
     RouterLink,
     ThemeToggleComponent,
     InterviewReviewComponent,

@@ -6,7 +6,6 @@ import {
   signal,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -33,7 +32,7 @@ import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-tog
 @Component({
   selector: 'codelab-interview-certificate',
   standalone: true,
-  imports: [CommonModule, RouterLink, ThemeToggleComponent],
+  imports: [RouterLink, ThemeToggleComponent],
   templateUrl: './interview-certificate.component.html',
   styleUrls: ['./interview-certificate.component.scss'],
   encapsulation: ViewEncapsulation.None,

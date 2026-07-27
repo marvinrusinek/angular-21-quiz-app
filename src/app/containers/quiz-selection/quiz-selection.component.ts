@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit,
   signal, ViewEncapsulation } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgClass, NgOptimizedImage, NgStyle, TitleCasePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -57,7 +57,9 @@ import { swallow } from '../../shared/utils/error-logging';
   selector: 'codelab-quiz-selection',
   standalone: true,
   imports: [
-    CommonModule,
+    NgClass,
+    NgStyle,
+    TitleCasePipe,
     RouterModule,
     MatCardModule,
     MatIconModule,

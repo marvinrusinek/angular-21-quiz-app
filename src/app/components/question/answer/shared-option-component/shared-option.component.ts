@@ -2,7 +2,7 @@ import {
   AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef,
   DoCheck, inject, input, OnInit, output, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatRadioModule, MatRadioChange } from '@angular/material/radio';
@@ -53,7 +53,7 @@ import { SharedOptionConfigDirective } from '../../../../directives/shared-optio
   selector: 'app-shared-option',
   standalone: true,
   imports: [
-    CommonModule,
+    NgTemplateOutlet,
     ReactiveFormsModule,
     MatIconModule,
     MatRadioModule,

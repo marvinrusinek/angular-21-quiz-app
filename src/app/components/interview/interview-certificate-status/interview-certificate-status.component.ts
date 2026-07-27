@@ -10,7 +10,6 @@ import {
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
@@ -33,7 +32,7 @@ import {
 @Component({
   selector: 'app-interview-certificate-status',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: './interview-certificate-status.component.html',
   styleUrls: ['./interview-certificate-status.component.scss'],
   encapsulation: ViewEncapsulation.None,

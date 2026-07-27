@@ -6,7 +6,7 @@ import {
   inject,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule, ViewportScroller } from '@angular/common';
+import { TitleCasePipe, ViewportScroller } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -38,7 +38,7 @@ import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-in
   selector: 'codelab-interview-history-detail',
   standalone: true,
   imports: [
-    CommonModule,
+    TitleCasePipe,
     RouterLink,
     ThemeToggleComponent,
     TopicPerformanceListComponent,

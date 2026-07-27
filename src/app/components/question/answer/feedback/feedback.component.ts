@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, effect, inject, input, signal
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
 import { FeedbackProps } from '../../../../shared/models/FeedbackProps.model';
@@ -19,7 +19,7 @@ import { norm } from '../../../../shared/utils/text-norm';
 @Component({
   selector: 'codelab-quiz-feedback',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [NgClass, MatIconModule],
   templateUrl: './feedback.component.html',
   styleUrls: ['./feedback.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -14,7 +14,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -79,7 +79,7 @@ type AnimationState = 'animationStarted' | 'none';
   selector: 'codelab-quiz-component',
   standalone: true,
   imports: [
-    CommonModule,
+    NgClass,
     MatCardModule,
     MatIconModule,
     MatTooltipModule,

@@ -6,7 +6,6 @@ import {
   output,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { Option } from '../../../shared/models/Option.model';
 import { pinAllOfTheAboveLast } from '../../../shared/utils/all-of-the-above';
@@ -25,7 +24,6 @@ import { pinAllOfTheAboveLast } from '../../../shared/utils/all-of-the-above';
 @Component({
   selector: 'app-interview-options',
   standalone: true,
-  imports: [CommonModule],
   templateUrl: './interview-options.component.html',
   styleUrls: ['./interview-options.component.scss'],
   encapsulation: ViewEncapsulation.None,

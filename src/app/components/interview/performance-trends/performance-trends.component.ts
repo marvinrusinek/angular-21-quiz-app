@@ -5,7 +5,6 @@ import {
   input,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { InterviewTrendPoint, InterviewTrends } from '../../../shared/models/interview-history.model';
 
@@ -44,7 +43,6 @@ interface ChartGeometry {
 @Component({
   selector: 'app-performance-trends',
   standalone: true,
-  imports: [CommonModule],
   templateUrl: './performance-trends.component.html',
   styleUrls: ['./performance-trends.component.scss'],
   encapsulation: ViewEncapsulation.None,

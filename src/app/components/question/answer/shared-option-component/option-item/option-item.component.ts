@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, DestroyRef,
   effect, inject, input, OnInit, output, ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
@@ -52,7 +52,8 @@ export interface OptionUIEvent {
   selector: 'app-option-item',
   standalone: true,
   imports: [
-    CommonModule,
+    NgClass,
+    NgTemplateOutlet,
     ReactiveFormsModule,
     MatCheckboxModule,
     MatRadioModule,

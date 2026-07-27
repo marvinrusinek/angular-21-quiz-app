@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
@@ -41,7 +41,8 @@ export interface InterviewSubmitDialogData {
     }
     .submit-summary dt { color: rgba(0, 0, 0, 0.6); }
     .submit-summary dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InterviewSubmitDialogComponent {
   readonly dialogRef = inject(MatDialogRef<InterviewSubmitDialogComponent, boolean>);

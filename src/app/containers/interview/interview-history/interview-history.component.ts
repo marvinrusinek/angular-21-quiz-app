@@ -10,7 +10,7 @@ import {
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { formatDuration } from '../../../shared/utils/format-time';
@@ -45,7 +45,7 @@ interface HistoryCard {
   selector: 'codelab-interview-history',
   standalone: true,
   imports: [
-    CommonModule,
+    TitleCasePipe,
     RouterLink,
     ThemeToggleComponent,
     InterviewReadinessComponent,

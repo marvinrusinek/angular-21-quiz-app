@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { TimerService } from '../../../shared/services/features/timer/timer.service';
@@ -13,7 +13,7 @@ enum TimerType {
 @Component({
   selector: 'codelab-scoreboard-timer',
   standalone: true,
-  imports: [CommonModule, MatMenuModule, DecimalPipe],
+  imports: [MatMenuModule, DecimalPipe],
   templateUrl: './timer.component.html',
   styleUrls: ['./timer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
