@@ -2,15 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
-  ElementRef,
   inject,
   OnInit,
   signal,
-  viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { A11yModule } from '@angular/cdk/a11y';
 
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
 import {
@@ -33,7 +31,7 @@ import {
 @Component({
   selector: 'app-interview-certificate-status',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, A11yModule],
   templateUrl: './interview-certificate-status.component.html',
   styleUrls: ['./interview-certificate-status.component.scss'],
   encapsulation: ViewEncapsulation.None,
@@ -65,14 +63,11 @@ export class InterviewCertificateStatusComponent implements OnInit {
   // True only for the session in which the certificate was just unlocked here.
   readonly showDialog = signal(false);
 
-  private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
-
-  constructor() {
-    // Move focus to the celebration dialog when it appears (accessibility).
-    effect(() => {
-      if (this.showDialog()) this.dialog()?.nativeElement.focus();
-    });
-  }
+  // Focus handling is delegated to cdkTrapFocus + cdkTrapFocusAutoCapture in the
+  // template: it moves focus into the dialog, keeps Tab cycling inside it while
+  // open, and restores focus to the previously focused element on close. That
+  // replaces a manual focus() effect, which moved focus IN but neither trapped
+  // it nor restored it.
 
   ngOnInit(): void {
     // Start (or migrate) the certificate qualification period once — the first

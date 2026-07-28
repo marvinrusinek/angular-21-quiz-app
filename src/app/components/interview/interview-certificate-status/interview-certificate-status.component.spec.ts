@@ -114,4 +114,25 @@ describe('InterviewCertificateStatusComponent', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.ic-dialog')).toBeNull();
   });
+
+  it('Escape closes the celebration dialog (keyboard users are not trapped)', () => {
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 5 }));
+    const fixture = render();
+    const el = fixture.nativeElement as HTMLElement;
+    const dialog = el.querySelector('.ic-dialog') as HTMLElement;
+    expect(dialog).not.toBeNull();
+
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(el.querySelector('.ic-dialog')).toBeNull();
+  });
+
+  it('the celebration dialog traps focus while open', () => {
+    progressSig.set(progress({ angularExplorerEarned: true, qualifyingInterviewsCompleted: 5 }));
+    const fixture = render();
+    const dialog = (fixture.nativeElement as HTMLElement).querySelector('.ic-dialog');
+    // cdkTrapFocus keeps Tab inside the modal and restores focus on close.
+    expect(dialog?.hasAttribute('cdktrapfocus')).toBe(true);
+  });
 });

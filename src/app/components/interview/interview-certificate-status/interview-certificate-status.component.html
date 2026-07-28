@@ -55,12 +55,14 @@
 @if (showDialog()) {
   <div class="ic-dialog__scrim" (click)="dismiss()"></div>
   <div
-    #dialog
     class="ic-dialog"
     role="dialog"
     aria-modal="true"
     aria-labelledby="ic-dialog-title"
     tabindex="-1"
+    cdkTrapFocus
+    [cdkTrapFocusAutoCapture]="true"
+    (keydown.escape)="dismiss()"
   >
     <span class="ic-dialog__mark" aria-hidden="true">🎓</span>
     <h2 id="ic-dialog-title" class="ic-dialog__title" i18n>Certificate Unlocked</h2>
