@@ -26,7 +26,13 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true,
     "strictStandalone": true,
-    "compilationMode": "partial",
+    // "full" is correct for an APPLICATION. "partial" is library mode: it emits
+    // partial-Ivy declarations and defers component metadata resolution to a
+    // later linking step, so the Angular Language Server (which reads THIS root
+    // config, unlike ng build/jest which read tsconfig.app/spec.json) could not
+    // confirm that standalone components were standalone — surfacing a bogus
+    // "Component imports must be standalone..." (-992012) on every save.
+    "compilationMode": "full",
     "emitDecoratorMetadata": false
   }
 }
