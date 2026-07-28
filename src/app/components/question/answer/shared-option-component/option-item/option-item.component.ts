@@ -111,10 +111,10 @@ export class OptionItemComponent implements OnInit {
   private _wasSelected = false;
   private _lastQuestionIndex = -1;
   // Tracks whether this component instance has seen a real user click.
-  // Used to gate destructive visual-state clears in ngOnChanges: on
-  // refresh the parent may briefly emit currentQuestionIndex=0 before
-  // the real index resolves, and the second ngOnChanges would wipe the
-  // refresh-restored state if we cleared unconditionally.
+  // Used to gate destructive visual-state clears in the question-change
+  // effect below: on refresh the parent may briefly emit
+  // currentQuestionIndex=0 before the real index resolves, and the second
+  // run would wipe the refresh-restored state if we cleared unconditionally.
   private _userHasClicked = false;
   // Tracks whether the timer expired for the current question. Used to
   // clear timer-expiry highlighting on question change even when the
@@ -944,8 +944,9 @@ export class OptionItemComponent implements OnInit {
   }
 
   shouldHighlightOption(): boolean {
-    // Catch in-place mutations from rehydrateUiFromState that bypass
-    // ngOnChanges (same object reference, no @Input change detected).
+    // Catch in-place mutations from rehydrateUiFromState that bypass change
+    // propagation (same object reference, so the binding signal input never
+    // reports a change).
     // Only latch if (a) the user has actually clicked, or (b) the
     // binding's selection is confirmed by authoritative saved state.
     // Without the guard, transient b.isSelected from stale option.selected

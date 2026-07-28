@@ -36,7 +36,7 @@ export class OptionFeedbackEffectsService {
    * Multi-answer auto-disable. Reactively watches the selections signal and
    * rebuilds optionBindings with fresh refs the moment every pristine-correct
    * option for THIS rendered question is selected. Pure Angular reactivity —
-   * OnPush option-item children pick up new `b` refs via ngOnChanges, no DOM,
+   * OnPush option-item children pick up new `b` refs via their signal inputs, no DOM,
    * no detectChanges hacks. Identifies the rendered question by option-text
    * fingerprint (against pristine quizInitialState) rather than trusting
    * currentQuestionIndex, which can lag during click flow. Body verbatim.
@@ -72,7 +72,7 @@ export class OptionFeedbackEffectsService {
     if (h.optionBindings().some((b: OptionBindings) => b?._autoRevealedCorrect)) return;
 
     // Rebuild every binding with fresh refs so OnPush option-items pick
-    // up the new disabled state via ngOnChanges.
+    // up the new disabled state via their signal inputs.
     const correctTexts = pristineCorrectTexts;
     let mutated = false;
     const next = h.optionBindings().map((b: OptionBindings) => {

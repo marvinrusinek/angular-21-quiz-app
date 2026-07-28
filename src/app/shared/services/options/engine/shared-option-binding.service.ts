@@ -465,8 +465,9 @@ export class SharedOptionBindingService {
 
       // Pass the GUARDED selection state to getBindings so that on refresh
       // (hasUserClicked=false) no binding gets isSelected=true from stale
-      // savedIds. This prevents _wasSelected from latching in ngOnChanges
-      // before rehydrateUiFromState can run its clean-slate reset.
+      // savedIds. This prevents _wasSelected from latching in
+      // shouldHighlightOption() before rehydrateUiFromState can run its
+      // clean-slate reset.
       // IMPORTANT: only use useSelected, NOT useHighlightSet - highlightSet
       // can contain IDs for options never clicked (e.g. both correct answers
       // in multi-answer), causing ghost isSelected=true on bindings.

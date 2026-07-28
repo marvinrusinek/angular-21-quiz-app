@@ -13,7 +13,7 @@ import type { QuizQuestionComponent } from '../../../../components/question/quiz
 type Host = QuizQuestionComponent;
 
 /**
- * Orchestrates QQC lifecycle methods (ngOnInit, ngAfterViewInit, ngOnChanges, ngOnDestroy).
+ * Orchestrates QQC lifecycle methods (ngOnInit, ngAfterViewInit, ngOnDestroy).
  * Extracted from QqcComponentOrchestratorService.
  */
 @Injectable({ providedIn: 'root' })

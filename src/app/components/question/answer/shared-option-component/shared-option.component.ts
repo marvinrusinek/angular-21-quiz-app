@@ -206,13 +206,13 @@ export class SharedOptionComponent
   public _lastHandledTime: number | null = null;
 
   // BULLETPROOF feedback tracker: set synchronously in handleOptionClick,
-  // NEVER cleared by ngOnChanges/generateOptionBindings/rebuild cycles.
+  // NEVER cleared by generateOptionBindings/rebuild cycles.
   // Only cleared on question change.
   public _lastClickFeedback: { index: number; config: FeedbackProps; questionIdx: number } | null = null;
 
   // DURABLE multi-answer selection tracker. Survives binding regeneration.
   // Maps question index → Set of selected display indices.
-  // Only cleared on question change (resetStateForNewQuestion / ngOnChanges).
+  // Only cleared on question change (resetStateForNewQuestion).
   _multiSelectByQuestion = new Map<number, Set<number>>();
   _correctIndicesByQuestion = new Map<number, number[]>();
 

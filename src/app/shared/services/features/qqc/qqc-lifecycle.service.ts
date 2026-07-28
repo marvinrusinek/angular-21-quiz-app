@@ -16,7 +16,7 @@ import { shallowObjectEqual } from '../../../utils/shallow-equal';
  * Manages lifecycle-related orchestration for QuizQuestionComponent:
  * - ngOnInit subscription wiring and index tracking
  * - ngAfterViewInit render-ready and options loader subscriptions
- * - ngOnChanges render-ready computation
+ * - render-ready computation (observable-driven; see createRenderReadyObservable)
  * - ngOnDestroy cleanup helpers
  *
  * Extracted from QuizQuestionComponent to reduce its size.
