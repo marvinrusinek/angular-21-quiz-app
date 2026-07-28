@@ -534,3 +534,54 @@ mat-card {
 .defer-placeholder {
   min-height: 200px;
 }
+
+// Shown when a deferred section's chunk fails to fetch (see the #deferError
+// ng-template). Uses the global [data-theme] custom properties rather than
+// :host-context so it reads correctly in both light and dark mode.
+.defer-error {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  font-family: vars.$font-stack;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  .material-icons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: vars.$fire-red;
+  }
+
+  p {
+    margin: 0;
+    max-width: 42ch;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+}
+
+.defer-retry {
+  font-family: vars.$font-stack;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bg-card);
+  background: vars.$dodger-blue;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: color.adjust(vars.$dodger-blue, $lightness: -10%);
+  }
+}

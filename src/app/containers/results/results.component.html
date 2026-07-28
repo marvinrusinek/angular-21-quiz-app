@@ -1,3 +1,15 @@
+<!-- Shared @error content for the deferred section blocks below. Defined once
+     because @error content is EAGERLY bundled (like @placeholder), so it stays
+     deliberately light — plain markup, no extra components. A failed chunk
+     fetch previously rendered nothing at all, leaving the section blank. -->
+<ng-template #deferError>
+  <div class="defer-error" role="alert">
+    <i class="material-icons" aria-hidden="true">cloud_off</i>
+    <p i18n>This section couldn't be loaded. Check your connection and try again.</p>
+    <button type="button" class="defer-retry" (click)="reloadPage()" i18n>Retry</button>
+  </div>
+</ng-template>
+
 <mat-card>
   <!-- Custom Header to ensure Grid Layout works perfectly -->
   <div class="results-header">
@@ -114,6 +126,8 @@
           <codelab-results-statistics [viewMode]="'score'" [quizId]="quizId()" />
         } @placeholder {
           <div class="defer-placeholder" aria-busy="true"></div>
+        } @error {
+          <ng-container [ngTemplateOutlet]="deferError" />
         }
       }
 
@@ -123,6 +137,8 @@
           <codelab-results-summary [viewMode]="'summary'" [quizId]="quizId()" />
         } @placeholder {
           <div class="defer-placeholder" aria-busy="true"></div>
+        } @error {
+          <ng-container [ngTemplateOutlet]="deferError" />
         }
       }
 
@@ -138,6 +154,8 @@
             />
           } @placeholder {
             <div class="defer-placeholder" aria-busy="true"></div>
+          } @error {
+            <ng-container [ngTemplateOutlet]="deferError" />
           }
         </section>
       }
@@ -148,6 +166,8 @@
           <codelab-results-summary [viewMode]="'highscores'" [quizId]="quizId()" />
         } @placeholder {
           <div class="defer-placeholder" aria-busy="true"></div>
+        } @error {
+          <ng-container [ngTemplateOutlet]="deferError" />
         }
       }
 
@@ -159,6 +179,8 @@
           <codelab-results-statistics [viewMode]="'resources'" [quizId]="quizId()" />
         } @placeholder {
           <div class="defer-placeholder" aria-busy="true"></div>
+        } @error {
+          <ng-container [ngTemplateOutlet]="deferError" />
         }
       }
 

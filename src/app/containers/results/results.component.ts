@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -75,6 +75,7 @@ import { swallow } from '../../shared/utils/error-logging';
     MatIconModule,
     MatTooltipModule,
     NgOptimizedImage,
+    NgTemplateOutlet,
     AchievementUnlockedComponent,
     AchievementsCatalogComponent,
     BackToTopComponent,
@@ -233,6 +234,16 @@ export class ResultsComponent implements OnInit {
     // Always show the catalog with the current earned/locked state (even on a
     // refresh, when no new achievement is being announced).
     this.achievementsCatalog.set(this.achievementService.catalog());
+  }
+
+  /**
+   * Retry for a deferred section whose chunk failed to load. `@defer` has no
+   * re-trigger API once it has entered the error state, so a full reload is
+   * the honest option — the active section is restored from sessionStorage
+   * (`resultsActiveSection`), so the user lands back where they were.
+   */
+  reloadPage(): void {
+    window.location.reload();
   }
 
   toggleMenu(): void {
