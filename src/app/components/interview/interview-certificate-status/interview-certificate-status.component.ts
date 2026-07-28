@@ -15,6 +15,7 @@ import { RouterLink } from '@angular/router';
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
 import {
   certificateAccessibleSummary,
+  certificateInterviewsShown,
   certificateNextAction
 } from '../../../shared/utils/interview-certificate-progress';
 
@@ -46,6 +47,12 @@ export class InterviewCertificateStatusComponent implements OnInit {
 
   readonly nextAction = computed(() => certificateNextAction(this.progress()));
   readonly srSummary = computed(() => certificateAccessibleSummary(this.progress()));
+
+  // Capped for display — never "18 / 5". See certificateInterviewsShown().
+  readonly interviewsShown = computed(() => certificateInterviewsShown(this.progress()));
+  readonly interviewsMet = computed(
+    () => this.progress().qualifyingInterviewsCompleted >= this.progress().requiredInterviews
+  );
 
   // Optional "journey started on …" caption (locale date; '' until qualified).
   readonly journeyDate = computed(() => {

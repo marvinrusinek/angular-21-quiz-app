@@ -1,6 +1,7 @@
 import { InterviewCertificateProgress } from '../models/interview-certificate.model';
 import {
   certificateAccessibleSummary,
+  certificateInterviewsShown,
   certificateNextAction
 } from './interview-certificate-progress';
 
@@ -65,5 +66,21 @@ describe('certificateAccessibleSummary', () => {
   it('announces the unlocked state', () => {
     expect(certificateAccessibleSummary(progress({ isUnlocked: true })))
       .toBe('Angular Interview Master certificate unlocked.');
+  });
+
+  it('caps the announced count so it never reads "18 of 5"', () => {
+    const s = certificateAccessibleSummary(progress({ qualifyingInterviewsCompleted: 18 }));
+    expect(s).toContain('5 of 5 required interviews completed.');
+    expect(s).not.toContain('18 of 5');
+  });
+});
+
+describe('certificateInterviewsShown', () => {
+  it('passes the real count through while below the requirement', () => {
+    expect(certificateInterviewsShown(progress({ qualifyingInterviewsCompleted: 3 }))).toBe(3);
+  });
+
+  it('caps at the requirement — a user with 18 qualifying interviews shows 5, not 18', () => {
+    expect(certificateInterviewsShown(progress({ qualifyingInterviewsCompleted: 18 }))).toBe(5);
   });
 });

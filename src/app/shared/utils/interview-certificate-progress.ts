@@ -13,6 +13,16 @@ function interviewsWord(n: number): string {
 }
 
 /**
+ * The completed count as shown against the requirement, CAPPED so a user who
+ * has done more qualifying interviews than required never sees a nonsensical
+ * progress reading like `18 / 5`. This is a progress indicator, not a tally —
+ * the uncapped figure stays available on `qualifyingInterviewsCompleted`.
+ */
+export function certificateInterviewsShown(p: InterviewCertificateProgress): number {
+  return Math.min(p.qualifyingInterviewsCompleted, p.requiredInterviews);
+}
+
+/**
  * The single clearest next action for a NOT-yet-unlocked certificate. Returns ''
  * when unlocked or already eligible (the UI shows the unlocked state instead).
  */
@@ -44,7 +54,7 @@ export function certificateAccessibleSummary(p: InterviewCertificateProgress): s
   const explorer = p.angularExplorerEarned
     ? $localize`Angular Explorer unlocked.`
     : $localize`Angular Explorer not yet unlocked.`;
-  const counts = $localize`${p.qualifyingInterviewsCompleted} of ${p.requiredInterviews} required interviews completed.`;
+  const counts = $localize`${certificateInterviewsShown(p)} of ${p.requiredInterviews} required interviews completed.`;
   const remaining =
     p.interviewsRemaining > 0
       ? $localize`${p.interviewsRemaining} ${interviewsWord(p.interviewsRemaining)} remaining.`

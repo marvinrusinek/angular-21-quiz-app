@@ -30,14 +30,14 @@
           @else { <ng-container i18n>Locked</ng-container> }
         </span>
       </li>
-      <li class="ic-check" [class.ic-check--met]="progress().qualifyingInterviewsCompleted >= progress().requiredInterviews">
+      <li class="ic-check" [class.ic-check--met]="interviewsMet()">
         <span class="ic-check__mark"
-              [class.ic-check__mark--met]="progress().qualifyingInterviewsCompleted >= progress().requiredInterviews"
+              [class.ic-check__mark--met]="interviewsMet()"
               aria-hidden="true">
-          {{ progress().qualifyingInterviewsCompleted >= progress().requiredInterviews ? '✓' : '○' }}
+          {{ interviewsMet() ? '✓' : '○' }}
         </span>
         <span class="ic-check__text">
-          <span class="ic-check__label" i18n>Interviews completed: {{ progress().qualifyingInterviewsCompleted }} / {{ progress().requiredInterviews }}</span>
+          <span class="ic-check__label" i18n>Interviews completed: {{ interviewsShown() }} / {{ progress().requiredInterviews }}</span>
         </span>
       </li>
     </ul>

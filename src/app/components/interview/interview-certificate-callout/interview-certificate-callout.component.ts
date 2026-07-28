@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { InterviewCertificateService } from '../../../shared/services/features/interview/interview-certificate.service';
 import {
   certificateAccessibleSummary,
+  certificateInterviewsShown,
   certificateNextAction
 } from '../../../shared/utils/interview-certificate-progress';
 
@@ -41,7 +42,7 @@ import {
             <ng-container i18n>Angular Explorer unlocked</ng-container>
           </p>
         }
-        <p class="icc__line" i18n>Interviews completed: {{ progress().qualifyingInterviewsCompleted }} / {{ progress().requiredInterviews }}</p>
+        <p class="icc__line" i18n>Interviews completed: {{ interviewsShown() }} / {{ progress().requiredInterviews }}</p>
         <p class="icc__action">{{ nextAction() }}</p>
       }
     </section>
@@ -91,6 +92,9 @@ export class InterviewCertificateCalloutComponent implements OnInit {
 
   readonly nextAction = computed(() => certificateNextAction(this.progress()));
   readonly srSummary = computed(() => certificateAccessibleSummary(this.progress()));
+
+  // Capped for display — never "18 / 5". See certificateInterviewsShown().
+  readonly interviewsShown = computed(() => certificateInterviewsShown(this.progress()));
 
   ngOnInit(): void {
     // First Builder visit with the curriculum complete starts the qualification
