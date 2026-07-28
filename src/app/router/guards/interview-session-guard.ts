@@ -16,8 +16,6 @@ export class InterviewSessionGuard implements CanActivate {
   private readonly router = inject(Router);
 
   canActivate(): boolean | UrlTree {
-    return this.session.hasActiveSession()
-      ? true
-      : this.router.createUrlTree(['/interview']);
+    return this.session.hasActiveSession() ? true : this.router.createUrlTree(['/interview']);
   }
 }

@@ -90,7 +90,7 @@ export class QuizDataService {
         const mergedQuizzes = Array.isArray(quizzes)
           ? quizzes.map((q) => ({
               ...q,
-              status: existingStatuses.get(q.quizId) || q.status,
+              status: existingStatuses.get(q.quizId) || q.status
             }))
           : [];
 
