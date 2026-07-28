@@ -13,6 +13,9 @@ const recordSig = signal<InterviewCertificateRecord | null>(null);
 const readinessSig = signal<InterviewReadiness | null>({ band: 'interview-ready' } as InterviewReadiness);
 const trendsSig = signal<{ best: number | null }>({ best: 95 });
 const setRecipientName = jest.fn();
+const ensureQualificationStarted = jest.fn();
+// Mirrors the real service: idempotent, and issues only when eligible.
+const unlock = jest.fn(() => recordSig());
 
 function band(b: InterviewReadinessBand | null): void {
   readinessSig.set(b === null ? null : ({ band: b } as InterviewReadiness));
@@ -21,7 +24,9 @@ function band(b: InterviewReadinessBand | null): void {
 const serviceStub = {
   record: recordSig,
   unlocked: computed(() => recordSig()?.unlocked === true),
-  setRecipientName
+  setRecipientName,
+  ensureQualificationStarted,
+  unlock
 } as unknown as InterviewCertificateService;
 
 function issued(over: Partial<InterviewCertificateRecord> = {}): InterviewCertificateRecord {
@@ -112,5 +117,26 @@ describe('InterviewCertificateComponent', () => {
     const facts = (render().nativeElement as HTMLElement).querySelector('.ic-cert__facts')?.textContent ?? '';
     expect(facts).toContain('Interview Ready');   // required-tier fallback
     expect(facts).toContain('—');                 // score placeholder
+  });
+
+  // Unlocking used to be reachable ONLY from the Results status card, so a user
+  // who became eligible and came straight here saw the locked page despite
+  // qualifying. Visiting this page now attempts the (idempotent) unlock.
+  it('attempts qualification + unlock on visit, so unlocking is order-independent', () => {
+    recordSig.set(null);
+    render();
+    expect(ensureQualificationStarted).toHaveBeenCalled();
+    expect(unlock).toHaveBeenCalled();
+  });
+
+  it('does not re-issue when already unlocked (id and date stay stable)', () => {
+    recordSig.set(issued());
+    const fixture = render();
+    const idText = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(idText).toContain('AQ-2026-000128');
+    // unlock() is idempotent: it returns the existing record rather than a new one.
+    expect(unlock).toHaveBeenCalled();
+    expect(recordSig()?.certificateId).toBe('AQ-2026-000128');
+    expect(recordSig()?.unlockedAt).toBe('2026-07-24T15:00:00.000Z');
   });
 });

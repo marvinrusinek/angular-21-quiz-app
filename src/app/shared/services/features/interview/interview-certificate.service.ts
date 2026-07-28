@@ -87,10 +87,18 @@ export class InterviewCertificateService {
     // Count ONLY completed interviews on/after the qualification date. Interviews
     // predating it (or all of them, if qualification hasn't started) do NOT count,
     // but stay in Interview History for Readiness / Trends / Topic Trends.
+    // Compare INSTANTS, not strings. History entries are written with
+    // toISOString(), but validateEntry() accepts any Date.parse-able string, so
+    // a legacy or hand-edited value like "Jan 15, 2026" would win a lexicographic
+    // `>=` against "2026-…" ('J' > '2') and wrongly count as qualifying.
     const qualificationStartedAt = this._qualStartedAt();
-    const qualifyingInterviewsCompleted = qualificationStartedAt
-      ? this.historyService.history().filter((e) => e.completedAt >= qualificationStartedAt).length
-      : 0;
+    const qualStartMs = qualificationStartedAt ? Date.parse(qualificationStartedAt) : Number.NaN;
+    const qualifyingInterviewsCompleted = Number.isNaN(qualStartMs)
+      ? 0
+      : this.historyService.history().filter((e) => {
+          const completedMs = Date.parse(e.completedAt);
+          return !Number.isNaN(completedMs) && completedMs >= qualStartMs;
+        }).length;
     const interviewsRemaining = Math.max(REQUIRED_CERTIFICATE_INTERVIEWS - qualifyingInterviewsCompleted, 0);
 
     return {

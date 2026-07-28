@@ -117,6 +117,29 @@ describe('InterviewCertificateService — qualification period', () => {
     expect(svc.progress().qualifyingInterviewsCompleted).toBe(3);
   });
 
+  it('compares INSTANTS, not strings — a non-ISO legacy date cannot sneak past', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;   // "2026-…" ISO
+
+    // validateEntry() accepts any Date.parse-able string. This one predates
+    // qualification but wins a LEXICOGRAPHIC ">=" because 'J' > '2'.
+    const legacyBefore = new Date(Date.parse(qual) - 86_400_000).toDateString();  // "Mon Jul 27 2026"
+    expect(legacyBefore >= qual).toBe(true);              // proves the old bug's premise
+    setHistory([legacyBefore]);
+    expect(svc.progress().qualifyingInterviewsCompleted).toBe(0);   // correctly excluded
+  });
+
+  it('ignores history entries whose completedAt is unparseable', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory(['not-a-date', offset(qual, 60_000)]);
+    expect(svc.progress().qualifyingInterviewsCompleted).toBe(1);
+  });
+
   it('unlocks after five QUALIFYING interviews (Explorer earned)', () => {
     setEarned(ALL_SIX);
     const svc = freshService();

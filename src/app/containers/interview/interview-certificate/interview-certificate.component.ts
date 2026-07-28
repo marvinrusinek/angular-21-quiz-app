@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  OnInit,
   signal,
   ViewEncapsulation
 } from '@angular/core';
@@ -38,7 +39,7 @@ import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-tog
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InterviewCertificateComponent {
+export class InterviewCertificateComponent implements OnInit {
   private readonly certService = inject(InterviewCertificateService);
   private readonly readinessService = inject(InterviewReadinessService);
   private readonly historyService = inject(InterviewHistoryService);
@@ -60,6 +61,19 @@ export class InterviewCertificateComponent {
   readonly score = computed(() => this.historyService.trends().best);
 
   readonly recipientName = computed(() => this.record()?.recipientName ?? '');
+
+  ngOnInit(): void {
+    // Make unlocking ORDER-INDEPENDENT. Previously the only place that could
+    // issue the certificate was the Results status card, so a user who became
+    // eligible and came straight here (or deep-linked) saw the locked page even
+    // though they qualified. Both calls are idempotent: ensureQualificationStarted()
+    // no-ops once the date exists, and unlock() returns the existing record when
+    // already issued and null when not yet eligible — so the id and issue date
+    // stay stable and no duplicate is ever generated. The celebration dialog
+    // deliberately stays a Results-only moment.
+    this.certService.ensureQualificationStarted();
+    this.certService.unlock();
+  }
 
   readonly issuedDate = computed(() => {
     const iso = this.record()?.unlockedAt;
