@@ -14,6 +14,7 @@ import {
   DifficultyRecommendation,
 } from '../../shared/models/difficulty-recommendation.model';
 import { InterviewCertificateService } from '../../shared/services/features/interview/interview-certificate.service';
+import { certificateNextAction } from '../../shared/utils/interview-certificate-progress';
 
 /**
  * Compact, advisory "Difficulty Recommendation" card for Quiz Selection.
@@ -84,13 +85,10 @@ import { InterviewCertificateService } from '../../shared/services/features/inte
               <ng-container i18n>Ready for Interview Mode?</ng-container>
             </p>
             @if (certProgress().interviewMasterEarned) {
-              <p
-                class="dr__message"
-                i18n
-              >
-                Complete {{ certProgress().requiredInterviews }} qualifying interviews to unlock
-                your Angular Interview Master Certificate.
-              </p>
+              <!-- Same next-action sentence the Results card and Builder callout
+                   show, so all three surfaces agree and it reflects ACTUAL
+                   progress ("2 more interviews") rather than restating the bar. -->
+              <p class="dr__message">{{ certNextAction() }}</p>
             } @else {
               <p
                 class="dr__message"
@@ -239,6 +237,10 @@ export class DifficultyRecommendationComponent implements OnInit {
   // Certificate state (single source of truth) — drives the complete-state copy.
   readonly certUnlocked = this.cert.unlocked;
   readonly certProgress = this.cert.progress;
+
+  // Reuses the shared helper rather than restating the requirement, so this
+  // surface tracks real progress and stays in step with Results + Builder.
+  readonly certNextAction = computed(() => certificateNextAction(this.certProgress()));
 
   // Kept for template clarity; routing decisions stay in the parent.
   protected readonly hasAction = computed(() => !!this.recommendation()?.action);

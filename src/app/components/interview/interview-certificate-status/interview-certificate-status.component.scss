@@ -1,17 +1,15 @@
 // Inherits the Interview Results `--ir-*` tokens (CSS custom properties cascade
-// by DOM, independent of encapsulation) with local fallbacks so it also works
-// standalone. Calm + professional, not a game reward.
+// by DOM, independent of encapsulation). Fallbacks live at each USE site rather
+// than in a local re-declaration: `--ir-surface: var(--ir-surface, #fff)` is a
+// self-reference, which is a cycle — invalid at computed-value time — so it
+// provided no working standalone default, and hard-coding the light values here
+// would instead OVERRIDE the dark-theme tokens the Results page sets.
+// Calm + professional, not a game reward.
 .ic-status {
-  --ir-surface: var(--ir-surface, #fff);
-  --ir-border: var(--ir-border, #e0e0e0);
-  --ir-text: var(--ir-text, #1a1a1a);
-  --ir-muted: var(--ir-muted, #6a6a6a);
-  --ir-accent: var(--ir-accent, #007aff);
-
-  border: 1px solid var(--ir-border);
+  border: 1px solid var(--ir-border, #e0e0e0);
   border-radius: 12px;
-  background: var(--ir-surface);
-  color: var(--ir-text);
+  background: var(--ir-surface, #fff);
+  color: var(--ir-text, #1a1a1a);
   padding: 16px 18px;
 }
 
@@ -32,7 +30,7 @@
   .ic-status__badge { font-size: 30px; line-height: 1; }
   .ic-status__body { flex: 1 1 auto; min-width: 0; }
   .ic-status__title { margin: 0; font-size: 17px; font-weight: 800; }
-  .ic-status__sub { margin: 2px 0 0; font-size: 13px; color: var(--ir-muted); }
+  .ic-status__sub { margin: 2px 0 0; font-size: 13px; color: var(--ir-muted, #6a6a6a); }
 }
 
 .ic-status__cta {
@@ -42,20 +40,20 @@
   min-height: 40px;
   padding: 8px 16px;
   border-radius: 10px;
-  background: var(--ir-accent);
+  background: var(--ir-accent, #007aff);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 
   &:hover { filter: brightness(1.05); }
-  &:focus-visible { outline: 2px solid var(--ir-accent); outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--ir-accent, #007aff); outline-offset: 2px; }
 }
 
 // ── progress checklist ────────────────────────────────────────────────
 .ic-status--progress {
   .ic-status__title { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
-  .ic-status__hint { margin: 0 0 12px; font-size: 13px; color: var(--ir-muted); }
+  .ic-status__hint { margin: 0 0 12px; font-size: 13px; color: var(--ir-muted, #6a6a6a); }
 }
 
 .ic-checklist {
@@ -79,8 +77,8 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1px solid var(--ir-border);
-    color: var(--ir-muted);
+    border: 1px solid var(--ir-border, #e0e0e0);
+    color: var(--ir-muted, #6a6a6a);
     font-size: 13px;
     font-weight: 700;
 
@@ -93,7 +91,7 @@
 
   &__text { display: flex; flex-direction: column; flex: 1 1 auto; }
   &__label { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  &__detail { font-size: 12px; color: var(--ir-muted); font-variant-numeric: tabular-nums; }
+  &__detail { font-size: 12px; color: var(--ir-muted, #6a6a6a); font-variant-numeric: tabular-nums; }
 
   &__badge {
     flex: none;
@@ -102,7 +100,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: var(--ir-muted);
+    color: var(--ir-muted, #6a6a6a);
   }
 
   &--met .ic-check__badge { color: #2f8f4a; }
@@ -112,13 +110,13 @@
   margin: 12px 0 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ir-text);
+  color: var(--ir-text, #1a1a1a);
 }
 
 .ic-status__journey {
   margin: 6px 0 0;
   font-size: 12px;
-  color: var(--ir-muted);
+  color: var(--ir-muted, #6a6a6a);
 }
 
 // ── celebration dialog (subtle) ───────────────────────────────────────

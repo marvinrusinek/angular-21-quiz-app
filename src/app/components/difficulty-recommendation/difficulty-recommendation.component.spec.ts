@@ -12,12 +12,16 @@ const progressSig = signal<InterviewCertificateProgress>(progress());
 const ensureQualificationStarted = jest.fn();
 
 function progress(over: Partial<InterviewCertificateProgress> = {}): InterviewCertificateProgress {
+  const requiredInterviews = over.requiredInterviews ?? 5;
+  const qualifyingInterviewsCompleted = over.qualifyingInterviewsCompleted ?? 0;
   return {
     interviewMasterEarned: false,
     angularExplorerEarned: false,
-    qualifyingInterviewsCompleted: 0,
-    requiredInterviews: 5,
-    interviewsRemaining: 5,
+    qualifyingInterviewsCompleted,
+    requiredInterviews,
+    // DERIVED, exactly as the real service does — a hard-coded value here let a
+    // stub claim "3 of 5 done, 5 remaining", which no real progress model can.
+    interviewsRemaining: Math.max(requiredInterviews - qualifyingInterviewsCompleted, 0),
     isEligible: false,
     isUnlocked: false,
     ...over
@@ -63,12 +67,28 @@ describe('DifficultyRecommendationComponent — certificate-journey completion c
     expect(el.querySelector('button.dr__btn')?.textContent).toContain('Build an Interview');
   });
 
-  it('after Interview Master (locked): prompts to complete qualifying interviews', () => {
+  // Uses the SHARED certificateNextAction() helper, so this surface says the same
+  // thing as the Results card and Builder callout. With Explorer still locked,
+  // interviews alone would NOT unlock the certificate — the old hard-coded
+  // "Complete 5 qualifying interviews to unlock…" implied they would.
+  it('after Interview Master, Explorer still locked: names BOTH outstanding requirements', () => {
     progressSig.set(progress({ interviewMasterEarned: true }));
     const el = render(COMPLETE).nativeElement as HTMLElement;
     expect(el.querySelector('.dr__message')?.textContent)
-      .toContain('Complete 5 qualifying interviews to unlock your Angular Interview Master Certificate.');
+      .toContain('Continue earning achievements and completing interviews.');
     expect(el.querySelector('button.dr__btn')?.textContent).toContain('Build an Interview');
+  });
+
+  it('Explorer earned, interviews outstanding: counts down the REMAINING interviews', () => {
+    progressSig.set(progress({
+      interviewMasterEarned: true,
+      angularExplorerEarned: true,
+      qualifyingInterviewsCompleted: 3
+    }));
+    const el = render(COMPLETE).nativeElement as HTMLElement;
+    // 2 remaining — not a restatement of the requirement.
+    expect(el.querySelector('.dr__message')?.textContent)
+      .toContain('Complete 2 more interviews to earn your certificate.');
   });
 
   it('certificate earned: shows the medal + View Certificate link', () => {
