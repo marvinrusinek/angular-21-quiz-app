@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { AchievementService } from './achievement.service';
@@ -197,5 +197,28 @@ describe('AchievementService', () => {
   it('seeds best scores from legacy highScoresLocal when none stored yet', () => {
     localStorage.setItem('highScoresLocal', JSON.stringify([{ quizId: 'b1', score: 100 }]));
     expect(ids(service.evaluate(ALL))).toContain('perfect-score');
+  });
+
+  // 17 — REGRESSION GUARD. `earnedIds` must stay a SIGNAL, not a plain method
+  // that re-reads localStorage. A downstream computed() (notably the
+  // certificate's `progress`) cannot track a method call, so it would serve a
+  // stale value until some unrelated signal happened to invalidate it — which
+  // silently blocked the certificate unlock. Any revert breaks this test.
+  it('earnedIds is reactive: a downstream computed sees newly earned achievements', () => {
+    const explorerEarned = computed(() => service.earnedIds().has('angular-explorer'));
+
+    // Read FIRST, while nothing is earned — this caches the computed.
+    expect(explorerEarned()).toBe(false);
+
+    // Earn everything (including the meta Explorer) via a normal evaluation.
+    localStorage.setItem(
+      SK_QUIZ_BEST_SCORES,
+      JSON.stringify({ b1: 100, b2: 90, i1: 90, a1: 90 })
+    );
+    setInterviewMastery(true);
+    expect(ids(service.evaluate(ALL))).toContain('angular-explorer');
+
+    // The already-read computed must now recompute. Fails if earnedIds regresses.
+    expect(explorerEarned()).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { Quiz } from '../../models/Quiz.model';
 import {
@@ -36,6 +36,15 @@ export class AchievementService {
   // interview score here). No cycle: neither injects AchievementService.
   private readonly readiness = inject(InterviewReadinessService);
   private readonly interviewHistory = inject(InterviewHistoryService);
+
+  // Bumped whenever an achievement is earned. `earnedIds` depends on it, which
+  // makes the derived read REACTIVE while keeping localStorage authoritative
+  // (the value is still re-read on each recompute, so a direct storage seed is
+  // still honoured). Previously `earnedIds` was a plain method: a downstream
+  // computed() — notably the certificate's `progress` — could not track it and
+  // served a stale value until some unrelated signal invalidated it, silently
+  // blocking the certificate unlock.
+  private readonly _rev = signal(0);
 
   /**
    * Record a completed quiz's score, keeping the BEST per quiz. A later, lower
@@ -82,14 +91,16 @@ export class AchievementService {
         ...newly.map(d => ({ id: d.id, earnedAt: now }))
       ];
       writeLocalJson(SK_QUIZ_ACHIEVEMENTS, updated);
+      this._rev.update((n) => n + 1);   // publish reactively — see `_rev`
     }
     return newly;
   }
 
-  /** Ids of every achievement earned so far. */
-  earnedIds(): Set<AchievementId> {
+  /** Ids of every achievement earned so far. Reactive (see `_rev`). */
+  readonly earnedIds = computed(() => {
+    this._rev();   // reactive dependency — recompute after each new earn
     return new Set<AchievementId>(this.readEarned().map(e => e.id));
-  }
+  });
 
   /** Compact progress summary for the catalog UI (e.g. "3 / 6"). */
   summary(): { earned: number; total: number } {
