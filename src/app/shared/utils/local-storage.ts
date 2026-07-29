@@ -35,11 +35,18 @@ export function readLocalJson<T>(key: string, fallback: T): T {
   }
 }
 
-/** Write a JSON-serializable value to localStorage. Errors are swallowed. */
-export function writeLocalJson(key: string, value: unknown): void {
+/**
+ * Write a JSON-serializable value to localStorage. Errors are swallowed, but the
+ * outcome is RETURNED: `true` on success, `false` if the write failed (private
+ * browsing, quota exceeded, storage disabled). Callers persisting something the
+ * user would notice losing — an issued certificate, say — can check this instead
+ * of assuming it stuck. Existing callers may keep ignoring the result.
+ */
+export function writeLocalJson(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (err: unknown) { swallow('local-storage.ts', err); /* ignore */ }
+    return true;
+  } catch (err: unknown) { swallow('local-storage.ts', err); return false; }
 }
 
 /** Remove a key from localStorage. Errors are swallowed. */

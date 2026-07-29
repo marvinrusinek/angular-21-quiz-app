@@ -21,9 +21,12 @@ function band(b: InterviewReadinessBand | null): void {
   readinessSig.set(b === null ? null : ({ band: b } as InterviewReadiness));
 }
 
+const persistFailedSig = signal(false);
+
 const serviceStub = {
   record: recordSig,
   unlocked: computed(() => recordSig()?.unlocked === true),
+  persistenceFailed: persistFailedSig,
   setRecipientName,
   ensureQualificationStarted,
   unlock
@@ -127,6 +130,17 @@ describe('InterviewCertificateComponent', () => {
     render();
     expect(ensureQualificationStarted).toHaveBeenCalled();
     expect(unlock).toHaveBeenCalled();
+  });
+
+  it('warns when the certificate could not be saved, and stays silent otherwise', () => {
+    recordSig.set(issued());
+    persistFailedSig.set(false);
+    expect((render().nativeElement as HTMLElement).querySelector('.ic-warning')).toBeNull();
+
+    persistFailedSig.set(true);
+    const warning = (render().nativeElement as HTMLElement).querySelector('.ic-warning');
+    expect(warning?.textContent).toContain('could not be saved to this browser');
+    persistFailedSig.set(false);
   });
 
   it('does not re-issue when already unlocked (id and date stay stable)', () => {

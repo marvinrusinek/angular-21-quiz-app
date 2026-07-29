@@ -12,6 +12,7 @@ import { InterviewHistoryService } from './interview-history.service';
 import {
   generateCertificateId,
   InterviewCertificateService,
+  isWellFormedCertificateId,
   validateCertificateRecord
 } from './interview-certificate.service';
 
@@ -251,6 +252,28 @@ describe('InterviewCertificateService — unlock persistence', () => {
     expect(svc.unlocked()).toBe(true);
   });
 
+  it('reports a FAILED persist instead of silently losing the certificate', () => {
+    setEarned(ALL_SIX);
+    const svc = freshService();
+    svc.ensureQualificationStarted();
+    const qual = svc.progress().qualificationStartedAt!;
+    setHistory(Array.from({ length: 5 }, (_, i) => offset(qual, (i + 1) * 1000)));
+
+    expect(svc.persistenceFailed()).toBe(false);
+
+    // Simulate private browsing / quota exceeded.
+    const setItem = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('QuotaExceededError');
+    });
+    try {
+      const issued = svc.unlock();
+      expect(issued).not.toBeNull();          // the user is not blocked …
+      expect(svc.persistenceFailed()).toBe(true);   // … but we know it didn't stick
+    } finally {
+      setItem.mockRestore();
+    }
+  });
+
   it('does not unlock while ineligible + never persists', () => {
     setEarned(CURRICULUM);
     const svc = freshService();
@@ -261,8 +284,30 @@ describe('InterviewCertificateService — unlock persistence', () => {
 });
 
 describe('generateCertificateId / validateCertificateRecord', () => {
-  it('formats AQ-YYYY-NNNNNN, zero-padded', () => {
-    expect(generateCertificateId('2026-07-24T12:00:00.000Z', () => 0.000128)).toBe('AQ-2026-000128');
+  it('formats AQ-YYYY-NNNNNN-C, zero-padded, with a check character', () => {
+    const id = generateCertificateId('2026-07-24T12:00:00.000Z', () => 0.000128);
+    expect(id).toMatch(/^AQ-2026-000128-[0-9A-Z]$/);
+    expect(isWellFormedCertificateId(id)).toBe(true);
+  });
+
+  it('the checksum rejects a mistyped or transposed id', () => {
+    const id = generateCertificateId('2026-07-24T12:00:00.000Z', () => 0.000128);
+    const body = id.slice(0, -2);                       // "AQ-2026-000128"
+    const check = id.slice(-1);
+    // A transposition inside the body no longer matches the check character.
+    expect(isWellFormedCertificateId(`AQ-2026-000182-${check}`)).toBe(false);
+    // A wrong check character is rejected too.
+    const wrong = check === 'Z' ? 'Y' : 'Z';
+    expect(isWellFormedCertificateId(`${body}-${wrong}`)).toBe(false);
+  });
+
+  it('legacy ids (issued before the checksum) still validate as certificates', () => {
+    // isWellFormedCertificateId is a FORMAT check, so a legacy id fails it …
+    expect(isWellFormedCertificateId('AQ-2026-000001')).toBe(false);
+    // … but the record must still be honoured — never invalidate an issued cert.
+    expect(validateCertificateRecord({
+      version: 1, unlocked: true, unlockedAt: '2026-07-24T00:00:00.000Z', certificateId: 'AQ-2026-000001'
+    })).toMatchObject({ unlocked: true, certificateId: 'AQ-2026-000001' });
   });
   it('validates records', () => {
     expect(validateCertificateRecord({

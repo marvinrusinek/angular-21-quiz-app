@@ -5,6 +5,16 @@
     <codelab-theme-toggle />
   </div>
 
+  <!-- Storage write failed (private browsing / quota / storage disabled). The
+       certificate is valid for this session but won't survive a reload, so say
+       so rather than letting a "permanent" reward vanish silently. Never printed. -->
+  @if (persistenceFailed()) {
+    <p class="ic-warning ic-noprint" role="status" i18n>
+      This certificate could not be saved to this browser — private browsing or a
+      full storage quota can cause this. It may disappear when you reload.
+    </p>
+  }
+
   @if (unlocked()) {
     <!-- The certificate artifact. Semantic: one h1 (the award title), the award
          statement, and a definition list for the verifiable facts. -->

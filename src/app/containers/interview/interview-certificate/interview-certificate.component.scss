@@ -303,8 +303,25 @@
 }
 
 // ── print: ONLY the certificate, black-on-white, no chrome ─────────────
+// Soft, non-alarming notice when the certificate could not be persisted.
+// Theme-aware via the same --ir-* tokens the rest of this page defines.
+.ic-warning {
+  max-width: 720px;
+  margin: 0 auto 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--ir-border, #e0e0e0);
+  border-left: 3px solid #d98324;
+  border-radius: 8px;
+  background: var(--ir-surface, #fff);
+  color: var(--ir-text, #1a1a1a);
+  font-size: 13.5px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
 @media print {
   .ic-noprint { display: none !important; }
+  .ic-warning { display: none !important; }
 
   .interview-certificate {
     max-width: none;

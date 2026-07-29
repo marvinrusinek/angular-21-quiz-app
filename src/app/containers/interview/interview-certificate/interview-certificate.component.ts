@@ -48,6 +48,7 @@ export class InterviewCertificateComponent implements OnInit {
   readonly requiredInterviews = REQUIRED_CERTIFICATE_INTERVIEWS;
   readonly record = this.certService.record;
   readonly unlocked = this.certService.unlocked;
+  readonly persistenceFailed = this.certService.persistenceFailed;
 
   // Live readiness tier for display — reuses the readiness service (no re-derive).
   // Falls back to the required tier if history has since aged out (the

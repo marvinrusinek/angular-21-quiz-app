@@ -64,8 +64,17 @@ export class InterviewCertificateService {
   // the curriculum is complete; only interviews on/after it count.
   private readonly _qualStartedAt = signal<string | undefined>(this.loadQualStartedAt());
 
+  // True when persisting the certificate FAILED (private browsing, quota, storage
+  // disabled). The unlock still succeeds in memory so the user isn't blocked, but
+  // the record won't survive a reload — and silently losing a "permanent" reward
+  // is worse than saying so, hence the soft warning on the certificate page.
+  private readonly _persistFailed = signal(false);
+
   /** The issued certificate, or null until unlocked. */
   readonly record = this._record.asReadonly();
+
+  /** True if the issued certificate could not be written to storage. */
+  readonly persistenceFailed = this._persistFailed.asReadonly();
 
   /** Whether the certificate has been unlocked (and persisted). */
   readonly unlocked = computed(() => this._record()?.unlocked === true);
@@ -193,22 +202,52 @@ export class InterviewCertificateService {
   }
 
   private save(record: InterviewCertificateRecord): void {
-    writeLocalJson(SK_INTERVIEW_CERTIFICATE, record);
+    this._persistFailed.set(!writeLocalJson(SK_INTERVIEW_CERTIFICATE, record));
   }
 }
 
 // ── pure helpers (exported for tests) ─────────────────────────────────
 
+const CHECK_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 /**
- * Generate a stable, certificate-style id — `AQ-2026-000128`. Called ONCE at
+ * Check character for a certificate id body, e.g. `AQ-2026-000128` → `K`.
+ * Position-weighted so transpositions (a common transcription error) change it.
+ */
+function checkChar(body: string): string {
+  let sum = 0;
+  for (let i = 0; i < body.length; i++) sum += body.charCodeAt(i) * (i + 1);
+  return CHECK_ALPHABET[sum % CHECK_ALPHABET.length];
+}
+
+/**
+ * Generate a stable, certificate-style id — `AQ-2026-000128-K`. Called ONCE at
  * unlock and then persisted, so it never changes. `rand` is injectable for
  * deterministic tests.
+ *
+ * The trailing character is a CHECKSUM, so an id copied into a CV or pasted into
+ * a form can be checked for transcription errors via isWellFormedCertificateId().
+ * It is emphatically NOT anti-tamper: everything here is client-side, so anyone
+ * editing localStorage can mint a well-formed id. The certificate is a personal
+ * portfolio artifact, not a credential a third party can verify.
  */
 export function generateCertificateId(iso: string, rand: () => number = Math.random): string {
   const parsed = new Date(iso);
   const year = Number.isNaN(parsed.getTime()) ? new Date().getFullYear() : parsed.getFullYear();
   const n = Math.floor(Math.max(0, Math.min(0.9999999, rand())) * 1_000_000);
-  return `${CERTIFICATE_ID_PREFIX}-${year}-${String(n).padStart(6, '0')}`;
+  const body = `${CERTIFICATE_ID_PREFIX}-${year}-${String(n).padStart(6, '0')}`;
+  return `${body}-${checkChar(body)}`;
+}
+
+/**
+ * True if `id` is a well-formed certificate id whose checksum matches. Ids issued
+ * BEFORE the checksum was introduced have no check character and return false —
+ * which is why validateCertificateRecord() does NOT use this: an existing
+ * certificate must never be invalidated by a format change.
+ */
+export function isWellFormedCertificateId(id: string): boolean {
+  const m = new RegExp(`^(${CERTIFICATE_ID_PREFIX}-\\d{4}-\\d{6})-([${CHECK_ALPHABET}])$`).exec(id);
+  return !!m && checkChar(m[1]) === m[2];
 }
 
 /**
