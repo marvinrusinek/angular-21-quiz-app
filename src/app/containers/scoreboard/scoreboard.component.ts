@@ -78,7 +78,13 @@ export class ScoreboardComponent implements OnInit {
       map(() => this.readIndexFromSnapshot())
     ),
     fromEvent(window, 'pageshow').pipe(map(() => this.readIndexFromSnapshot()))
-  ).pipe(distinctUntilChanged(), shareReplay(1));
+    // refCount so the source — which includes document/window DOM listeners —
+    // is released when the last subscriber goes. A bare shareReplay(1) never
+    // unsubscribes upstream, so those listeners survived every destroyed
+    // scoreboard for the app's lifetime. Safe here because all consumers
+    // (toSignal + two takeUntilDestroyed subscribes) are created at construction
+    // and live until destroy, so the count never dips to zero and back.
+  ).pipe(distinctUntilChanged(), shareReplay({ bufferSize: 1, refCount: true }));
 
   // 1-based for display
   readonly displayIndex$: Observable<number> = this.routeIndex$.pipe(map((i) => i + 1));
@@ -101,7 +107,7 @@ export class ScoreboardComponent implements OnInit {
   ]).pipe(
     map(([n, total]) => (Number.isFinite(total) && total > 0 ? `Question ${n} of ${total}` : '')),
     distinctUntilChanged(),
-    shareReplay(1)
+    shareReplay({ bufferSize: 1, refCount: true })
   );
 
   // Final badge: prefer service text only when it agrees with the route-
@@ -118,7 +124,7 @@ export class ScoreboardComponent implements OnInit {
       return svc === cmp ? svc : cmp;
     }),
     distinctUntilChanged(),
-    shareReplay(1)
+    shareReplay({ bufferSize: 1, refCount: true })
   );
 
   readonly badgeText = toSignal(this.badgeText$, { initialValue: '' });

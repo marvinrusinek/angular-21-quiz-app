@@ -80,6 +80,11 @@ export class TimerService implements OnDestroy {
       });
   }
 
+  // NOTE: this service is providedIn: 'root', so ngOnDestroy only runs at app
+  // teardown — by which point the page is going away regardless. It is kept as a
+  // correctness backstop (and for any future non-root provision), NOT because it
+  // reclaims anything meaningful today. Per-question teardown is handled by
+  // stopTimer() and takeUntil(this.isStop).
   ngOnDestroy(): void {
     this.timerSubscription?.unsubscribe();
     this.stopTimerSignalSubscription?.unsubscribe();
