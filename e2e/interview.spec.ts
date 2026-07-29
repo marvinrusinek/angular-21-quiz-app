@@ -122,10 +122,17 @@ test.describe('Interview Mode', () => {
     await page.locator('.ih-card__actions a:has-text("View Summary")').click();
     await expect(page).toHaveURL(/\/interview\/history\/.+/);
     await expect(page.locator('.ihd__readonly')).toContainText('Read Only');
-    await expect(page.locator('.ihd-note')).toContainText('was not retained');
-    // Topic Performance is reused here; no live Review Answers controls exist.
+
+    // A freshly completed attempt RETAINS its per-question review, so the detail
+    // page embeds the read-only Review Answers list. The "was not retained" note
+    // is the LEGACY branch (entry.review empty) and must NOT appear here.
+    await expect(page.locator('.ihd-review')).toBeVisible();
+    await expect(page.locator('#ihd-review-heading')).toHaveText(/Review Answers/);
+    await expect(page.locator('.rv-item')).toHaveCount(10);
+    await expect(page.locator('.ihd-note')).toHaveCount(0);
+
+    // Topic Performance is reused here too.
     await expect(page.locator('.topic-row').first()).toBeVisible();
-    await expect(page.locator('.rv-item')).toHaveCount(0);
   });
 
   test('interview readiness: limited state → score → updates → cleared with history', async ({ page }) => {
