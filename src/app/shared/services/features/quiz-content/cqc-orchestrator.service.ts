@@ -6,7 +6,7 @@ import {
 } from 'rxjs';
 import {
   catchError, distinctUntilChanged, filter, map, shareReplay, startWith,
-  take, tap, withLatestFrom
+  switchMap, take, tap, withLatestFrom
 } from 'rxjs/operators';
 
 import { QuestionType } from '../../../models/question-type.enum';
@@ -166,20 +166,31 @@ export class CqcOrchestratorService {
         startWith(host.quizService?.currentQuestionIndex ?? 0)
       )
     ])
-      .pipe(takeUntilDestroyed(host.destroyRef))
-      .subscribe((pair: any) => {
-        const index: number = pair[1];
-        if (host.lastQuestionIndexForReset !== index) {
+      .pipe(
+        // Only act when the index actually changes. This was an `if` inside the
+        // subscribe; as a filter it lets the answered-lookup below be flattened.
+        map((pair: any) => pair[1] as number),
+        filter((index: number) => host.lastQuestionIndexForReset !== index),
+        tap((index: number) => {
           host.explanationTextService.setShouldDisplayExplanation(false);
           host.lastQuestionIndexForReset = index;
-
-          host.quizService.isAnswered(index).pipe(take(1))
-            .subscribe((isAnswered: boolean) => {
-              if (!isAnswered) {
-                host.quizStateService.setDisplayState({ mode: 'question', answered: false });
-                host.explanationTextService.setIsExplanationTextDisplayed(false, { force: true });
-              }
-            });
+        }),
+        // switchMap, NOT a nested subscribe. Two reasons:
+        //  1) cancellation — a newer index must abandon the in-flight lookup for
+        //     the previous one. Nested subscribes let both resolve, so a slow
+        //     lookup for question N could land after N+1 and apply STALE state.
+        //  2) lifetime — the inner stream now inherits takeUntilDestroyed below,
+        //     so it can no longer write display state after the host is gone
+        //     (take(1) prevented a leak but not a post-destroy write).
+        // concatMap would preserve the stale write, mergeMap keeps the race, and
+        // exhaustMap would drop legitimate newer indices.
+        switchMap((index: number) => host.quizService.isAnswered(index).pipe(take(1))),
+        takeUntilDestroyed(host.destroyRef)
+      )
+      .subscribe((isAnswered: boolean) => {
+        if (!isAnswered) {
+          host.quizStateService.setDisplayState({ mode: 'question', answered: false });
+          host.explanationTextService.setIsExplanationTextDisplayed(false, { force: true });
         }
       });
   }
