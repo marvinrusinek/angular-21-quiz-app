@@ -230,11 +230,12 @@ export class QqcOrchLifecycleService {
    * currentQuestion/options/explanation), and the shuffle-preference watcher.
    */
   private wireCoreStateSubscriptions(host: Host): void {
-    host.subscriptionWiring.createCurrentQuestionIndexSubscription((index: number) => {
+    host.subscriptionWiring.createCurrentQuestionIndexSubscription(host.destroyRef, (index: number) => {
       host.currentQuestionIndex.set(index);
     });
 
     host.subscriptionWiring.createQuestionPayloadSubscription({
+      destroyRef: host.destroyRef,
       onPayload: (payload: any) => {
         host.currentQuestion.set(payload.question);
         host.optionsToDisplay.set(payload.options);
@@ -265,6 +266,7 @@ export class QqcOrchLifecycleService {
    */
   private wireNavigationEventSubscriptions(host: Host): void {
     const navSubs = host.subscriptionWiring.createNavigationEventSubscriptions({
+      destroyRef: host.destroyRef,
       onNavigationSuccess: () => host.resetUIForNewQuestion(),
       onNavigatingBack: () => {
         const soc = host.sharedOptionComponent?.();
@@ -433,5 +435,13 @@ export class QqcOrchLifecycleService {
   runOnDestroy(host: Host): void {
     try { document.removeEventListener('visibilitychange', host.onVisibilityChange.bind(host)); } catch (err: unknown) { swallow('qqc-orch-lifecycle.service.ts removeEventListener', err); }
     try { host.nextButtonStateService.cleanupNextButtonStateStream(); } catch (err: unknown) { swallow('qqc-orch-lifecycle.service.ts cleanupNextButtonStateStream', err); }
+    // Defence in depth: every subscription pushed onto displaySubscriptions now
+    // also carries takeUntilDestroyed, but this array was previously ONLY cleared
+    // by the page-visibility handler — so a plain destroy left them live. Clear it
+    // here too, so the teardown never depends on a visibility event happening.
+    try {
+      for (const sub of (host.displaySubscriptions ?? [])) sub.unsubscribe();
+      host.displaySubscriptions = [];
+    } catch (err: unknown) { swallow('qqc-orch-lifecycle.service.ts displaySubscriptions', err); }
   }
 }

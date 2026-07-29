@@ -122,12 +122,14 @@ export class QqcSubscriptionWiringService {
    * Extracted from ngOnInit (lines 485â€“499).
    */
   createQuestionPayloadSubscription(callbacks: {
+    destroyRef: DestroyRef;
     onPayload: (payload: QuestionPayload) => void;
-  }): Subscription {
-    return this.quizService.questionPayload$
+  }): void {
+    this.quizService.questionPayload$
       .pipe(
         filter((payload): payload is QuestionPayload => !!payload),
-        tap((payload: QuestionPayload) => callbacks.onPayload(payload))
+        tap((payload: QuestionPayload) => callbacks.onPayload(payload)),
+        takeUntilDestroyed(callbacks.destroyRef)
       )
       .subscribe();
   }
@@ -151,6 +153,7 @@ export class QqcSubscriptionWiringService {
    * Extracted from ngOnInit (lines 506â€“551).
    */
   createNavigationEventSubscriptions(callbacks: {
+    destroyRef: DestroyRef;
     onNavigationSuccess: () => void;
     onNavigatingBack: (sharedOptionComponent: any) => void;
     onNavigationToQuestion: (data: { question: QuizQuestion; options: Option[] }) => void;
@@ -159,22 +162,30 @@ export class QqcSubscriptionWiringService {
     onResetUIForNewQuestion: () => void;
   }): Subscription[] {
     const subs: Subscription[] = [];
+    // Every stream below is a LONG-LIVED root-service Subject, while the host
+    // (QuizQuestionComponent) is recreated on every question. These handles are
+    // still returned so the page-visibility path can clear them early, but
+    // takeUntilDestroyed is what guarantees they die with the component — without
+    // it each question left six live subscriptions firing callbacks into a
+    // destroyed instance.
+    const untilGone = <T>(o: Observable<T>): Observable<T> =>
+      o.pipe(takeUntilDestroyed(callbacks.destroyRef));
 
     subs.push(
-      this.quizNavigationService.navigationSuccess$.subscribe(() => {
+      untilGone(this.quizNavigationService.navigationSuccess$).subscribe(() => {
         callbacks.onNavigationSuccess();
       })
     );
 
     subs.push(
-      this.quizNavigationService.navigatingBack$.subscribe(() => {
+      untilGone(this.quizNavigationService.navigatingBack$).subscribe(() => {
         // Component passes sharedOptionComponent reference
         callbacks.onNavigatingBack(null);
       })
     );
 
     subs.push(
-      this.quizNavigationService.navigationToQuestion$.subscribe(
+      untilGone(this.quizNavigationService.navigationToQuestion$).subscribe(
         ({ question, options }) => {
           if (question?.questionText && options?.length) {
             callbacks.onNavigationToQuestion({ question, options });
@@ -184,19 +195,19 @@ export class QqcSubscriptionWiringService {
     );
 
     subs.push(
-      this.quizNavigationService.explanationReset$.subscribe(() => {
+      untilGone(this.quizNavigationService.explanationReset$).subscribe(() => {
         callbacks.onExplanationReset();
       })
     );
 
     subs.push(
-      this.quizNavigationService.renderReset$.subscribe(() => {
+      untilGone(this.quizNavigationService.renderReset$).subscribe(() => {
         callbacks.onRenderReset();
       })
     );
 
     subs.push(
-      this.quizNavigationService.resetUIForNewQuestion$.subscribe(() => {
+      untilGone(this.quizNavigationService.resetUIForNewQuestion$).subscribe(() => {
         callbacks.onResetUIForNewQuestion();
       })
     );
@@ -267,11 +278,14 @@ export class QqcSubscriptionWiringService {
    * Extracted from ngOnInit (lines 470â€“479).
    */
   createCurrentQuestionIndexSubscription(
-    onIndex: (index: number) => void                                                                                        
-  ): Subscription {    
-    return this.quizService.currentQuestionIndex$.subscribe((index: number) => {
-      onIndex(index);
-    });
+    destroyRef: DestroyRef,
+    onIndex: (index: number) => void
+  ): void {
+    this.quizService.currentQuestionIndex$
+      .pipe(takeUntilDestroyed(destroyRef))
+      .subscribe((index: number) => {
+        onIndex(index);
+      });
   }
 
   /**
