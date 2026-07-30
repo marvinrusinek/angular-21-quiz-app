@@ -1,13 +1,13 @@
-import {
-  bootstrapApplication,
-  provideClientHydration,
-  withEventReplay
-} from '@angular/platform-browser';
+import { bootstrapApplication } from '@angular/platform-browser';
 import { HttpClient, provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
-  ErrorHandler, inject, isDevMode, provideAppInitializer, provideZonelessChangeDetection
+  ErrorHandler,
+  inject,
+  isDevMode,
+  provideAppInitializer,
+  provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
@@ -32,7 +32,10 @@ bootstrapApplication(AppComponent, {
     // lazy import() — no separate chunk to fetch (fixes StackBlitz cold-load
     // "Failed to fetch dynamically imported module"), no circular dependency.
     { provide: ANSWER_COMPONENT, useValue: AnswerComponent },
-    provideClientHydration(withEventReplay()),
+    // NOTE: no provideClientHydration() here. This app is client-only (static
+    // GitHub Pages build, no SSR), so there is never serialized server state to
+    // hydrate from. Angular 22 warns about exactly that combination (NG0505),
+    // and the provider did nothing for us, so it is gone rather than silenced.
     provideHttpClient(withFetch()),
     provideRouter(routes),
     provideAnimations(),
@@ -65,8 +68,7 @@ bootstrapApplication(AppComponent, {
     provideAppInitializer(() => inject(PwaUpdateService).init()),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000'
-    })
-  ]
-})
-  .catch((err: any) => console.error(err));
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
+  ],
+}).catch((err: any) => console.error(err));

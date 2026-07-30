@@ -6,7 +6,13 @@
     "types": []
   },
   "angularCompilerOptions": {
-    "compilationMode": "full"
+    "compilationMode": "full",
+    "extendedDiagnostics": {
+      "checks": {
+        "nullishCoalescingNotNullable": "suppress",
+        "optionalChainNotNullable": "suppress"
+      }
+    }
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.ts"],

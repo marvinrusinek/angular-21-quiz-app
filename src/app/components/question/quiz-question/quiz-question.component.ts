@@ -13,6 +13,7 @@ import {
   signal,
   viewChild,
   ViewContainerRef,
+  linkedSignal,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
@@ -129,7 +130,10 @@ export class QuizQuestionComponent extends BaseQuestion implements OnInit, After
   readonly quizId = model<string | null | undefined>('');
   readonly explanationText = model<string | null>(null);
   readonly isOptionSelected = model<boolean>(false);
-  readonly selectionMessage = model<string | undefined>(undefined);
+  readonly selectionMessageInput = input<string | undefined>(undefined, {
+    alias: 'selectionMessage',
+  });
+  readonly selectionMessage = linkedSignal(this.selectionMessageInput);
   readonly shouldRenderOptions = model<boolean>(false);
 
   // ── remaining variables ─────────────────────────────────────────

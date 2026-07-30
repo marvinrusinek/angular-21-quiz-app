@@ -1,55 +1,100 @@
 <ul class="summary-stats">
   <li>
-    <span class="summary-stats-leader" i18n>Your Score: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Your Score:
+    </span>
     <span class="result">{{ quizMetadata()?.correctAnswersCount?.() ?? 0 }}</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Total Questions: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Total Questions:
+    </span>
     <span class="result">{{ quizMetadata()?.totalQuestions ?? 0 }}</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Total Questions Attempted: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Total Questions Attempted:
+    </span>
     <span class="result">{{ quizMetadata()?.totalQuestionsAttempted ?? 0 }}</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Your Score (percentage): </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Your Score (percentage):
+    </span>
     <span class="result">{{ quizMetadata()?.percentage ?? 0 }}%</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Passing Score: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Passing Score:
+    </span>
     <span class="result">60%</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Test Status: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Test Status:
+    </span>
     <span class="result">
       {{ (quizMetadata()?.percentage ?? 0) > 60 ? 'Passed' : 'Failed' }}
     </span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Test Mode: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Test Mode:
+    </span>
     <span class="result">{{ isShuffled() ? 'Shuffled' : 'Unshuffled' }}</span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Time Elapsed: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Time Elapsed:
+    </span>
     <span class="result">
-      {{ elapsedMinutes() }} {{ elapsedMinutes() === 1 ? 'minute' : 'minutes' }}
-      and {{ elapsedSeconds() }} seconds
+      {{ elapsedMinutes() }} {{ elapsedMinutes() === 1 ? 'minute' : 'minutes' }} and
+      {{ elapsedSeconds() }} seconds
     </span>
   </li>
 
   <li>
-    <span class="summary-stats-leader" i18n>Date/Time Completed: </span>
+    <span
+      class="summary-stats-leader"
+      i18n
+    >
+      Date/Time Completed:
+    </span>
 
     @if (score()?.attemptDateTime) {
       <span class="result">
-        {{ score()?.attemptDateTime | date: 'medium' }}
+        {{ $safeNavigationMigration(score()?.attemptDateTime) | date: 'medium' }}
       </span>
     } @else {
       <span class="result">N/A</span>
