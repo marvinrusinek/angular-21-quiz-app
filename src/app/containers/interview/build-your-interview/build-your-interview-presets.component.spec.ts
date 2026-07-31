@@ -193,7 +193,7 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     const comp = fixture.componentInstance;
 
     // Build up a partial Custom configuration.
-    comp.form.controls.difficulty.setValue('intermediate');
+    comp.setDifficulty('intermediate');
     fixture.detectChanges();
     comp.toggleTopic('router', true);
     comp.toggleTopic('http', true);
@@ -210,7 +210,7 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     comp.selectPreset('custom');
     fixture.detectChanges();
     expect(comp.isCustom()).toBe(true);
-    expect(comp.form.controls.difficulty.value).toBe('intermediate');
+    expect(comp.difficulty()).toBe('intermediate');
     expect([...comp.selectedTopicIds()].sort()).toEqual(['http', 'router']);
     expect(comp.questionCount()).toBe(10);
   });
@@ -218,7 +218,7 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
   it('Custom start still uses the existing custom path, unchanged', async () => {
     const fixture = render();
     const comp = fixture.componentInstance;
-    comp.form.controls.difficulty.setValue('beginner');
+    comp.setDifficulty('beginner');
     fixture.detectChanges();
     comp.toggleTopic('typescript', true);
     comp.toggleTopic('templates', true);

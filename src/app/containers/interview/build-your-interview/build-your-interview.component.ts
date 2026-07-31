@@ -6,12 +6,11 @@ import {
   inject,
   OnInit,
   signal,
-  Signal,
   ViewEncapsulation
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
-import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { form, minLength, required, requiredError, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
 import {
@@ -58,6 +57,21 @@ interface DifficultyOption {
 }
 
 /**
+ * The Custom builder's configuration, as ONE typed Signal Forms model rather
+ * than three separately-managed pieces of state (a one-field reactive
+ * FormControl plus two loose signals).
+ *
+ * `durationMinutes` is deliberately absent: it is DERIVED from questionCount
+ * (DURATION_SECONDS_BY_COUNT) and is not user-editable, so modelling it as a
+ * form field would misrepresent it as an input.
+ */
+export interface InterviewBuilderModel {
+  difficulty: InterviewDifficulty | null;
+  selectedTopicIds: string[];
+  questionCount: AssessmentQuestionCount;
+}
+
+/**
  * "Build Your Interview" configuration page. Guides the user through
  * Difficulty → Topics → Question count → Preview → Start. Topics are conditional
  * on difficulty; validity is DERIVED from the configuration and the eligible
@@ -67,14 +81,13 @@ interface DifficultyOption {
 @Component({
   selector: 'codelab-build-your-interview',
   standalone: true,
-  imports: [TitleCasePipe, ReactiveFormsModule, InterviewCertificateCalloutComponent],
+  imports: [TitleCasePipe, InterviewCertificateCalloutComponent],
   templateUrl: './build-your-interview.component.html',
   styleUrls: ['./build-your-interview.component.scss'],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuildYourInterviewComponent implements OnInit {
-  private readonly fb = inject(FormBuilder);
   private readonly quizDataService = inject(QuizDataService);
   private readonly builder = inject(AssessmentBuilderService);
   private readonly session = inject(InterviewSessionService);
@@ -93,19 +106,41 @@ export class BuildYourInterviewComponent implements OnInit {
 
   readonly countOptions: readonly AssessmentQuestionCount[] = [10, 20, 30];
 
-  // Difficulty lives in a Reactive Form control (the project's form approach);
-  // topics + count are signals so the dynamic multi-select and per-option
-  // disabling stay simple and testable.
-  readonly form = this.fb.group({
-    difficulty: this.fb.control<InterviewDifficulty | null>(null)
+  // ── Signal Forms model ──────────────────────────────────────────
+  // One typed model is the single source of truth for the Custom builder.
+  // `form()` treats it as the source of truth (it does not copy), so it
+  // composes with the rest of the component's signal architecture.
+  private readonly model = signal<InterviewBuilderModel>({
+    difficulty: null,
+    selectedTopicIds: [],
+    questionCount: 20
   });
 
-  readonly difficulty = toSignal(this.form.controls.difficulty.valueChanges, {
-    initialValue: this.form.controls.difficulty.value
-  }) as Signal<InterviewDifficulty | null>;
+  /**
+   * Structural validity lives in the schema; POOL-CAPACITY validity is also a
+   * schema rule so `builderForm().valid()` is the whole truth and the Start
+   * button never has to re-derive it. The user-facing shortfall wording stays
+   * in `invalidReason()` — a boolean can't explain WHICH topic/count pairing
+   * failed or what to do about it.
+   */
+  readonly builderForm = form(this.model, (path) => {
+    required(path.difficulty);
+    minLength(path.selectedTopicIds, 1);
+    validate(path.questionCount, ({ value }) => {
+      const { selectedTopicIds } = this.model();
+      if (selectedTopicIds.length === 0) return null;   // topic rule reports this
+      const available = this.builder.countEligible(selectedTopicIds).total;
+      return available >= value()
+        ? null
+        : requiredError({ message: 'Not enough questions for this selection.' });
+    });
+  });
 
-  readonly selectedTopicIds = signal<ReadonlySet<string>>(new Set());
-  readonly questionCount = signal<AssessmentQuestionCount>(20);
+  // Field reads, kept under their original names so the template and the
+  // preset code are untouched by the migration.
+  readonly difficulty = computed(() => this.builderForm.difficulty().value());
+  readonly selectedTopicIds = computed(() => this.builderForm.selectedTopicIds().value());
+  readonly questionCount = computed(() => this.builderForm.questionCount().value());
 
   // Topics eligible for the chosen difficulty (Mixed = all). Empty until a
   // difficulty is chosen, which hides the topics fieldset.
@@ -227,30 +262,33 @@ export class BuildYourInterviewComponent implements OnInit {
   readonly topicsEnabled = computed(() => this.difficulty() !== null);
 
   readonly eligiblePool = computed(() =>
-    this.builder.countEligible([...this.selectedTopicIds()])
+    this.builder.countEligible(this.selectedTopicIds())
   );
 
-  readonly selectedTopicNames = computed(() =>
-    this.availableTopics()
-      .filter((topic) => this.selectedTopicIds().has(topic.id))
-      .map((topic) => topic.name)
-  );
+  readonly selectedTopicNames = computed(() => {
+    const selected = new Set(this.selectedTopicIds());
+    return this.availableTopics()
+      .filter((topic) => selected.has(topic.id))
+      .map((topic) => topic.name);
+  });
 
+  // Duration is DERIVED from the question count, never chosen — which is why it
+  // is not a field on the Signal Forms model.
   readonly durationMinutes = computed(
     () => DURATION_SECONDS_BY_COUNT[this.questionCount()] / 60
   );
 
-  // Start is enabled only when a difficulty + at least one topic + a valid
-  // count are chosen and the eligible pool can supply the requested count.
-  readonly startDisabled = computed(() => {
-    if (!this.difficulty()) return true;
-    if (this.selectedTopicIds().size === 0) return true;
-    return this.eligiblePool().total < this.questionCount();
-  });
+  // Start validity now comes straight from the schema (required difficulty,
+  // ≥1 topic, and the pool-capacity rule), so there is no second hand-rolled
+  // definition of "valid" that could drift from the form's own.
+  readonly startDisabled = computed(() => !this.builderForm().valid());
 
   // Pool-size messaging is shown ONLY to explain an invalid configuration.
+  // DELIBERATELY KEPT despite the schema now reporting the same failure as a
+  // boolean: `valid()` cannot tell the user how many questions are actually
+  // available or what to change. The wording is unchanged.
   readonly invalidReason = computed(() => {
-    if (!this.difficulty() || this.selectedTopicIds().size === 0) return '';
+    if (!this.difficulty() || this.selectedTopicIds().length === 0) return '';
     const total = this.eligiblePool().total;
     if (total < this.questionCount()) {
       return `Only ${total} question${total === 1 ? '' : 's'} ${total === 1 ? 'is' : 'are'} available for this selection. ` +
@@ -259,19 +297,22 @@ export class BuildYourInterviewComponent implements OnInit {
     return '';
   });
 
-  constructor() {
-    // Changing difficulty must drop topic selections that are no longer valid —
-    // never retain stale topic ids.
-    this.form.controls.difficulty.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe((difficulty) => {
-        const valid = new Set(
-          difficulty ? this.builder.eligibleTopicIds(difficulty) : []
-        );
-        this.selectedTopicIds.update(
-          (current) => new Set([...current].filter((id) => valid.has(id)))
-        );
-      });
+  /**
+   * Set the difficulty and prune topic selections that are no longer eligible —
+   * never retain stale topic ids.
+   *
+   * This replaces a `valueChanges.subscribe()` bridge. The pruning is a direct
+   * consequence of the write, so doing it here (rather than reacting to the
+   * change afterwards) removes the component's only RxJS subscription for form
+   * state and makes the two updates a single atomic model change.
+   */
+  setDifficulty(difficulty: InterviewDifficulty | null): void {
+    const eligible = new Set(difficulty ? this.builder.eligibleTopicIds(difficulty) : []);
+    this.model.update((current) => ({
+      ...current,
+      difficulty,
+      selectedTopicIds: current.selectedTopicIds.filter((id) => eligible.has(id))
+    }));
   }
 
   ngOnInit(): void {
@@ -285,27 +326,26 @@ export class BuildYourInterviewComponent implements OnInit {
   }
 
   isTopicSelected(id: string): boolean {
-    return this.selectedTopicIds().has(id);
+    return this.selectedTopicIds().includes(id);
   }
 
+  // Immutable array updates. The filter/concat pair also guarantees no duplicate
+  // id can enter the model even if a change event fires twice for one chip.
   toggleTopic(id: string, checked: boolean): void {
-    this.selectedTopicIds.update((current) => {
-      const next = new Set(current);
-      if (checked) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
+    this.builderForm.selectedTopicIds().value.update((current) => {
+      const without = current.filter((existing) => existing !== id);
+      return checked ? [...without, id] : without;
     });
   }
 
   selectAllTopics(): void {
-    this.selectedTopicIds.set(new Set(this.availableTopics().map((t) => t.id)));
+    this.builderForm.selectedTopicIds().value.set(
+      this.availableTopics().map((t) => t.id)
+    );
   }
 
   clearTopics(): void {
-    this.selectedTopicIds.set(new Set());
+    this.builderForm.selectedTopicIds().value.set([]);
   }
 
   // A count option is disabled when the eligible pool can't supply it.
@@ -315,13 +355,13 @@ export class BuildYourInterviewComponent implements OnInit {
 
   setCount(count: AssessmentQuestionCount): void {
     if (this.isCountDisabled(count)) return;
-    this.questionCount.set(count);
+    this.builderForm.questionCount().value.set(count);
   }
 
   private currentConfig(): AssessmentConfig {
     return {
       difficulty: this.difficulty()!,
-      topicIds: [...this.selectedTopicIds()],
+      topicIds: [...this.selectedTopicIds()],   // copy: config must not alias the model
       questionCount: this.questionCount()
     };
   }

@@ -9,7 +9,11 @@
   <!-- Compact certificate progress — motivates without competing with Build. -->
   <app-interview-certificate-callout />
 
-  <form [formGroup]="form" (ngSubmit)="startInterview()">
+  <!-- Native submit, not (ngSubmit): that is an output of NgForm /
+       FormGroupDirective, and with ReactiveFormsModule removed no such
+       directive is on this element, so (ngSubmit) would never fire. The native
+       event keeps Enter-to-submit working; preventDefault stops the reload. -->
+  <form (submit)="$event.preventDefault(); startInterview()">
     <!-- 0. Quick Setup — role presets. Custom is the default, so the existing
          difficulty-first workflow is what users land on and is unchanged. -->
     <fieldset class="builder-section quick-setup">
@@ -93,10 +97,14 @@
       <div class="option-row" role="radiogroup" aria-label="Difficulty" i18n-aria-label>
         @for (option of difficultyOptions; track option.value) {
           <label class="chip">
+            <!-- Manual field wiring rather than the Signal Forms Field
+                 directive: these are custom chips, and hand-binding keeps the
+                 markup, classes, keyboard behaviour and a11y byte-identical. -->
             <input
               type="radio"
-              formControlName="difficulty"
-              [value]="option.value"
+              name="difficulty"
+              [checked]="difficulty() === option.value"
+              (change)="setDifficulty(option.value)"
             />
             <span>{{ option.label }}</span>
           </label>
@@ -184,7 +192,7 @@
         </div>
         <div class="preview-item">
           <dt i18n>Topics</dt>
-          <dd>{{ selectedTopicIds().size }}</dd>
+          <dd>{{ selectedTopicIds().length }}</dd>
         </div>
         <div class="preview-item">
           <dt i18n>Questions</dt>

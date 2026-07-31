@@ -65,7 +65,7 @@ describe('BuildYourInterviewComponent', () => {
   });
 
   const setDifficulty = (d: string) => {
-    component.form.controls.difficulty.setValue(d as never);
+    component.setDifficulty(d as never);
     fixture.detectChanges();
   };
 
@@ -151,10 +151,10 @@ describe('BuildYourInterviewComponent', () => {
     setDifficulty('beginner');
     component.toggleTopic('ts', true);
     component.toggleTopic('templates', true);
-    expect(component.selectedTopicIds().size).toBe(2);
+    expect(component.selectedTopicIds().length).toBe(2);
 
     setDifficulty('advanced');
-    expect(component.selectedTopicIds().size).toBe(0);
+    expect(component.selectedTopicIds().length).toBe(0);
   });
 
   // 7
