@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Service, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ActivatedRouteSnapshot, Router } from '@angular/router';
 import { firstValueFrom, Observable, of, Subject } from 'rxjs';
@@ -23,7 +23,7 @@ import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX, SK_SELECTED_OPTIONS_
 
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizNavigationService {
   // ── injects ─────────────────────────────────────────────────────
   private activatedRoute = inject(ActivatedRoute);

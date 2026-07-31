@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
@@ -15,7 +15,7 @@ type Host = SelectedOptionService;
  * Handles selection CRUD operations (add, remove, set, update, commit).
  * Extracted from SelectedOptionService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SelectionCrudService {
   // ── injects ─────────────────────────────────────────────────────
   private idResolver = inject(OptionIdResolverService);

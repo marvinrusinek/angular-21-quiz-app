@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { EMPTY, firstValueFrom, of } from 'rxjs';
@@ -30,7 +30,7 @@ type Host = QuizComponent;
  * Handles quiz data loading, session hydration, and question stream initialization for QuizComponent.
  * Extracted from QuizSetupService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizSetupDataService {
   // ── injects ─────────────────────────────────────────────────────
   private explanationTextService = inject(ExplanationTextService);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { SK_QUIZ_BEST_SCORES } from '../../constants/session-keys';
 import { readLocalJson, writeLocalJson } from '../../utils/local-storage';
@@ -17,7 +17,7 @@ export type BestScores = Record<string, number>;
  * Reads are defensive (malformed data → dropped) and one-time seed from the
  * legacy `highScoresLocal` list so users with existing progress get credit.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class BestScoreService {
   /** Record a completed quiz's score, keeping the BEST per quiz (never lowered). */
   recordBestScore(quizId: string, scorePercent: number): void {

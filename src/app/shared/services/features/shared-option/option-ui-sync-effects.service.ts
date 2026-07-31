@@ -1,4 +1,4 @@
-import { Injectable, effect } from '@angular/core';
+import { Service, effect } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 
@@ -20,7 +20,7 @@ type Host = SharedOptionComponent;
  * are called synchronously from the component constructor (which IS an
  * injection context); they close over `host` to reach its signals/fields.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionUiSyncEffectsService {
   /**
    * Effect #1 (original position): mirror the currentQuestion signal input into

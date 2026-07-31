@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
@@ -7,7 +7,7 @@ import { QuizService } from '../data/quiz.service';
 
 import { norm } from '../../utils/text-norm';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionIdResolverService {
   // ── injects ─────────────────────────────────────────────────────
   private quizService = inject(QuizService);

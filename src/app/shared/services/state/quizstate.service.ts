@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Service, computed, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, distinctUntilChanged, filter } from 'rxjs/operators';
@@ -13,7 +13,7 @@ import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizStateService {
   // ── signals / computed / properties ─────────────────────────────
 

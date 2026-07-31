@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -14,7 +14,7 @@ import { QuizService } from '../data/quiz.service';
  * Handles route parameter parsing and route-based quiz data resolution.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizRouteService {
   // ── injects ─────────────────────────────────────────────────────
   private quizDataService = inject(QuizDataService);

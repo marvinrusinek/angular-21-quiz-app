@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { Service } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 
 import { Option } from '../../../models/Option.model';
@@ -15,7 +15,7 @@ import { isOptionCorrect } from '../../../utils/is-option-correct';
  * This service handles pure data transformations for options display.
  * The component retains subject emissions, cdRef calls, and sharedOptionComponent interactions.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcDisplayStateManagerService {
 
   /**

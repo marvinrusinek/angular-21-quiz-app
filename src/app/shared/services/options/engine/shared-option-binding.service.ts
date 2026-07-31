@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { Option } from '../../../models/Option.model';
@@ -21,7 +21,7 @@ import { feedbackAnchorMatches } from '../../../utils/feedback-anchor';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionBindingService {
   // ── injects ─────────────────────────────────────────────────────
   private clickHandler = inject(OptionClickHandlerService);

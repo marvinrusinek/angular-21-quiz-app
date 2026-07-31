@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -17,7 +17,7 @@ import { swallow } from '../../utils/error-logging';
  * Handles session restore, hydration, and selection persistence.
  * Extracted from QuizContentLoaderService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QclSessionRestoreService {
 
   // ── injects ─────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Service, signal } from '@angular/core';
 
 import { InterviewResult } from '../../../models/InterviewResult.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -45,7 +45,7 @@ export interface InterviewReviewSource {
  *
  * Kept entirely separate from topic-quiz progress/best-score/achievement stores.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewHistoryService {
   private readonly analytics = inject(InterviewAnalyticsService);
 

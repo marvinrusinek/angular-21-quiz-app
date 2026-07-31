@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { DestroyRef, inject, Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { interval } from 'rxjs';
@@ -14,7 +14,7 @@ import { reportError } from '../utils/error-logging';
  * fresh deploy is caught on load, and polls hourly so long-open tabs pick up a
  * later deploy. No-op when the SW is disabled (dev / unsupported).
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class PwaUpdateService {
   // ----- injects -----
   private readonly destroyRef = inject(DestroyRef);

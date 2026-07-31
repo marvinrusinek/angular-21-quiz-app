@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import { Observable, of } from 'rxjs';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizQuestionManagerService {
   // ── public methods ──────────────────────────────────────────────
   getNumberOfCorrectAnswersText(

@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take } from 'rxjs/operators';
 
@@ -27,7 +27,7 @@ import { SelectionMessageService } from '../features/selection-message/selection
  * Handles question fetching, loading, and API data retrieval.
  * Extracted from QuizContentLoaderService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QclQuestionFetchService {
   // ── injects ─────────────────────────────────────────────────────
   private dotStatusService = inject(QuizDotStatusService);

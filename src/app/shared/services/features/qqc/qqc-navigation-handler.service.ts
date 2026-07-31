@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -25,7 +25,7 @@ import { delay } from '../../../utils/delay';
  *
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcNavigationHandlerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly dotStatusService = inject(QuizDotStatusService);

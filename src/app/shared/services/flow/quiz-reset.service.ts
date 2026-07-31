@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX, SK_SELECTED_OPTIONS_MAP, SK_SHUFFLED_QUESTIONS, SK_USER_ANSWERS } from '../../constants/session-keys';
 
@@ -22,7 +22,7 @@ import { swallow } from '../../utils/error-logging';
  * Orchestrates reset operations across multiple services.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizResetService {
   // ── injects ─────────────────────────────────────────────────────
   private dotStatusService = inject(QuizDotStatusService);

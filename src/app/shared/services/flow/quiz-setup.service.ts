@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -41,7 +41,7 @@ type Host = QuizComponent;
  * Hosts orchestration / route / lifecycle logic extracted from QuizComponent.
  * Delegates to 2 extracted sub-services; retains lifecycle + option/explanation handlers inline.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizSetupService {
   // ── injects ─────────────────────────────────────────────────────
   private dataService = inject(QuizSetupDataService);

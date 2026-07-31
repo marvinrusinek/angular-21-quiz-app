@@ -1,4 +1,4 @@
-import { inject, Injectable, Injector, signal } from '@angular/core';
+import { inject, Service, Injector, signal } from '@angular/core';
 
 import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX } from '../../constants/session-keys';
 
@@ -12,7 +12,7 @@ import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizScoringService {
   // ── injects ─────────────────────────────────────────────────────
   public readonly quizShuffleService = inject(QuizShuffleService);

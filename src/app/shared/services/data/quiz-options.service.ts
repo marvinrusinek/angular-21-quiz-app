@@ -1,4 +1,4 @@
-import { Injectable, WritableSignal } from '@angular/core';
+import { Service, WritableSignal } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
@@ -10,7 +10,7 @@ import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizOptionsService {
   sanitizeOptions(options: Option[]): Option[] {
     if (!Array.isArray(options)) return [];

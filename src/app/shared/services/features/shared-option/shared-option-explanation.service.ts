@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { SK_SEL_Q } from '../../../constants/session-keys';
 
@@ -32,7 +32,7 @@ export interface ExplanationContext {
   isMultiMode: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionExplanationService {
   pendingExplanationIndex = -1;
 

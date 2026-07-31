@@ -1,4 +1,4 @@
-import { Injectable, Injector, inject } from '@angular/core';
+import { Service, Injector, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -16,7 +16,7 @@ export interface LockIncorrectResult {
   allCorrectSelectedForLock: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionLockPolicyService {
   // ── injects ─────────────────────────────────────────────────────
   private injector = inject(Injector);

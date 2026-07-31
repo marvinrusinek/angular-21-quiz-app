@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { SK_DOT_CONFIRMED, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP } from '../../constants/session-keys';
 
@@ -20,7 +20,7 @@ export interface SelectionStateContext {
   _refreshBackup: Map<number, SelectedOption[]>;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SelectionPersistenceService {
   // ── public methods ──────────────────────────────────────────────
 

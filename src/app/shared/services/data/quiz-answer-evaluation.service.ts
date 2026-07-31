@@ -1,4 +1,4 @@
-import { inject, Injectable, Injector } from '@angular/core';
+import { inject, Service, Injector } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -14,7 +14,7 @@ import { swallow } from '../../utils/error-logging';
  * Handles answer evaluation, correctness checking, and direct scoring
  * with pristine verification. Extracted from QuizService to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizAnswerEvaluationService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly injector = inject(Injector);

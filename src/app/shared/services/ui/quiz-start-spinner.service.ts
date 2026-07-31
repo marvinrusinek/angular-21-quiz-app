@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Service, signal } from '@angular/core';
 
 /**
  * Drives the brief "starting the quiz" loading overlay. IntroductionComponent
@@ -12,7 +12,7 @@ import { Injectable, signal } from '@angular/core';
  * data-load indicator. Shown ONLY on Start (never on Next/Previous or while
  * browsing the Quiz Selection screen).
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizStartSpinnerService {
   // Hold over the intro for one full spinner rotation (slightly longer than the
   // 1.5s CSS rotation) before the caller navigates to Q1. Time-boxed on purpose:

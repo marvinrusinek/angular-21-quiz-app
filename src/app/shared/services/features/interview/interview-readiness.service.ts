@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Service } from '@angular/core';
 
 import { InterviewAttemptHistoryEntry } from '../../../models/interview-history.model';
 import {
@@ -40,7 +40,7 @@ const avg = (xs: number[]): number => (xs.length ? xs.reduce((s, x) => s + x, 0)
  * eligible Interview Mode topic list from the quiz-data cache. All scoring lives
  * in the pure helpers below so it is easy to test and tune.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewReadinessService {
   private readonly history = inject(InterviewHistoryService);
   private readonly quizData = inject(QuizDataService);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { QuestionType } from '../../../../shared/models/question-type.enum';
 
@@ -7,7 +7,7 @@ import { QuizQuestion } from '../../../../shared/models/QuizQuestion.model';
 
 import { isOptionCorrect } from '../../../../shared/utils/is-option-correct';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AnswerOptionsService {
   getEffectiveOptionId(option: any, index: number): number {
     return option?.optionId != null && option.optionId !== -1

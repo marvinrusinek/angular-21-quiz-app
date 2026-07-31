@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { debounceTime, tap } from 'rxjs/operators';
@@ -25,7 +25,7 @@ type Host = CodelabQuizContentComponent;
  * - runLoadQuizDataFromRoute: route-based quiz data loading
  * - runLoadQuestion: question loading with FET recovery
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class CqcQuestionNavService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly fetGuard = inject(CqcFetGuardService);

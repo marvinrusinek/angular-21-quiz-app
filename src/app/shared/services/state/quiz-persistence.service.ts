@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { SK_COMPLETED_QUIZ_IDS, SK_CORRECT_ANSWERS_COUNT, SK_DOT_CONFIRMED, SK_DISPLAY_MODE, SK_IS_ANSWERED, SK_SAVED_QUESTION_INDEX, SK_SEL_Q, SK_SELECTED_OPTIONS_MAP, SK_USER_ANSWERS } from '../../constants/session-keys';
 import { readSessionJson, removeSessionKey, writeSessionJson } from '../../utils/session-storage';
@@ -15,7 +15,7 @@ import { swallow } from '../../utils/error-logging';
  * progress, and continue-status.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizPersistenceService {
   // ── injects ─────────────────────────────────────────────────────
   private quizDataService = inject(QuizDataService);

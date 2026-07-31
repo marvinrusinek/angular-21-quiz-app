@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { QqcComponentOrchestratorService } from './qqc-component-orchestrator.service';
 import { QqcDisplayStateManagerService } from './qqc-display-state-manager.service';
@@ -22,7 +22,7 @@ import { QqcTimerEffectService } from './qqc-timer-effect.service';
  * fifteen, while QQC's getters re-expose each member so the existing
  * `host.<service>` access pattern used by the orchestrators keeps working.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizQuestionFacadeService {
   // ── injects ─────────────────────────────────────────────────────
   public readonly clickOrchestrator = inject(QqcOptionClickOrchestratorService);

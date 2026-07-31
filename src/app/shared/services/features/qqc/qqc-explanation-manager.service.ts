@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
@@ -14,7 +14,7 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  * Manages explanation text resolution, formatting, and caching for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcExplanationManagerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

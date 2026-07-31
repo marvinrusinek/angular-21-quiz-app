@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -89,7 +89,7 @@ export interface RouteChangeQuestionResult {
  * Handles heavy data-fetching and preparation logic for quiz questions.
  * Delegates to 3 extracted sub-services; retains shared utilities inline.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizContentLoaderService {
   // ── injects ─────────────────────────────────────────────────────
   private explanationTextService = inject(ExplanationTextService);

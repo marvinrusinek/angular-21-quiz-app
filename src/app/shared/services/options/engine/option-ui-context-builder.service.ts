@@ -1,10 +1,10 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 
 import { OptionUiSyncContext } from '../engine/option-ui-sync.service';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionUiContextBuilderService {
   // ── public methods ──────────────────────────────────────────────
   build(ctx: OptionUiSyncContext): OptionUiSyncContext {

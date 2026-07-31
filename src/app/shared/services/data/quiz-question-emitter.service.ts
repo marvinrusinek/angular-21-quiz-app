@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -15,7 +15,7 @@ import { isOptionCorrect } from '../../utils/is-option-correct';
  * QuizService's reactive subjects. Extracted from QuizService to reduce
  * its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizQuestionEmitterService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly dataLoader = inject(QuizDataLoaderService);

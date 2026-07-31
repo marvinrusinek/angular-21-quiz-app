@@ -1,4 +1,4 @@
-﻿import { inject, Injectable, signal } from '@angular/core';
+﻿import { inject, Service, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import { firstValueFrom, forkJoin, lastValueFrom, of } from 'rxjs';
@@ -30,7 +30,7 @@ import { swallow } from '../../../utils/error-logging';
  * Manages reactive streams, DOM freeze/thaw, and legacy question-loading pipeline.
  * Absorbed from QuizQuestionLoaderService into the QQC sub-service layer.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcQlStreamService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly dotStatusService = inject(QuizDotStatusService);

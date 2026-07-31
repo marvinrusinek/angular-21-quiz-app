@@ -1,4 +1,4 @@
-import { Injectable, effect } from '@angular/core';
+import { Service, effect } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 
@@ -19,7 +19,7 @@ type Host = SharedOptionComponent;
  * moved verbatim; `this.` host access becomes `h.` (host-as-any), matching the
  * component's documented "services mutate these fields via host as any" pattern.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionInteractionEffectsService {
   // Per-host last-seen question index that gates the transition cleanup. A
   // WeakMap (not a single field) because this service is a root singleton, but

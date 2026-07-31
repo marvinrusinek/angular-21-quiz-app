@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Service, signal } from '@angular/core';
 
 import { FeedbackMode } from '../../../models/InterviewSession.model';
 
@@ -12,7 +12,7 @@ import { FeedbackMode } from '../../../models/InterviewSession.model';
  * the session's lifetime and back to 'immediate' on teardown; nothing else
  * writes it, so every non-interview screen keeps its existing behavior.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class FeedbackPolicyService {
   private readonly _mode = signal<FeedbackMode>('immediate');
   readonly feedbackMode = this._mode.asReadonly();

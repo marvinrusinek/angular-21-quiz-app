@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Quiz, QuizDifficulty } from '../../models/Quiz.model';
 import {
@@ -21,7 +21,7 @@ const DIFFICULTY_ORDER: readonly QuizDifficulty[] = ['beginner', 'intermediate',
  * Dependency direction: completion + best scores → Progress Tracking. It does
  * NOT depend on achievement state.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ProgressService {
   private readonly bestScoreService = inject(BestScoreService);
 

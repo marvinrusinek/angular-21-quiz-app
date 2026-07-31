@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { SK_DOT_CONFIRMED } from '../../../constants/session-keys';
 
@@ -40,7 +40,7 @@ export interface ResetPerQuestionResult {
  * Manages per-question reset, state clearing, and click guard resets for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcResetManagerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Service, signal } from '@angular/core';
 
 import {
   CERTIFICATE_ID_PREFIX,
@@ -54,7 +54,7 @@ const CURRICULUM_ACHIEVEMENTS: readonly AchievementId[] = [
   'advanced-complete'
 ];
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewCertificateService {
   private readonly achievements = inject(AchievementService);
   private readonly historyService = inject(InterviewHistoryService);

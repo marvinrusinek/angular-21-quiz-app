@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { PROMISE_RACE_TIMEOUT_MS } from '../../../constants/timing';
@@ -24,7 +24,7 @@ import { QuizStateService } from '../../state/quizstate.service';
  * for explanation text. The component retains EventEmitter emissions, cdRef calls,
  * and subject mutations.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcExplanationFlowService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationDisplay = inject(QqcExplanationDisplayService);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 
@@ -18,7 +18,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC option click handling.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchClickService {
 
   async runOnOptionClicked(

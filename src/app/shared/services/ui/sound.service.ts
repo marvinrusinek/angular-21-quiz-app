@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import { Howl } from 'howler';
 
 import { SelectedOption } from '../../models/SelectedOption.model';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SoundService {
   // ── properties ──────────────────────────────────────────────────
   private sounds: { [key: string]: Howl } = {};

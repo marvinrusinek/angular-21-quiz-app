@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -18,7 +18,7 @@ type Host = SharedOptionComponent;
  * runs after setting `_feedbackDisplay` (shared-option-click.service.ts) — the old
  * [FB-*] console.logs that used to incidentally nudge CD timing are no longer needed.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionFeedbackDisplayService {
   shouldShowFeedbackFor(host: Host, b: OptionBindings): boolean {
     const h = host as any;

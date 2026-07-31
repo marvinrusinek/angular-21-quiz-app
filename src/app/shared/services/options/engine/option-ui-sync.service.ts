@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { MatRadioChange } from '@angular/material/radio';
 
@@ -53,7 +53,7 @@ export interface OptionUiSyncContext {
   onSelect?: (binding: OptionBindings, checked: boolean, questionIndex: number) => void;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionUiSyncService {
   // ── injects ─────────────────────────────────────────────────────
   private feedbackService = inject(FeedbackService);

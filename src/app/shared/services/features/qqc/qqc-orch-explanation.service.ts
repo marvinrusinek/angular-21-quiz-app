@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -13,7 +13,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC explanation display, visibility restore, and explanation state management.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchExplanationService {
 
   async runOnVisibilityChange(host: Host): Promise<void> {

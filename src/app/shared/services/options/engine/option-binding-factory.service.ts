@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -34,7 +34,7 @@ export interface OptionBindingFactoryConfig {
   isDisabled?: (opt: Option, idx: number) => boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionBindingFactoryService {
   // ── public methods ──────────────────────────────────────────────
   createBindings(cfg: OptionBindingFactoryConfig): OptionBindings[] {

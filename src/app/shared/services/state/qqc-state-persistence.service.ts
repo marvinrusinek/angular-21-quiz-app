@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { swallow } from '../../utils/error-logging';
@@ -27,7 +27,7 @@ export interface QqcRestoredState {
   feedbackText: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcStatePersistenceService {
   // ── public methods ──────────────────────────────────────────────
 

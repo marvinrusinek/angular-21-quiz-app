@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable } from '@angular/core';
+import { DestroyRef, Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
@@ -21,7 +21,7 @@ import { shallowObjectEqual } from '../../../utils/shallow-equal';
  *
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcLifecycleService {
 
   // ═══════════════════════════════════════════════════════════════

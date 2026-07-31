@@ -1,4 +1,4 @@
-﻿import { inject, Injectable } from '@angular/core';
+﻿import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { QuestionType } from '../../../models/question-type.enum';
@@ -22,7 +22,7 @@ import { isOptionCorrect } from '../../../utils/is-option-correct';
  * Manages feedback display, option highlighting, and disable logic for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcFeedbackManagerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

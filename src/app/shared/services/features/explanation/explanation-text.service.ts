@@ -1,4 +1,4 @@
-import { inject, Injectable, WritableSignal } from '@angular/core';
+import { inject, Service, WritableSignal } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { FormattedExplanation } from '../../../models/FormattedExplanation.model';
@@ -20,7 +20,7 @@ export { FETPayload } from './explanation-display-state.service';
  * Facade that preserves the original public API of ExplanationTextService.
  * All logic is delegated to ExplanationFormatterService and ExplanationDisplayStateService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ExplanationTextService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly displayState = inject(ExplanationDisplayStateService);

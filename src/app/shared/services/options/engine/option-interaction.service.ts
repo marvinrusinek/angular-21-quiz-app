@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -70,9 +70,7 @@ interface ClickContext extends ClickContextBase {
   mockEvent: any;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Service()
 export class OptionInteractionService {
   // ── injects ─────────────────────────────────────────────────────
   private quizService = inject(QuizService);

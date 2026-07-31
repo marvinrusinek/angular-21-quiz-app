@@ -1,4 +1,4 @@
-import { inject, Injectable, WritableSignal } from '@angular/core';
+import { inject, Service, WritableSignal } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 import { QuizStatus } from '../../models/quiz-status.enum';
@@ -66,7 +66,7 @@ export interface QuizSessionState {
  * question transitions, and resetting state. Extracted from QuizService
  * to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizSessionManagerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly optionsService = inject(QuizOptionsService);

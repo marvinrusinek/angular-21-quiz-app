@@ -1,10 +1,10 @@
-import { DestroyRef, Injectable, inject } from '@angular/core';
+import { DestroyRef, Service, inject } from '@angular/core';
 
 import { NextButtonStateService } from '../state/next-button-state.service';
 import { QuizStateService } from '../state/quizstate.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizInitializationService {
   // ── injects ─────────────────────────────────────────────────────
   private nextButtonStateService = inject(NextButtonStateService);

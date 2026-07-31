@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import {
   AssessmentConfig,
@@ -59,7 +59,7 @@ export interface PresetCapacity {
  * the source catalog is never mutated, then shuffles question and option order.
  * It has NO Interview-specific UI behavior and leaves quiz.json untouched.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AssessmentBuilderService {
   private sequence = 0;
 

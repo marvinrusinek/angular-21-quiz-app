@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
 
@@ -11,7 +11,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC reset, per-question state clearing, and selection restore.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchResetService {
 
   async runResetQuestionStateBeforeNavigation(

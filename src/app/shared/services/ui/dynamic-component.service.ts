@@ -1,8 +1,8 @@
-import { inject, Injectable, ViewContainerRef, ComponentRef, Type } from '@angular/core';
+import { inject, Service, ViewContainerRef, ComponentRef, Type } from '@angular/core';
 
 import { ANSWER_COMPONENT } from '../../tokens/answer-component.token';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class DynamicComponentService {
   // AnswerComponent is provided eagerly via ANSWER_COMPONENT (from main.ts)
   // instead of a dynamic import(). The lazy import produced a separate hashed

@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionLockStateService {
   // ── properties ──────────────────────────────────────────────────
   private _lockedByQuestion = new Map<number, Set<string | number>>();

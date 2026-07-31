@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -29,7 +29,7 @@ const MULTI_ANSWER_BACKUP_FET_DELAY_MS = 50;
  * Handles multi-answer and single-answer click processing logic.
  * Extracted from SharedOptionClickService.runOptionContentClick.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SocAnswerProcessingService {
   // ── injects ─────────────────────────────────────────────────────
   private clickHandler = inject(OptionClickHandlerService);

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { filter, map, take, timeout } from 'rxjs/operators';
 
@@ -23,7 +23,7 @@ import { delay } from '../../../utils/delay';
  * Handles timer expiry, lock, and disable logic for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcTimerEffectService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

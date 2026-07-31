@@ -1,4 +1,4 @@
-﻿import { forwardRef, inject, Injectable, Injector } from '@angular/core';
+﻿import { forwardRef, inject, Service, Injector } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -15,7 +15,7 @@ import { ExplanationTextService } from '../explanation/explanation-text.service'
 import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class FeedbackService {
   // ── injects ─────────────────────────────────────────────────────
   // ExplanationTextService is forwardRef'd to preserve the circular-DI

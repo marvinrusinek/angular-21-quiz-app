@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { FeedbackProps } from '../../../models/FeedbackProps.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -22,7 +22,7 @@ import { norm } from '../../../utils/text-norm';
  * Delegates to 2 extracted sub-services; retains onOptionUI, runOptionContentClick preamble/postamble,
  * and updateOptionAndUI inline.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionClickService {
   // ── injects ─────────────────────────────────────────────────────
   private answerProcessing = inject(SocAnswerProcessingService);

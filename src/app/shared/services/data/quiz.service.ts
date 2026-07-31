@@ -1,4 +1,4 @@
-﻿import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+﻿import { inject, Service, signal, WritableSignal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
@@ -33,7 +33,7 @@ import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizService {
   // ── injects ─────────────────────────────────────────────────────
   public readonly answerEvaluation = inject(QuizAnswerEvaluationService);

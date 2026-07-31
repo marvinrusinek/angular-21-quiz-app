@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { FET_UNLOCK_WATCHDOG_MS } from '../../constants/timing';
@@ -14,7 +14,7 @@ import { swallow } from '../../utils/error-logging';
  * Handles FET gate control, explanation preparation, and explanation state evaluation.
  * Extracted from QuizContentLoaderService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QclFetGateService {
 
   // ── injects ─────────────────────────────────────────────────────

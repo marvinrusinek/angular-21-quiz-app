@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { InterviewResult } from '../../../models/InterviewResult.model';
 import {
@@ -26,7 +26,7 @@ const EMPTY: InterviewAnalytics = Object.freeze({
  * the two ends never overlap; when every topic has the same percentage there is
  * no meaningful ranking, so both ends are empty.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewAnalyticsService {
   private static readonly STRONG_MIN = 80;
   private static readonly MODERATE_MIN = 60;

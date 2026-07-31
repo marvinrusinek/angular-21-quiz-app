@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -13,7 +13,7 @@ import { norm } from '../../../utils/text-norm';
 
 type Host = SharedOptionComponent;
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionOrchestratorService {
 
   // ===== Lifecycle =====

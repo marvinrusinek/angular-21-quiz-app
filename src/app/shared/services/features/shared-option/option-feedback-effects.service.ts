@@ -1,4 +1,4 @@
-import { Injectable, effect } from '@angular/core';
+import { Service, effect } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 import { SelectedOption } from '../../../models/SelectedOption.model';
@@ -20,7 +20,7 @@ type Host = SharedOptionComponent;
  * in their original order, called LAST in the component constructor so overall
  * effect-creation order is preserved. Must run in the host's injection context.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionFeedbackEffectsService {
   registerFeedbackEffects(host: Host): void {
     const h = host as any;

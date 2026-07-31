@@ -1,4 +1,4 @@
-import { inject, Injectable, Injector, signal } from '@angular/core';
+import { inject, Service, Injector, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -17,7 +17,7 @@ import { norm } from '../../../utils/text-norm';
 import { withTerminalPeriod } from '../../../utils/terminal-period';
 import { swallow } from '../../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ExplanationFormatterService {
   // -- injects -----------------------------------------------------
   private readonly activatedRoute = inject(ActivatedRoute);

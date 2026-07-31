@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, signal } from '@angular/core';
+import { DestroyRef, Service, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, Subject } from 'rxjs';
 
@@ -20,7 +20,7 @@ import { readSessionJson, removeSessionKey, writeSessionJson } from '../../../ut
  * destroyed — nothing global survives leaving the session. NEVER touches
  * topic-quiz progress/achievements/scores.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AssessmentIntegrityService {
   // Coalesce a paired blur + visibilitychange (fired for one action) so a single
   // tab-switch counts ONCE.

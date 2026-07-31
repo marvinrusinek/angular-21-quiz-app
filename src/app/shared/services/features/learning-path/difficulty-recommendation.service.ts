@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Quiz } from '../../../models/Quiz.model';
 import {
@@ -25,7 +25,7 @@ interface LevelStats {
  * Best scores already hold each quiz's HIGHEST attempt, so duplicate/repeated
  * attempts never affect the averages.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class DifficultyRecommendationService {
   /** Advance once ~this fraction of a level is completed. */
   private static readonly COMPLETION_THRESHOLD = 0.75;

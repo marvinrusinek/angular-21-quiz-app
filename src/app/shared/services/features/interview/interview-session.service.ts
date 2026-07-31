@@ -1,4 +1,4 @@
-import { computed, Injectable, inject, signal } from '@angular/core';
+import { computed, Service, inject, signal } from '@angular/core';
 
 import { AssessmentConfig } from '../../../models/AssessmentConfig.model';
 import { GeneratedAssessment } from '../../../models/GeneratedAssessment.model';
@@ -35,7 +35,7 @@ interface PersistedInterviewSession {
  * Timer, sessionStorage persistence/resume, and submission land in a later
  * milestone.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewSessionService {
   private readonly builder = inject(AssessmentBuilderService);
   private readonly feedbackPolicy = inject(FeedbackPolicyService);

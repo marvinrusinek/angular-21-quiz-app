@@ -1,4 +1,4 @@
-import { computed, Injectable, OnDestroy, signal } from '@angular/core';
+import { computed, Service, OnDestroy, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { formatMMSS } from '../../../utils/format-time';
@@ -13,7 +13,7 @@ import { formatMMSS } from '../../../utils/format-time';
  * when the browser tab is inactive (interval ticks can be throttled) and it can
  * be restored after a refresh from a persisted `expiresAt`.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewTimerService implements OnDestroy {
   private static readonly LOW_TIME_THRESHOLD = 5 * 60;   // 5 minutes
 

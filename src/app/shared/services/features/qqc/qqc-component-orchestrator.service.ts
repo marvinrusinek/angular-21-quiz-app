@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
@@ -21,7 +21,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QuizQuestionComponent lifecycle/event method bodies.
  * Pure delegation facade — all logic lives in the 8 extracted sub-services.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcComponentOrchestratorService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly orchClick = inject(QqcOrchClickService);

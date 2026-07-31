@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, ParamMap, Params, Router } from '@angular/router';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
@@ -32,7 +32,7 @@ type Host = QuizComponent;
  * Handles route subscriptions, URL-driven navigation, and question-index tracking for QuizComponent.
  * Extracted from QuizSetupService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizSetupRouteService {
   // ── injects ─────────────────────────────────────────────────────
   private dotStatusService = inject(QuizDotStatusService);

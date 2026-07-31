@@ -1,4 +1,4 @@
-import { computed, effect, Injectable, inject, signal, untracked } from '@angular/core';
+import { computed, effect, Service, inject, signal, untracked } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
@@ -30,7 +30,7 @@ interface OptionSnapshot {
   correct?: boolean
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SelectionMessageService {
   // Click-driven override consumed by the computed selectionMessageSig.
   // Cleared on nav transitions (see ctor effect) so a prior question's

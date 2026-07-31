@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -14,7 +14,7 @@ export interface PrepareShuffleOpts {
   shuffleOptions?: boolean
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizShuffleService {
   // ── properties ──────────────────────────────────────────────────
   private shuffleByQuizId = new Map<string, ShuffleState>();

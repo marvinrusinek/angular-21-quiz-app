@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuizQuestion } from '../../models/QuizQuestion.model';
@@ -67,7 +67,7 @@ export interface OptionEvaluationResult {
  * Handles the heavy evaluation and scoring logic from onOptionSelected.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizOptionProcessingService {
   // -- injects -----------------------------------------------------
   private dotStatusService = inject(QuizDotStatusService);

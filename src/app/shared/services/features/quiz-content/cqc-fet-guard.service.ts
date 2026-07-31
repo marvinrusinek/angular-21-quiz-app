@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 
@@ -16,7 +16,7 @@ type Host = CodelabQuizContentComponent;
  * Responsible for:
  * - hasInteractionEvidence: does this index have evidence the FET should show?
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class CqcFetGuardService {
   // ── injects ─────────────────────────────────────────────────────
   private dotStatusService = inject(QuizDotStatusService);

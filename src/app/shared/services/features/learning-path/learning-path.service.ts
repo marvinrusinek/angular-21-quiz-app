@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { Quiz } from '../../../models/Quiz.model';
 import { LearningPathState, QuizRecommendation } from '../../../models/learning-path.model';
@@ -15,7 +15,7 @@ import { LearningPathState, QuizRecommendation } from '../../../models/learning-
  * Rule order: in-progress → new-user intro → mapped follow-up → current
  * difficulty → any incomplete. It only guides; it never locks or forces a path.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class LearningPathService {
   /** Advance to the next difficulty once ~this fraction of a level is completed. */
   private static readonly LEVEL_UP_THRESHOLD = 0.75;

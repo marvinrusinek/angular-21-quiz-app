@@ -1,4 +1,4 @@
-﻿import { inject, Injectable, signal } from '@angular/core';
+﻿import { inject, Service, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable, of, throwError } from 'rxjs';
@@ -27,7 +27,7 @@ import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 import { isOptionCorrect } from '../../utils/is-option-correct';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizDataService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly quizService = inject(QuizService);

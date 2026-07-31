@@ -1,4 +1,4 @@
-﻿﻿import { inject, Injectable } from '@angular/core';
+﻿﻿import { inject, Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParamMap } from '@angular/router';
 import {
@@ -28,7 +28,7 @@ type Host = CodelabQuizContentComponent;
 /**
  * Orchestrates CodelabQuizContentComponent logic, extracted via the typed host pattern.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class CqcOrchestratorService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly questionNav = inject(CqcQuestionNavService);

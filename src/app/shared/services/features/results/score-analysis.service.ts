@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { QuizQuestion } from '../../../models/QuizQuestion.model';
 import { Option } from '../../../models/Option.model';
@@ -18,7 +18,7 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  * the review stays correct on REVISIT (matched by question text, so it's immune
  * to the wipe AND to any shuffle/order change). Pure over its inputs.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ScoreAnalysisService {
   private readonly selectedOptionService = inject(SelectedOptionService);
 

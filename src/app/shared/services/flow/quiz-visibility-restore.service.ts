@@ -1,4 +1,4 @@
-import { Injectable, WritableSignal, inject } from '@angular/core';
+import { Service, WritableSignal, inject } from '@angular/core';
 
 import { Option } from '../../models/Option.model';
 import { QuestionPayload } from '../../models/QuestionPayload.model';
@@ -24,7 +24,7 @@ export interface VisibilityRestoreParams {
  * Handles tab visibility change save/restore for quiz display state.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizVisibilityRestoreService {
   // ── injects ─────────────────────────────────────────────────────
   private explanationTextService = inject(ExplanationTextService);

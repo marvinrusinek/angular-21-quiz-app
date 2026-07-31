@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Service } from '@angular/core';
 
 import { InterviewAttemptHistoryEntry } from '../../../models/interview-history.model';
 import {
@@ -28,7 +28,7 @@ const round = (n: number): number => Math.round(n);
  * shared aggregateTopicPercentages helper and the validated history signal, and
  * exposes a computed result. All scoring is in the pure helpers below.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewTopicTrendsService {
   private readonly history = inject(InterviewHistoryService);
 

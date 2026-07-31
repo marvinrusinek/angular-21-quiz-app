@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { SK_DOT_CONFIRMED } from '../../constants/session-keys';
 
@@ -78,7 +78,7 @@ interface ScoredDotParams {
  * status determination for the quiz pagination dots.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizDotStatusService {
 
   // ── injects ─────────────────────────────────────────────────────

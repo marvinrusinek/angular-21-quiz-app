@@ -1,9 +1,9 @@
-import { computed, DestroyRef, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, Service, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { combineLatest, Observable, of, Subscription } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class NextButtonStateService {
   // ── signals ─────────────────────────────────────────────────────
   readonly isButtonEnabled = signal<boolean>(false);

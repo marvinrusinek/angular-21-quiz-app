@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import {
   catchError, distinctUntilChanged, filter, map, take
@@ -13,7 +13,7 @@ import { QuizShuffleService } from '../flow/quiz-shuffle.service';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizQuestionResolverService {
 
   getQuestionByIndex(

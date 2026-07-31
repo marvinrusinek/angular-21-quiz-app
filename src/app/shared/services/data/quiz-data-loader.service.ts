@@ -1,4 +1,4 @@
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { inject, Service, signal, WritableSignal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -19,7 +19,7 @@ import { isOptionCorrect } from '../../utils/is-option-correct';
 import { ArrayUtils } from '../../utils/array-utils';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizDataLoaderService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly quizShuffleService = inject(QuizShuffleService);

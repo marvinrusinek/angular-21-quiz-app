@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionSelectionUiService {
   // ── public methods ──────────────────────────────────────────────
 

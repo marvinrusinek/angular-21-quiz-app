@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { BehaviorSubject, merge, Observable, ReplaySubject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
 
@@ -14,7 +14,7 @@ import { swallow } from '../../../utils/error-logging';
  * lines and so the storage layer is testable in isolation from the
  * lock/visibility/context state that lives on the parent.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ExplanationGateService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly formatter = inject(ExplanationFormatterService);

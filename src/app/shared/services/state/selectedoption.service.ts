@@ -1,4 +1,4 @@
-﻿import { Injectable, inject, signal } from '@angular/core';
+﻿import { Service, inject, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
 import { distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -23,7 +23,7 @@ import { SelectionCrudService } from './selection-crud.service';
 import { SelectionPersistenceService } from './selection-persistence.service';
 import { swallow } from '../../utils/error-logging';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SelectedOptionService {
   // ── injects ─────────────────────────────────────────────────────
   private answerEval = inject(AnswerEvaluationService);

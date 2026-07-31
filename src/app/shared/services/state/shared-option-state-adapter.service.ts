@@ -1,4 +1,4 @@
-import { Injectable, WritableSignal } from '@angular/core';
+import { Service, WritableSignal } from '@angular/core';
 
 import { FeedbackProps } from '../../models/FeedbackProps.model';
 import { Option } from '../../models/Option.model';
@@ -62,7 +62,7 @@ export interface SharedOptionHost {
   explanationToDisplayChange?: any;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionStateAdapterService {
   // ── public methods ──────────────────────────────────────────────
 

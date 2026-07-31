@@ -1,4 +1,4 @@
-﻿﻿import { Injectable } from '@angular/core';
+﻿﻿import { Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -16,7 +16,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC lifecycle methods (ngOnInit, ngAfterViewInit, ngOnDestroy).
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchLifecycleService {
 
   async runOnInit(host: Host): Promise<void> {

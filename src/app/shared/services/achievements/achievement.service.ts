@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Service, signal } from '@angular/core';
 
 import { Quiz } from '../../models/Quiz.model';
 import {
@@ -27,7 +27,7 @@ import { InterviewHistoryService } from '../features/interview/interview-history
  * All achievement rules live here (not scattered across components). Evaluation
  * is idempotent: re-running with the same data earns nothing new.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AchievementService {
   readonly definitions: readonly AchievementDefinition[] = ACHIEVEMENT_DEFINITIONS;
 

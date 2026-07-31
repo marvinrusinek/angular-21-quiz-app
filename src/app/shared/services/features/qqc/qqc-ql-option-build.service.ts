@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -13,7 +13,7 @@ import { swallow } from '../../../utils/error-logging';
  * Handles option building, enrichment, bindings, and dynamic component configuration for QQC.
  * Extracted from QqcQuestionLoaderService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcQlOptionBuildService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly quizService = inject(QuizService);

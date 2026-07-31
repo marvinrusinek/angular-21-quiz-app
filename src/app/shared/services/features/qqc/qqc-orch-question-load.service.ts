@@ -1,4 +1,4 @@
-import { ComponentRef, Injectable } from '@angular/core';
+import { ComponentRef, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { debounceTime, take } from 'rxjs/operators';
 
@@ -22,7 +22,7 @@ interface LoadPrep {
  * Orchestrates QQC question loading and dynamic component initialization.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchQuestionLoadService {
 
   async runLoadDynamicComponent(host: Host, question: QuizQuestion, options: Option[]): Promise<void> {

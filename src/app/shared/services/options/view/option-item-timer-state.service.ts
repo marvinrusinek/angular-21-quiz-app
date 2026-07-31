@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { OptionBindings } from '../../../models/OptionBindings.model';
 
@@ -16,7 +16,7 @@ import { TimerService } from '../../features/timer/timer.service';
  *   bindings; stamps without a scoped `_timerExpiredStampedForIndex` are
  *   not trusted.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionItemTimerStateService {
   private readonly quizService = inject(QuizService);
   private readonly timerService = inject(TimerService);

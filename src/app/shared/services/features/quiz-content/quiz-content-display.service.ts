@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Service, signal } from '@angular/core';
 import { combineLatest, Observable } from 'rxjs';
 import {
   distinctUntilChanged, map, shareReplay, startWith
@@ -6,7 +6,7 @@ import {
 
 import { ExplanationTextService, FETPayload } from '../explanation/explanation-text.service';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizContentDisplayService {
   // ═══════════════════════════════════════════════════════════════════════
   // FET State

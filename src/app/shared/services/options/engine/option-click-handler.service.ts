@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -69,7 +69,7 @@ export interface DisabledStateContext {
   flashDisabledSet: Set<number>;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionClickHandlerService {
   // ── injects ─────────────────────────────────────────────────────
   private quizService = inject(QuizService);

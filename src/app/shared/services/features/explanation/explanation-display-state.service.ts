@@ -1,4 +1,4 @@
-import { inject, Injectable, Injector, signal } from '@angular/core';
+import { inject, Service, Injector, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import {
   BehaviorSubject, firstValueFrom, Observable, ReplaySubject, Subject
@@ -24,7 +24,7 @@ const FET_UNLOCK_SETTLE_DELAY_MS = 120;
 
 export type FETPayload = { idx: number; text: string; token: number };
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ExplanationDisplayStateService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly formatter = inject(ExplanationFormatterService);

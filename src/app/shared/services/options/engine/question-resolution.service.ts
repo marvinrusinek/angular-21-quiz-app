@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT, SK_SEL_Q } from '../../../constants/session-keys';
 import { readSessionString } from '../../../utils/session-storage';
@@ -23,7 +23,7 @@ export interface QuestionResolutionResult {
   liveSel: any[];
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuestionResolutionService {
   private readonly quizService = inject(QuizService);
   private readonly selectedOptionService = inject(SelectedOptionService);

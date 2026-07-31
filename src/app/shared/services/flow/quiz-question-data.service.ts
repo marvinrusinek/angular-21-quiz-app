@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { QuestionType } from '../../models/question-type.enum';
@@ -14,7 +14,7 @@ import { QuizService } from '../data/quiz.service';
  * Handles question data fetching, normalization, and preparation.
  * Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizQuestionDataService {
   // ── injects ─────────────────────────────────────────────────────
   private explanationTextService = inject(ExplanationTextService);

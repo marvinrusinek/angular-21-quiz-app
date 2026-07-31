@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { SelectedOption } from '../../models/SelectedOption.model';
 
@@ -12,7 +12,7 @@ import { OptionIdResolverService } from './option-id-resolver.service';
  * map that qqc-reset-manager rebuilds + reads when re-entering an
  * answered question.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class OptionFeedbackStateService {
   // ── injects ─────────────────────────────────────────────────────
   private idResolver = inject(OptionIdResolverService);

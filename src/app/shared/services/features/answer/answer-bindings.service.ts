@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../../../shared/models/Option.model';
 import { OptionBindings } from '../../../../shared/models/OptionBindings.model';
@@ -8,7 +8,7 @@ import { AnswerOptionsService } from './answer-options.service';
 import { isOptionCorrect } from '../../../../shared/utils/is-option-correct';
 import { norm } from '../../../../shared/utils/text-norm';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class AnswerBindingsService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly answerOptionsService = inject(AnswerOptionsService);

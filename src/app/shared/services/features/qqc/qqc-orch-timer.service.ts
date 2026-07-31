@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 
@@ -17,7 +17,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC timer expiry and timeout handling.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchTimerService {
   private dotStatusService = inject(QuizDotStatusService);
   private nextButtonStateService = inject(NextButtonStateService);

@@ -1,4 +1,4 @@
-﻿import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
+﻿import { computed, inject, Service, OnDestroy, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Subject, Subscription, timer } from 'rxjs';
 import { finalize, takeUntil, tap } from 'rxjs/operators';
@@ -20,7 +20,7 @@ interface StopTimerAttemptOptions {
   onStop?: (elapsedMs?: number) => void  // allow elapsed to be delivered
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class TimerService implements OnDestroy {
   timePerQuestion = 30;
   completionTime = Number(sessionStorage.getItem('completionTime')) || 0;

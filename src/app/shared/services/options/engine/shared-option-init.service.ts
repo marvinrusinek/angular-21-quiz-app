@@ -1,4 +1,4 @@
-﻿import { ChangeDetectorRef, Injectable, WritableSignal, inject } from '@angular/core';
+﻿import { ChangeDetectorRef, Service, WritableSignal, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup } from '@angular/forms';
 import {
@@ -132,7 +132,7 @@ export interface SharedOptionComponentLike {
   rebuildShowFeedbackMapFromBindings(): void;
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionInitService {
   // ── injects ─────────────────────────────────────────────────────
   private explanationTextService = inject(ExplanationTextService);

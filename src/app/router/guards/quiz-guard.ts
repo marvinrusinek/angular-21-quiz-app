@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import {
   ActivatedRouteSnapshot,
   CanActivate,
@@ -11,7 +11,7 @@ import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizDataService } from '../../shared/services/data/quizdata.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizGuard implements CanActivate {
   private readonly quizDataService = inject(QuizDataService);
   private readonly quizService = inject(QuizService);

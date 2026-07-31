@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import { take } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
@@ -14,7 +14,7 @@ type Host = QuizQuestionComponent;
  * Orchestrates QQC display state, option rendering, feedback, and misc wrappers.
  * Extracted from QqcComponentOrchestratorService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOrchDisplayService {
 
   runUpdateOptionsSafely(host: Host, newOptions: Option[]): void {

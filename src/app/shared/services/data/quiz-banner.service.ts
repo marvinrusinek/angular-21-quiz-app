@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Service, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { auditTime, distinctUntilChanged, filter, shareReplay } from 'rxjs/operators';
@@ -16,7 +16,7 @@ import { swallow } from '../../utils/error-logging';
  * stack. Callers go through `QuizService` passthrough getters/methods
  * unchanged.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizBannerService {
   // ── Correct-answers banner ──────────────────────────────────────────
   readonly correctAnswersCountTextSig = signal<string>(

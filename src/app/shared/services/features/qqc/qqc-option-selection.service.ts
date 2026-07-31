@@ -1,4 +1,4 @@
-﻿import { inject, Injectable } from '@angular/core';
+﻿import { inject, Service } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -19,7 +19,7 @@ import { isOptionCorrect } from '../../../utils/is-option-correct';
  * Manages option selection logic, state transitions, and correctness evaluation for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcOptionSelectionService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

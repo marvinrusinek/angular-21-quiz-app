@@ -1,4 +1,4 @@
-﻿import { inject, Injectable } from '@angular/core';
+﻿import { inject, Service } from '@angular/core';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
@@ -25,7 +25,7 @@ import { norm } from '../../../utils/text-norm';
  * and explanation UI state for QQC.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcExplanationDisplayService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationManager = inject(QqcExplanationManagerService);

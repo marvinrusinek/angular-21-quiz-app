@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -14,7 +14,7 @@ import { delay } from '../../../utils/delay';
  * Handles question data fetching, validation, and quiz loading for QQC.
  * Extracted from QqcQuestionLoaderService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcQlFetchService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly quizDataService = inject(QuizDataService);

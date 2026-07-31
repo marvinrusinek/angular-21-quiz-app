@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { Option } from '../../../models/Option.model';
 import { OptionBindings } from '../../../models/OptionBindings.model';
@@ -20,7 +20,7 @@ import { TimerService } from '../timer/timer.service';
  * Manages question loading pipeline, quiz data fetching, and question initialization for QQC.
  * Delegates to 2 extracted sub-services; retains load-pipeline orchestration inline.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcQuestionLoaderService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

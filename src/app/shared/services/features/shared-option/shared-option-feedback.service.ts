@@ -1,4 +1,4 @@
-﻿import { Injectable, inject } from '@angular/core';
+﻿import { Service, inject } from '@angular/core';
 
 import { QuestionType } from '../../../models/question-type.enum';
 
@@ -76,7 +76,7 @@ export interface RegenerateFeedbackResult {
   updatedBindings: OptionBindings[];
 }
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SharedOptionFeedbackService {
   private feedbackService = inject(FeedbackService);
   private quizService = inject(QuizService);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 
 import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
@@ -7,7 +7,7 @@ import { SelectedOption } from '../../models/SelectedOption.model';
  * Manages scoring, progress calculation, and expected-correct-count
  * initialization. Extracted from QuizComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QuizScoringService {
   // ── public methods ──────────────────────────────────────────────
 

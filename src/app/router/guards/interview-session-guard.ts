@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
 
 import { InterviewSessionService } from '../../shared/services/features/interview/interview-session.service';
@@ -10,7 +10,7 @@ import { InterviewSessionService } from '../../shared/services/features/intervie
  * redirects safely to the builder — no question index, score, or config is ever
  * exposed as a route param.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InterviewSessionGuard implements CanActivate {
   private readonly session = inject(InterviewSessionService);
   private readonly router = inject(Router);

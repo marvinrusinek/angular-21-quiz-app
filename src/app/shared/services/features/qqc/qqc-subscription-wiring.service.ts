@@ -1,4 +1,4 @@
-﻿import { DestroyRef, inject, Injectable } from '@angular/core';
+﻿import { DestroyRef, inject, Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
@@ -20,7 +20,7 @@ import { swallow } from '../../../utils/error-logging';
  * Creates and returns Subscription objects that the component owns and tears down.
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcSubscriptionWiringService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly quizNavigationService = inject(QuizNavigationService);

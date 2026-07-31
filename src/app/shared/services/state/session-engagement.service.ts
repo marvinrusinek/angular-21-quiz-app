@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Service, signal } from '@angular/core';
 
 /**
  * Tracks whether the user has started using quizzes in THIS app session.
@@ -14,7 +14,7 @@ import { Injectable, signal } from '@angular/core';
  * a returning user still keeps their scores/achievements; they simply don't
  * surface until the user starts using a quiz again this session.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SessionEngagementService {
   private readonly _engaged = signal(false);
 

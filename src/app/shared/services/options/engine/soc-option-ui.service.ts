@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 
 import { isOptionCorrect } from '../../../utils/is-option-correct';
 
@@ -15,7 +15,7 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  * backward navigation clicks, and display enforcement.
  * Extracted from SharedOptionClickService.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class SocOptionUiService {
   // ── injects ─────────────────────────────────────────────────────
   private optionLockService = inject(OptionLockService);

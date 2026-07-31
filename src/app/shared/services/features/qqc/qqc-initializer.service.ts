@@ -1,4 +1,4 @@
-﻿import { DestroyRef, inject, Injectable } from '@angular/core';
+﻿import { DestroyRef, inject, Service } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -24,7 +24,7 @@ import { SelectedOptionService } from '../../state/selectedoption.service';
  *
  * Extracted from QuizQuestionComponent to reduce its size.
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class QqcInitializerService {
   // ── injects ─────────────────────────────────────────────────────
   private readonly explanationTextService = inject(ExplanationTextService);

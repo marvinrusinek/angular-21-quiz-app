@@ -1,9 +1,9 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
+import { computed, effect, Service, signal } from '@angular/core';
 import { swallow } from '../../utils/error-logging';
 
 export type Theme = 'light' | 'dark';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ThemeService {
   // ── signals ─────────────────────────────────────────────────────
   readonly theme = signal<Theme>(this.loadInitialTheme());
