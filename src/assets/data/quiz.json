@@ -331,7 +331,7 @@
           "explanation": "a template contains the HTML code that a component generates"
         },
         {
-          "questionText": "In a standalone component (the Angular 21 default), how do you make another component, directive, or pipe available to its template?",
+          "questionText": "In a standalone component (the Angular 22 default), how do you make another component, directive, or pipe available to its template?",
           "options": [
             {
               "text": "Add it to the component's imports array.",
@@ -1559,7 +1559,7 @@
           "explanation": "the Angular CLI scaffolds and generates code, runs a live-reload dev server (ng serve), and builds and bundles the app (ng build) — so all of the above are true."
         },
         {
-          "questionText": "In Angular 21, what does `ng generate component my-comp` create by default?",
+          "questionText": "In Angular 22, what does `ng generate component my-comp` create by default?",
           "options": [
             {
               "text": "A standalone component.",
@@ -1779,7 +1779,7 @@
       ],
       "questions": [
         {
-          "questionText": "In a standalone Angular 21 app, how do you make HttpClient available for injection?",
+          "questionText": "In a standalone Angular 22 app, how do you make HttpClient available for injection?",
           "options": [
             {
               "text": "Add provideHttpClient() to the providers passed to bootstrapApplication().",
@@ -1916,7 +1916,7 @@
           "explanation": "catchError() is an RxJS operator used inside pipe() to handle a failed request. You can recover by returning a fallback such as of([]) or re-throw with throwError(() => err); it does not retry on its own."
         },
         {
-          "questionText": "In Angular 21, functional HTTP interceptors are plain functions registered with withInterceptors() (passed to provideHttpClient()) that can modify both outgoing requests and incoming responses. True or False?",
+          "questionText": "In Angular 22, functional HTTP interceptors are plain functions registered with withInterceptors() (passed to provideHttpClient()) that can modify both outgoing requests and incoming responses. True or False?",
           "options": [
             {
               "text": "True",
@@ -1948,7 +1948,7 @@
           "explanation": "switchMap() unsubscribes from the previous request when a new value arrives, aborting it only if it is still in flight. There is no request.cancel() or cancelPrevious option, and an already-completed request cannot be undone."
         },
         {
-          "questionText": "Which are recommended best practices for using HttpClient in Angular 21? Select all that apply.",
+          "questionText": "Which are recommended best practices for using HttpClient in Angular 22? Select all that apply.",
           "options": [
             {
               "text": "Encapsulate HTTP calls in dedicated services instead of calling HttpClient from components.",
@@ -2303,7 +2303,7 @@
           "explanation": "@defer postpones loading and rendering its content until a trigger fires (here, entering the viewport), so heavy or below-the-fold content does not block the first paint and its code can be split out. It defers real work, not just hides it."
         },
         {
-          "questionText": "How do you optimize images in Angular 21 using the built-in directive?",
+          "questionText": "How do you optimize images in Angular 22 using the built-in directive?",
           "options": [
             {
               "text": "Add loading='eager' to every img so they all load up front."
