@@ -28,4 +28,9 @@ export interface InterviewResult {
   // Assessment Integrity Mode: number of focus-loss episodes recorded during the
   // session (neutral/informational only — NEVER affects the score).
   focusChanges: number;
+  // ── role-preset metadata (absent for Custom interviews) ──
+  // Copied from the generated assessment's config so Results and History can
+  // label the attempt without re-deriving anything.
+  presetId?: string;
+  presetName?: string;
 }

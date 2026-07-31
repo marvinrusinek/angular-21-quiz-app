@@ -1,5 +1,14 @@
-import { ChangeDetectorRef, DestroyRef, Directive, inject, input, model,
-  OnInit, output } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  DestroyRef,
+  Directive,
+  inject,
+  input,
+  model,
+  OnInit,
+  output,
+  linkedSignal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { filter } from 'rxjs/operators';
@@ -19,15 +28,15 @@ import { swallow } from '../../../shared/utils/error-logging';
 
 /** Event payload emitted when an option is clicked */
 export interface OptionClickEvent {
-  option: SelectedOption | null,
-  index: number,
-  checked?: boolean
+  option: SelectedOption | null;
+  index: number;
+  checked?: boolean;
 }
 
 @Directive()
-export abstract class BaseQuestion<T extends OptionClickEvent =
-  OptionClickEvent> implements OnInit
-{
+export abstract class BaseQuestion<
+  T extends OptionClickEvent = OptionClickEvent,
+> implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
   public readonly cdRef = inject(ChangeDetectorRef);
   protected readonly destroyRef = inject(DestroyRef);
@@ -45,18 +54,25 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
   readonly correctMessageChange = output<string>();
 
   // ── inputs ──────────────────────────────────────────────────────
-  readonly quizQuestionComponentOnOptionClicked = input<((option: SelectedOption, index: number) => void) | undefined>(undefined);
+  readonly quizQuestionComponentOnOptionClicked = input<
+    ((option: SelectedOption, index: number) => void) | undefined
+  >(undefined);
   readonly feedback = input<string>('');
   readonly shouldResetBackground = input<boolean>(false);
   readonly config = input<SharedOptionConfig | undefined>(undefined);
 
   // ── models ──────────────────────────────────────────────────────
-  readonly question = model<QuizQuestion | null>(null);
+  readonly questionInput = input<QuizQuestion | null>(null, { alias: 'question' });
+  readonly question = linkedSignal(this.questionInput);
   readonly optionsToDisplay = model<Option[]>([]);
-  readonly correctMessage = model<string>('');
+  readonly correctMessageInput = input<string>('', { alias: 'correctMessage' });
+  readonly correctMessage = linkedSignal(this.correctMessageInput);
   readonly showFeedback = model<boolean>(false);
   readonly type = model<'single' | 'multiple'>('single');
-  readonly explanationToDisplay = model<string | null>(null);
+  readonly explanationToDisplayInput = input<string | null>(null, {
+    alias: 'explanationToDisplay',
+  });
+  readonly explanationToDisplay = linkedSignal(this.explanationToDisplayInput);
   readonly optionBindings = model<OptionBindings[]>([]);
 
   // ── remaining variables ─────────────────────────────────────────
@@ -80,13 +96,14 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
       !this.question() ||
       !Array.isArray(this.question()!.options) ||
       this.question()!.options.length === 0
-    ) return;
+    )
+      return;
 
     const clonedOptions = (options ?? this.question()!.options ?? []).map((opt, idx) => ({
       ...opt,
       optionId: opt.optionId ?? idx,
       correct: opt.correct ?? false,
-      feedback: opt.feedback
+      feedback: opt.feedback,
     }));
 
     this.sharedOptionConfig = {
@@ -103,7 +120,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
       selectedOptionIndex: -1,
       isAnswerCorrect: false,
       feedback: this.feedback() || '',
-      highlightCorrectAfterIncorrect: false
+      highlightCorrectAfterIncorrect: false,
     };
   }
 
@@ -126,7 +143,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
       showCorrectMessage: false,
       explanationText: '',
       showExplanation: false,
-      idx: 0
+      idx: 0,
     };
   }
 
@@ -183,21 +200,24 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
   }
 
   updateCorrectMessageForQuestion(): void {
-    this.correctMessage.set(
-      this.feedbackService.setCorrectMessage(this.optionsToDisplay())
-    );
+    this.correctMessage.set(this.feedbackService.setCorrectMessage(this.optionsToDisplay()));
     this.correctMessageChange.emit(this.correctMessage());
     this.cdRef.markForCheck();
   }
 
   protected initializeQuestion(): void {
     try {
-      const qqc = (this as any).quizQuestionComponent ??
-        (this as any)._quizQuestionComponent;
+      const qqc = (this as any).quizQuestionComponent ?? (this as any)._quizQuestionComponent;
       qqc?._fetEarlyShown?.clear();
-    } catch (err: unknown) { swallow('base-question.ts', err); }
+    } catch (err: unknown) {
+      swallow('base-question.ts', err);
+    }
 
-    if (this.question() && Array.isArray(this.question()!.options) && this.question()!.options.length > 0) {
+    if (
+      this.question() &&
+      Array.isArray(this.question()!.options) &&
+      this.question()!.options.length > 0
+    ) {
       this.initializeOptions();
       this.optionsInitialized = true;
       this.questionChange.emit(this.question()!);
@@ -213,7 +233,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
     if (!this.questionForm) {
       this.questionForm = new FormGroup({});
       for (const option of this.question()!.options) {
-        const controlName = `option_${option.optionId}`;  // stable and unique
+        const controlName = `option_${option.optionId}`; // stable and unique
         if (!this.questionForm.contains(controlName)) {
           this.questionForm.addControl(controlName, new FormControl(false));
         }
@@ -253,7 +273,7 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
           this.question.set(quizQuestion);
           this.initializeOptions();
         },
-        error: () => { }
+        error: () => {},
       });
   }
 
@@ -273,11 +293,13 @@ export abstract class BaseQuestion<T extends OptionClickEvent =
   }
 
   private initializeQuestionIfAvailable(): void {
-    if (this.question() && Array.isArray(this.question()!.options) &&
-      this.question()!.options.length > 0) {
+    if (
+      this.question() &&
+      Array.isArray(this.question()!.options) &&
+      this.question()!.options.length > 0
+    ) {
       this.setCurrentQuestion(this.question()!);
       this.initializeQuestion();
     }
   }
-
 }

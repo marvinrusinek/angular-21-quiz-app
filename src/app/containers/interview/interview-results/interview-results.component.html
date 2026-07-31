@@ -5,6 +5,11 @@
       <codelab-theme-toggle />
     </header>
 
+    <!-- Which interview this was: a role preset's name, or "Custom Interview".
+         Reads the metadata stored on the result; legacy results have none and
+         fall back to Custom. -->
+    <p class="interview-results__kind">{{ interviewKindLabel() }}</p>
+
     @if (r.submittedByExpiry) {
       <p class="interview-results__expiry" role="status" i18n>
         Time's up. Your assessment was submitted automatically.

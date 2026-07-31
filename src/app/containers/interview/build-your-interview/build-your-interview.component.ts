@@ -28,6 +28,14 @@ import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-
 import { swallow } from '../../../shared/utils/error-logging';
 import { isEligibleInterviewTopic } from '../../../shared/utils/interview-topics';
 import {
+  findInterviewPreset,
+  INTERVIEW_PRESETS,
+  InterviewPreset,
+  InterviewPresetId,
+  PRESET_DISCLAIMER
+} from '../../../shared/models/interview-preset.model';
+import { calculateDifficultyQuota } from '../../../shared/utils/difficulty-quota';
+import {
   INTERVIEW_TOPIC_CATEGORIES,
   INTERVIEW_TOPIC_OTHER_CATEGORY
 } from './interview-topic-categories';
@@ -150,6 +158,72 @@ export class BuildYourInterviewComponent implements OnInit {
     return groups;
   });
 
+  // ── Quick Setup: role presets ───────────────────────────────────
+  // 'custom' is the default so the existing Custom workflow is what users land
+  // on and nothing about it changes. Selecting a preset only PREVIEWS it — the
+  // existing Start button remains the single way to begin.
+  readonly presets = INTERVIEW_PRESETS;
+  readonly presetDisclaimer = PRESET_DISCLAIMER;
+  readonly selectedPresetId = signal<InterviewPresetId | 'custom'>('custom');
+  readonly isCustom = computed(() => this.selectedPresetId() === 'custom');
+
+  readonly selectedPreset = computed<InterviewPreset | undefined>(() =>
+    findInterviewPreset(this.selectedPresetId())
+  );
+
+  // Resolved question counts per difficulty — NOT the configured percentages.
+  // Shown because difficulty here is a property of the TOPIC, so a weight can be
+  // unfillable (Senior weights 10% beginner but configures no beginner topic);
+  // displaying what will actually be generated keeps the preview honest.
+  readonly presetQuota = computed(() => {
+    const preset = this.selectedPreset();
+    return preset
+      ? calculateDifficultyQuota(preset.questionCount, preset.difficultyDistribution)
+      : null;
+  });
+
+  readonly presetCapacity = computed(() => {
+    const preset = this.selectedPreset();
+    return preset ? this.builder.presetCapacity(preset) : null;
+  });
+
+  readonly presetTopicNames = computed<string[]>(() => {
+    const preset = this.selectedPreset();
+    if (!preset) return [];
+    const byId = new Map(this.quizzes().map((q) => [q.quizId, q.milestone ?? q.quizId]));
+    return preset.topicIds.map((id) => byId.get(id) ?? id);
+  });
+
+  // A preset can only start when its own topics can supply its full count.
+  readonly presetStartDisabled = computed(() => {
+    const capacity = this.presetCapacity();
+    return !capacity || capacity.usable < capacity.required;
+  });
+
+  readonly presetInvalidReason = computed(() => {
+    const capacity = this.presetCapacity();
+    if (!capacity || capacity.usable >= capacity.required) return '';
+    return `Only ${capacity.usable} of the ${capacity.required} questions this preset needs are available. ` +
+      'Choose another preset or build a Custom interview.';
+  });
+
+  /**
+   * Whether the Start button is disabled, for WHICHEVER mode is active. The
+   * template must bind to this rather than startDisabled(): that one only
+   * describes the Custom configuration, so with a preset selected (and Custom
+   * left unconfigured) it would keep Start disabled and the preset unstartable.
+   */
+  readonly startDisabledForMode = computed(() =>
+    this.selectedPreset() ? this.presetStartDisabled() : this.startDisabled()
+  );
+
+  selectPreset(id: InterviewPresetId | 'custom'): void {
+    // Custom's in-progress difficulty/topics/count signals are deliberately left
+    // untouched while a preset is previewed, so returning to Custom restores the
+    // user's unfinished configuration exactly.
+    this.selectedPresetId.set(id);
+  }
+
   readonly topicsEnabled = computed(() => this.difficulty() !== null);
 
   readonly eligiblePool = computed(() =>
@@ -253,9 +327,19 @@ export class BuildYourInterviewComponent implements OnInit {
   }
 
   async startInterview(): Promise<void> {
-    if (this.startDisabled()) return;
-    this.stashTimerOverride();
-    this.session.start(this.currentConfig());
+    // A role preset ignores the Custom controls entirely — it is a fixed
+    // configuration, so its questions come from buildFromPreset() and the
+    // user's in-progress Custom selections are left untouched.
+    const preset = this.selectedPreset();
+    if (preset) {
+      if (this.presetStartDisabled()) return;
+      this.stashTimerOverride();
+      this.session.startPreset(preset);
+    } else {
+      if (this.startDisabled()) return;
+      this.stashTimerOverride();
+      this.session.start(this.currentConfig());
+    }
     await this.spinner.showForStart($localize`Preparing Interview…`);
     await this.router.navigate(['/interview/session']);
   }

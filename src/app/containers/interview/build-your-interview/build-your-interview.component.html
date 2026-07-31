@@ -10,6 +10,83 @@
   <app-interview-certificate-callout />
 
   <form [formGroup]="form" (ngSubmit)="startInterview()">
+    <!-- 0. Quick Setup — role presets. Custom is the default, so the existing
+         difficulty-first workflow is what users land on and is unchanged. -->
+    <fieldset class="builder-section quick-setup">
+      <legend i18n>Quick Setup</legend>
+      <p class="builder-hint" i18n>
+        Choose a role-based preset or build your own interview.
+      </p>
+
+      <div class="option-row" role="radiogroup" aria-label="Interview setup" i18n-aria-label>
+        <label class="chip">
+          <input
+            type="radio"
+            name="quickSetup"
+            [checked]="isCustom()"
+            (change)="selectPreset('custom')"
+          />
+          <span i18n>Custom</span>
+        </label>
+        @for (preset of presets; track preset.id) {
+          <label class="chip">
+            <input
+              type="radio"
+              name="quickSetup"
+              [checked]="selectedPresetId() === preset.id"
+              (change)="selectPreset(preset.id)"
+            />
+            <span>{{ preset.shortLabel }}</span>
+          </label>
+        }
+      </div>
+
+      @if (selectedPreset(); as preset) {
+        <section class="preset-preview" aria-labelledby="preset-preview-heading">
+          <h3 id="preset-preview-heading" class="preset-preview__name">{{ preset.name }}</h3>
+          <p class="preset-preview__description">{{ preset.description }}</p>
+
+          <dl class="preview-grid">
+            <div class="preview-item">
+              <dt i18n>Questions</dt>
+              <dd>{{ preset.questionCount }}</dd>
+            </div>
+            <div class="preview-item">
+              <dt i18n>Duration</dt>
+              <dd>{{ preset.durationMinutes }} <span i18n>min</span></dd>
+            </div>
+          </dl>
+
+          <!-- Resolved COUNTS, not configured percentages: difficulty belongs to
+               the topic, so a weight can be unfillable. Text carries the meaning,
+               never colour alone. -->
+          @if (presetQuota(); as quota) {
+            <p class="preset-preview__mix" i18n>
+              Difficulty mix: {{ quota.beginner }} Beginner ·
+              {{ quota.intermediate }} Intermediate ·
+              {{ quota.advanced }} Advanced
+            </p>
+          }
+
+          <p class="preset-preview__topics">
+            <span class="preset-preview__label" i18n>Topics:</span>
+            {{ presetTopicNames().join(', ') }}
+          </p>
+
+          @if (presetInvalidReason()) {
+            <p class="preview-invalid" role="status" aria-live="polite">
+              {{ presetInvalidReason() }}
+            </p>
+          }
+        </section>
+      }
+
+      <p class="preset-disclaimer">{{ presetDisclaimer }}</p>
+    </fieldset>
+
+    <!-- The Custom controls stay mounted but hidden while a preset is previewed,
+         so returning to Custom restores the user's unfinished configuration. -->
+    <div [hidden]="!isCustom()">
     <!-- 1. Difficulty -->
     <fieldset class="builder-section">
       <legend i18n>Difficulty</legend>
@@ -129,13 +206,14 @@
         </p>
       }
     </section>
+    </div>
 
     <!-- 5. Start -->
     <div class="builder-actions">
       <button
         type="submit"
         class="start-interview-btn"
-        [disabled]="startDisabled()"
+        [disabled]="startDisabledForMode()"
         i18n
       >
         Start Assessment

@@ -85,6 +85,9 @@
               >{{ completionLabel(c.entry) }}</span>
             </div>
 
+            <!-- Role preset name, or "Custom Interview" for custom + legacy
+                 entries (which carry no preset metadata). -->
+            <p class="ih-card__kind">{{ interviewKindLabel(c.entry) }}</p>
             <p class="ih-card__date">
               <time [attr.datetime]="c.entry.completedAt">{{ formatDate(c.entry.completedAt) }}</time>
             </p>

@@ -1,20 +1,23 @@
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  computed,
   DestroyRef,
   ElementRef,
+  OnInit,
+  ViewEncapsulation,
+  afterNextRender,
+  computed,
   inject,
   signal,
-  viewChild,
-  ViewEncapsulation
+  viewChild
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { formatDuration } from '../../../shared/utils/format-time';
+import { swallow } from '../../../shared/utils/error-logging';
 import { InterviewAttemptHistoryEntry } from '../../../shared/models/interview-history.model';
+import { interviewConfigLabel } from '../../../shared/models/interview-preset.model';
 import {
   filterAttempts,
   InterviewHistoryFilter,
@@ -57,7 +60,19 @@ interface HistoryCard {
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InterviewHistoryComponent {
+export class InterviewHistoryComponent implements OnInit {
+  ngOnInit(): void {
+    // Open at the TOP. Arriving from a long Interview Results page (or from a
+    // history detail) otherwise inherits the previous scroll offset and lands
+    // mid-list, hiding the heading and the summary counts.
+    try {
+      window.scrollTo({ top: 0, left: 0 });
+    } catch (err: unknown) {
+      // Non-fatal in non-browser test environments.
+      swallow('interview-history#scrollTop', err);
+    }
+  }
+
   private readonly history = inject(InterviewHistoryService);
   private readonly readinessService = inject(InterviewReadinessService);
   private readonly destroyRef = inject(DestroyRef);
@@ -146,6 +161,11 @@ export class InterviewHistoryComponent {
 
   setFilter(id: InterviewHistoryFilter): void {
     this.filter.set(id);
+  }
+
+  /** Role preset name, or "Custom Interview" for custom and legacy entries. */
+  interviewKindLabel(entry: InterviewAttemptHistoryEntry): string {
+    return interviewConfigLabel(entry.configKind, entry.presetId, entry.presetName);
   }
 
   completionLabel(entry: InterviewAttemptHistoryEntry): string {

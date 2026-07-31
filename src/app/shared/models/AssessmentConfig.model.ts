@@ -9,13 +9,29 @@ export type InterviewDifficulty = QuizDifficulty | 'mixed';
 // DURATION_SECONDS_BY_COUNT), so v1 exposes no timer-duration selector.
 export type AssessmentQuestionCount = 10 | 20 | 30;
 
+// Question counts the ROLE PRESETS use. Kept as a separate literal union so the
+// Custom builder's three choices stay exactly as they were — presets are the
+// only thing that may introduce 15 or 25.
+export type PresetQuestionCount = 15 | 25;
+
+// Any count the engine can be asked for (Custom's three, plus preset-only sizes).
+export type BuildableQuestionCount = AssessmentQuestionCount | PresetQuestionCount;
+
 // A reusable, UI-agnostic description of the assessment to build. The
 // AssessmentBuilder answers "given this config, which questions?" — nothing
 // about how the interview behaves lives here.
 export interface AssessmentConfig {
   difficulty: InterviewDifficulty;
   topicIds: string[];                     // source quizIds (topics)
-  questionCount: AssessmentQuestionCount;
+  questionCount: BuildableQuestionCount;
+  // ── preset metadata (absent for Custom, which is unchanged) ──
+  // Present only when the assessment came from a role preset. Carried through
+  // the session snapshot into the result + history so a completed attempt can be
+  // labelled reliably later.
+  presetId?: string;
+  presetName?: string;                    // snapshot of the name at build time
+  // Presets declare their own duration instead of deriving it from the count.
+  durationSecondsOverride?: number;
 }
 
 // question count → total interview seconds (10→15m, 20→30m, 30→45m).

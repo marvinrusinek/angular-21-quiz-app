@@ -13,6 +13,7 @@ import { formatMMSS } from '../../../shared/utils/format-time';
 import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { InterviewAnalyticsService } from '../../../shared/services/features/interview/interview-analytics.service';
 import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
+import { interviewConfigLabel } from '../../../shared/models/interview-preset.model';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
 import { PerformanceTrendsComponent } from '../../../components/interview/performance-trends/performance-trends.component';
@@ -66,6 +67,13 @@ export class InterviewResultsComponent {
   }
 
   readonly result = this.session.result;
+
+  // Role-preset name, or "Custom Interview". Single-sourced from the preset
+  // model so the label can never drift from the definitions.
+  readonly interviewKindLabel = computed(() => {
+    const r = this.result();
+    return interviewConfigLabel(r?.presetId ? 'preset' : 'custom', r?.presetId, r?.presetName);
+  });
   readonly assessment = this.session.assessment;
   readonly answersByIndex = this.session.answersByIndex;
   readonly timeUsed = computed(() => formatMMSS(this.result()?.timeUsedSeconds ?? 0));
