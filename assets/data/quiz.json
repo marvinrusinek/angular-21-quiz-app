@@ -331,7 +331,7 @@
           "explanation": "a template contains the HTML code that a component generates"
         },
         {
-          "questionText": "In a standalone component (the Angular 22 default), how do you make another component, directive, or pipe available to its template?",
+          "questionText": "In Angular 22, components are standalone by default. How do you make another component, directive, or pipe available to a component's template?",
           "options": [
             {
               "text": "Add it to the component's imports array.",
@@ -347,7 +347,7 @@
               "text": "Register it as a provider."
             }
           ],
-          "explanation": "a standalone component declares everything it uses — other components, directives, and pipes — in its own imports array. Nothing is globally available by default, index.html is not where you register Angular building blocks, and providers are for injectable services, not template dependencies."
+          "explanation": "A standalone component declares its template dependencies in its own imports array. Nothing is global by default, and providers is for injectable services, not template dependencies."
         },
         {
           "questionText": "Which decorator marks a class as an Angular component and supplies its metadata (selector, template, styles)?",
