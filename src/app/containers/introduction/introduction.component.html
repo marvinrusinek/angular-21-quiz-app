@@ -72,13 +72,12 @@
     </mat-card-content>
 
     <mat-card-actions>
-      <form
-        [formGroup]="preferencesForm"
-        class="intro-preferences"
-        ngNativeValidate
-      >
+      <form class="intro-preferences" ngNativeValidate>
+        <!-- Bound to the Signal Forms field via [checked] + (change) rather than
+             formControlName: one write path, and the Material toggle's own
+             markup, ripple and a11y are untouched. -->
         <mat-slide-toggle
-          formControlName="shouldShuffleOptions"
+          [checked]="isChecked()"
           (change)="onSlideToggleChange($event)"
           [disableRipple]="true"
         >

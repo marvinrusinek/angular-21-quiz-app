@@ -1,12 +1,10 @@
 import {
   ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, OnInit, signal
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass, NgOptimizedImage, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import {
-  FormBuilder, FormGroup, FormsModule, ReactiveFormsModule
-} from '@angular/forms';
+import { form } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,19 +27,22 @@ import { TimerService } from '../../shared/services/features/timer/timer.service
 import { QuizStartSpinnerService } from '../../shared/services/ui/quiz-start-spinner.service';
 import { swallow } from '../../shared/utils/error-logging';
 
+/** The Introduction page's quiz preferences, as a typed Signal Forms model. */
+export interface QuizPreferencesModel {
+  shouldShuffleOptions: boolean;
+}
+
 @Component({
   selector: 'codelab-quiz-intro',
   standalone: true,
   imports: [
     NgClass,
     TitleCasePipe,
-    FormsModule,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
     MatSlideToggleModule,
-    NgOptimizedImage,
-    ReactiveFormsModule
+    NgOptimizedImage
   ],
   templateUrl: './introduction.component.html',
   styleUrls: ['./introduction.component.scss'],
@@ -59,15 +60,28 @@ export class IntroductionComponent implements OnInit {
   private readonly timerService = inject(TimerService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly startSpinner = inject(QuizStartSpinnerService);
 
   // ── remaining variables ─────────────────────────────────────────
   quizId: string | undefined;
   readonly selectedQuiz = signal<Quiz | null>(null);
-  preferencesForm: FormGroup;
-  readonly isChecked = signal(false);
+  // ── Signal Forms: quiz preferences ──────────────────────────────
+  // A typed model replaces the FormBuilder group. The former group also carried
+  // an `isImmediateFeedback` control that nothing ever read — dropped rather
+  // than carried across.
+  //
+  // NOTE: with a single always-valid boolean there is no schema to attach; the
+  // value of `form()` here is the typed model and losing the reactive-forms
+  // machinery, not validation.
+  private readonly preferences = signal<QuizPreferencesModel>({
+    shouldShuffleOptions: false
+  });
+
+  readonly preferencesForm = form(this.preferences);
+
+  /** The toggle's state, read straight off the field. */
+  readonly isChecked = computed(() => this.preferencesForm.shouldShuffleOptions().value());
   readonly isStartingQuiz = signal(false);
   readonly questionCountSig = signal(0);
   readonly questionLabelSig = computed(() =>
@@ -85,22 +99,10 @@ export class IntroductionComponent implements OnInit {
   readonly introImgSig = signal('');
 
   constructor() {
-    // Initialize the form group with default values
-    this.preferencesForm = this.fb.group({
-      shouldShuffleOptions: [false],
-      isImmediateFeedback: [false]
-    });
 
-    const shuffleCtrl = this.preferencesForm.get('shouldShuffleOptions')!;
-    const shouldShuffle = toSignal(shuffleCtrl.valueChanges, {
-      initialValue: shuffleCtrl.value as boolean
-    });
-
-    effect(() => {
-      const isChecked = shouldShuffle();
-      this.quizService.setCheckedShuffle(isChecked);
-      this.isChecked.set(isChecked);
-    });
+    // Mirror the toggle into QuizService whenever it changes. The write path is
+    // now onSlideToggleChange() alone; this effect only propagates.
+    effect(() => this.quizService.setCheckedShuffle(this.isChecked()));
   }
 
   ngOnInit(): void {
@@ -108,11 +110,11 @@ export class IntroductionComponent implements OnInit {
     this.subscribeToRouteParameters();
   }
 
+  // The SINGLE write path for the toggle. Previously the template used BOTH
+  // formControlName and this handler, so every flip was applied twice — once
+  // through the control's valueChanges effect and once here.
   onSlideToggleChange(event: MatSlideToggleChange): void {
-    const isChecked = event.checked;
-
-    this.quizService.setCheckedShuffle(isChecked);
-    this.isChecked.set(isChecked);
+    this.preferencesForm.shouldShuffleOptions().value.set(event.checked);
   }
 
   async onStartQuiz(quizId?: string): Promise<void> {
@@ -134,7 +136,7 @@ export class IntroductionComponent implements OnInit {
       const activeQuiz = await this.resolveActiveQuiz(targetQuizId);
       if (!activeQuiz) return;
 
-      const shouldShuffleOptions = !!this.preferencesForm.value?.shouldShuffleOptions;
+      const shouldShuffleOptions = this.isChecked();
       this.applySelectedQuizState(activeQuiz, targetQuizId, shouldShuffleOptions);
 
       this.resetQuizForFreshStart(targetQuizId);
