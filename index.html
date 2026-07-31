@@ -6,7 +6,11 @@
     <base href="/angular-22-quiz-app/"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="theme-color" content="#1e88e5"/>
-    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <!-- Reuses an existing PWA icon rather than a separate favicon.ico: the
+         angular.json assets list referenced src/favicon.ico, but that file has
+         never existed, so every page load 404'd on it. Relative href so the
+         GitHub Pages <base> applies. -->
+    <link rel="icon" type="image/png" href="icons/icon-96x96.png"/>
 
     <!-- Content Security Policy. GitHub Pages cannot serve custom HTTP headers,
          so this is delivered as a meta tag — equivalent for every directive the
@@ -65,5 +69,5 @@
   <body>
     <codelab-root></codelab-root>
     <noscript>Please enable JavaScript to continue using this application.</noscript>
-  <script src="polyfills-ZCFIDMUY.js" type="module"></script><script src="main-TGXAMFDT.js" type="module"></script></body>
+  <script src="polyfills-ZCFIDMUY.js" type="module"></script><script src="main-T4AOJM5S.js" type="module"></script></body>
 </html>
