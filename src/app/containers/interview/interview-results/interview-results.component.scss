@@ -256,3 +256,13 @@
   --ir-band-strong-text: #6fd68c;
   --ir-band-weak-text: #f28b84;
 }
+
+// Which interview this was — a role preset's name, or "Custom Interview".
+// Sits under the "Assessment Complete" heading as secondary context, so it is
+// deliberately quieter than the title it follows.
+.interview-results__kind {
+  margin: 2px 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ir-muted, #6a6a6a);
+}

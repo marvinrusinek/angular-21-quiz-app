@@ -366,3 +366,12 @@
   color: var(--ir-muted, #6a6a6a);
   white-space: nowrap;
 }
+
+// Role preset name (or "Custom Interview") on each history card. Sits between
+// the card title and the date as a compact qualifier.
+.ih-card__kind {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ir-accent, #007aff);
+}

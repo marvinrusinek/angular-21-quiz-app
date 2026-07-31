@@ -321,3 +321,74 @@
   --ib-accent-contrast: #0d1117;
   --ib-invalid: #ff6b57;
 }
+
+// ── Quick Setup: role-preset preview ──────────────────────────────────────
+// Mirrors .interview-preview so the two panels read as one system. Everything
+// uses the --ib-* tokens, which already have a [data-theme='dark'] override, so
+// light/dark comes for free rather than needing a second rule set.
+.preset-preview {
+  border: 1px solid var(--ib-border);
+  border-left: 3px solid var(--ib-accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 12px 0 0;
+  background: var(--ib-surface-2);
+  color: var(--ib-text);
+  box-sizing: border-box;
+
+  &__name {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  &__description {
+    margin: 0 0 10px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ib-muted);
+  }
+
+  // Difficulty mix + topics. tabular-nums keeps the counts from shifting as the
+  // selection changes; the meaning is carried entirely by TEXT, never colour.
+  &__mix {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ib-text);
+  }
+
+  &__topics {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ib-muted);
+  }
+
+  &__label {
+    font-weight: 700;
+    color: var(--ib-text);
+  }
+
+  // The shared preview grid is reused inside this panel; tighten its spacing so
+  // the compact preset card doesn't inherit the full-width panel's rhythm.
+  .preview-grid {
+    margin: 0 0 10px;
+  }
+}
+
+// Representativeness note — deliberately the quietest text in the section.
+.preset-disclaimer {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--ib-muted);
+}
+
+@media (max-width: 600px) {
+  .preset-preview {
+    padding: 12px 14px;
+  }
+}
