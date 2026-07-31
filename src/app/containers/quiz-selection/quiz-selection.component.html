@@ -273,8 +273,8 @@
 </div>
 
 @defer (on idle) {
+  <!-- The single scroll control. It pages down and flips to an up-chevron at
+       the bottom, so it already does what the separate back-to-top button did;
+       rendering both put two floating controls on the same page. -->
   <app-scroll-down-indicator />
-}
-@defer (on idle) {
-  <app-back-to-top />
 }

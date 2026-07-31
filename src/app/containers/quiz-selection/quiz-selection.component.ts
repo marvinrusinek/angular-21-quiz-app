@@ -34,7 +34,6 @@ import { SessionEngagementService } from '../../shared/services/state/session-en
 
 import { ProgressSummary, QuizProgress } from '../../shared/models/progress.model';
 
-import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
 import { AchievementsSummaryComponent } from '../../components/achievements-summary/achievements-summary.component';
 import { ProgressPanelComponent } from '../../components/progress-panel/progress-panel.component';
 import { RecommendedNextQuizComponent } from '../../components/recommended-next-quiz/recommended-next-quiz.component';
@@ -71,7 +70,6 @@ import { swallow } from '../../shared/utils/error-logging';
     ScrollDownIndicatorComponent,
     RecommendedNextQuizComponent,
     DifficultyRecommendationComponent,
-    BackToTopComponent,
     AchievementsSummaryComponent,
     CertificateEarnedBadgeComponent,
     ProgressPanelComponent,

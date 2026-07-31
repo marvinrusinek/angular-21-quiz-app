@@ -55,7 +55,6 @@ import { AchievementDefinition, AchievementView } from '../../shared/models/achi
 import { AccordionComponent } from './accordion/accordion.component';
 import { AchievementUnlockedComponent } from '../../components/achievement-unlocked/achievement-unlocked.component';
 import { AchievementsCatalogComponent } from '../../components/achievements-catalog/achievements-catalog.component';
-import { BackToTopComponent } from '../../components/back-to-top/back-to-top.component';
 import { ScrollDownIndicatorComponent } from '../../components/scroll-down-indicator/scroll-down-indicator.component';
 import { QuizFactComponent } from '../../components/quiz-fact/quiz-fact.component';
 import { ChallengeComponent } from './challenge/challenge.component';
@@ -78,7 +77,6 @@ import { swallow } from '../../shared/utils/error-logging';
     NgTemplateOutlet,
     AchievementUnlockedComponent,
     AchievementsCatalogComponent,
-    BackToTopComponent,
     ScrollDownIndicatorComponent,
     QuizFactComponent,
     AccordionComponent,
