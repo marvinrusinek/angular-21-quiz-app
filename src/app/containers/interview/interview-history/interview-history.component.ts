@@ -125,6 +125,30 @@ export class InterviewHistoryComponent implements OnInit {
   readonly topicTrends = this.topicTrendsService.trends;
   readonly hasHistory = computed(() => this.history.history().length > 0);
 
+  /**
+   * Lifetime attempts vs. attempts still on file.
+   *
+   * History keeps only the newest INTERVIEW_HISTORY_MAX (20) attempts, but
+   * `attemptNumber` is a LIFETIME counter that keeps climbing. Showing the
+   * retained count under a "Completed Interviews" label therefore read as a
+   * miscount once a user passed 20 (e.g. attempts 6–25 on file → "20" beside an
+   * "Interview #25" card).
+   *
+   * The lifetime total is inferred from the highest retained attemptNumber
+   * rather than persisted separately: retention always keeps the NEWEST
+   * attempts, so the newest entry carries the highest number. Falls back to the
+   * retained count for legacy entries that predate attemptNumber.
+   */
+  readonly lifetimeCount = computed(() => {
+    const all = this.history.history();
+    return all.reduce((max, e) => Math.max(max, e.attemptNumber ?? 0), 0) || all.length;
+  });
+
+  /** True once older attempts have aged out, i.e. the two numbers differ. */
+  readonly hasAgedOut = computed(() => this.lifetimeCount() > this.history.history().length);
+
+  readonly retainedCount = computed(() => this.history.history().length);
+
   readonly filter = signal<InterviewHistoryFilter>('all');
 
   readonly filters: { id: InterviewHistoryFilter; label: string }[] = [

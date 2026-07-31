@@ -355,3 +355,14 @@
     }
   }
 }
+
+// "· last 20 shown" qualifier beside the lifetime total. Deliberately quieter
+// than the number it annotates, and it wraps rather than stretching the stat.
+.ih-summary__note {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ir-muted, #6a6a6a);
+  white-space: nowrap;
+}

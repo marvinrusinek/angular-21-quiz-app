@@ -188,3 +188,52 @@ describe('InterviewHistoryComponent', () => {
     expect(el.querySelector('.interview-history__none')?.textContent).toContain('No interviews match');
   });
 });
+
+// History keeps only the newest INTERVIEW_HISTORY_MAX attempts while
+// attemptNumber keeps climbing, so once attempts age out the LIFETIME total and
+// the number ON FILE diverge. Showing the retained count alone read as a
+// miscount ("20" beside an "Interview #25" card). These pin the distinction.
+describe('InterviewHistoryComponent — lifetime vs retained counts', () => {
+  afterEach(() => localStorage.clear());
+
+  it('shows the lifetime total and notes how many are retained once attempts age out', () => {
+    // Attempts 6..25 on file: 20 retained, lifetime total 25.
+    const attempts = Array.from({ length: 20 }, (_, i) => ({
+      ...entry(80, i),
+      id: `att-${i + 6}`,
+      attemptNumber: i + 6
+    }));
+    seed(attempts);
+
+    const fixture = render();
+    const comp = fixture.componentInstance;
+    expect(comp.retainedCount()).toBe(20);
+    expect(comp.lifetimeCount()).toBe(25);
+    expect(comp.hasAgedOut()).toBe(true);
+
+    const summary = (fixture.nativeElement as HTMLElement).querySelector('.ih-summary')?.textContent ?? '';
+    expect(summary).toContain('25');
+    expect(summary).toContain('last 20 shown');
+  });
+
+  it('shows a bare count with no qualifier when nothing has aged out', () => {
+    seed([1, 2, 3].map((n) => ({ ...entry(70, n), id: `att-${n}`, attemptNumber: n })));
+
+    const fixture = render();
+    const comp = fixture.componentInstance;
+    expect(comp.retainedCount()).toBe(3);
+    expect(comp.lifetimeCount()).toBe(3);
+    expect(comp.hasAgedOut()).toBe(false);
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.ih-summary__note')).toBeNull();
+  });
+
+  it('falls back to the retained count for legacy entries with no attemptNumber', () => {
+    seed([entry(60, 1), entry(70, 2)]);   // no attemptNumber field at all
+
+    const comp = render().componentInstance;
+    expect(comp.lifetimeCount()).toBe(2);
+    expect(comp.hasAgedOut()).toBe(false);
+  });
+});

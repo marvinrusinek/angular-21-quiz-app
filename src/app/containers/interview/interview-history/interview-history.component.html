@@ -18,7 +18,16 @@
     <dl class="ih-summary" aria-label="Interview history summary" i18n-aria-label>
       <div>
         <dt i18n>Completed Interviews</dt>
-        <dd>{{ trends().count }}</dd>
+        <!-- History retains only the newest 20 attempts while the attempt number
+             keeps climbing, so once older attempts age out the lifetime total and
+             the number on file differ. Show both rather than a bare retained
+             count, which read as a miscount (e.g. "20" beside an Interview #25). -->
+        <dd>
+          {{ lifetimeCount() }}
+          @if (hasAgedOut()) {
+            <span class="ih-summary__note" i18n>· last {{ retainedCount() }} shown</span>
+          }
+        </dd>
       </div>
       <div>
         <dt i18n>Best Score</dt>
