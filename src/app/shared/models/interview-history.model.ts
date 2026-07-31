@@ -62,6 +62,11 @@ export interface InterviewAttemptHistoryEntry {
   completionReason: InterviewCompletionReason;
   durationSeconds?: number;
   configuredDifficulty?: string;
+  // 'preset' when the attempt came from a role preset; absent/'custom' otherwise.
+  // LEGACY entries have neither field and are treated as Custom Interview.
+  configKind?: 'custom' | 'preset';
+  presetId?: string;
+  presetName?: string;              // snapshot of the label at completion time
   selectedTopicIds: string[];
   topicPerformance: InterviewTopicHistoryEntry[];
   // Optional per-question review snapshot. Present on attempts recorded once this

@@ -8,6 +8,7 @@ import { InterviewSessionStatus } from '../../../models/InterviewSession.model';
 import { getQuizData } from '../../../quiz-data-cache';
 import { computeInterviewResult } from '../../../utils/interview-scoring';
 import { SK_INTERVIEW_SESSION } from '../../../constants/session-keys';
+import { InterviewPreset } from '../../../models/interview-preset.model';
 import { readSessionJson, removeSessionKey, writeSessionJson } from '../../../utils/session-storage';
 
 import { AssessmentBuilderService } from '../assessment/assessment-builder.service';
@@ -125,7 +126,20 @@ export class InterviewSessionService {
   // Build a temporary assessment and begin the session. Throws (via the builder)
   // if the pool can't satisfy the request — callers validate first.
   start(config: AssessmentConfig): GeneratedAssessment {
-    const assessment = this.builder.build(config);
+    return this.begin(this.builder.build(config));
+  }
+
+  /**
+   * Begin a ROLE-PRESET session. Identical to start() in every respect except
+   * which builder entry point produces the questions — the preset's metadata and
+   * duration travel on the assessment's config, so persistence, resume, results
+   * and history all pick them up without a second code path.
+   */
+  startPreset(preset: InterviewPreset): GeneratedAssessment {
+    return this.begin(this.builder.buildFromPreset(preset));
+  }
+
+  private begin(assessment: GeneratedAssessment): GeneratedAssessment {
     this._assessment.set(assessment);
     this._currentIndex.set(0);
     this._answersByIndex.set({});

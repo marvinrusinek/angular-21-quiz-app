@@ -144,6 +144,11 @@ export class InterviewHistoryService {
       completionReason: result.submittedByExpiry ? 'time-expired' : 'submitted',
       durationSeconds: Math.max(0, Math.floor(result.timeUsedSeconds ?? 0)),
       configuredDifficulty: result.difficulty,
+      // Preset metadata travels from the assessment config via InterviewResult.
+      // Absent for Custom, so Custom entries keep exactly their old shape.
+      configKind: result.presetId ? 'preset' : undefined,
+      presetId: result.presetId,
+      presetName: result.presetName,
       selectedTopicIds: [...(result.topicIds ?? [])],
       topicPerformance,
       review
@@ -292,6 +297,9 @@ export function validateAttemptEntry(raw: unknown): InterviewAttemptHistoryEntry
     durationSeconds,
     configuredDifficulty:
       typeof e['configuredDifficulty'] === 'string' ? e['configuredDifficulty'] : undefined,
+    configKind: e['configKind'] === 'preset' ? 'preset' : undefined,
+    presetId: typeof e['presetId'] === 'string' ? e['presetId'] : undefined,
+    presetName: typeof e['presetName'] === 'string' ? e['presetName'] : undefined,
     selectedTopicIds,
     topicPerformance,
     review

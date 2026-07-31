@@ -81,6 +81,10 @@ export function computeInterviewResult(
     timeUsedSeconds,
     timeRemainingSeconds,
     difficulty: assessment.config.difficulty,
+    // Role-preset metadata, if this assessment came from one. Undefined for
+    // Custom, so Custom results keep their existing shape exactly.
+    presetId: assessment.config.presetId,
+    presetName: assessment.config.presetName,
     topicIds: assessment.config.topicIds,
     perTopic,
     submittedByExpiry,

@@ -1,10 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   HostListener,
   OnInit,
+  inject,
   signal
 } from '@angular/core';
+
+import { swallow } from '../../shared/utils/error-logging';
 
 /**
  * A subtle floating scroll cue pinned to the bottom-centre of the screen. Shown
@@ -46,6 +50,8 @@ import {
 })
 export class ScrollDownIndicatorComponent implements OnInit {
   // Shown only when the page can actually scroll.
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly visible = signal(false);
   // Travel direction. Flips at the extremes, persists in between.
   readonly direction = signal<'down' | 'up'>('down');
@@ -58,9 +64,30 @@ export class ScrollDownIndicatorComponent implements OnInit {
   readonly downTitle = $localize`Scroll down`;
   readonly upTitle = $localize`Back to top`;
 
+  private resizeObserver?: ResizeObserver;
+
   ngOnInit(): void {
     // Defer the first measure so fonts/images have laid out.
     setTimeout(() => this.recompute(), 300);
+
+    // …but a single deferred measure is not enough. Pages like Interview Results
+    // GROW after that first check as their async sections arrive (Performance
+    // Trends, Readiness, Certificate status, Review Answers). If the page was
+    // still short at 300ms the chevron hid and — with no scroll or resize to
+    // react to — never came back, leaving a long page with no elevator control.
+    // Watch the document for size changes so the cue appears as soon as the page
+    // actually becomes scrollable.
+    try {
+      if (typeof ResizeObserver !== 'undefined') {
+        this.resizeObserver = new ResizeObserver(() => this.recompute());
+        this.resizeObserver.observe(document.documentElement);
+      }
+    } catch (err: unknown) {
+      // Non-fatal: without the observer the indicator simply keeps its previous
+      // scroll/resize-driven behaviour.
+      swallow('scroll-down-indicator#resizeObserver', err);
+    }
+    this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
   }
 
   // A genuine user scroll ends the idle bounce and updates direction.
