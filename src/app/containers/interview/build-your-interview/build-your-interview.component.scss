@@ -59,6 +59,13 @@
   font-style: italic;
 }
 
+// Quick Setup's hint sits directly above the preset chips, so it needs breathing
+// room the other .builder-hint use (inside Topics) does not — scoped rather than
+// changing the shared rule.
+.quick-setup .builder-hint {
+  margin-bottom: 10px;
+}
+
 .option-row {
   display: flex;
   flex-wrap: wrap;
