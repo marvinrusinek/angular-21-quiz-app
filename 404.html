@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>Angular Quiz App</title>
+    <base href="/angular-22-quiz-app/"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#1e88e5"/>
+    <!-- Reuses an existing PWA icon rather than a separate favicon.ico: the
+         angular.json assets list referenced src/favicon.ico, but that file has
+         never existed, so every page load 404'd on it. Relative href so the
+         GitHub Pages <base> applies. -->
+    <link rel="icon" type="image/png" href="icons/icon-96x96.png"/>
+
+    <!-- Content Security Policy. GitHub Pages cannot serve custom HTTP headers,
+         so this is delivered as a meta tag — equivalent for every directive the
+         app needs except `frame-ancestors`, which is header-only and therefore
+         NOT enforceable here (see the security notes in the repo).
+
+         script-src is strict: 'self' with NO 'unsafe-inline' and NO 'unsafe-eval'.
+         The production build emits only external same-origin module scripts, so
+         an injected <script> or a javascript: URL cannot execute. This is the
+         layer that turns a hypothetical sanitizer bypass into a non-event.
+
+         style-src needs 'unsafe-inline': Angular Material and Angular animations
+         set inline style attributes at runtime, and the build inlines critical
+         CSS. This is a known, accepted limitation — it does not permit scripts.
+
+         The remote hosts below are exactly what the app loads today:
+           fonts.googleapis.com / gstatic  → Material Icons @import (app.component.scss)
+           raw.githubusercontent.com       → 9 legacy quiz tile images + result images,
+                                             and the Scoreboard/Calligraphy @font-face
+                                             files declared in _variables.scss
+           cdn.jsdelivr.net                → quiz sound effects (howler) -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' data: https://fonts.gstatic.com https://raw.githubusercontent.com;
+      img-src 'self' data: https://raw.githubusercontent.com;
+      media-src 'self' https://cdn.jsdelivr.net;
+      connect-src 'self' https://cdn.jsdelivr.net;
+      worker-src 'self';
+      manifest-src 'self';
+      object-src 'none';
+      frame-src 'none';
+      base-uri 'self';
+      form-action 'self'
+    "/>
+
+    <!-- Self-hosted Material Icons font. Preloaded + declared here (stable,
+         unhashed URL) so it's fetched with high priority at startup — this stops
+         the cold-start "blank mat-icons until the font loads" race on app restart.
+         The service worker also prefetches it (ngsw-config), so it's instantly
+         available offline. -->
+    <link rel="preload" href="assets/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin="">
+    <style>
+      @font-face {
+        font-family: 'Material Icons';
+        font-style: normal;
+        font-weight: 400;
+        src: url('assets/fonts/material-icons.woff2') format('woff2');
+        font-display: block;
+      }
+    </style>
+
+    <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles-47UEOKTH.css"></head>
+  <body>
+    <codelab-root></codelab-root>
+    <noscript>Please enable JavaScript to continue using this application.</noscript>
+  <script src="polyfills-Q3J2IDWG.js" type="module"></script><script src="main-UWNTCMAN.js" type="module"></script></body>
+</html>
