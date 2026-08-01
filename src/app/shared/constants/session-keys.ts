@@ -68,3 +68,7 @@ export const SK_INTERVIEW_CERTIFICATE_QUAL = 'interviewCertificateQualifiedAt:v1
 // interview-only so certificate qualification and interview analytics are
 // unaffected.
 export const SK_TOPIC_PERFORMANCE_HISTORY = 'topicPerformanceHistory:v1';
+
+// Active Weak Areas Practice session (sessionStorage). Holds the GENERATED
+// questions so a refresh resumes the identical session rather than reshuffling.
+export const SK_PRACTICE_SESSION = 'weakAreasPracticeSession:v1';

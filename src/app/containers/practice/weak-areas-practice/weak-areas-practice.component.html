@@ -1,0 +1,89 @@
+<div class="wap">
+  <header class="wap__bar">
+    <h1 #heading class="wap__title" tabindex="-1" i18n>Weak Areas Practice</h1>
+    <codelab-theme-toggle />
+  </header>
+
+  @if (currentQuestion(); as question) {
+    <!-- Untimed: progress is a position, never a countdown. -->
+    <p class="wap__progress" aria-live="polite">
+      <ng-container i18n>Question {{ displayNumber() }} of {{ total() }}</ng-container>
+      <span class="wap__sep" aria-hidden="true">·</span>
+      <ng-container i18n>{{ answeredCount() }} answered</ng-container>
+    </p>
+
+    <section class="wap__question-box" aria-labelledby="wap-question">
+      <!-- Source topic, as TEXT so it never relies on colour or position. -->
+      @if (currentTopicName(); as topic) {
+        <p class="wap__topic">
+          <span class="wap__topic-label" i18n>Topic:</span>
+          <span class="wap__topic-name">{{ topic }}</span>
+        </p>
+      }
+
+      <h2 id="wap-question" class="wap__question">{{ question.questionText }}</h2>
+
+      <app-practice-options
+        [options]="question.options ?? []"
+        [selectedIds]="currentSelection()"
+        [resolved]="isCurrentResolved()"
+        (selectionChange)="onSelectionChange($event)"
+      />
+
+      <!-- FET follows the verified topic-quiz rule: shown only once the question
+           is RESOLVED. A wrong or partial selection never reveals it; those
+           explanations appear afterwards in Results → Answer Review. -->
+      @if (explanation(); as text) {
+        <p class="wap__explanation" role="status">{{ text }}</p>
+      }
+    </section>
+
+    <nav class="wap__nav" aria-label="Practice navigation" i18n-aria-label>
+      <button
+        type="button"
+        class="wap__btn"
+        [disabled]="!canGoPrevious()"
+        (click)="previous()"
+        i18n
+      >
+        Previous
+      </button>
+
+      <!-- Next and the ArrowRight shortcut share one gate (session.canGoNext):
+           any selection on single/true-false, the complete set on multi. -->
+      @if (isLastQuestion()) {
+        <button
+          type="button"
+          class="wap__btn"
+          [disabled]="!canSubmit()"
+          (click)="submit()"
+          i18n
+        >
+          Finish Practice
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="wap__btn"
+          [disabled]="!canGoNext()"
+          (click)="next()"
+          i18n
+        >
+          Next
+        </button>
+      }
+    </nav>
+
+    <div class="wap__actions">
+      <button type="button" class="wap__btn wap__btn--ghost" (click)="backToQuizzes()" i18n>
+        Back to Quizzes
+      </button>
+    </div>
+  } @else {
+    <!-- The guard prevents this in practice; kept as a safe terminal state. -->
+    <p class="wap__empty" i18n>This practice session is no longer available.</p>
+    <a class="wap__btn" routerLink="/quiz" i18n>Back to Quizzes</a>
+  }
+
+  <app-scroll-down-indicator />
+</div>

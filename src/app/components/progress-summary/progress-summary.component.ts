@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { ProgressSummary } from '../../shared/models/progress.model';
 import { WeakAreasService } from '../../shared/services/progress/weak-areas.service';
+import { PracticeSessionService } from '../../shared/services/features/practice/practice-session.service';
 
 /**
  * "Your Progress" panel for the Quiz Selection page. It renders an
@@ -20,7 +21,7 @@ import { WeakAreasService } from '../../shared/services/progress/weak-areas.serv
   selector: 'codelab-progress-summary',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TitleCasePipe, RouterLink],
+  imports: [TitleCasePipe],
   template: `
     @if (summary(); as s) {
       @if (s.totalCount > 0) {
@@ -139,20 +140,19 @@ import { WeakAreasService } from '../../shared/services/progress/weak-areas.serv
               </div>
             </dl>
 
-            <!-- Shown ONLY when there are eligible weak topics. The other two
-                 states are messages, never a disabled button.
-                 TEMPORARILY GATED: /practice/weak-areas does not exist yet, and
-                 a visible action must never route to a missing page. Flip
-                 PRACTICE_ROUTE_READY to true in the same commit that registers
-                 the route and session flow. -->
-            @if (practiceRouteReady && weakTopics().length > 0) {
-              <a
+            <!-- Rendered directly from eligibility: shown ONLY when there are
+                 weak topics to practise. The other two states are messages,
+                 never a disabled button. -->
+            @if (weakTopics().length > 0) {
+              <button
+                type="button"
                 class="progress-summary__practice"
-                routerLink="/practice/weak-areas"
                 [attr.aria-label]="practiceAriaLabel()"
+                (click)="startPractice()"
                 i18n
-                >Practice Weak Areas</a
               >
+                Practice Weak Areas
+              </button>
             }
           }
         </section>
@@ -310,14 +310,8 @@ import { WeakAreasService } from '../../shared/services/progress/weak-areas.serv
 })
 export class ProgressSummaryComponent {
   private readonly weakAreas = inject(WeakAreasService);
-
-  /**
-   * Gates the Practice Weak Areas action. The Needs Review TEXT states are live
-   * and correct; only the navigation is withheld until /practice/weak-areas and
-   * its session flow exist, so the UI can never offer a link to a missing page.
-   * Flip to `true` in the commit that registers the route.
-   */
-  readonly practiceRouteReady = false;
+  private readonly practiceSession = inject(PracticeSessionService);
+  private readonly router = inject(Router);
 
   /**
    * The SAME weak topics the practice session will draw from — one computed,
@@ -336,6 +330,19 @@ export class ProgressSummaryComponent {
     const names = this.weakTopics().map((t) => t.topicName).join(', ');
     return names ? `Practice weak areas: ${names}` : 'Practice weak areas';
   });
+
+  /**
+   * Generate a session from the CURRENT weak topics, THEN navigate. The route
+   * guard blocks direct URL entry, so the session must exist before we go — a
+   * bare routerLink here would simply be bounced back.
+   *
+   * start() returns false when the weak topics cannot supply a single question,
+   * so an eligible-looking action can never navigate into an empty session.
+   */
+  async startPractice(): Promise<void> {
+    if (!this.practiceSession.start()) return;
+    await this.router.navigate(['/practice/weak-areas']);
+  }
 
   /** The derived aggregate progress. Renders nothing when there are no quizzes. */
   readonly summary = input<ProgressSummary | null>(null);

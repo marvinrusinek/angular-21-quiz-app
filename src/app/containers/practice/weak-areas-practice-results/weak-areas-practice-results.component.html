@@ -1,0 +1,124 @@
+<div class="wapr">
+  <header class="wapr__bar">
+    <h1 #heading class="wapr__title" tabindex="-1" i18n>Practice Complete</h1>
+    <codelab-theme-toggle />
+  </header>
+
+  @if (result(); as summary) {
+    <!-- Overall score. The percentage is stated alongside the raw counts so the
+         result never depends on reading a single number. -->
+    <section class="wapr__score" aria-labelledby="wapr-score-heading">
+      <h2 id="wapr-score-heading" class="wapr__section-title" i18n>Your Score</h2>
+      <p class="wapr__score-value">{{ summary.percentage }}%</p>
+      <p class="wapr__score-detail" i18n>
+        {{ summary.correct }} of {{ summary.total }} correct
+      </p>
+      @if (summary.unanswered > 0) {
+        <p class="wapr__score-note" i18n>{{ summary.unanswered }} left unanswered</p>
+      }
+    </section>
+
+    <!-- Per-topic breakdown, from each question's preserved source topic. -->
+    <section class="wapr__topics" aria-labelledby="wapr-topics-heading">
+      <h2 id="wapr-topics-heading" class="wapr__section-title" i18n>By Topic</h2>
+      <ul class="wapr__topic-list">
+        @for (topic of perTopic(); track topic.topicId) {
+          <li class="wapr__topic">
+            <span class="wapr__topic-name">{{ topic.topicName }}</span>
+            <span class="wapr__topic-score">
+              <ng-container i18n>{{ topic.correct }}/{{ topic.total }}</ng-container>
+              <span class="wapr__topic-pct">{{ topic.percentage }}%</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Answer Review. Every question appears, including the ones answered
+         correctly, and the explanation is ALWAYS available here — this is where
+         the FET for a wrong answer finally shows up. -->
+    <section class="wapr__review" aria-labelledby="wapr-review-heading">
+      <h2 id="wapr-review-heading" class="wapr__section-title" i18n>Answer Review</h2>
+
+      @for (entry of review(); track entry.index) {
+        <article
+          class="wapr__entry"
+          [class.wapr__entry--correct]="entry.isCorrect"
+          [class.wapr__entry--incorrect]="!entry.isCorrect"
+        >
+          <p class="wapr__entry-meta">
+            <span class="wapr__entry-number" i18n>Question {{ entry.index + 1 }}</span>
+            <span class="wapr__sep" aria-hidden="true">·</span>
+            <span class="wapr__entry-topic">{{ entry.topicName }}</span>
+          </p>
+
+          <h3 class="wapr__entry-question">{{ entry.questionText }}</h3>
+
+          <!-- Result as TEXT, so it is never carried by colour alone. -->
+          <p class="wapr__entry-result">
+            @if (entry.isCorrect) {
+              <span class="wapr__badge wapr__badge--correct" i18n>Correct</span>
+            } @else if (entry.answered) {
+              <span class="wapr__badge wapr__badge--incorrect" i18n>Incorrect</span>
+            } @else {
+              <span class="wapr__badge wapr__badge--skipped" i18n>Not answered</span>
+            }
+          </p>
+
+          <dl class="wapr__answers">
+            <dt i18n>Your answer</dt>
+            <dd>
+              @if (entry.selectedTexts.length > 0) {
+                <ul class="wapr__answer-list">
+                  @for (text of entry.selectedTexts; track text) {
+                    <li>{{ text }}</li>
+                  }
+                </ul>
+              } @else {
+                <span class="wapr__muted" i18n>No answer selected</span>
+              }
+            </dd>
+
+            <dt i18n>Correct answer</dt>
+            <dd>
+              <ul class="wapr__answer-list">
+                @for (text of entry.correctTexts; track text) {
+                  <li>{{ text }}</li>
+                }
+              </ul>
+            </dd>
+          </dl>
+
+          @if (entry.explanation) {
+            <p class="wapr__entry-explanation">{{ entry.explanation }}</p>
+          }
+        </article>
+      }
+    </section>
+  }
+
+  <!-- Practice Again found nothing left to practise. Shown INSTEAD of starting
+       an empty session, with an exit that always works. -->
+  @if (noWeakAreasRemaining()) {
+    <section class="wapr__none" role="status" aria-live="polite">
+      <h2 class="wapr__none-title" i18n>No weak areas detected</h2>
+      <p class="wapr__none-text" i18n>
+        There is nothing left to practise right now. Take a quiz or an interview to
+        gather more performance data.
+      </p>
+    </section>
+  }
+
+  <div class="wapr__actions">
+    @if (!noWeakAreasRemaining()) {
+      <button type="button" class="wapr__btn" (click)="practiceAgain()" i18n>
+        Practice Again
+      </button>
+    }
+    <button type="button" class="wapr__btn wapr__btn--ghost" (click)="backToQuizzes()" i18n>
+      Back to Quizzes
+    </button>
+  </div>
+
+  <app-scroll-down-indicator />
+</div>

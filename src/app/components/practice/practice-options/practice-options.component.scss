@@ -1,0 +1,110 @@
+.io-hint {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--io-muted, #5a5a5a);
+}
+
+.io-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// Reuse the topic quiz's light-gray option surface (--bg-option global token).
+.io-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: 1px solid var(--io-border, #dcdcdc);
+  border-radius: 8px;
+  background-color: var(--bg-option, #f5f5f5);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    background-color: var(--bg-option-hover, #f0f0f0);
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--io-accent, #007aff);
+    outline-offset: 2px;
+  }
+}
+
+.io-input {
+  accent-color: var(--io-accent, #007aff);
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.io-text {
+  flex: 1 1 auto;
+  min-width: 0;              // let the flex item shrink so long text wraps
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;  // break long unbreakable strings instead of overflowing
+  word-break: break-word;
+}
+
+// Neutral selected marker — NO correctness color (no green/red).
+.io-option.io-selected {
+  background-color: rgba(0, 122, 255, 0.10);
+  box-shadow: inset 3px 0 0 0 var(--io-accent, #007aff);
+}
+
+[data-theme='dark'] {
+  .io-hint { color: var(--io-muted, #a8a8a8); }
+
+  .io-option {
+    --io-border: #3a3a3a;
+    // --bg-option is already themed globally (#484b55 in dark).
+  }
+
+  .io-option.io-selected {
+    background-color: rgba(76, 157, 255, 0.20);
+    box-shadow: inset 3px 0 0 0 #4c9dff;
+  }
+}
+
+// ── practice-only: immediate correctness ──────────────────────────────────
+// Practice is a learning mode, so correctness is revealed once answered. The
+// meaning is carried by the .po-status TEXT; these colours are reinforcement
+// only, never the sole signal.
+.po-correct {
+  border-color: #2e9e5b;
+  background: rgba(46, 158, 91, 0.12);
+}
+
+.po-incorrect {
+  border-color: #d64545;
+  background: rgba(214, 69, 69, 0.12);
+}
+
+.po-status {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.po-correct .po-status { color: #2e7d4f; }
+.po-incorrect .po-status { color: #b03636; }
+
+// Answered questions are read-only; keep the cursor honest.
+.io-option:has(.io-input:disabled) {
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .po-status {
+    margin-left: 0;
+    padding-left: 0;
+    flex-basis: 100%;
+  }
+  .io-option { flex-wrap: wrap; }
+}

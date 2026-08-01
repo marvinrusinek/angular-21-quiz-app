@@ -1,0 +1,34 @@
+@if (isMultiSelect()) {
+  <p class="io-hint" i18n>Select all that apply.</p>
+}
+
+<ul class="io-list" role="group" aria-label="Answer options" i18n-aria-label>
+  @for (option of displayOptions(); track option.optionId) {
+    <li>
+      <label
+        class="option-row io-option"
+        [class.io-selected]="isSelected(option)"
+        [class.po-correct]="isCorrectOption(option)"
+        [class.po-incorrect]="isIncorrectChoice(option)"
+      >
+        <input
+          class="io-input"
+          [type]="isMultiSelect() ? 'checkbox' : 'radio'"
+          name="practice-answer"
+          [checked]="isSelected(option)"
+          [disabled]="resolved()"
+          (change)="onToggle(option)"
+        />
+        <!-- Plain-text interpolation, consistent with the topic-quiz options
+             (option-item.component.html). innerHTML here would parse literal
+             tags in the option (e.g. "<div>") as elements and drop them. -->
+        <span class="io-text">{{ option.text }}</span>
+
+        <!-- Correctness is carried by TEXT, never by colour alone. -->
+        @if (statusLabel(option); as status) {
+          <span class="po-status">{{ status }}</span>
+        }
+      </label>
+    </li>
+  }
+</ul>

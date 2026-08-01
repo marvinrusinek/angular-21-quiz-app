@@ -1,0 +1,138 @@
+// Weak Areas Practice session. Reuses the --ir-* token set the Interview
+// surfaces define so light/dark come from the token layer, with local fallbacks
+// at each USE site (never a self-referential re-declaration).
+.wap {
+  --ir-surface: #fff;
+  --ir-border: #e0e0e0;
+  --ir-text: #1a1a1a;
+  --ir-muted: #6a6a6a;
+  --ir-accent: #007aff;
+
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 16px 18px 96px;
+  color: var(--ir-text);
+  box-sizing: border-box;
+}
+
+.wap__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.wap__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+// Focus is moved here on entry; keep the ring visible but not permanent.
+.wap__title:focus-visible {
+  outline: 2px solid var(--ir-accent);
+  outline-offset: 4px;
+}
+
+.wap__progress {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--ir-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.wap__sep { margin: 0 8px; }
+
+.wap__question-box {
+  border: 1px solid var(--ir-border);
+  border-radius: 12px;
+  background: var(--ir-surface);
+  padding: 18px 20px;
+}
+
+.wap__topic {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--ir-muted);
+}
+
+.wap__topic-label { font-weight: 700; margin-right: 6px; }
+.wap__topic-name { font-weight: 600; }
+
+.wap__question {
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.wap__explanation {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--ir-accent);
+  border-radius: 8px;
+  background: rgba(0, 122, 255, 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.wap__nav,
+.wap__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.wap__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 18px;
+  border: 1px solid var(--ir-accent);
+  border-radius: 8px;
+  background: var(--ir-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wap__btn:focus-visible {
+  outline: 2px solid var(--ir-accent);
+  outline-offset: 2px;
+}
+
+.wap__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wap__btn--ghost {
+  background: transparent;
+  color: var(--ir-accent);
+}
+
+.wap__empty {
+  margin: 24px 0 16px;
+  font-size: 15px;
+  color: var(--ir-muted);
+}
+
+[data-theme='dark'] .wap {
+  --ir-surface: #1e1e1e;
+  --ir-border: #363636;
+  --ir-text: #f0f0f0;
+  --ir-muted: #a0a0a0;
+  --ir-accent: #4c9dff;
+}
+
+@media (max-width: 600px) {
+  .wap { padding: 12px 14px 96px; }
+  .wap__question-box { padding: 14px 16px; }
+  .wap__nav,
+  .wap__actions { flex-wrap: wrap; }
+  .wap__btn { flex: 1 1 auto; }
+}

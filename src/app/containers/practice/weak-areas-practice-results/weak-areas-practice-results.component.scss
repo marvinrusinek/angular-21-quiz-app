@@ -1,0 +1,241 @@
+// Practice Results. Reuses the --ir-* token set the Interview surfaces define so
+// light/dark come from the token layer, with local fallbacks at each USE site.
+.wapr {
+  --ir-surface: #fff;
+  --ir-border: #e0e0e0;
+  --ir-text: #1a1a1a;
+  --ir-muted: #6a6a6a;
+  --ir-accent: #007aff;
+  --ir-correct: #1b7f3b;
+  --ir-incorrect: #b3261e;
+
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 16px 18px 96px;
+  color: var(--ir-text);
+  box-sizing: border-box;
+}
+
+.wapr__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.wapr__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.wapr__title:focus-visible {
+  outline: 2px solid var(--ir-accent);
+  outline-offset: 4px;
+}
+
+.wapr__section-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ir-muted);
+}
+
+.wapr__score,
+.wapr__topics,
+.wapr__review,
+.wapr__none {
+  border: 1px solid var(--ir-border);
+  border-radius: 12px;
+  background: var(--ir-surface);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.wapr__score-value {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.wapr__score-detail {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+.wapr__score-note {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--ir-muted);
+}
+
+// ── per-topic ────────────────────────────────────────────────────
+.wapr__topic-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wapr__topic {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ir-border);
+}
+
+.wapr__topic:last-child { border-bottom: 0; }
+
+.wapr__topic-name { font-weight: 600; }
+
+.wapr__topic-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wapr__topic-pct { font-weight: 800; }
+
+// ── review ───────────────────────────────────────────────────────
+.wapr__entry {
+  border-top: 1px solid var(--ir-border);
+  padding: 16px 0 4px;
+}
+
+.wapr__entry:first-of-type { border-top: 0; padding-top: 0; }
+
+.wapr__entry-meta {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: var(--ir-muted);
+}
+
+.wapr__sep { margin: 0 8px; }
+
+.wapr__entry-question {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.wapr__entry-result { margin: 0 0 10px; }
+
+.wapr__badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid currentcolor;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.wapr__badge--correct { color: var(--ir-correct); }
+.wapr__badge--incorrect { color: var(--ir-incorrect); }
+.wapr__badge--skipped { color: var(--ir-muted); }
+
+.wapr__answers {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.wapr__answers dt {
+  font-weight: 700;
+  color: var(--ir-muted);
+  margin-top: 8px;
+}
+
+.wapr__answers dd { margin: 2px 0 0; }
+
+.wapr__answer-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.wapr__muted { color: var(--ir-muted); }
+
+.wapr__entry-explanation {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--ir-accent);
+  border-radius: 8px;
+  background: rgba(0, 122, 255, 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+// ── no weak areas ────────────────────────────────────────────────
+.wapr__none-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.wapr__none-text {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--ir-muted);
+  line-height: 1.5;
+}
+
+// ── actions ──────────────────────────────────────────────────────
+.wapr__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.wapr__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 18px;
+  border: 1px solid var(--ir-accent);
+  border-radius: 8px;
+  background: var(--ir-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wapr__btn:focus-visible {
+  outline: 2px solid var(--ir-accent);
+  outline-offset: 2px;
+}
+
+.wapr__btn--ghost {
+  background: transparent;
+  color: var(--ir-accent);
+}
+
+[data-theme='dark'] .wapr {
+  --ir-surface: #1e1e1e;
+  --ir-border: #363636;
+  --ir-text: #f0f0f0;
+  --ir-muted: #a0a0a0;
+  --ir-accent: #4c9dff;
+  --ir-correct: #6ede8a;
+  --ir-incorrect: #ff8a80;
+}
+
+@media (max-width: 600px) {
+  .wapr { padding: 12px 14px 96px; }
+  .wapr__score,
+  .wapr__topics,
+  .wapr__review,
+  .wapr__none { padding: 14px 16px; }
+  .wapr__topic { flex-wrap: wrap; }
+  .wapr__actions { flex-wrap: wrap; }
+  .wapr__btn { flex: 1 1 auto; }
+}

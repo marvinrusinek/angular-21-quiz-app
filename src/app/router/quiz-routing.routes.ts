@@ -23,6 +23,10 @@ import { InterviewCertificateComponent } from
 
 import { QuizGuard } from './guards/quiz-guard';
 import { InterviewSessionGuard } from './guards/interview-session-guard';
+import { PracticeSessionGuard } from './guards/practice-session-guard';
+import { PracticeResultGuard } from './guards/practice-result-guard';
+import { WeakAreasPracticeComponent } from '../containers/practice/weak-areas-practice/weak-areas-practice.component';
+import { WeakAreasPracticeResultsComponent } from '../containers/practice/weak-areas-practice-results/weak-areas-practice-results.component';
 import { InterviewResultGuard } from './guards/interview-result-guard';
 
 export const routes: Routes = [
@@ -86,6 +90,25 @@ export const routes: Routes = [
   {
     path: 'interview/certificate',
     component: InterviewCertificateComponent
+  },
+
+  // Weak Areas Practice — untimed learning session generated from the user's
+  // calculated weak topics. Guarded: the session is created by the Practice
+  // action, never by navigating to the URL; direct/stale access redirects to
+  // Quiz Selection. A refresh passes because the session rehydrates from
+  // sessionStorage before the guard runs.
+  {
+    path: 'practice/weak-areas',
+    component: WeakAreasPracticeComponent,
+    canActivate: [PracticeSessionGuard]
+  },
+  // Practice Results. Guarded: requires a SUBMITTED session with a scored
+  // result. The result is persisted with the session snapshot, so a refresh
+  // re-renders the same score instead of recomputing it.
+  {
+    path: 'practice/results',
+    component: WeakAreasPracticeResultsComponent,
+    canActivate: [PracticeResultGuard]
   },
 
   // Backward compatibility redirects
