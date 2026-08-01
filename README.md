@@ -5,7 +5,7 @@ A feature-rich quiz platform built with <strong>Angular 22</strong> that demonst
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Angular-21-red">
+<img src="https://img.shields.io/badge/Angular-22-red">
 <img src="https://img.shields.io/badge/TypeScript-Enabled-blue">
 <img src="https://img.shields.io/badge/RxJS-Reactive-purple">
 <img src="https://img.shields.io/badge/Signals-Integrated-orange">
