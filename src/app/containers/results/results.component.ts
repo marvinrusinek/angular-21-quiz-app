@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage, NgTemplateOutlet } from '@angular/common';
+import { TopicPerformanceHistoryService } from '../../shared/services/progress/topic-performance-history.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -103,6 +104,7 @@ export class ResultsComponent implements OnInit {
   private readonly timerService = inject(TimerService);
   private readonly scoreAnalysisService = inject(ScoreAnalysisService);
   private readonly achievementService = inject(AchievementService);
+  private readonly topicPerformanceHistory = inject(TopicPerformanceHistoryService);
   private readonly themeService = inject(ThemeService);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly cdRef = inject(ChangeDetectorRef);
@@ -153,7 +155,7 @@ export class ResultsComponent implements OnInit {
       this.applyFinalResultSnapshot(r);
       this.updateHeaderLabel(r.total);
       this.persistResultsToSession(r);
-      this.processAchievements(r);
+      this.finalizeCompletion(r);
     });
   }
 
@@ -212,7 +214,7 @@ export class ResultsComponent implements OnInit {
       this.applyFinalResultSnapshot(snapshot);
       this.updateHeaderLabel(snapshot.total);
       this.persistResultsToSession(snapshot);
-      this.processAchievements(snapshot);
+      this.finalizeCompletion(snapshot);
 
       // Record this completed attempt in the High Scores list ONCE, here at the
       // single results-load convergence point (alongside achievements). The
@@ -449,6 +451,48 @@ export class ResultsComponent implements OnInit {
    * idempotent — evaluate() persists + returns only genuinely NEW achievements,
    * so a refresh that re-runs the flow yields [] and shows nothing.
    */
+  /**
+   * The completion chokepoint. Runs the independent finalization steps for a
+   * completed quiz.
+   *
+   * Topic-performance recording is called HERE rather than from inside
+   * processAchievements() so it is not semantically dependent on achievements:
+   * an achievement early-return, a disabled achievement system, or a future
+   * achievement refactor must never silently stop weak-area data being recorded.
+   * Each step carries its own idempotence.
+   */
+  private finalizeCompletion(result: FinalResult): void {
+    this.recordTopicPerformance(result);
+    this.processAchievements(result);
+  }
+
+  /**
+   * Record the RAW correct/total for Weak Areas, exactly once per completion.
+   *
+   * The attempt id uses `completedAt`, which is stamped ONCE when the result is
+   * first built and then persisted in the sessionStorage snapshot — a revisit or
+   * refresh reads that snapshot rather than rebuilding, so the id is identical
+   * and the store's dedup makes the repeat a no-op. A genuinely new completion
+   * of the same quiz gets a new timestamp, so it correctly records a second
+   * attempt.
+   *
+   * Writes only to topicPerformanceHistory:v1 — never High Scores, completion
+   * counts, achievements or Interview History.
+   */
+  private recordTopicPerformance(result: FinalResult): void {
+    if (!result?.quizId || !(result.total > 0)) return;
+    this.topicPerformanceHistory.record(
+      `quiz:${result.quizId}:${result.completedAt}`,
+      'topic-quiz',
+      [{
+        topicId: result.quizId,
+        topicName: this.quizData.find((q) => q.quizId === result.quizId)?.milestone ?? result.quizId,
+        correct: result.correct,
+        total: result.total
+      }]
+    );
+  }
+
   private processAchievements(result: FinalResult): void {
     if (this.achievementsProcessed) return;
     if (!result?.quizId) return;

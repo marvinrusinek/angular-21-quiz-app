@@ -86,7 +86,9 @@ describe('ProgressPanelComponent', () => {
     expect(text).toContain('Overall Progress');        // overall bar
     expect(text).toContain('Beginner');                // difficulty bar
     expect(text).toContain('Dependency Injection');    // strongest
-    expect(text).toContain('RxJS');                    // needs review
+    // Needs Review no longer echoes the best-score weakest quiz; with no
+    // reliable topic-performance data it shows the insufficient-data message.
+    expect(text).toContain('Complete a quiz or interview to identify weak areas.');
   });
 
   it('does not render for a null summary even with activity', () => {

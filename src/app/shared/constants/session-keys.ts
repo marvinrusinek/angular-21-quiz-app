@@ -62,3 +62,9 @@ export const SK_INTERVIEW_CERTIFICATE = 'interviewCertificate:v1';
 // 5-interview requirement. Kept separate from the issued-certificate record and
 // from Interview History (which is never modified).
 export const SK_INTERVIEW_CERTIFICATE_QUAL = 'interviewCertificateQualifiedAt:v1';
+
+// General store of RELIABLE raw topic performance (topic quizzes + Weak Areas
+// Practice). Deliberately SEPARATE from interviewAttemptHistory:v1, which stays
+// interview-only so certificate qualification and interview analytics are
+// unaffected.
+export const SK_TOPIC_PERFORMANCE_HISTORY = 'topicPerformanceHistory:v1';

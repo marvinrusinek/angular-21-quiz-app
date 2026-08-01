@@ -70,7 +70,10 @@ describe('ProgressSummaryComponent', () => {
     expect(text()).toContain('Dependency Injection');
   });
 
-  it('shows strongest but hides Needs Review when weakest is null', () => {
+  // Needs Review is now driven by WeakAreasService, not the best-score
+  // percentage. With no reliable topic-performance data it shows the
+  // insufficient-data message rather than hiding.
+  it('shows strongest, and the insufficient-data message under Needs Review', () => {
     set(summary({
       completedCount: 1,
       completionPercentage: 20,
@@ -79,7 +82,9 @@ describe('ProgressSummaryComponent', () => {
     }));
     expect(text()).toContain('Strongest');
     expect(text()).toContain('RxJS');
-    expect(text()).not.toContain('Needs Review');
+    expect(text()).toContain('Needs Review');
+    expect(text()).toContain('Complete a quiz or interview to identify weak areas.');
+    expect(text()).not.toContain('Practice Weak Areas');   // no action without weak topics
   });
 
   it('shows both strongest and needs-review when both present', () => {
@@ -91,7 +96,9 @@ describe('ProgressSummaryComponent', () => {
     }));
     expect(text()).toContain('Strongest');
     expect(text()).toContain('Needs Review');
-    expect(text()).toContain('55%');
+    // The old best-score weakness (55%) is deliberately NOT used here any more.
+    expect(text()).not.toContain('55%');
+    expect(text()).toContain('Complete a quiz or interview to identify weak areas.');
   });
 
   it('renders 100% at full completion', () => {
@@ -141,7 +148,10 @@ describe('ProgressSummaryComponent', () => {
       expect(text()).toContain('60%');
       expect(text()).toContain('Beginner');
       expect(text()).toContain('Dependency Injection');
-      expect(text()).toContain('RxJS');
+      // Needs Review is WeakAreasService-driven now, so the best-score weakest
+      // quiz (RxJS 40%) is no longer echoed here.
+      expect(text()).toContain('Needs Review');
+      expect(text()).not.toContain('RxJS');
       // A progress bar element with accessible attributes is rendered.
       const bar = fixture.nativeElement.querySelector('.progress-summary__bar[role="progressbar"]');
       expect(bar?.getAttribute('aria-valuenow')).toBe('60');

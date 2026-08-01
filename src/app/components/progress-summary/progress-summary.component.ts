@@ -1,11 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { ProgressSummary } from '../../shared/models/progress.model';
+import { WeakAreasService } from '../../shared/services/progress/weak-areas.service';
 
 /**
- * "Your Progress" panel for the Quiz Selection page. Pure presentation: it takes
- * an already-derived ProgressSummary and renders it — no storage, no rules.
+ * "Your Progress" panel for the Quiz Selection page. It renders an
+ * already-derived ProgressSummary and owns no storage or scoring rules of its
+ * own. The one exception is Needs Review, which reads WeakAreasService directly
+ * so the topics it names are exactly the ones the practice session will use.
  * Renders nothing until there is at least one quiz.
  *
  * Accessibility: every value is available as text (never color alone); the bars
@@ -16,7 +20,7 @@ import { ProgressSummary } from '../../shared/models/progress.model';
   selector: 'codelab-progress-summary',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TitleCasePipe],
+  imports: [TitleCasePipe, RouterLink],
   template: `
     @if (summary(); as s) {
       @if (s.totalCount > 0) {
@@ -102,7 +106,7 @@ import { ProgressSummary } from '../../shared/models/progress.model';
             </div>
           </dl>
 
-          @if (s.strongestQuiz || s.weakestQuiz) {
+          @if (s.strongestQuiz || s.weakestQuiz || weakTopics().length > 0) {
             <dl class="progress-summary__rows progress-summary__rows--highlights">
               @if (s.strongestQuiz; as strong) {
                 <div class="progress-summary__row">
@@ -110,13 +114,46 @@ import { ProgressSummary } from '../../shared/models/progress.model';
                   <dd class="progress-summary__value">{{ strong.milestone }} — {{ strong.bestScore }}%</dd>
                 </div>
               }
-              @if (s.weakestQuiz; as weak) {
-                <div class="progress-summary__row">
-                  <dt class="progress-summary__label" i18n>Needs Review</dt>
-                  <dd class="progress-summary__value">{{ weak.milestone }} — {{ weak.bestScore }}%</dd>
-                </div>
-              }
+              <!-- Needs Review is driven by WeakAreasService, NOT the
+                   best-score percentage that used to feed it: the practice
+                   action below must offer exactly the topics named here, and a
+                   best-score percentage cannot say how many questions were
+                   answered. There is deliberately no percentage fallback. -->
+              <div class="progress-summary__row">
+                <dt class="progress-summary__label" i18n>Needs Review</dt>
+                <dd class="progress-summary__value">
+                  @if (weakTopics().length > 0) {
+                    <span class="progress-summary__weak-list">
+                      @for (t of weakTopics(); track t.topicId) {
+                        <span class="progress-summary__weak-topic"
+                          >{{ t.topicName }} — {{ t.percentage }}%</span
+                        >
+                      }
+                    </span>
+                  } @else if (insufficientData()) {
+                    <span i18n>Complete a quiz or interview to identify weak areas.</span>
+                  } @else {
+                    <span i18n>No weak areas detected.</span>
+                  }
+                </dd>
+              </div>
             </dl>
+
+            <!-- Shown ONLY when there are eligible weak topics. The other two
+                 states are messages, never a disabled button.
+                 TEMPORARILY GATED: /practice/weak-areas does not exist yet, and
+                 a visible action must never route to a missing page. Flip
+                 PRACTICE_ROUTE_READY to true in the same commit that registers
+                 the route and session flow. -->
+            @if (practiceRouteReady && weakTopics().length > 0) {
+              <a
+                class="progress-summary__practice"
+                routerLink="/practice/weak-areas"
+                [attr.aria-label]="practiceAriaLabel()"
+                i18n
+                >Practice Weak Areas</a
+              >
+            }
           }
         </section>
       }
@@ -272,6 +309,34 @@ import { ProgressSummary } from '../../shared/models/progress.model';
   `]
 })
 export class ProgressSummaryComponent {
+  private readonly weakAreas = inject(WeakAreasService);
+
+  /**
+   * Gates the Practice Weak Areas action. The Needs Review TEXT states are live
+   * and correct; only the navigation is withheld until /practice/weak-areas and
+   * its session flow exist, so the UI can never offer a link to a missing page.
+   * Flip to `true` in the commit that registers the route.
+   */
+  readonly practiceRouteReady = false;
+
+  /**
+   * The SAME weak topics the practice session will draw from — one computed,
+   * so the labels shown here can never name different topics than the generator
+   * uses. Percentage is pre-rounded for display (templates can't call Math).
+   */
+  readonly weakTopics = computed(() =>
+    this.weakAreas.weakTopics().map((t) => ({ ...t, percentage: Math.round(t.percentage) }))
+  );
+
+  /** True when no topic yet has enough answered questions to be judged. */
+  readonly insufficientData = this.weakAreas.hasInsufficientData;
+
+  /** Names the topics in the action's accessible label, not colour or position. */
+  readonly practiceAriaLabel = computed(() => {
+    const names = this.weakTopics().map((t) => t.topicName).join(', ');
+    return names ? `Practice weak areas: ${names}` : 'Practice weak areas';
+  });
+
   /** The derived aggregate progress. Renders nothing when there are no quizzes. */
   readonly summary = input<ProgressSummary | null>(null);
 

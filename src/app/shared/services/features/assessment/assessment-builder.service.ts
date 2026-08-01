@@ -146,6 +146,46 @@ export class AssessmentBuilderService {
     };
   }
 
+  // ── weak areas practice ─────────────────────────────────────────
+
+  /** Questions available across the given weak topics. */
+  practiceCapacity(topicIds: readonly string[]): number {
+    return this.countEligible([...topicIds]).total;
+  }
+
+  /**
+   * Build an untimed Weak Areas Practice session from the calculated weak
+   * topics.
+   *
+   * Deliberately a thin wrapper over build(): that path already balances across
+   * topics, deep-clones + resets answer state, shuffles with
+   * ArrayUtils.shuffleArray, shuffles options with "All of the above" pinned
+   * last, and stamps sourceQuizId on every question. Re-implementing any of that
+   * here would create a second, divergent generator.
+   *
+   * The only practice-specific rules are the cap and the shortfall behaviour:
+   * take at most `max` questions, or everything available when the weak topics
+   * hold fewer. Returns null when there is nothing to practise, so callers never
+   * start an empty session.
+   */
+  buildPractice(topicIds: readonly string[], max = 10): GeneratedAssessment | null {
+    const ids = this.dedupe([...topicIds]);
+    if (ids.length === 0) return null;
+
+    const available = this.practiceCapacity(ids);
+    if (available <= 0) return null;
+
+    const questionCount = Math.min(max, available);
+    const built = this.build({
+      difficulty: 'mixed',
+      topicIds: ids,
+      questionCount: questionCount as AssessmentConfig['questionCount']
+    });
+
+    // Practice is UNTIMED: no countdown is derived or displayed.
+    return { ...built, id: `practice-${built.id}`, title: 'Weak Areas Practice', durationSeconds: 0 };
+  }
+
   // ── role presets ────────────────────────────────────────────────
 
   /**
