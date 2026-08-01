@@ -22,6 +22,38 @@ export default defineConfig({
     baseURL: 'http://localhost:4200',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+
+    /**
+     * Keep every page FOREGROUNDED and un-throttled.
+     *
+     * Without these, Chromium backgrounds or marks-occluded a page that is not
+     * the frontmost window, which flips `document.visibilityState` to 'hidden'
+     * and throttles timers to roughly once a minute. Both break this app's real
+     * behaviour rather than merely slowing it down:
+     *
+     *   - `qqc-orch-explanation.service.ts:40` calls
+     *     `resetExplanationStateOnHide()` when the page goes hidden, so a
+     *     timer-expiry FET assertion sees the heading revert to question text.
+     *   - Question timers are wall-clock dependent, so a throttled 30s timer
+     *     never fires inside a 45s wait.
+     *
+     * That is why the TIMER/FET specs passed when run ALONE (one page, always
+     * frontmost) yet failed in multi-file runs — a harness artefact, not a
+     * product defect. The app's hidden-document guards are deliberate (they are
+     * part of the FET-flicker fixes) and are NOT relaxed to suit the tests.
+     *
+     * Note this does NOT disable deliberate simulation: assessment-integrity
+     * .spec.ts forces `document.visibilityState` via a property getter and
+     * dispatches its own visibilitychange/blur events, which still work.
+     */
+    launchOptions: {
+      args: [
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=CalculateNativeWinOcclusion',
+      ],
+    },
   },
   projects: [
     {

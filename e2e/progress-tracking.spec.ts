@@ -14,17 +14,31 @@ const BEST_SCORES_KEY = 'quizBestScores';
  *     (`Record<quizId, number 0-100>`; key presence means "completed"). Durable:
  *     survives reloads, and a lower retake never lowers it.
  *
- *  2. SESSION-ONLY PANEL VISIBILITY — the "Your Progress" panel and the per-card
- *     score line sit behind `@if (showSelectionProgress())`, which reads
- *     `SessionEngagementService.engaged`. That flag is IN-MEMORY and is set in
- *     exactly one place: `onSelect()` on Quiz Selection (a tile click). So it is
- *     false on every fresh load, including after a refresh, BY DESIGN — the point
- *     is that a returning user isn't shown progress UI until they engage again.
- *     Saved progress is never touched by this gate.
+ *  2. PANEL VISIBILITY — the "Your Progress" panel and the per-card score line
+ *     sit behind `@if (showSelectionProgress())`, which is an OR of three
+ *     sources (quiz-selection.component.ts:102):
  *
- * Consequence for this spec: it must enter through Quiz Selection and click the
- * tile (deep-linking to a question URL never sets the flag), and it must expect
- * the panel to DISAPPEAR after a refresh while the stored score remains.
+ *         sessionEngagement.engaged()   in-memory — lost on any reload
+ *       || hasAccessedQuizzes()         sessionStorage (startedQuizIds /
+ *                                       completedQuizIds) — survives a RELOAD
+ *                                       in the SAME TAB, but not a new tab or a
+ *                                       restarted browser
+ *       || achievementsEarned() > 0     localStorage — survives everything,
+ *                                       including a new browser session
+ *
+ *     Only the FIRST is per-page-load. Once the user has real progress the panel
+ *     is retained across a refresh BY DESIGN, so the achievements header and
+ *     per-tile progress don't vanish on a returning user. A brand-new user with
+ *     no progress at all still gets a clean, progress-free screen.
+ *
+ *     Playwright gives each test a fresh context, so every test here starts as
+ *     that brand-new user — both stores begin empty.
+ *
+ * Consequence for this spec: it enters through Quiz Selection and clicks the
+ * tile (deep-linking to a question URL never sets the in-memory flag), and after
+ * a refresh it expects the panel to REMAIN — this run has completed a quiz, so
+ * the durable sources hold. The session-only half of the gate is asserted
+ * separately below, with a user who has no stored progress.
  */
 
 /** The durable record — read directly, so it is independent of panel visibility. */
@@ -79,7 +93,7 @@ async function answerTypescript(page: Page, wrongFirst = false): Promise<void> {
   await expect(page).toHaveURL(/\/results\//);
 }
 
-test('progress: score persists durably, panel visibility is session-only, and a lower retake keeps the best score', async ({ page }) => {
+test('progress: score persists durably, the panel is retained once progress exists, and a lower retake keeps the best score', async ({ page }) => {
   test.setTimeout(240_000);
 
   // ── complete the quiz perfectly (100%), entering via the tile so the
@@ -118,25 +132,25 @@ test('progress: score persists durably, panel visibility is session-only, and a 
   // ── the DURABLE record, asserted independently of any UI ────────────────
   expect((await storedBestScores(page))['typescript']).toBe(100);
 
-  // ── refresh: the in-memory engagement gate resets ────────────────────────
+  // ── refresh: the in-memory flag resets, but DURABLE progress keeps the panel ──
   await page.reload();
   await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
 
-  // Panel is GONE — `@if` removes it from the DOM. This is intended behaviour,
-  // not lost progress: the very next assertion proves the data survived.
-  await expect(page.locator(PANEL)).toHaveCount(0);
+  // The panel REMAINS. engaged() is back to false, but this run completed a
+  // quiz, so hasAccessedQuizzes() (sessionStorage — intact, same tab) and
+  // achievementsEarned() (localStorage) each hold the gate open on their own.
+  await expect(page.locator(PANEL)).toBeVisible();
   expect((await storedBestScores(page))['typescript']).toBe(100);
 
-  // ── re-engage through a tile and come back through the app ──────────────
-  // The tile click is what matters here: it calls onSelect() → markEngaged().
-  // Where it lands depends on state — an untouched quiz opens its intro, an
-  // already-completed one opens its results — so accept either.
+  // ── navigate away through the app and come back ────────────────────────
+  // Where the tile lands depends on state — an untouched quiz opens its intro,
+  // an already-completed one opens its results — so accept either.
   await page.locator(TS_TILE).click();
   await expect(page).toHaveURL(/\/quiz\/(intro|results)\/typescript/);
-  await page.goBack();   // router navigation, so the in-memory flag survives
+  await page.goBack();
   await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
 
-  // Panel returns, showing the SAME saved score.
+  // Panel still there, showing the SAME saved score.
   await expect(page.locator(PANEL)).toBeVisible();
   await expect(page.locator(PANEL_HEADER)).toContainText(/1 of \d+ completed/);
   await expect(page.locator('.quiz-tile.completed .quiz-card-progress')).toContainText('100%');
@@ -154,4 +168,58 @@ test('progress: score persists durably, panel visibility is session-only, and a 
   await expect(page.locator('.quiz-tile.completed .quiz-card-progress')).toContainText('100%');
   await expect(page.locator('.quiz-tile.completed .quiz-card-progress')).not.toContainText('90%');
   expect((await storedBestScores(page))['typescript']).toBe(100);
+});
+
+/**
+ * The gate from a BRAND-NEW user's starting point.
+ *
+ * With nothing stored, every source of `showSelectionProgress()` is false, so
+ * the screen starts clean. Engaging then opens the gate — and note that the very
+ * act of opening a quiz is itself RECORDED (the quiz is added to the
+ * sessionStorage accessed list), so from that point on the panel survives a
+ * reload of this tab. The "clean start" is the state of a user with no stored
+ * progress, not something that returns on every page load.
+ */
+test('progress: a brand-new user starts clean, and engaging opens the gate durably', async ({ page }) => {
+  await page.goto('/quiz');
+  await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
+
+  // Guard the premise: a genuinely fresh user. Each source is read from the
+  // store that actually backs it — scores/achievements in localStorage, the
+  // accessed list in sessionStorage.
+  const stored = await page.evaluate(() => ({
+    best: localStorage.getItem('quizBestScores'),
+    achievements: localStorage.getItem('quizAchievements'),
+    started: sessionStorage.getItem('startedQuizIds'),
+    completed: sessionStorage.getItem('completedQuizIds')
+  }));
+  expect(Object.values(stored).every((v) => v === null || v === '{}' || v === '[]')).toBe(true);
+
+  // Fresh load: no panel.
+  await expect(page.locator(PANEL)).toHaveCount(0);
+
+  // Tile click calls onSelect() -> markEngaged(), which opens the gate.
+  await page.locator(TS_TILE).click();
+  await expect(page).toHaveURL(/\/quiz\/(intro|results)\/typescript/);
+  await page.goBack();   // router navigation, so the in-memory flag survives
+  await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
+  await expect(page.locator(PANEL)).toBeVisible();
+
+  // A real reload drops the in-memory flag — but opening the quiz recorded it in
+  // the sessionStorage accessed list, which survives a reload of this tab, so
+  // hasAccessedQuizzes() now holds the gate open on its own.
+  await page.reload();
+  await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
+  await expect(page.locator(PANEL)).toBeVisible();
+
+  // Prove it is the STORED progress doing the work, not something incidental.
+  // Both stores must go: the accessed list is in sessionStorage, scores and
+  // achievements in localStorage. Clearing only one leaves the gate open.
+  // Clearing both represents a brand-new user or cleared site data — NOT a new
+  // browser session, which would drop sessionStorage but keep localStorage, so
+  // achievementsEarned() would still hold the panel open on its own.
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.reload();
+  await page.locator('.quiz-tile').first().waitFor({ state: 'visible', timeout: 20_000 });
+  await expect(page.locator(PANEL)).toHaveCount(0);
 });
