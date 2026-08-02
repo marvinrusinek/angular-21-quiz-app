@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { form, minLength, required, requiredError, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
@@ -22,6 +23,13 @@ import {
 
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
 import { AssessmentBuilderService } from '../../../shared/services/features/assessment/assessment-builder.service';
+import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
+import { InterviewApiError } from '../../../shared/services/api/interview-api.errors';
+import { BackendInterviewSessionService } from '../../../shared/services/interview/backend-interview-session.service';
+import { AssessmentIntegrityService } from '../../../shared/services/features/interview/assessment-integrity.service';
+import { buildInterviewSessionRequest } from '../../../shared/services/interview/interview-builder-request.mapper';
+import { isApiConfigured } from '../../../shared/tokens/api-base-url.token';
+import type { CreateInterviewSessionRequest } from '../../../shared/models/api/interview-api.dto';
 import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 import { swallow } from '../../../shared/utils/error-logging';
@@ -89,8 +97,23 @@ export interface InterviewBuilderModel {
 })
 export class BuildYourInterviewComponent implements OnInit {
   private readonly quizDataService = inject(QuizDataService);
+  // Still injected for the eligibility PREVIEW (counts/capacity shown while
+  // configuring). It no longer generates the assessment — the backend does.
   private readonly builder = inject(AssessmentBuilderService);
   private readonly session = inject(InterviewSessionService);
+  private readonly api = inject(InterviewApiService);
+  private readonly backendSession = inject(BackendInterviewSessionService);
+  private readonly integrity = inject(AssessmentIntegrityService);
+
+  /** In-flight guard for session creation. Not derived from the disabled state. */
+  private creating = false;
+  private readonly _isCreating = signal(false);
+  private readonly _createError = signal<string | null>(null);
+
+  /** True while the backend session is being created and navigation is pending. */
+  readonly isCreating = this._isCreating.asReadonly();
+  /** Safe, user-facing message. Never a raw backend message. */
+  readonly createError = this._createError.asReadonly();
   private readonly spinner = inject(QuizStartSpinnerService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -366,22 +389,69 @@ export class BuildYourInterviewComponent implements OnInit {
     };
   }
 
+  /**
+   * Create the assessment on the BACKEND and hand off to the session route.
+   *
+   * Stage 9C cutover: nothing is generated or scored locally any more. The
+   * builder no longer calls AssessmentBuilderService or the old
+   * InterviewSessionService — a failure surfaces as a retryable message rather
+   * than silently falling back to local generation.
+   */
   async startInterview(): Promise<void> {
-    // A role preset ignores the Custom controls entirely — it is a fixed
-    // configuration, so its questions come from buildFromPreset() and the
-    // user's in-progress Custom selections are left untouched.
+    // ONE in-flight guard, independent of the disabled attribute: a double
+    // click, Enter-plus-click or repeated key activation must not create two
+    // attempts, and the backend mints a new attempt for every request.
+    if (this.creating) return;
+
     const preset = this.selectedPreset();
     if (preset) {
       if (this.presetStartDisabled()) return;
-      this.stashTimerOverride();
-      this.session.startPreset(preset);
-    } else {
-      if (this.startDisabled()) return;
-      this.stashTimerOverride();
-      this.session.start(this.currentConfig());
+    } else if (this.startDisabled()) {
+      return;
     }
-    await this.spinner.showForStart($localize`Preparing Interview…`);
-    await this.router.navigate(['/interview/session']);
+
+    // Fail CLOSED when the production API origin has not been configured.
+    if (!isApiConfigured()) {
+      this._createError.set($localize`Interview Mode is not configured for this environment.`);
+      return;
+    }
+
+    let request: CreateInterviewSessionRequest;
+    try {
+      request = buildInterviewSessionRequest({
+        presetId: preset?.id ?? null,
+        difficulty: this.model().difficulty,
+        topicIds: this.model().selectedTopicIds,
+        questionCount: this.model().questionCount
+      });
+    } catch {
+      this._createError.set($localize`The selected Interview configuration could not be created.`);
+      return;
+    }
+
+    this.creating = true;
+    this._isCreating.set(true);
+    this._createError.set(null);
+    this.stashTimerOverride();
+
+    try {
+      const created = await firstValueFrom(this.api.createSession(request));
+
+      // Only NOW is the previous session reference replaced — a failed create
+      // must never destroy a still-valid session the user could resume.
+      this.backendSession.activateCreatedSession(created.session, created.sessionToken);
+      this.integrity.reset();
+
+      await this.spinner.showForStart($localize`Preparing Interview…`);
+      // The session id is NOT secret; the token stays in sessionStorage.
+      await this.router.navigate(['/interview/session', created.session.sessionId]);
+    } catch (err: unknown) {
+      const error = err instanceof InterviewApiError ? err : new InterviewApiError('UNKNOWN', 0);
+      this._createError.set(error.userMessage);
+    } finally {
+      this.creating = false;
+      this._isCreating.set(false);
+    }
   }
 
   // Test-only hook: carry a `?interviewSeconds=` override into the session (via

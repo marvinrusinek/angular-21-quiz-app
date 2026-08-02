@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+
+# Real environment values and the SQLite session store are never committed.
+.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

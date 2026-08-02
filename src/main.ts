@@ -19,6 +19,7 @@ import { ANSWER_COMPONENT } from './app/shared/tokens/answer-component.token';
 import { PwaUpdateService } from './app/shared/services/pwa-update.service';
 import { GlobalErrorHandler, installGlobalErrorLogging } from './app/shared/utils/error-logging';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
+import { provideApiBaseUrl } from './app/shared/tokens/api-base-url.token';
 import { validateQuizData } from './app/shared/utils/quiz-data-validation';
 
 installGlobalErrorLogging();
@@ -37,6 +38,10 @@ bootstrapApplication(AppComponent, {
     // hydrate from. Angular 22 warns about exactly that combination (NG0505),
     // and the provider did nothing for us, so it is gone rather than silenced.
     provideHttpClient(withFetch()),
+    // Base URL for the private quiz API. Provided centrally so no service or
+    // component hard-codes a host. Nothing consumes it yet — Interview Mode is
+    // wired to the API from Stage 9C.
+    provideApiBaseUrl(),
     provideRouter(routes),
     provideAnimations(),
     // Fetch quiz dataset BEFORE app stabilizes. Populates the module-level

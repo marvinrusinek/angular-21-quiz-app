@@ -1,7 +1,40 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+
+import { API_BASE_URL } from '../../../shared/tokens/api-base-url.token';
+import { of, throwError } from 'rxjs';
+
+import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
+import { InterviewApiError } from '../../../shared/services/api/interview-api.errors';
+import { AssessmentBuilderService } from '../../../shared/services/features/assessment/assessment-builder.service';
+import type { CreatedInterviewSession } from '../../../shared/services/api/interview-api.service';
+
+/**
+ * A representative created-session fixture. Deliberately contains NO
+ * correctness and NO explanation — that is what the backend actually returns.
+ */
+const CREATED: CreatedInterviewSession = {
+  sessionToken: 'a'.repeat(43),
+  session: {
+    sessionId: 'is_test_1',
+    status: 'active',
+    createdAtMs: 1_700_000_000_000,
+    expiresAtMs: 1_700_000_900_000,
+    durationSeconds: 900,
+    remainingSeconds: 900,
+    config: { mode: 'custom', difficulty: 'beginner', topicIds: ['ts', 'templates'], questionCount: 20 },
+    questions: [
+      {
+        questionId: 'ts:q:0', sourceQuizId: 'ts', questionText: 'Q?', type: 'single',
+        options: [{ optionId: 101, text: 'a' }, { optionId: 102, text: 'b' }]
+      }
+    ],
+    answers: new Map()
+  }
+};
 
 import { Quiz, QuizDifficulty } from '../../../shared/models/Quiz.model';
 import { setQuizDataCache } from '../../../shared/quiz-data-cache';
@@ -50,7 +83,11 @@ describe('BuildYourInterviewComponent', () => {
       providers: [
         { provide: QuizDataService, useValue: { quizzesSig: signal(CATALOG), ensureQuizzesLoaded: () => of(CATALOG) } },
         { provide: Router, useValue: router },
-        { provide: QuizStartSpinnerService, useValue: spinner }
+        { provide: QuizStartSpinnerService, useValue: spinner },
+        // Stage 9C: the builder now creates the session through the API.
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://test.local/api' }
       ]
     }).compileComponents();
 
@@ -211,9 +248,19 @@ describe('BuildYourInterviewComponent', () => {
   });
 
   // 13
-  it('triggers assessment generation exactly once on Start', async () => {
+  /**
+   * Stage 9C: Start now creates the assessment on the BACKEND. The local
+   * generator and the old session service must not be involved.
+   */
+  it('creates ONE backend session on Start and navigates with the session id', async () => {
+    const api = TestBed.inject(InterviewApiService);
     const session = TestBed.inject(InterviewSessionService);
+    const builder = TestBed.inject(AssessmentBuilderService);
+
+    const createSpy = jest.spyOn(api, 'createSession').mockReturnValue(of(CREATED));
     const startSpy = jest.spyOn(session, 'start');
+    const presetSpy = jest.spyOn(session, 'startPreset');
+    const buildSpy = jest.spyOn(builder, 'build');
 
     setDifficulty('beginner');
     component.toggleTopic('ts', true);
@@ -221,13 +268,84 @@ describe('BuildYourInterviewComponent', () => {
 
     await component.startInterview();
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
-    expect(startSpy).toHaveBeenCalledWith({
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(createSpy).toHaveBeenCalledWith({
+      mode: 'custom',
       difficulty: 'beginner',
       topicIds: ['ts', 'templates'],
       questionCount: 20
     });
+
+    // NO local generation, NO old session service.
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(presetSpy).not.toHaveBeenCalled();
+    expect(buildSpy).not.toHaveBeenCalled();
+
     expect(spinner.showForStart).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(['/interview/session']);
+    expect(router.navigate).toHaveBeenCalledWith(['/interview/session', 'is_test_1']);
+  });
+
+  it('does NOT fall back to local generation when the API fails', async () => {
+    sessionStorage.clear();   // isolate from the successful-create test above
+    const api = TestBed.inject(InterviewApiService);
+    const session = TestBed.inject(InterviewSessionService);
+    const builder = TestBed.inject(AssessmentBuilderService);
+
+    jest.spyOn(api, 'createSession').mockReturnValue(
+      throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0))
+    );
+    const startSpy = jest.spyOn(session, 'start');
+    const buildSpy = jest.spyOn(builder, 'build');
+    const presetBuildSpy = jest.spyOn(builder, 'buildFromPreset');
+
+    setDifficulty('beginner');
+    component.toggleTopic('ts', true);
+    component.toggleTopic('templates', true);
+
+    await component.startInterview();
+
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(buildSpy).not.toHaveBeenCalled();
+    expect(presetBuildSpy).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    // Stays on the builder, with a safe retryable message and no stored session.
+    expect(component.createError()).toBeTruthy();
+    expect(component.isCreating()).toBe(false);
+    expect(sessionStorage.getItem('interviewSessionRef:v2')).toBeNull();
+  });
+
+  it('a double invocation produces exactly ONE request', async () => {
+    const api = TestBed.inject(InterviewApiService);
+    const createSpy = jest.spyOn(api, 'createSession').mockReturnValue(of(CREATED));
+
+    setDifficulty('beginner');
+    component.toggleTopic('ts', true);
+    component.toggleTopic('templates', true);
+
+    await Promise.all([component.startInterview(), component.startInterview()]);
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes ONLY the minimal v2 reference', async () => {
+    const api = TestBed.inject(InterviewApiService);
+    jest.spyOn(api, 'createSession').mockReturnValue(of(CREATED));
+
+    setDifficulty('beginner');
+    component.toggleTopic('ts', true);
+    component.toggleTopic('templates', true);
+    await component.startInterview();
+
+    const raw = sessionStorage.getItem('interviewSessionRef:v2')!;
+    expect(Object.keys(JSON.parse(raw)).sort())
+      .toEqual(['currentIndex', 'sessionId', 'sessionToken', 'version']);
+    for (const banned of [
+      'questions', 'options', 'answers', 'correct', 'correctOptionIds',
+      'explanation', 'GeneratedAssessment', 'durationSeconds', 'expiresAt', 'result', 'score'
+    ]) {
+      expect(raw).not.toContain(banned);
+    }
+    // The old answer-bearing key is never written.
+    expect(sessionStorage.getItem('interviewSession')).toBeNull();
   });
 });

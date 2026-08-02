@@ -1,6 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
+
+import { of } from 'rxjs';
+
+import { API_BASE_URL } from '../../../shared/tokens/api-base-url.token';
+import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
 
 import { BuildYourInterviewComponent } from './build-your-interview.component';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
@@ -16,13 +23,46 @@ const REAL_CATALOG = ((quizData as { quizzes?: unknown[] }).quizzes ?? quizData)
 const startPreset = jest.fn();
 const start = jest.fn();
 
+/**
+ * Stage 9C: the builder creates the assessment on the BACKEND. The fixture
+ * deliberately carries no correctness and no explanation.
+ */
+const createSession = jest.fn();
+const CREATED = {
+  sessionToken: 'a'.repeat(43),
+  session: {
+    sessionId: 'is_preset_1',
+    status: 'active' as const,
+    createdAtMs: 1_700_000_000_000,
+    expiresAtMs: 1_700_000_900_000,
+    durationSeconds: 900,
+    remainingSeconds: 900,
+    config: { mode: 'preset' as const, presetId: 'junior', topicIds: ['typescript'], questionCount: 15 },
+    questions: [
+      {
+        questionId: 'typescript:q:0', sourceQuizId: 'typescript', questionText: 'Q?',
+        type: 'single' as const, options: [{ optionId: 101, text: 'a' }, { optionId: 102, text: 'b' }]
+      }
+    ],
+    answers: new Map<string, readonly number[]>()
+  }
+};
+
 function render(): ComponentFixture<BuildYourInterviewComponent> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [BuildYourInterviewComponent],
     providers: [
       // Register the real target so startInterview()'s navigation resolves.
-      provideRouter([{ path: 'interview/session', children: [] }]),
+      // Stage 9C navigates to the id-bearing route.
+      provideRouter([
+        { path: 'interview/session', children: [] },
+        { path: 'interview/session/:sessionId', children: [] }
+      ]),
+      // Stage 9C: the builder now creates the session through the API.
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      { provide: API_BASE_URL, useValue: 'http://test.local/api' },
       {
         provide: QuizDataService,
         useValue: {
@@ -31,6 +71,7 @@ function render(): ComponentFixture<BuildYourInterviewComponent> {
         }
       },
       { provide: InterviewSessionService, useValue: { start, startPreset } },
+      { provide: InterviewApiService, useValue: { createSession } },
       { provide: QuizStartSpinnerService, useValue: { showForStart: async () => void 0 } }
     ]
   });
@@ -44,8 +85,11 @@ const text = (el: HTMLElement): string => el.textContent ?? '';
 describe('BuildYourInterviewComponent — Quick Setup presets', () => {
   beforeEach(() => {
     setQuizDataCache(REAL_CATALOG, []);
+    sessionStorage.clear();
     startPreset.mockClear();
     start.mockClear();
+    createSession.mockReset();
+    createSession.mockReturnValue(of(CREATED));
   });
 
   it('offers Custom plus the three role presets as a radiogroup', () => {
@@ -134,8 +178,10 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     fixture.detectChanges();
     await fixture.componentInstance.startInterview();
 
-    expect(startPreset).toHaveBeenCalledTimes(1);
-    expect(startPreset.mock.calls[0][0]).toMatchObject({ id: 'mid-level' });
+    // Stage 9C: the preset goes to the BACKEND as just its id.
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(createSession).toHaveBeenCalledWith({ mode: 'preset', presetId: 'mid-level' });
+    expect(startPreset).not.toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
   });
 
@@ -174,8 +220,9 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(startPreset).toHaveBeenCalledTimes(1);
-    expect(startPreset.mock.calls[0][0]).toMatchObject({ id: 'junior' });
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(createSession).toHaveBeenCalledWith({ mode: 'preset', presetId: 'junior' });
+    expect(startPreset).not.toHaveBeenCalled();
   });
 
   it('keeps the real Start button DISABLED when a preset cannot be filled', () => {
@@ -215,7 +262,7 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     expect(comp.questionCount()).toBe(10);
   });
 
-  it('Custom start still uses the existing custom path, unchanged', async () => {
+  it('Custom start sends a custom backend request', async () => {
     const fixture = render();
     const comp = fixture.componentInstance;
     comp.setDifficulty('beginner');
@@ -226,7 +273,13 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     fixture.detectChanges();
 
     await comp.startInterview();
-    expect(start).toHaveBeenCalledTimes(1);
+    // Custom now sends exactly the four permitted fields to the backend.
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(createSession).toHaveBeenCalledWith({
+      mode: 'custom', difficulty: 'beginner',
+      topicIds: ['typescript', 'templates'], questionCount: 10
+    });
+    expect(start).not.toHaveBeenCalled();
     expect(startPreset).not.toHaveBeenCalled();
   });
 

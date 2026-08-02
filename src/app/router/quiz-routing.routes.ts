@@ -12,6 +12,8 @@ import { BuildYourInterviewComponent } from
     '../containers/interview/build-your-interview/build-your-interview.component';
 import { InterviewSessionComponent } from
     '../containers/interview/interview-session/interview-session.component';
+import { InterviewSessionHandoffComponent } from
+    '../containers/interview/interview-session-handoff/interview-session-handoff.component';
 import { InterviewResultsComponent } from
     '../containers/interview/interview-results/interview-results.component';
 import { InterviewHistoryComponent } from
@@ -66,6 +68,14 @@ export const routes: Routes = [
     path: 'interview/session',
     component: InterviewSessionComponent,
     canActivate: [InterviewSessionGuard]
+  },
+  // Stage 9C handoff. The builder now creates the assessment on the backend and
+  // navigates here with the (non-secret) session id; the bearer token stays in
+  // sessionStorage. Stage 9D replaces this shell with the real backend-backed
+  // session component and removes this comment.
+  {
+    path: 'interview/session/:sessionId',
+    component: InterviewSessionHandoffComponent
   },
   // Interview Results ("Assessment Complete"). Guarded: requires a submitted
   // result; direct/stale access redirects to the builder.
