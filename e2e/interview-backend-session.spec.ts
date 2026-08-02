@@ -40,8 +40,11 @@ async function startInterview(page: Page, count = '10'): Promise<void> {
   await page.locator('.chip:has-text("Beginner")').first().click();
   const boxes = page.locator('.topic-check input[type="checkbox"]');
   await expect(boxes.first()).toBeVisible();
-  const total = await boxes.count();
-  for (let i = 0; i < total; i++) await boxes.nth(i).check({ force: true });
+  // Use the builder's own Select All rather than ticking each box: choosing a
+  // difficulty re-renders the topic list, so a loop over a captured count can
+  // click an element that has just been replaced.
+  await page.locator('.topics-toolbar button:has-text("Select All")').click();
+  await expect(boxes.first()).toBeChecked();
   await page.locator(`.chip--button:has-text("${count}")`).first().click();
   await page.locator('.start-interview-btn').click();
 

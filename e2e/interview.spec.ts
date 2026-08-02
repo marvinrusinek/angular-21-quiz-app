@@ -15,10 +15,13 @@ const RESULTS_URL = /\/interview\/results\/[^/?#]+/;
 // the page is already on /interview (possibly with a ?interviewSeconds= hook).
 async function configureAndStart(page: Page, count: '10' | '20' | '30' = '10') {
   await page.locator('.chip:has-text("Beginner")').first().click();
+  // Use the builder's own Select All rather than ticking each box: choosing a
+  // difficulty re-renders the topic list, so a loop over a captured count can
+  // click an element that has just been replaced.
   const boxes = page.locator('.topic-check input[type="checkbox"]');
   await expect(boxes.first()).toBeVisible();
-  const n = await boxes.count();
-  for (let i = 0; i < n; i++) await boxes.nth(i).check({ force: true });
+  await page.locator('.topics-toolbar button:has-text("Select All")').click();
+  await expect(boxes.first()).toBeChecked();
   await page.locator(`.chip--button:has-text("${count}")`).first().click();
   await page.locator('.start-interview-btn').click();
   // The session route carries the backend session id.

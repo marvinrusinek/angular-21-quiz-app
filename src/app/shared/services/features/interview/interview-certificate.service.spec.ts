@@ -317,3 +317,99 @@ describe('generateCertificateId / validateCertificateRecord', () => {
     expect(validateCertificateRecord({ unlocked: false, certificateId: 'x', unlockedAt: '2026-07-24' })).toBeNull();
   });
 });
+
+/**
+ * The certificate reads Interview History, which is now SANITIZED (v2): no
+ * review, no questions, no answer key — only summary analytics. It consumes
+ * exactly one field, `completedAt`, so the migration must not change any
+ * qualification outcome.
+ */
+describe('certificate qualification over SANITIZED v2 history', () => {
+  beforeEach(() => { localStorage.clear(); setEarned([]); setHistory([]); });
+
+  /** A v2 record as InterviewResultHistoryAdapter + the store now produce it. */
+  function sanitizedAttempt(index: number, completedAt: string) {
+    return {
+      id: `att_${index}`,
+      sessionId: `is_${index}`,
+      attemptNumber: index + 1,
+      completedAt,
+      score: 8,
+      totalQuestions: 10,
+      percentage: 80,
+      completionReason: 'submitted' as const,
+      answered: 10,
+      unanswered: 0,
+      incorrect: 2,
+      durationSeconds: 540,
+      timeUsedSeconds: 540,
+      submittedByExpiry: false,
+      focusChanges: 0,
+      configKind: 'custom' as const,
+      configuredDifficulty: 'beginner',
+      selectedTopicIds: ['rxjs'],
+      topicPerformance: [
+        { topicId: 'rxjs', topicName: 'RxJS', correct: 8, total: 10, percentage: 80 }
+      ]
+    };
+  }
+
+  function setSanitizedHistory(completedAts: string[]): void {
+    historySig.set(
+      completedAts.map((iso, i) => sanitizedAttempt(i, iso)) as unknown as { completedAt: string }[]
+    );
+  }
+
+  it('a qualifying sequence still awards the certificate', () => {
+    setEarned(ALL_SIX);
+    const service = freshService();
+
+    // Qualification starts when the curriculum is finished.
+    service.ensureQualificationStarted();
+    const start = service.progress().qualificationStartedAt!;
+
+    // Five sanitized attempts completed AFTER that moment.
+    setSanitizedHistory([1, 2, 3, 4, 5].map((n) => offset(start, n * 60_000)));
+
+    const progress = service.progress();
+    expect(progress.qualifyingInterviewsCompleted).toBe(5);
+    expect(progress.isEligible).toBe(true);
+
+    expect(service.unlock()).not.toBeNull();
+    expect(service.record()?.unlocked).toBe(true);
+  });
+
+  it('sanitized records earlier than the qualification start still do not count', () => {
+    setEarned(ALL_SIX);
+    const service = freshService();
+    service.ensureQualificationStarted();
+    const start = service.progress().qualificationStartedAt!;
+
+    setSanitizedHistory([
+      offset(start, -60_000),            // before → ignored
+      offset(start, -30_000),            // before → ignored
+      offset(start, 60_000)              // after  → counts
+    ]);
+
+    expect(service.progress().qualifyingInterviewsCompleted).toBe(1);
+    expect(service.progress().isEligible).toBe(false);
+  });
+
+  it('reads ONLY completedAt — the absent v1 review changes nothing', () => {
+    setEarned(ALL_SIX);
+    const service = freshService();
+    service.ensureQualificationStarted();
+    const start = service.progress().qualificationStartedAt!;
+
+    const withoutReview = [1, 2, 3, 4, 5].map((n) => offset(start, n * 60_000));
+    setSanitizedHistory(withoutReview);
+    const sanitizedProgress = service.progress();
+
+    // The same dates carried on bare records produce the same outcome, proving
+    // no other history field participates.
+    setHistory(withoutReview);
+    expect(service.progress().qualifyingInterviewsCompleted)
+      .toBe(sanitizedProgress.qualifyingInterviewsCompleted);
+    expect(service.progress().isEligible).toBe(sanitizedProgress.isEligible);
+  });
+});
