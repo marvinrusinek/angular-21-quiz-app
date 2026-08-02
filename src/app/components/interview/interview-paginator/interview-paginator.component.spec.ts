@@ -171,6 +171,60 @@ describe('InterviewPaginatorComponent', () => {
     });
   });
 
+  /**
+   * `disabled` is the save gate: while an answer is being written to the
+   * backend — or after a write failed — leaving the question would strand it.
+   * Unlike `canNext`, this blocks EVERY direction, including Previous and
+   * direct page jumps.
+   */
+  describe('disabled (save gate)', () => {
+    function gated(current = 5) {
+      setup(20, current, new Set([0, 1, 2, 3, 4, 5]), true);
+      fixture.componentRef.setInput('disabled', true);
+      fixture.detectChanges();
+    }
+
+    it('disables Previous, Next and every page button', () => {
+      gated();
+      expect((fixture.nativeElement.querySelector('.pg-prev') as HTMLButtonElement).disabled).toBe(true);
+      expect((fixture.nativeElement.querySelector('.pg-next') as HTMLButtonElement).disabled).toBe(true);
+      expect(pageButtons().every((b) => b.disabled)).toBe(true);
+    });
+
+    it('emits nothing from a page click, goNext(), goPrevious() or goTo()', () => {
+      gated();
+      const emitted: number[] = [];
+      component.select.subscribe((i) => emitted.push(i));
+
+      pageButtons()[0]!.click();
+      component.goNext();
+      component.goPrevious();
+      component.goTo(9);
+
+      expect(emitted).toEqual([]);
+    });
+
+    it('defaults to enabled so the component works standalone', () => {
+      setup(20, 5, new Set([5]), true);
+      expect(component.disabled()).toBe(false);
+      expect((fixture.nativeElement.querySelector('.pg-next') as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('re-enables every direction once the gate clears', () => {
+      gated();
+      fixture.componentRef.setInput('disabled', false);
+      fixture.detectChanges();
+
+      const emitted: number[] = [];
+      component.select.subscribe((i) => emitted.push(i));
+      component.goPrevious();
+      component.goNext();
+
+      expect(emitted).toEqual([4, 6]);
+      expect(pageButtons().every((b) => !b.disabled)).toBe(true);
+    });
+  });
+
   it('renders the compact "Question X of Y" indicator for mobile', () => {
     setup(20, 7);
     const compact = fixture.nativeElement.querySelector('.pg-compact') as HTMLElement;

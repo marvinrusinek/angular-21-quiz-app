@@ -1,4 +1,23 @@
-@if (currentQuestion(); as q) {
+@if (status() === 'loading') {
+  <p class="loading-message" role="status" aria-live="polite" i18n>
+    Loading your assessment&hellip;
+  </p>
+} @else if (status() === 'error') {
+  <!-- Backend unavailable. The session reference is deliberately preserved so a
+       transient outage cannot destroy a live assessment. -->
+  <div class="interview-unavailable" role="status" aria-live="polite">
+    <p class="interview-unavailable__text" i18n>
+      Cannot reach the interview service. Your assessment is safe — check your
+      connection and try again.
+    </p>
+    <button type="button" class="show-results-btn" [disabled]="retrying()" (click)="retryResume()" i18n>
+      Try Again
+    </button>
+    <button type="button" class="ai-fullscreen-btn" (click)="backToBuilder()" i18n>
+      Back to Build Your Interview
+    </button>
+  </div>
+} @else if (currentQuestion(); as q) {
   <div class="interview-session">
     <header class="interview-session__bar">
       <h1 class="interview-session__title" i18n>Angular Assessment</h1>
@@ -40,19 +59,12 @@
          "Question X of Y" indicator is centered on this row. -->
     <div class="interview-integrity">
       @if (isFullscreen()) {
-        <!-- Replaces the button once fullscreen is active (the button would be a
-             no-op there). Same grid slot, so the row's layout does not shift. -->
         <span class="ai-fullscreen-on" role="status" aria-live="polite">
           <span class="ai-dot" aria-hidden="true"></span>
           <ng-container i18n>Full Screen Enabled</ng-container>
         </span>
       } @else if (fullscreenSupported) {
-        <button
-          type="button"
-          class="ai-fullscreen-btn"
-          (click)="enterFullscreen()"
-          i18n
-        >
+        <button type="button" class="ai-fullscreen-btn" (click)="enterFullscreen()" i18n>
           Enter Full Screen
         </button>
       }
@@ -78,8 +90,6 @@
       (contextmenu)="blockCopy($event)"
       (dragstart)="blockCopy($event)"
     >
-      <!-- Question text rendered directly (deferred feedback → always the
-           question text, never the FET, never empty). -->
       <h3
         class="interview-question"
         aria-live="polite"
@@ -87,11 +97,29 @@
         [innerHTML]="questionText()"
       ></h3>
 
+      <!-- Multi-select comes from the server TYPE. There is no correctness in
+           the active model to infer it from. -->
       <app-interview-options
         [options]="currentOptions()"
         [selectedIds]="selectedIds()"
+        [questionType]="questionType()"
+        [disabled]="inputsLocked()"
         (selectionChange)="onSelectionChange($event)"
       />
+
+      <!-- Save status. Never correctness. -->
+      @if (isSavingCurrent()) {
+        <p class="interview-save interview-save--pending" role="status" aria-live="polite" i18n>
+          Saving&hellip;
+        </p>
+      } @else if (hasFailedCurrent()) {
+        <!-- The display has been rolled back to the confirmed server answer, so
+             say so: otherwise the restored selection reads as lost data. -->
+        <p class="interview-save interview-save--error" role="alert">
+          <span i18n>Your answer could not be saved — your previous answer is shown.</span>
+          <button type="button" class="interview-save__btn" (click)="retrySave()" i18n>Retry</button>
+        </p>
+      }
     </div>
 
     <app-interview-paginator
@@ -99,14 +127,25 @@
       [currentIndex]="currentIndex()"
       [answered]="answeredIndices()"
       [canNext]="canNavigateNext()"
+      [disabled]="navigationBlocked()"
       (select)="onNavigate($event)"
     />
 
     <footer class="interview-session__footer">
-      @if (isLastQuestion()) {
+      @if (isFinalizing()) {
+        <span class="interview-save interview-save--pending" role="status" aria-live="polite" i18n>
+          Submitting your assessment&hellip;
+        </span>
+      } @else if (submitError(); as error) {
+        <span class="interview-save interview-save--error" role="alert">
+          {{ error }}
+          <button type="button" class="interview-save__btn" (click)="retrySubmit()" i18n>Retry</button>
+        </span>
+      } @else if (isLastQuestion()) {
         <button
           type="button"
           class="show-results-btn"
+          [disabled]="navigationBlocked()"
           (click)="onShowResults()"
           i18n
         >
@@ -115,12 +154,12 @@
       }
 
       <span class="interview-session__progress">
-        {{ answeredIndices().size }} / {{ total() }} <span i18n>answered</span>
+        {{ answeredCount() }} / {{ total() }} <span i18n>answered</span>
       </span>
     </footer>
   </div>
 } @else {
-  <p class="loading-message" role="status" aria-live="polite">
-    Preparing interview&hellip; (questions loaded: {{ total() }})
+  <p class="loading-message" role="status" aria-live="polite" i18n>
+    Preparing interview&hellip;
   </p>
 }

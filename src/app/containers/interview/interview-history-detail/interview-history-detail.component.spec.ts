@@ -25,7 +25,7 @@ function entry(id: string, i: number): InterviewAttemptHistoryEntry {
 }
 
 function seed(attempts: InterviewAttemptHistoryEntry[]): void {
-  localStorage.setItem(SK_INTERVIEW_HISTORY, JSON.stringify({ version: 1, attempts }));
+  localStorage.setItem(SK_INTERVIEW_HISTORY, JSON.stringify({ version: 2, attempts }));
 }
 
 function render(id: string): ComponentFixture<InterviewHistoryDetailComponent> {
@@ -63,41 +63,25 @@ describe('InterviewHistoryDetailComponent', () => {
     expect(ro?.getAttribute('aria-label')).toContain('Read only');
   });
 
-  it('10. states that per-question review was not retained for a legacy entry', () => {
+  it('10. states that detailed review is only available in the current session', () => {
     seed([entry('a1', 1)]);
     const el = render('a1').nativeElement as HTMLElement;
-    expect(el.querySelector('.ihd-note')?.textContent).toContain('Detailed answer review was not retained');
+    expect(el.querySelector('.ihd-note')?.textContent)
+      .toContain('available only for the current browser session');
     expect(el.querySelector('app-interview-review')).toBeNull();
   });
 
-  it('reopens the read-only Review Answers list when a review snapshot was retained', () => {
-    const withReview: InterviewAttemptHistoryEntry = {
-      ...entry('a1', 1),
-      review: [
-        {
-          questionText: 'What is a signal?', explanation: 'A reactive primitive.',
-          sourceQuizId: 'forms',
-          options: [
-            { optionId: 1, text: 'A value', correct: true },
-            { optionId: 2, text: 'A pipe', correct: false }
-          ],
-          selectedOptionIds: [2]   // answered, wrong
-        }
-      ]
-    };
-    seed([withReview]);
+  it('NEVER renders a per-question review for a sanitized record', () => {
+    // Even if a stale store still carried review data, the component must not
+    // render it: the field is gone from the schema and hasReview() is false.
+    seed([{ ...entry('a1', 1), review: [{ questionText: 'leftover' }] } as never]);
     const el = render('a1').nativeElement as HTMLElement;
-    // Review list renders; the "not retained" note does not.
-    expect(el.querySelector('.ihd-note')).toBeNull();
-    expect(el.querySelector('.ihd-review__heading')?.textContent).toContain('Review Answers');
-    // The section carries the #review anchor so the History card shortcut can
-    // deep-link straight to it.
-    expect(el.querySelector('#review.ihd-review')).not.toBeNull();
-    expect(el.querySelector('.rv-item')).not.toBeNull();
-    expect(el.textContent).toContain('What is a signal?');
-    // Embedded on this page: the review's own header meta is suppressed (the
-    // detail header already shows attempt #/date/score).
-    expect(el.querySelector('.rv-meta')).toBeNull();
+
+    expect(el.querySelector('app-interview-review')).toBeNull();
+    expect(el.querySelector('.rv-item')).toBeNull();
+    expect(el.textContent).not.toContain('leftover');
+    expect(el.querySelector('.ihd-note')?.textContent)
+      .toContain('available only for the current browser session');
   });
 
   it('reuses the shared Topic Performance component', () => {

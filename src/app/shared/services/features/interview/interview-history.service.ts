@@ -6,18 +6,21 @@ import { QuestionType } from '../../../models/question-type.enum';
 import {
   INTERVIEW_HISTORY_MAX,
   INTERVIEW_HISTORY_VERSION,
+  INTERVIEW_HISTORY_VERSION_V1,
   InterviewAttemptHistoryEntry,
   InterviewAttemptHistoryStore,
   InterviewCompletionReason,
-  InterviewReviewOptionSnapshot,
-  InterviewReviewQuestionSnapshot,
   InterviewTopicHistoryEntry,
   InterviewTrendDirection,
   InterviewTrendPoint,
   InterviewTrends
 } from '../../../models/interview-history.model';
-import { SK_INTERVIEW_HISTORY } from '../../../constants/session-keys';
+import {
+  SK_INTERVIEW_HISTORY,
+  SK_INTERVIEW_HISTORY_V1
+} from '../../../constants/session-keys';
 import { readLocalJson, removeLocalKey, writeLocalJson } from '../../../utils/local-storage';
+import type { SanitizedAttemptInput } from '../../interview/interview-result-history.adapter';
 
 import { InterviewAnalyticsService } from './interview-analytics.service';
 
@@ -80,6 +83,7 @@ export class InterviewHistoryService {
     attemptId?: string,
     reviewSource?: InterviewReviewSource
   ): void {
+    void reviewSource;   // v2 never retains a review snapshot
     if (!result) return;
     if (result === this.lastRecorded) return;   // same in-memory result → no-op
     // Durable guard: this attempt is already in the persisted history.
@@ -89,7 +93,52 @@ export class InterviewHistoryService {
     }
     this.lastRecorded = result;
 
-    const entry = this.toEntry(result, attemptId, reviewSource);
+    this.append(this.toEntry(result, attemptId));
+  }
+
+  /**
+   * Persist a SANITIZED attempt built from the backend result. This is the path
+   * the migrated Interview flow uses.
+   *
+   * Deduplicated by `sessionId`, which is stable on the SERVER: navigating to
+   * Results, refreshing it, remounting the component, re-fetching `GET /result`
+   * and re-submitting an already-submitted session all describe ONE attempt and
+   * must produce ONE record. Score + timestamp cannot do this job — a refresh
+   * reproduces both exactly, and two different attempts can legitimately share
+   * them.
+   */
+  recordAttempt(input: SanitizedAttemptInput): void {
+    if (!input.sessionId) return;
+    if (this._history().some((e) => e.sessionId === input.sessionId)) return;
+
+    this.append({
+      id: this.nextId(),
+      sessionId: input.sessionId,
+      attemptNumber: this.nextAttemptNumber(),
+      completedAt: input.completedAt,
+      score: input.score,
+      totalQuestions: input.totalQuestions,
+      percentage: input.percentage,
+      completionReason: input.completionReason,
+      answered: input.answered,
+      unanswered: input.unanswered,
+      incorrect: input.incorrect,
+      // `durationSeconds` has always meant "time the attempt took" to the
+      // history UI, which is the backend's timeUsedSeconds.
+      durationSeconds: input.timeUsedSeconds,
+      timeUsedSeconds: input.timeUsedSeconds,
+      submittedByExpiry: input.submittedByExpiry,
+      focusChanges: input.focusChanges,
+      configKind: input.configKind,
+      presetId: input.presetId,
+      presetName: input.presetName,
+      configuredDifficulty: input.configuredDifficulty,
+      selectedTopicIds: [...input.selectedTopicIds],
+      topicPerformance: input.topicPerformance
+    });
+  }
+
+  private append(entry: InterviewAttemptHistoryEntry): void {
     // Append + keep only the latest N (drops the oldest, preserves order).
     const attempts = [...this._history(), entry].slice(-INTERVIEW_HISTORY_MAX);
     this._history.set(attempts);
@@ -111,8 +160,7 @@ export class InterviewHistoryService {
   // ── internals ───────────────────────────────────────────────────
   private toEntry(
     result: InterviewResult,
-    attemptId?: string,
-    reviewSource?: InterviewReviewSource
+    attemptId?: string
   ): InterviewAttemptHistoryEntry {
     // Reuse Topic Performance analytics rather than re-deriving topic tallies.
     const topicPerformance: InterviewTopicHistoryEntry[] = this.analytics
@@ -127,12 +175,6 @@ export class InterviewHistoryService {
 
     const total = Math.max(0, result.total);
     const score = Math.max(0, Math.min(result.correct, total));   // never exceed total
-
-    // Optional per-question snapshot — only when the live source was supplied.
-    // Undefined otherwise (JSON.stringify omits it), so the entry stays compact.
-    const review = reviewSource
-      ? buildReviewSnapshot(reviewSource.questions, reviewSource.answersByIndex)
-      : undefined;
 
     return {
       id: attemptId && attemptId.length > 0 ? attemptId : this.nextId(),
@@ -150,8 +192,7 @@ export class InterviewHistoryService {
       presetId: result.presetId,
       presetName: result.presetName,
       selectedTopicIds: [...(result.topicIds ?? [])],
-      topicPerformance,
-      review
+      topicPerformance
     };
   }
 
@@ -172,7 +213,13 @@ export class InterviewHistoryService {
   private load(): InterviewAttemptHistoryEntry[] {
     // readLocalJson already returns null on missing/invalid JSON; validation
     // then rejects unsupported versions / malformed entries and de-dupes by id.
-    const validated = validateHistoryStore(readLocalJson<unknown>(SK_INTERVIEW_HISTORY, null));
+    let validated = validateHistoryStore(readLocalJson<unknown>(SK_INTERVIEW_HISTORY, null));
+
+    // No v2 store yet → try migrating v1. Only when v2 is genuinely absent, so
+    // a later run can never resurrect v1 data over newer records.
+    if (validated.length === 0 && readLocalJson<unknown>(SK_INTERVIEW_HISTORY, null) === null) {
+      validated = this.migrateV1();
+    }
     // One-time migration: legacy records predate attemptNumber. Assign numbers by
     // chronological position and persist, so numbering is stable from here on.
     if (validated.some((e) => e.attemptNumber == null)) {
@@ -181,6 +228,30 @@ export class InterviewHistoryService {
       return migrated;
     }
     return validated;
+  }
+
+  /**
+   * One-time v1 → v2 migration.
+   *
+   * v1 records carried a full `review` snapshot — question text, option text,
+   * per-option `correct` flags and explanations — i.e. a durable answer key in
+   * localStorage. Every safe summary/analytics field is carried across by name;
+   * the review and any unrecognised nested data are dropped rather than copied.
+   *
+   * Idempotent: v1 is removed only after v2 has been written, so an interrupted
+   * migration simply runs again. Unrelated storage is never touched.
+   */
+  private migrateV1(): InterviewAttemptHistoryEntry[] {
+    const raw = readLocalJson<unknown>(SK_INTERVIEW_HISTORY_V1, null);
+    if (raw === null) return [];
+
+    const migrated = migrateV1Attempts(raw);
+
+    // Write v2 FIRST. If this throws (quota), v1 stays put and nothing is lost.
+    this.save(migrated);
+    removeLocalKey(SK_INTERVIEW_HISTORY_V1);
+
+    return migrated;
   }
 
   private save(attempts: InterviewAttemptHistoryEntry[]): void {
@@ -283,11 +354,15 @@ export function validateAttemptEntry(raw: unknown): InterviewAttemptHistoryEntry
         .filter((t): t is InterviewTopicHistoryEntry => t !== null)
     : [];
 
-  // Optional per-question review snapshot — undefined for legacy entries.
-  const review = validateReviewSnapshots(e['review']);
+  const optionalCount = (key: string): number | undefined =>
+    isFiniteNum(e[key]) && (e[key] as number) >= 0 ? Math.round(e[key] as number) : undefined;
 
   return {
     id: e['id'],
+    // Server-stable dedup key. Absent on migrated v1 records.
+    sessionId: typeof e['sessionId'] === 'string' && e['sessionId'].length > 0
+      ? e['sessionId']
+      : undefined,
     attemptNumber,
     completedAt: e['completedAt'],
     score,
@@ -302,106 +377,57 @@ export function validateAttemptEntry(raw: unknown): InterviewAttemptHistoryEntry
     presetName: typeof e['presetName'] === 'string' ? e['presetName'] : undefined,
     selectedTopicIds,
     topicPerformance,
-    review
+
+    // v2 summary fields. Absent → "not recorded"; never defaulted to a number
+    // that would look like real data.
+    answered: optionalCount('answered'),
+    unanswered: optionalCount('unanswered'),
+    incorrect: optionalCount('incorrect'),
+    timeUsedSeconds: optionalCount('timeUsedSeconds'),
+    submittedByExpiry:
+      typeof e['submittedByExpiry'] === 'boolean' ? e['submittedByExpiry'] : undefined,
+    focusChanges: optionalCount('focusChanges')
   };
-}
-
-// ── per-question review snapshot (build + validate) ───────────────────
-
-const QUESTION_TYPES: readonly QuestionType[] = [
-  QuestionType.SingleAnswer,
-  QuestionType.MultipleAnswer,
-  QuestionType.TrueFalse
-];
-const isQuestionType = (v: unknown): v is QuestionType =>
-  typeof v === 'string' && (QUESTION_TYPES as readonly string[]).includes(v);
-
-/**
- * Build a compact, plain-data review snapshot from the live questions + answers
- * at submission. Keeps only what the read-only Review Answers list needs
- * (question/explanation text, each option's id/text/correctness, topic + type,
- * the user's selection) — never live Option/QuizQuestion behaviour. Pure.
- */
-export function buildReviewSnapshot(
-  questions: readonly QuizQuestion[],
-  answersByIndex: Record<number, number[]>
-): InterviewReviewQuestionSnapshot[] {
-  return (questions ?? []).map((q, i) => {
-    const options: InterviewReviewOptionSnapshot[] = (q.options ?? [])
-      .filter((o) => o.optionId != null)
-      .map((o) => ({
-        optionId: o.optionId as number,
-        text: o.text ?? '',
-        correct: o.correct === true
-      }));
-    const selectedOptionIds = (answersByIndex?.[i] ?? []).filter(
-      (id): id is number => id != null
-    );
-    return {
-      questionText: q.questionText ?? '',
-      explanation: q.explanation ?? '',
-      type: q.type,
-      sourceQuizId: q.sourceQuizId,
-      options,
-      selectedOptionIds
-    };
-  });
 }
 
 /**
- * Validate an untrusted persisted review payload. Returns a clean array, or
- * `undefined` when absent/empty/malformed (so the detail page falls back to the
- * "not retained" note rather than rendering a broken review). Never throws.
+ * Migrate a v1 store into sanitized v2 entries.
+ *
+ * Safe fields are carried across BY NAME. `review` — and anything else not
+ * explicitly recognised — is dropped: a partially-valid record contributes its
+ * recoverable summary rather than dragging unsafe nested data along, and a
+ * record too broken to validate is discarded entirely.
  */
-export function validateReviewSnapshots(
-  raw: unknown
-): InterviewReviewQuestionSnapshot[] | undefined {
-  if (!Array.isArray(raw)) return undefined;
-  const clean = raw
-    .map(validateReviewQuestion)
-    .filter((q): q is InterviewReviewQuestionSnapshot => q !== null);
-  return clean.length > 0 ? clean : undefined;
+export function migrateV1Attempts(raw: unknown): InterviewAttemptHistoryEntry[] {
+  if (!raw || typeof raw !== 'object') return [];
+  const store = raw as { version?: unknown; attempts?: unknown };
+
+  // Accept v1 explicitly, and also a version-less store (very old writes).
+  if (store.version !== INTERVIEW_HISTORY_VERSION_V1 && store.version !== undefined) return [];
+  if (!Array.isArray(store.attempts)) return [];
+
+  const clean = store.attempts
+    // validateAttemptEntry already ignores every v1-only field, so the review
+    // snapshot cannot survive this step even if it is well-formed.
+    .map(validateAttemptEntry)
+    .filter((e): e is InterviewAttemptHistoryEntry => e !== null);
+
+  const seen = new Set<string>();
+  const deduped = clean.filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)));
+
+  return deduped
+    .sort((a, b) => a.completedAt.localeCompare(b.completedAt))
+    .slice(-INTERVIEW_HISTORY_MAX)
+    // Numbering stays stable across the migration.
+    .map((e, i) => ({ ...e, attemptNumber: e.attemptNumber ?? i + 1 }));
 }
 
-function validateReviewQuestion(raw: unknown): InterviewReviewQuestionSnapshot | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const q = raw as Record<string, unknown>;
-
-  const options = Array.isArray(q['options'])
-    ? q['options']
-        .map(validateReviewOption)
-        .filter((o): o is InterviewReviewOptionSnapshot => o !== null)
-    : [];
-  if (options.length === 0) return null;   // a question with no options is unusable
-
-  // Selection must reference real option ids from THIS question.
-  const validIds = new Set(options.map((o) => o.optionId));
-  const selectedOptionIds = Array.isArray(q['selectedOptionIds'])
-    ? q['selectedOptionIds'].filter(
-        (id): id is number => isFiniteNum(id) && validIds.has(Math.round(id))
-      ).map((id) => Math.round(id as number))
-    : [];
-
-  return {
-    questionText: typeof q['questionText'] === 'string' ? q['questionText'] : '',
-    explanation: typeof q['explanation'] === 'string' ? q['explanation'] : '',
-    type: isQuestionType(q['type']) ? q['type'] : undefined,
-    sourceQuizId: typeof q['sourceQuizId'] === 'string' ? q['sourceQuizId'] : undefined,
-    options,
-    selectedOptionIds
-  };
-}
-
-function validateReviewOption(raw: unknown): InterviewReviewOptionSnapshot | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Record<string, unknown>;
-  if (!isFiniteNum(o['optionId'])) return null;
-  return {
-    optionId: Math.round(o['optionId']),
-    text: typeof o['text'] === 'string' ? o['text'] : '',
-    correct: o['correct'] === true
-  };
-}
+// ── v1 review snapshots: REMOVED ─────────────────────────────────────
+//
+// buildReviewSnapshot / validateReviewSnapshots and their validators lived
+// here. They produced the durable per-question answer key that v2 no longer
+// persists. Current-session review now comes from the backend result; a
+// sanitized historical record has no review at all.
 
 function validateTopicEntry(raw: unknown): InterviewTopicHistoryEntry | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -419,7 +445,11 @@ function validateTopicEntry(raw: unknown): InterviewTopicHistoryEntry | null {
     topicName: typeof t['topicName'] === 'string' ? t['topicName'] : t['topicId'],
     correct,
     total,
-    percentage: clampPct(t['percentage'])
+    percentage: clampPct(t['percentage']),
+    incorrect:
+      isFiniteNum(t['incorrect']) && t['incorrect'] >= 0 ? Math.round(t['incorrect']) : undefined,
+    unanswered:
+      isFiniteNum(t['unanswered']) && t['unanswered'] >= 0 ? Math.round(t['unanswered']) : undefined
   };
 }
 

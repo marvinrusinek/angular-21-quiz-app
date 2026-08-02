@@ -131,21 +131,13 @@
             }
 
             <div class="ih-card__actions">
-              <!-- Direct shortcut to this attempt's answers — deep-links straight
-                   to the Review Answers section (the detail page scrolls to it).
-                   Shown only when a per-question review was retained. -->
-              @if (c.entry.review?.length) {
-                <a
-                  class="ih-btn ih-btn--primary"
-                  [routerLink]="['/interview/history', c.entry.id]"
-                  fragment="review"
-                  [attr.aria-label]="'Review answers for Interview #' + c.number"
-                  i18n-aria-label
-                  i18n
-                >Review Answers</a>
-              }
+              <!-- No Review Answers shortcut. Per-question review is served by
+                   the backend for the CURRENT attempt only; history retains
+                   analytics, not questions, answers or explanations. Offering
+                   the action here would promise data the browser no longer
+                   holds. -->
               <a
-                class="ih-btn"
+                class="ih-btn ih-btn--primary"
                 [routerLink]="['/interview/history', c.entry.id]"
                 [attr.aria-label]="'View summary for Interview #' + c.number"
                 i18n-aria-label

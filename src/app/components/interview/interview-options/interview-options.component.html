@@ -11,6 +11,7 @@
           [type]="isMultiSelect() ? 'checkbox' : 'radio'"
           name="interview-answer"
           [checked]="isSelected(option)"
+          [disabled]="disabled()"
           (change)="onToggle(option)"
         />
         <!-- Plain-text interpolation, consistent with the topic-quiz options

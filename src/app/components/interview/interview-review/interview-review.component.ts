@@ -8,9 +8,10 @@ import {
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 
-import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
-import { InterviewResult } from '../../../shared/models/InterviewResult.model';
-import { pinAllOfTheAboveLast } from '../../../shared/utils/all-of-the-above';
+import type {
+  InterviewResultViewModel,
+  InterviewReviewQuestionViewModel
+} from '../../../shared/models/interview/interview-view-models';
 import {
   REVIEW_FILTERS,
   ReviewFilterDef,
@@ -19,11 +20,8 @@ import {
 } from './interview-review-filters';
 import {
   countReviewStatuses,
-  getCorrectAnswerLabels,
   getReviewOptionLabel,
   getReviewOptionState,
-  getReviewQuestionStatus,
-  getReviewQuestionType,
   InterviewReviewOptionState,
   joinWithAnd
 } from './interview-review-status';
@@ -31,6 +29,13 @@ import {
 // Re-exported so existing importers keep working after the type moved to the
 // pure filters module.
 export type { ReviewStatus, ReviewFilterId };
+
+/** Server question type → the chip label shown beside the topic. */
+function questionTypeLabel(type: InterviewReviewQuestionViewModel['type']): string {
+  if (type === 'multiple') return $localize`Multiple answer`;
+  if (type === 'trueFalse') return $localize`True or false`;
+  return $localize`Single answer`;
+}
 
 interface ReviewOptionView {
   text: string;
@@ -74,10 +79,14 @@ interface ReviewItem {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InterviewReviewComponent {
-  readonly questions = input.required<QuizQuestion[]>();
-  readonly answersByIndex = input<Record<number, number[]>>({});
+  /**
+   * FROZEN backend review data. Question order, option order, correctness and
+   * explanations are exactly what the server recorded at finalization, so an
+   * edit to the quiz bank cannot alter a completed attempt.
+   */
+  readonly questions = input.required<readonly InterviewReviewQuestionViewModel[]>();
   // The submitted result — the source of truth for the summary + header meta.
-  readonly result = input<InterviewResult | null>(null);
+  readonly result = input<InterviewResultViewModel | null>(null);
   // Optional header meta (from the just-recorded history entry), shown when set.
   readonly attemptNumber = input<number | null>(null);
   readonly completedAt = input<string | null>(null);
@@ -91,49 +100,61 @@ export class InterviewReviewComponent {
 
   readonly filter = signal<ReviewFilterId>('all');
 
-  // sourceQuizId → human topic name, from the result's per-topic breakdown.
+  // topicId → FROZEN backend title. Never re-resolved from the local quiz bank,
+  // so a renamed or removed topic still reads as it did at completion time.
   private readonly topicNames = computed<Map<string, string>>(
-    () => new Map((this.result()?.perTopic ?? []).map((t) => [t.quizId, t.title]))
+    () => new Map((this.result()?.byTopic ?? []).map((t) => [t.topicId, t.title]))
   );
 
   readonly items = computed<ReviewItem[]>(() => {
-    const answers = this.answersByIndex();
     const topics = this.topicNames();
+
+    // Server order is preserved verbatim — no re-sort and no All-of-the-above
+    // re-pin. The user saw a specific order during the assessment and the
+    // review must match it.
     return (this.questions() ?? []).map((q, i) => {
-      const selectedIds = new Set((answers[i] ?? []).filter((id) => id != null));
-      const status = getReviewQuestionStatus(q, answers[i] ?? []);
+      const selectedIds = new Set(q.selectedOptionIds);
+      const correctIds = new Set(q.correctOptionIds);
 
-      const options: ReviewOptionView[] = pinAllOfTheAboveLast([...(q.options ?? [])], (o) => o.text).map(
-        (o) => {
-          const selected = o.optionId != null && selectedIds.has(o.optionId);
-          const state = getReviewOptionState(o.correct === true, selected);
-          return {
-            text: o.text,
-            state,
-            label: getReviewOptionLabel(state),
-            cssClass:
-              state === 'incorrect-selected'
-                ? 'rv-wrong'
-                : state === 'correct-selected' || state === 'correct-missed'
-                  ? 'rv-correct'
-                  : '',
-            mark: state === 'incorrect-selected' ? '✕' : state === 'neutral' ? '' : '✓'
-          };
-        }
-      );
+      // Correctness comes from the two ID LISTS only. There is no `correct`
+      // flag on an option any more, and none is reintroduced here.
+      const status: ReviewStatus = !q.isAnswered
+        ? 'unanswered'
+        : q.isCorrect
+          ? 'correct'
+          : 'incorrect';
 
-      const correctLabels = getCorrectAnswerLabels(q.options ?? []);
+      const options: ReviewOptionView[] = q.options.map((o) => {
+        const state = getReviewOptionState(correctIds.has(o.optionId), selectedIds.has(o.optionId));
+        return {
+          text: o.text,
+          state,
+          label: getReviewOptionLabel(state),
+          cssClass:
+            state === 'incorrect-selected'
+              ? 'rv-wrong'
+              : state === 'correct-selected' || state === 'correct-missed'
+                ? 'rv-correct'
+                : '',
+          mark: state === 'incorrect-selected' ? '✕' : state === 'neutral' ? '' : '✓'
+        };
+      });
+
+      const correctLabels = q.options
+        .filter((o) => correctIds.has(o.optionId))
+        .map((o) => o.text);
       // A concise "Correct answers: …" line helps most for multi-answer questions
       // and for questions the user skipped; single-answer answered questions read
       // clearly from the option labels alone.
-      const showSummary = (correctLabels.length > 1 || status === 'unanswered') && correctLabels.length > 0;
+      const showSummary =
+        (correctLabels.length > 1 || status === 'unanswered') && correctLabels.length > 0;
 
       return {
         number: i + 1,
-        topicName: topics.get(q.sourceQuizId ?? '') ?? '',
-        typeLabel: getReviewQuestionType(q),
-        questionText: q.questionText ?? '',
-        explanation: q.explanation ?? '',
+        topicName: topics.get(q.sourceQuizId) ?? '',
+        typeLabel: questionTypeLabel(q.type),
+        questionText: q.questionText,
+        explanation: q.explanation,
         status,
         flagged: false,
         options,

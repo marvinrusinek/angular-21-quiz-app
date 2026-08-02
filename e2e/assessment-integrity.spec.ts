@@ -15,7 +15,8 @@ async function configureAndStart(page: Page, count: '10' | '20' | '30' = '10') {
   for (let i = 0; i < n; i++) await boxes.nth(i).check({ force: true });
   await page.locator(`.chip--button:has-text("${count}")`).first().click();
   await page.locator('.start-interview-btn').click();
-  await page.waitForURL('**/interview/session');
+  // The session route carries the backend session id.
+  await page.waitForURL(/\/interview\/session\/[^/?#]+/);
   await expect(page.locator('.interview-question-box')).toBeVisible();
 }
 

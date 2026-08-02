@@ -216,16 +216,26 @@
     </section>
     </div>
 
-    <!-- 5. Start -->
+    <!-- 5. Start. The assessment is created on the SERVER, so this button now
+         has a network step: it reports progress and, on failure, says so rather
+         than appearing to do nothing. -->
     <div class="builder-actions">
       <button
         type="submit"
         class="start-interview-btn"
-        [disabled]="startDisabledForMode()"
+        [disabled]="startDisabledForMode() || isCreating()"
         i18n
       >
-        Start Assessment
+        @if (isCreating()) {
+          Preparing&hellip;
+        } @else {
+          Start Assessment
+        }
       </button>
+
+      @if (createError(); as error) {
+        <p class="builder-error" role="alert">{{ error }}</p>
+      }
     </div>
   </form>
 </div>

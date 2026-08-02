@@ -51,21 +51,19 @@
       </section>
 
       @if (hasReview()) {
-        <!-- Retained per-question review — reuses the read-only Review Answers
-             list. Embedded: the detail header already shows attempt #/date/%. -->
+        <!-- Unreachable for sanitized history: hasReview() is always false.
+             Per-question review is served by the backend for the current
+             attempt only. Kept as an explicit branch so the alternative below
+             reads as a deliberate state rather than an accident. -->
         <section id="review" class="ihd-review" aria-labelledby="ihd-review-heading">
           <h2 id="ihd-review-heading" class="ihd-review__heading" i18n>Review Answers</h2>
-          <app-interview-review
-            [questions]="reviewQuestions()"
-            [answersByIndex]="reviewAnswers()"
-            [result]="result()"
-            [embedded]="true"
-          />
         </section>
       } @else {
-        <!-- Legacy attempt recorded before per-question review was retained. -->
+        <!-- History keeps analytics only. The questions, answers and
+             explanations live on the server and are shown for the attempt you
+             just completed, while its session reference is still active. -->
         <p class="ihd-note" role="note" i18n>
-          Detailed answer review was not retained for this interview.
+          Detailed review is available only for the current browser session.
         </p>
       }
     </div>

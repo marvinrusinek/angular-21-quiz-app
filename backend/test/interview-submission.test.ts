@@ -564,3 +564,75 @@ describe('frozen result integrity', () => {
     ).toThrow(/must equal total/);
   });
 });
+
+/**
+ * Wire-shape guarantees for the RESULT endpoints.
+ *
+ * Post-submission responses are authorized to carry `correctOptionIds`,
+ * `explanation` and the aggregate `correct` count — that is the user's earned
+ * data. They must still never carry per-option correctness flags or any backend
+ * internal, so a `SELECT *` row or a widened mapper fails loudly here rather
+ * than shipping storage details to the browser.
+ */
+describe('result response contains no internal fields', () => {
+  /** Every property name anywhere in a parsed body. */
+  function keysOf(value: unknown, out = new Set<string>()): Set<string> {
+    if (value === null || typeof value !== 'object') return out;
+    if (Array.isArray(value)) {
+      for (const item of value) keysOf(item, out);
+      return out;
+    }
+    for (const [key, nested] of Object.entries(value)) {
+      out.add(key);
+      keysOf(nested, out);
+    }
+    return out;
+  }
+
+  const BANNED = [
+    'isCorrect', 'is_correct', 'tokenHash', 'token_hash', 'sessionToken',
+    'attemptId', 'attempt_id', 'sourceQuestionIndex', 'source_question_index',
+    'sourceOptionIndex', 'source_option_index', 'databasePath', 'database_path',
+    'dataPath', 'data_path', 'quizDataPath', 'allowedOrigins',
+    'result_json', 'resultJson', 'config_json', 'configJson'
+  ];
+
+  it.each(['submit', 'result'])('%s response carries no internal field', async (route) => {
+    const session = await createSession();
+    const q0 = session.questions[0]!;
+    await save(session, q0.questionId, correctIdsFor(session.id, q0.questionId));
+
+    const res = route === 'submit' ? await submit(session) : (await submit(session), await getResult(session));
+    expect(res.status).toBe(200);
+
+    const present = [...keysOf(res.body)].filter((k) => BANNED.includes(k));
+    expect(present).toEqual([]);
+  });
+
+  it('DOES carry the authorized review material', async () => {
+    const session = await createSession();
+    const res = await submit(session);
+
+    const keys = keysOf(res.body);
+    expect(keys.has('correctOptionIds')).toBe(true);
+    expect(keys.has('explanation')).toBe(true);
+    expect(keys.has('correct')).toBe(true);      // aggregate count
+    expect(keys.has('selectedOptionIds')).toBe(true);
+  });
+
+  it('ACTIVE responses still carry no correctness or explanation', async () => {
+    const session = await createSession();
+    const created = keysOf(session.questions);
+    for (const banned of ['correct', 'isCorrect', 'correctOptionIds', 'explanation']) {
+      expect(created.has(banned)).toBe(false);
+    }
+
+    const resumed = await request(app)
+      .get(`/api/interview-sessions/${session.id}`)
+      .set('Authorization', `Bearer ${session.token}`);
+    const resumeKeys = keysOf(resumed.body);
+    for (const banned of ['correct', 'isCorrect', 'correctOptionIds', 'explanation', 'sessionToken']) {
+      expect(resumeKeys.has(banned)).toBe(false);
+    }
+  });
+});

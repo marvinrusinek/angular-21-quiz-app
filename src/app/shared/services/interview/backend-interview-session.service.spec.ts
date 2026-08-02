@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError, Subject } from 'rxjs';
+import { of, throwError, Observable, Subject } from 'rxjs';
 
 import { BackendInterviewSessionService } from './backend-interview-session.service';
 import { InterviewSessionReferenceStorage } from './interview-session-reference.storage';
@@ -255,24 +255,101 @@ describe('optimistic saving', () => {
   });
 });
 
-describe('rollback', () => {
+describe('failed saves', () => {
   beforeEach(() => service.activateCreatedSession(
     session({ answers: new Map([['q:single', [101]]]) }), TOKEN
   ));
 
-  it('restores the last CONFIRMED selection when the save fails', async () => {
+  /**
+   * What the user SEES is always the confirmed server state. A failed save is
+   * rolled back on screen and flagged; the attempted selection survives only as
+   * internal retry intent, so the UI can never present an unsaved answer as
+   * though the backend had accepted it.
+   */
+  it('restores the last CONFIRMED selection when the latest save fails', async () => {
     api.saveAnswer.mockReturnValue(throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0)));
 
     const outcome = await service.updateAnswer('q:single', [102]);
     expect(outcome.kind).toBe('failed');
-    expect(service.selectionFor('q:single')).toEqual([101]);   // rolled back
+    expect(service.selectionFor('q:single')).toEqual([101]);       // rolled back
+    expect(service.confirmedAnswers().get('q:single')).toEqual([101]);
+    expect(service.hasFailedSave('q:single')).toBe(true);
+    expect(service.hasUnsavedChanges()).toBe(true);
     expect(service.error()?.code).toBe('BACKEND_UNAVAILABLE');
   });
 
-  it('a failed save does not leave the question permanently answered', async () => {
+  it('a failed save does not leave the question CONFIRMED as answered', async () => {
     api.saveAnswer.mockReturnValue(throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0)));
     await service.updateAnswer('q:multi', [401]);
+
+    expect(service.confirmedAnswers().has('q:multi')).toBe(false);
     expect(service.selectionFor('q:multi')).toEqual([]);
+  });
+
+  it('retryFailedSave resends the INTENDED selection, not the displayed one', async () => {
+    api.saveAnswer.mockReturnValue(throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0)));
+    await service.updateAnswer('q:single', [102]);
+    expect(service.selectionFor('q:single')).toEqual([101]);   // display shows the old answer
+
+    api.saveAnswer.mockClear();
+    api.saveAnswer.mockReturnValue(of(saveResponse('q:single', [102])));
+    const outcome = await service.retryFailedSave('q:single');
+
+    // [102] — the value the user chose, recovered from internal retry state.
+    expect(api.saveAnswer).toHaveBeenCalledWith(expect.anything(), TOKEN, 'q:single', [102]);
+    expect(outcome?.kind).toBe('saved');
+    expect(service.selectionFor('q:single')).toEqual([102]);
+    expect(service.confirmedAnswers().get('q:single')).toEqual([102]);
+    expect(service.hasFailedSave('q:single')).toBe(false);
+    expect(service.hasUnsavedChanges()).toBe(false);
+    await expect(service.awaitPendingSaves()).resolves.toBeUndefined();
+  });
+
+  it('retryFailedSave is a no-op when nothing failed', async () => {
+    await expect(service.retryFailedSave('q:single')).resolves.toBeNull();
+    expect(api.saveAnswer).not.toHaveBeenCalled();
+  });
+
+  it('a NEWER selection supersedes the failed retry intent', async () => {
+    api.saveAnswer.mockReturnValue(throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0)));
+    await service.updateAnswer('q:single', [102]);
+
+    // The user picks something else instead of retrying.
+    api.saveAnswer.mockReturnValue(of(saveResponse('q:single', [103])));
+    await service.updateAnswer('q:single', [103]);
+
+    api.saveAnswer.mockClear();
+    // Nothing is outstanding, so there is no stale [102] left to resend.
+    expect(await service.retryFailedSave('q:single')).toBeNull();
+    expect(api.saveAnswer).not.toHaveBeenCalled();
+    expect(service.selectionFor('q:single')).toEqual([103]);
+  });
+
+  /**
+   * Ordering guard: a slow FAILURE for an older attempt must not undo a newer
+   * attempt that already succeeded, or the user would watch a saved answer
+   * revert itself.
+   */
+  it('a STALE failure cannot roll back a newer confirmed save', async () => {
+    let failFirst!: (err: unknown) => void;
+    api.saveAnswer
+      .mockReturnValueOnce(new Observable((subscriber) => { failFirst = (e) => subscriber.error(e); }))
+      .mockReturnValue(of(saveResponse('q:multi', [402])));
+
+    const first = service.updateAnswer('q:multi', [401]);
+    await Promise.resolve();
+
+    // The older request fails only AFTER a newer one has been requested.
+    const second = service.updateAnswer('q:multi', [402]);
+    failFirst(new InterviewApiError('BACKEND_UNAVAILABLE', 0));
+
+    expect((await first).kind).toBe('superseded');
+    expect((await second).kind).toBe('saved');
+
+    expect(service.selectionFor('q:multi')).toEqual([402]);
+    expect(service.confirmedAnswers().get('q:multi')).toEqual([402]);
+    expect(service.hasFailedSave('q:multi')).toBe(false);
+    expect(service.hasUnsavedChanges()).toBe(false);
   });
 
   it('a retry after failure succeeds', async () => {

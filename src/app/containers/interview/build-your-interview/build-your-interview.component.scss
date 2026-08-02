@@ -259,7 +259,20 @@
 
 .builder-actions {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Create failed on the server. Same visual weight as .preview-invalid — this
+   is a recoverable condition, not an app crash. */
+.builder-error {
+  margin: 0;
+  max-width: 420px;
+  color: var(--ib-invalid);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
 }
 
 .start-interview-btn {

@@ -5,6 +5,11 @@ node_modules
 test-results
 playwright-report
 .playwright
+
+# Throwaway SQLite databases created per Playwright run (see
+# e2e/support/e2e-database.ts). Deleted on teardown; anything left here is
+# from an interrupted run and is swept at the next startup.
+.e2e-db/
 CODE_REVIEW.md
 E6_FET_STATE_MACHINE_DESIGN.md
 E1_SELECTED_OPTION_SERVICE_SPLIT_DESIGN.md

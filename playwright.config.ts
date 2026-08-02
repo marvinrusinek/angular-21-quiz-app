@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { E2E_DATABASE_PATH } from './e2e/support/e2e-database';
+
 /**
  * Playwright e2e config. These tests drive the app in a real browser to
  * catch the browser-only regressions (blank/stuck explanations, options
@@ -11,6 +13,10 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // Support modules are helpers, not specs.
+  testIgnore: ['support/**'],
+  globalSetup: './e2e/support/global-setup.ts',
+  globalTeardown: './e2e/support/global-teardown.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -61,12 +67,34 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:4200',
-    timeout: 240_000,
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  /**
+   * TWO servers: the Angular app and the Interview API.
+   *
+   * Interview Mode is backend-backed — the assessment is created, saved and
+   * scored on the server — so the specs that drive it cannot run against
+   * `ng serve` alone. The backend runs from `backend/` because it resolves its
+   * quiz bank and SQLite file relative to the working directory.
+   */
+  webServer: [
+    {
+      command: 'npm start',
+      url: 'http://localhost:4200',
+      timeout: 240_000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'npm run dev',
+      cwd: 'backend',
+      url: 'http://localhost:3000/api/health',
+      timeout: 120_000,
+      // NOT reused: an already-running backend would be pointed at the
+      // developer's database, which is exactly what this isolation prevents.
+      reuseExistingServer: false,
+      env: { DATABASE_PATH: E2E_DATABASE_PATH },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 });

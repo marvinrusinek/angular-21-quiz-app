@@ -17,7 +17,12 @@
       }
       <span class="rv-meta__item">{{ r.percentage }}%</span>
       <span class="rv-meta__item">{{ completionReason() }}</span>
-      <span class="rv-meta__item">{{ r.difficulty | titlecase }}</span>
+      <!-- Only a CUSTOM interview has one difficulty. A role preset mixes them
+           by design, so the chip is omitted rather than showing a value that
+           would misdescribe the attempt. -->
+      @if (r.config.difficulty; as difficulty) {
+        <span class="rv-meta__item">{{ difficulty | titlecase }}</span>
+      }
     </p>
   }
 

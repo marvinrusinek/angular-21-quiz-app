@@ -28,13 +28,15 @@
         <div><dt i18n>Correct</dt><dd>{{ r.correct }}</dd></div>
         <div><dt i18n>Incorrect</dt><dd>{{ r.incorrect }}</dd></div>
         <div><dt i18n>Time used</dt><dd>{{ timeUsed() }}</dd></div>
-        <div><dt i18n>Difficulty</dt><dd>{{ r.difficulty | titlecase }}</dd></div>
+        @if (difficultyLabel(); as difficulty) {
+          <div><dt i18n>Difficulty</dt><dd>{{ difficulty | titlecase }}</dd></div>
+        }
       </dl>
 
       <!-- Assessment Integrity Mode: neutral/informational only — NEVER affects
            the score. Interview Results only (not shown in Topic Quiz Results). -->
       <p class="interview-results__focus" role="status">
-        <ng-container i18n>Focus changes:</ng-container> {{ r.focusChanges }}
+        <ng-container i18n>Focus changes:</ng-container> {{ focusChanges() }}
       </p>
 
       <app-topic-performance-list [analytics]="analytics()" />
@@ -97,7 +99,6 @@
         >Review Answers</h2>
         <app-interview-review
           [questions]="reviewQuestions()"
-          [answersByIndex]="answersByIndex()"
           [result]="result()"
           [attemptNumber]="latestAttempt()?.attemptNumber ?? null"
           [completedAt]="latestAttempt()?.completedAt ?? null"
@@ -109,5 +110,42 @@
          Always available on this long page (self-hides when not scrollable), not
          only after Review Answers is opened. -->
     <app-scroll-down-indicator />
+  </div>
+} @else {
+  <!-- No result in memory. The guard allows this route through for a backend
+       outage or an unusable response, precisely so the user gets an explanation
+       and a retry instead of a blank page. A stale LOCAL result is never shown,
+       and no score is ever computed here as a fallback. -->
+  <div class="interview-results interview-results--error">
+    <header class="interview-results__bar">
+      <h1 class="interview-results__title" i18n>Assessment Complete</h1>
+      <codelab-theme-toggle />
+    </header>
+
+    <p class="interview-results__unavailable" role="status" aria-live="polite">
+      @if (loadError() === 'malformed') {
+        <ng-container i18n>
+          Your results could not be read. Your assessment was submitted and your
+          score is safe on the server.
+        </ng-container>
+      } @else {
+        <ng-container i18n>
+          Cannot reach the interview service. Your assessment was submitted —
+          check your connection and try again.
+        </ng-container>
+      }
+    </p>
+
+    <div class="interview-results__actions">
+      <button
+        type="button"
+        class="ir-btn ir-btn--primary"
+        [disabled]="retrying()"
+        (click)="retryLoad()"
+        i18n
+      >Try Again</button>
+      <a class="ir-btn" routerLink="/interview/history" i18n>View Interview History</a>
+      <a class="ir-btn" routerLink="/interview" i18n>Build Another Assessment</a>
+    </div>
   </div>
 }

@@ -9,8 +9,12 @@ import {
 import { TitleCasePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
+import { ActivatedRoute } from '@angular/router';
+
 import { formatMMSS } from '../../../shared/utils/format-time';
-import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
+import { BackendInterviewResultService } from '../../../shared/services/interview/backend-interview-result.service';
+import { BackendInterviewSessionService } from '../../../shared/services/interview/backend-interview-session.service';
+import { AssessmentIntegrityService } from '../../../shared/services/features/interview/assessment-integrity.service';
 import { InterviewAnalyticsService } from '../../../shared/services/features/interview/interview-analytics.service';
 import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
 import { interviewConfigLabel } from '../../../shared/models/interview-preset.model';
@@ -51,7 +55,10 @@ import { getQuizData } from '../../../shared/quiz-data-cache';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InterviewResultsComponent {
-  private readonly session = inject(InterviewSessionService);
+  private readonly results = inject(BackendInterviewResultService);
+  private readonly session = inject(BackendInterviewSessionService);
+  private readonly integrity = inject(AssessmentIntegrityService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly analyticsService = inject(InterviewAnalyticsService);
   private readonly history = inject(InterviewHistoryService);
@@ -61,26 +68,81 @@ export class InterviewResultsComponent {
   constructor() {
     // A completed interview is a fresh source of achievement progress: it can
     // unlock Interview Master (highest readiness + strong score) and, in turn,
-    // Angular Explorer. Runs here — after submission recorded history — and
-    // BEFORE the certificate-status child checks eligibility. Idempotent.
+    // Angular Explorer. Runs after the guard loaded the result and recorded
+    // history, and BEFORE the certificate-status child checks eligibility.
+    // Idempotent. getQuizData() here is the TOPIC-QUIZ catalogue used for
+    // achievement evaluation — it is never consulted for interview scoring.
     this.achievements.evaluate(getQuizData());
   }
 
-  readonly result = this.session.result;
+  /**
+   * The frozen backend result. Loaded once by the guard through the shared
+   * pipeline, so this page issues no request of its own and never computes a
+   * score locally.
+   */
+  readonly result = this.results.result;
+  readonly loadError = this.results.error;
+  readonly retrying = this.results.loading;
+
+  private readonly routeSessionId = computed(
+    () => this.route.snapshot.paramMap.get('sessionId') ?? ''
+  );
 
   // Role-preset name, or "Custom Interview". Single-sourced from the preset
   // model so the label can never drift from the definitions.
   readonly interviewKindLabel = computed(() => {
-    const r = this.result();
-    return interviewConfigLabel(r?.presetId ? 'preset' : 'custom', r?.presetId, r?.presetName);
+    const config = this.result()?.config;
+    return interviewConfigLabel(
+      config?.mode === 'preset' ? 'preset' : 'custom',
+      config?.presetId,
+      undefined
+    );
   });
-  readonly assessment = this.session.assessment;
-  readonly answersByIndex = this.session.answersByIndex;
+
+  /**
+   * A role preset deliberately MIXES difficulties, so there is no single value
+   * to show; only a custom interview has one the user chose.
+   */
+  readonly difficultyLabel = computed(() => this.result()?.config.difficulty ?? '');
+
+  /** Client-observed only. Never scored, never sent to the backend. */
+  readonly focusChanges = this.integrity.focusLossCount;
+
+  readonly reviewQuestions = computed(() => this.result()?.review ?? []);
   readonly timeUsed = computed(() => formatMMSS(this.result()?.timeUsedSeconds ?? 0));
 
-  // Topic Performance analytics — REUSES result.perTopic (no re-scoring). Derives
-  // per-topic bands + strongest / needs-review from the immutable result model.
-  readonly analytics = computed(() => this.analyticsService.analyze(this.result()));
+  // Topic Performance analytics — derived from the FROZEN backend per-topic
+  // buckets. No re-scoring, and topic titles are never re-resolved locally.
+  readonly analytics = computed(() => {
+    const r = this.result();
+    if (!r) return this.analyticsService.analyze(null);
+    return this.analyticsService.analyze({
+      total: r.total,
+      answered: r.answered,
+      unanswered: r.unanswered,
+      correct: r.correct,
+      incorrect: r.incorrect,
+      percentage: r.percentage,
+      timeUsedSeconds: r.timeUsedSeconds,
+      timeRemainingSeconds: 0,
+      difficulty: (r.config.difficulty ?? 'mixed') as never,
+      topicIds: [...r.config.topicIds],
+      perTopic: r.byTopic.map((t) => ({
+        quizId: t.topicId,
+        title: t.title,
+        correct: t.correct,
+        total: t.total,
+        percentage: t.percentage
+      })),
+      submittedByExpiry: r.submittedByExpiry,
+      focusChanges: this.integrity.focusLossCount()
+    });
+  });
+
+  /** Retry after a backend outage — same pipeline the guard used. */
+  async retryLoad(): Promise<void> {
+    await this.results.reload(this.routeSessionId());
+  }
 
   // Performance Trends — derived purely from the persisted attempt history (which
   // already includes this attempt: it is recorded at submission, before Results
@@ -91,7 +153,6 @@ export class InterviewResultsComponent {
   // already includes this attempt). Presentation-free scoring lives in the service.
   readonly readiness = this.readinessService.readiness;
 
-  readonly reviewQuestions = computed(() => this.assessment()?.questions ?? []);
   // The just-recorded attempt (last in history) — supplies Review's header meta
   // (attempt number + date). Read-only; never mutated.
   readonly latestAttempt = computed(() => this.history.history().at(-1) ?? null);
@@ -102,12 +163,23 @@ export class InterviewResultsComponent {
   }
 
   buildAnother(): void {
-    this.session.clear();
+    this.endSession();
     this.router.navigate(['/interview']);
   }
 
   returnToSelection(): void {
-    this.session.clear();
+    this.endSession();
     this.router.navigate(['/quiz']);
+  }
+
+  /**
+   * Leaving Results ends the attempt: the in-memory result is dropped and the
+   * session reference cleared, so the backend review is no longer reachable.
+   * History keeps the sanitized summary.
+   */
+  private endSession(): void {
+    this.results.clear();
+    this.session.clearSession();
+    this.integrity.reset();
   }
 }

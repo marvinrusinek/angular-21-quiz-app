@@ -47,7 +47,7 @@ export class BackendInterviewSessionGuard implements CanActivate {
       case 'unavailable':
         return true;
       case 'submitted':
-        return this.router.createUrlTree(['/interview/results']);
+        return this.router.createUrlTree(['/interview/results', reference.sessionId]);
       case 'unauthorized':
       case 'none':
       default:

@@ -7,16 +7,39 @@ import {
 } from '../../../models/interview-history.model';
 import { SK_INTERVIEW_HISTORY } from '../../../constants/session-keys';
 import {
-  buildReviewSnapshot,
   filterAttempts,
   InterviewHistoryService,
   summarizeTrends,
   validateAttemptEntry,
-  validateHistoryStore,
-  validateReviewSnapshots
+  validateHistoryStore
 } from './interview-history.service';
-import { QuizQuestion } from '../../../models/QuizQuestion.model';
-import { QuestionType } from '../../../models/question-type.enum';
+import type { SanitizedAttemptInput } from '../../interview/interview-result-history.adapter';
+
+/** A sanitized attempt as the adapter would produce it. */
+function sanitized(over: Partial<SanitizedAttemptInput> = {}): SanitizedAttemptInput {
+  return {
+    sessionId: 'is_1',
+    completedAt: '2026-08-01T12:00:00.000Z',
+    score: 7,
+    totalQuestions: 10,
+    percentage: 70,
+    completionReason: 'submitted',
+    answered: 9,
+    unanswered: 1,
+    incorrect: 2,
+    durationSeconds: 900,
+    timeUsedSeconds: 540,
+    submittedByExpiry: false,
+    focusChanges: 2,
+    configKind: 'custom',
+    configuredDifficulty: 'beginner',
+    selectedTopicIds: ['rxjs'],
+    topicPerformance: [
+      { topicId: 'rxjs', topicName: 'RxJS', correct: 4, total: 5, percentage: 80 }
+    ],
+    ...over
+  };
+}
 
 // ── factories ─────────────────────────────────────────────────────────
 function topic(quizId: string, correct: number, total: number): InterviewTopicScore {
@@ -60,7 +83,7 @@ function entry(pct: number, over: Partial<InterviewAttemptHistoryEntry> = {}): I
   };
 }
 
-function seed(attempts: InterviewAttemptHistoryEntry[], version: unknown = 1): void {
+function seed(attempts: InterviewAttemptHistoryEntry[], version: unknown = 2): void {
   localStorage.setItem(SK_INTERVIEW_HISTORY, JSON.stringify({ version, attempts }));
 }
 
@@ -202,72 +225,179 @@ describe('InterviewHistoryService — persistence', () => {
   });
 });
 
-describe('per-question review snapshot', () => {
-  // Q1 single (A correct), Q2 multi (C+E correct) with a topic + type.
-  const questions: QuizQuestion[] = [
-    {
-      questionText: 'Q1', explanation: 'E1', type: QuestionType.SingleAnswer, sourceQuizId: 'topicA',
-      options: [{ text: 'A', correct: true, optionId: 1 }, { text: 'B', optionId: 2 }]
-    },
-    {
-      questionText: 'Q2', explanation: 'E2', type: QuestionType.MultipleAnswer, sourceQuizId: 'topicB',
-      options: [{ text: 'C', correct: true, optionId: 3 }, { text: 'D', optionId: 4 }, { text: 'E', correct: true, optionId: 5 }]
+/**
+ * v2 is SANITIZED. The interview answer key lives on the backend now, so a
+ * durable local copy of questions, options, correctness and explanations is
+ * exactly what this schema removes.
+ */
+describe('sanitized v2 storage', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  function readStore(): { version: number; attempts: InterviewAttemptHistoryEntry[] } {
+    return JSON.parse(localStorage.getItem(SK_INTERVIEW_HISTORY) ?? '{}');
+  }
+
+  it('writes version 2 and never persists review data', () => {
+    const svc = freshService();
+    svc.record(makeResult(70), 'att_1');
+
+    const raw = localStorage.getItem(SK_INTERVIEW_HISTORY) ?? '';
+    expect(readStore().version).toBe(2);
+    for (const banned of [
+      'review', 'questions', 'options', 'selectedOptionIds', 'correctOptionIds',
+      'explanation', 'answerKey', 'sessionToken', 'questionText'
+    ]) {
+      expect(raw).not.toContain(banned);
     }
-  ];
+  });
 
-  it('buildReviewSnapshot captures options, correctness, topic/type and the selection', () => {
-    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3] });
-    expect(snap).toHaveLength(2);
-    expect(snap[0]).toMatchObject({
-      questionText: 'Q1', explanation: 'E1', type: QuestionType.SingleAnswer, sourceQuizId: 'topicA',
-      selectedOptionIds: [1]
+  it('recordAttempt stores the backend summary and per-topic tallies', () => {
+    const svc = freshService();
+    svc.recordAttempt(sanitized({ sessionId: 'is_1', score: 8, totalQuestions: 10, percentage: 80 }));
+
+    const [entry] = svc.history();
+    expect(entry).toMatchObject({
+      sessionId: 'is_1', score: 8, totalQuestions: 10, percentage: 80,
+      completionReason: 'submitted', focusChanges: 2
     });
-    expect(snap[0].options).toEqual([
-      { optionId: 1, text: 'A', correct: true },
-      { optionId: 2, text: 'B', correct: false }
+    expect(entry!.topicPerformance[0]).toMatchObject({ topicId: 'rxjs', topicName: 'RxJS' });
+    expect('review' in entry!).toBe(false);
+  });
+
+  it('DEDUPLICATES by sessionId, not by score and date', () => {
+    const svc = freshService();
+    const attempt = sanitized({ sessionId: 'is_1' });
+
+    // Navigate → refresh → re-fetch → remount all describe ONE attempt.
+    svc.recordAttempt(attempt);
+    svc.recordAttempt(attempt);
+    svc.recordAttempt({ ...attempt });
+    expect(svc.history()).toHaveLength(1);
+
+    // A DIFFERENT session with an identical score and timestamp is still a
+    // second attempt — score+date alone could not tell these cases apart.
+    svc.recordAttempt({ ...attempt, sessionId: 'is_2' });
+    expect(svc.history()).toHaveLength(2);
+  });
+
+  it('a preset attempt gets no invented difficulty; a custom one keeps its own', () => {
+    const svc = freshService();
+    svc.recordAttempt(sanitized({
+      sessionId: 'is_preset', configKind: 'preset', presetId: 'junior',
+      presetName: 'Junior Developer', configuredDifficulty: undefined
+    }));
+    svc.recordAttempt(sanitized({
+      sessionId: 'is_custom', configKind: 'custom', configuredDifficulty: 'advanced'
+    }));
+
+    const [preset, custom] = svc.history();
+    expect(preset!.configKind).toBe('preset');
+    expect(preset!.configuredDifficulty).toBeUndefined();   // mixed by design
+    expect(preset!.presetName).toBe('Junior Developer');
+    expect(custom!.configuredDifficulty).toBe('advanced');
+    expect(custom!.presetName).toBeUndefined();
+  });
+});
+
+describe('v1 → v2 migration', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  // A realistic historical record: full retained Q&A, exactly what v2 drops.
+  const v1Entry = {
+    id: 'att_old_1',
+    attemptNumber: 3,
+    completedAt: '2026-07-01T10:00:00.000Z',
+    score: 7,
+    totalQuestions: 10,
+    percentage: 70,
+    completionReason: 'submitted',
+    durationSeconds: 540,
+    configuredDifficulty: 'beginner',
+    selectedTopicIds: ['rxjs', 'signals'],
+    topicPerformance: [
+      { topicId: 'rxjs', topicName: 'RxJS', correct: 4, total: 5, percentage: 80 }
+    ],
+    review: [
+      {
+        questionText: 'Which operator flattens?',
+        explanation: 'switchMap cancels the previous inner observable.',
+        type: 'single',
+        sourceQuizId: 'rxjs',
+        options: [
+          { optionId: 1, text: 'switchMap', correct: true },
+          { optionId: 2, text: 'tap', correct: false }
+        ],
+        selectedOptionIds: [1]
+      }
+    ]
+  };
+
+  function seedV1(attempts: unknown[]): void {
+    localStorage.setItem(
+      'interviewAttemptHistory:v1',
+      JSON.stringify({ version: 1, attempts })
+    );
+  }
+
+  it('preserves analytics, drops the retained Q&A, and removes v1', () => {
+    seedV1([v1Entry]);
+    const svc = freshService();
+
+    const [entry] = svc.history();
+    expect(entry).toMatchObject({
+      id: 'att_old_1', attemptNumber: 3, score: 7, totalQuestions: 10,
+      percentage: 70, configuredDifficulty: 'beginner'
+    });
+    expect(entry!.topicPerformance[0]).toMatchObject({ topicId: 'rxjs', topicName: 'RxJS' });
+
+    // The answer key is gone from the record AND from storage.
+    expect('review' in entry!).toBe(false);
+    const raw = localStorage.getItem(SK_INTERVIEW_HISTORY) ?? '';
+    expect(raw).not.toContain('switchMap');
+    expect(raw).not.toContain('explanation');
+    expect(raw).not.toContain('correct":true');
+
+    // v1 is removed only after v2 exists.
+    expect(localStorage.getItem('interviewAttemptHistory:v1')).toBeNull();
+    expect(JSON.parse(raw).version).toBe(2);
+  });
+
+  it('keeps recoverable summaries and discards records too broken to trust', () => {
+    seedV1([
+      v1Entry,
+      { ...v1Entry, id: 'att_old_2', review: 'not-an-array' },   // recoverable
+      { id: 'att_bad', completedAt: 'nonsense', score: 1, totalQuestions: 2, percentage: 50 },
+      { review: [{ questionText: 'orphan' }] }                    // no id → dropped
     ]);
-    // Unanswered → empty selection; options with no id are dropped.
-    expect(buildReviewSnapshot(questions, {})[1].selectedOptionIds).toEqual([]);
-  });
-
-  it('record(...) persists the snapshot when the live source is supplied', () => {
-    localStorage.clear();
     const svc = freshService();
-    svc.record(makeResult(50), 'att-r', { questions, answersByIndex: { 0: [1], 1: [3, 5] } });
-    const saved = svc.history()[0];
-    expect(saved.review).toBeDefined();
-    expect(saved.review).toHaveLength(2);
-    expect(saved.review![1].selectedOptionIds).toEqual([3, 5]);
+
+    expect(svc.history().map((e) => e.id)).toEqual(['att_old_1', 'att_old_2']);
+    expect(localStorage.getItem(SK_INTERVIEW_HISTORY)).not.toContain('orphan');
   });
 
-  it('record(...) without a source leaves review undefined (compact, back-compat)', () => {
-    localStorage.clear();
+  it('is idempotent and leaves unrelated storage alone', () => {
+    seedV1([v1Entry]);
+    localStorage.setItem('quizBestScores', '{"typescript":90}');
+
+    freshService();
+    const afterFirst = localStorage.getItem(SK_INTERVIEW_HISTORY);
+
+    const second = freshService();
+
+    expect(localStorage.getItem(SK_INTERVIEW_HISTORY)).toBe(afterFirst);
+    expect(second.history()).toHaveLength(1);
+    expect(localStorage.getItem('quizBestScores')).toBe('{"typescript":90}');
+  });
+
+  it('does NOT resurrect v1 over an existing v2 store', () => {
     const svc = freshService();
-    svc.record(makeResult(50), 'att-n');
-    expect(svc.history()[0].review).toBeUndefined();
-  });
+    svc.recordAttempt(sanitized({ sessionId: 'is_new' }));
+    seedV1([v1Entry]);
 
-  it('validateReviewSnapshots round-trips a persisted snapshot and drops junk', () => {
-    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3, 5] });
-    const roundTripped = validateReviewSnapshots(JSON.parse(JSON.stringify(snap)));
-    expect(roundTripped).toEqual(snap);
-    // Non-array / empty → undefined (falls back to the "not retained" note).
-    expect(validateReviewSnapshots(undefined)).toBeUndefined();
-    expect(validateReviewSnapshots('nope')).toBeUndefined();
-    expect(validateReviewSnapshots([])).toBeUndefined();
-    // A selection referencing an unknown option id is dropped.
-    const tampered = [{ questionText: 'Q', explanation: '', options: [{ optionId: 1, text: 'A', correct: true }], selectedOptionIds: [1, 99] }];
-    expect(validateReviewSnapshots(tampered)![0].selectedOptionIds).toEqual([1]);
-    // A question with no valid options is unusable → dropped.
-    expect(validateReviewSnapshots([{ questionText: 'Q', options: [] }])).toBeUndefined();
-  });
-
-  it('validateAttemptEntry keeps a valid review and legacy entries stay review-free', () => {
-    const snap = buildReviewSnapshot(questions, { 0: [1], 1: [3, 5] });
-    const withReview = validateAttemptEntry({ ...entry(50), review: JSON.parse(JSON.stringify(snap)) });
-    expect(withReview?.review).toEqual(snap);
-    // Legacy entry (no review key) validates fine with review undefined.
-    expect(validateAttemptEntry(entry(50))?.review).toBeUndefined();
+    const reloaded = freshService();
+    expect(reloaded.history().map((e) => e.sessionId)).toEqual(['is_new']);
   });
 });
 
@@ -281,20 +411,21 @@ describe('validateHistoryStore / validateAttemptEntry', () => {
   });
 
   it('10. unsupported storage version fails safely', () => {
-    expect(validateHistoryStore({ version: 2, attempts: [entry(70)] })).toEqual([]);
+    // v1 is not read directly any more — it goes through the migration.
+    expect(validateHistoryStore({ version: 1, attempts: [entry(70)] })).toEqual([]);
     expect(validateHistoryStore({ version: 'x', attempts: [entry(70)] })).toEqual([]);
   });
 
   it('11. malformed entries are ignored, valid ones kept, without crashing', () => {
     const out = validateHistoryStore({
-      version: 1,
+      version: 2,
       attempts: [entry(70), null, 42, { id: '', completedAt: 'x', score: 1, totalQuestions: 1, percentage: 1 }, entry(90)]
     });
     expect(out.map((e) => e.percentage)).toEqual([70, 90]);
   });
 
   it('11b. a non-array attempts field fails safely', () => {
-    expect(validateHistoryStore({ version: 1, attempts: 'nope' })).toEqual([]);
+    expect(validateHistoryStore({ version: 2, attempts: 'nope' })).toEqual([]);
     expect(validateHistoryStore(null)).toEqual([]);
     expect(validateHistoryStore('str')).toEqual([]);
   });
@@ -309,7 +440,7 @@ describe('validateHistoryStore / validateAttemptEntry', () => {
 
   it('honours the retention window when loading an over-long store', () => {
     const many = Array.from({ length: 30 }, (_, i) => entry(i + 1, { id: `e${i}` }));
-    expect(validateHistoryStore({ version: 1, attempts: many })).toHaveLength(INTERVIEW_HISTORY_MAX);
+    expect(validateHistoryStore({ version: 2, attempts: many })).toHaveLength(INTERVIEW_HISTORY_MAX);
   });
 
   it('rejects internally-inconsistent records (score > totalQuestions)', () => {
@@ -339,7 +470,7 @@ describe('validateHistoryStore / validateAttemptEntry', () => {
 
   it('defensively orders entries chronologically by completedAt', () => {
     const out = validateHistoryStore({
-      version: 1,
+      version: 2,
       attempts: [
         entry(70, { id: 'late', completedAt: '2026-07-20T10:00:00.000Z' }),
         entry(80, { id: 'early', completedAt: '2026-07-10T10:00:00.000Z' })
@@ -350,7 +481,7 @@ describe('validateHistoryStore / validateAttemptEntry', () => {
 
   it('de-duplicates entries by id on load (keeps the first)', () => {
     const out = validateHistoryStore({
-      version: 1,
+      version: 2,
       attempts: [entry(70, { id: 'same' }), entry(90, { id: 'same' }), entry(60, { id: 'other' })]
     });
     expect(out.map((e) => e.id)).toEqual(['same', 'other']);

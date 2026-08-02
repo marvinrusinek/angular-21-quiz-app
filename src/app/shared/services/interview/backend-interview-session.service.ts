@@ -70,6 +70,14 @@ export class BackendInterviewSessionService {
   private readonly _answeredCount = signal(0);
   private readonly _pendingSaveCount = signal(0);
   private readonly _saving = signal<ReadonlySet<string>>(new Set());
+  /**
+   * Questions whose LATEST save failed and was rolled back.
+   *
+   * A signal, not a lookup over `saveState`: the components read this through
+   * `computed()`, and a plain Map read registers no dependency, so the gate
+   * would stay stale until something else happened to invalidate it.
+   */
+  private readonly _failed = signal<ReadonlySet<string>>(new Set());
   private readonly _error = signal<InterviewApiError | null>(null);
   private readonly _submitting = signal(false);
   /** IN MEMORY ONLY. Never persisted — the results route re-fetches it. */
@@ -77,6 +85,14 @@ export class BackendInterviewSessionService {
 
   private token = '';
   private readonly saveState = new Map<string, QuestionSaveState>();
+  /**
+   * Selection a failed save was trying to write, kept so Retry can resend it.
+   *
+   * INTERNAL ONLY — never exposed as a signal and never merged into the
+   * displayed answers. What the UI shows after a failure is the confirmed
+   * server state; this is only the intent behind the Retry button.
+   */
+  private readonly failedIntent = new Map<string, readonly number[]>();
 
   // ── public surface ────────────────────────────────────────────────
   readonly status = this._status.asReadonly();
@@ -98,6 +114,12 @@ export class BackendInterviewSessionService {
   readonly loading = computed(() => this._status() === 'loading');
   readonly isActive = computed(() => this._status() === 'active');
   readonly hasPendingSaves = computed(() => this._pendingSaveCount() > 0);
+
+  /**
+   * Answers the SERVER has confirmed. Drives durable paginator markers, so a
+   * failed optimistic save never leaves a question looking answered.
+   */
+  readonly confirmedAnswers = this._answers.asReadonly();
 
   /** What the UI renders: confirmed answers with the optimistic overlay applied. */
   readonly displayedAnswers = computed<ReadonlyMap<string, readonly number[]>>(() => {
@@ -184,7 +206,14 @@ export class BackendInterviewSessionService {
     this._currentIndex.set(this.clampIndex(requestedIndex, session.questions.length));
     this._pendingSaveCount.set(0);
     this._saving.set(new Set());
+    this._failed.set(new Set());
     this.saveState.clear();
+    this.failedIntent.clear();
+    // A newly hydrated session has NOT been submitted. Carrying the previous
+    // attempt's result forward would make submit() return it instead of
+    // finalizing this one, and the results route would then be asked for a
+    // session the backend still considers active.
+    this._result.set(null);
     this._status.set('active');
   }
 
@@ -203,6 +232,7 @@ export class BackendInterviewSessionService {
   clearSession(): void {
     this.token = '';
     this.saveState.clear();
+    this.failedIntent.clear();
     this._status.set('idle');
     this._sessionId.set('');
     this._questions.set([]);
@@ -216,6 +246,7 @@ export class BackendInterviewSessionService {
     this._answeredCount.set(0);
     this._pendingSaveCount.set(0);
     this._saving.set(new Set());
+    this._failed.set(new Set());
     this._error.set(null);
     this._result.set(null);
     this.storage.clear();
@@ -242,6 +273,10 @@ export class BackendInterviewSessionService {
     const version = ++state.requestedVersion;
 
     this.applyOptimistic(questionId, next);
+    // A newer selection SUPERSEDES any failed retry intent, and a save is now
+    // in flight, so the question is no longer in a failed state.
+    this.failedIntent.set(questionId, next);
+    this.markFailed(questionId, false);
     this.markSaving(questionId, true);
 
     // Serialize per question: the previous request must settle before this one
@@ -273,6 +308,8 @@ export class BackendInterviewSessionService {
       // answeredCount is the SERVER's, never derived locally.
       this._answeredCount.set(response.answeredCount);
       this._error.set(null);
+      this.failedIntent.delete(questionId);
+      this.markFailed(questionId, false);
       this.markSaving(questionId, false);
       return { kind: 'saved', selectedOptionIds: canonical };
     } catch (err: unknown) {
@@ -283,9 +320,14 @@ export class BackendInterviewSessionService {
         return { kind: 'superseded' };
       }
 
-      // Latest attempt failed: fall back to the last CONFIRMED server value.
+      // Latest attempt failed: roll the display back to the last CONFIRMED
+      // server value, so what the user sees is always what the backend holds.
+      // The attempted selection is retained as INTERNAL retry intent — never
+      // rendered as the recorded answer.
       this.rollback(questionId);
+      this.failedIntent.set(questionId, selection);
       this._error.set(error);
+      this.markFailed(questionId, true);
       this.markSaving(questionId, false);
       return { kind: 'failed', error };
     }
@@ -328,6 +370,19 @@ export class BackendInterviewSessionService {
     this._optimistic.set(optimistic);
   }
 
+  /**
+   * Resend the selection whose save failed.
+   *
+   * The intent is read from internal state rather than from the display,
+   * because the display was rolled back to the confirmed server value — the
+   * user's attempted answer is deliberately not shown as though it were saved.
+   */
+  async retryFailedSave(questionId: string): Promise<SaveOutcome | null> {
+    const intent = this.failedIntent.get(questionId);
+    if (!intent) return null;
+    return this.updateAnswer(questionId, intent);
+  }
+
   private markSaving(questionId: string, saving: boolean): void {
     const next = new Set(this._saving());
     if (saving) {
@@ -340,21 +395,22 @@ export class BackendInterviewSessionService {
     this._saving.set(next);
   }
 
+  private markFailed(questionId: string, failed: boolean): void {
+    const current = this._failed();
+    if (current.has(questionId) === failed) return;
+    const next = new Set(current);
+    if (failed) next.add(questionId);
+    else next.delete(questionId);
+    this._failed.set(next);
+  }
+
   /** True when the LATEST save for this question failed and was rolled back. */
   hasFailedSave(questionId: string): boolean {
-    const state = this.saveState.get(questionId);
-    return !!state && state.confirmedVersion < state.requestedVersion && !this.isQuestionSaving(questionId);
+    return this._failed().has(questionId);
   }
 
   /** Any question whose latest save failed — blocks navigation and submission. */
-  readonly hasUnsavedChanges = computed(() => {
-    void this._saving();
-    void this._optimistic();
-    for (const [, state] of this.saveState) {
-      if (state.confirmedVersion < state.requestedVersion) return true;
-    }
-    return false;
-  });
+  readonly hasUnsavedChanges = computed(() => this._failed().size > 0);
 
   // ── submission (Stage 9D handoff) ─────────────────────────────────
 

@@ -32,7 +32,7 @@ function entry(
 }
 
 function seed(attempts: InterviewAttemptHistoryEntry[]): void {
-  localStorage.setItem(SK_INTERVIEW_HISTORY, JSON.stringify({ version: 1, attempts }));
+  localStorage.setItem(SK_INTERVIEW_HISTORY, JSON.stringify({ version: 2, attempts }));
 }
 
 function render(): ComponentFixture<InterviewHistoryComponent> {
@@ -100,27 +100,17 @@ describe('InterviewHistoryComponent', () => {
     expect(link?.getAttribute('href')).toContain('/interview/history/att-1');
   });
 
-  it('shows a direct "Review Answers" shortcut (deep-linked to #review) only when answers were retained', () => {
-    const withReview: InterviewAttemptHistoryEntry = {
-      ...entry(70, 1),
-      review: [
-        {
-          questionText: 'Q', explanation: '',
-          options: [{ optionId: 1, text: 'A', correct: true }],
-          selectedOptionIds: [1]
-        }
-      ]
-    };
-    seed([withReview, entry(80, 2)]);   // #2 has no review
+  it('offers NO Review Answers shortcut — history keeps analytics, not answers', () => {
+    // The answer key lives on the backend now. A durable per-question review
+    // is no longer retained, so advertising the action would promise data the
+    // browser does not have.
+    seed([entry(70, 1), entry(80, 2)]);
     const cards = Array.from((render().nativeElement as HTMLElement).querySelectorAll('.ih-card'));
-    // Newest first → card[0] is #2 (no review), card[1] is #1 (has review).
-    const links = (card: Element) => Array.from(card.querySelectorAll<HTMLAnchorElement>('.ih-card__actions a'));
-    const noReview = links(cards[0]).map((a) => a.textContent?.trim());
-    const hasReview = links(cards[1]);
-    expect(noReview).toEqual(['View Summary']);
-    const review = hasReview.find((a) => a.textContent?.includes('Review Answers'));
-    expect(review).toBeTruthy();
-    expect(review!.getAttribute('href')).toContain('/interview/history/att-1#review');
+    for (const card of cards) {
+      const labels = Array.from(card.querySelectorAll<HTMLAnchorElement>('.ih-card__actions a'))
+        .map((el) => el.textContent?.trim());
+      expect(labels).toEqual(['View Summary']);
+    }
   });
 
   it('orders the page summary → interviews → readiness → topic trends', () => {

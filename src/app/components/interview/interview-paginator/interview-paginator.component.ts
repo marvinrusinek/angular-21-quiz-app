@@ -46,6 +46,15 @@ export class InterviewPaginatorComponent {
    */
   readonly canNext = input<boolean>(true);
 
+  /**
+   * Blocks EVERY navigation path — Prev, Next and the numeric pages alike.
+   *
+   * Distinct from `canNext`, which only expresses "this question has no answer
+   * yet". This one means "the current question has a pending or failed save",
+   * so leaving it would strand an answer the backend has not accepted.
+   */
+  readonly disabled = input<boolean>(false);
+
   // Emits the 0-based target index to navigate to.
   readonly select = output<number>();
 
@@ -92,13 +101,20 @@ export class InterviewPaginatorComponent {
   }
 
   goPrevious(): void {
-    if (!this.atStart()) this.select.emit(this.currentIndex() - 1);
+    if (this.disabled() || this.atStart()) return;
+    this.select.emit(this.currentIndex() - 1);
   }
 
   goNext(): void {
     // Guarded as well as [disabled] so a programmatic/synthetic click can't
     // bypass the gate.
-    if (!this.canNext() || this.atEnd()) return;
+    if (this.disabled() || !this.canNext() || this.atEnd()) return;
     this.select.emit(this.currentIndex() + 1);
+  }
+
+  /** Numeric page jump. Blocked by the same save gate as Prev/Next. */
+  goTo(index: number): void {
+    if (this.disabled()) return;
+    this.select.emit(index);
   }
 }

@@ -8,23 +8,22 @@ import {
   inject,
   OnDestroy,
   OnInit,
+  signal,
   viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 
-import { Option } from '../../../shared/models/Option.model';
-import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
-
 import { swallow } from '../../../shared/utils/error-logging';
 
 import { AssessmentIntegrityService } from '../../../shared/services/features/interview/assessment-integrity.service';
-import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
-import { InterviewTimerService } from '../../../shared/services/features/timer/interview-timer.service';
+import { BackendInterviewSessionService } from '../../../shared/services/interview/backend-interview-session.service';
+import { BackendInterviewTimerService } from '../../../shared/services/interview/backend-interview-timer.service';
+import { toggleOption } from '../../../shared/services/interview/interview-answer-transitions';
 import { AssessmentIntegrityWarningDialogComponent } from '../../../components/dialogs/assessment-integrity-warning-dialog/assessment-integrity-warning-dialog.component';
 import {
   KeyboardShortcutsDialogComponent,
@@ -38,21 +37,23 @@ import {
   InterviewSubmitDialogComponent,
   InterviewSubmitDialogData
 } from '../../../components/dialogs/interview-submit-dialog/interview-submit-dialog.component';
+import type { InterviewOptionViewModel } from '../../../shared/models/interview/interview-view-models';
 
 /**
- * Interview session shell.
+ * Interview session shell — BACKEND-BACKED.
  *
- * The question text is rendered directly inside the regular quiz question box
- * (the topic quizzes' `mat-card.quiz-card` container). We do NOT route it through
- * `codelab-quiz-content`: that heading component only produces text when the full
- * `codelab-quiz-question` pipeline runs alongside it (it reads shared state that
- * pipeline primes), and that pipeline can't drive a synthetic in-memory
- * assessment. Rendering the text directly guarantees it always shows; deferred
- * feedback means the heading is always the question text (never FET), by design.
+ * The assessment lives on the server. This component renders the hydrated
+ * safe view models and owns no generation, no scoring and no answer key: the
+ * active question model has `optionId` + `text` only, so correctness cannot
+ * leak through the UI even by accident.
  *
- * Options use InterviewOptionsComponent — native radio (single) / checkbox
- * (multiple), styled neutrally with correctness colors/icons/explanations
- * suppressed. Navigation moves the session index signal (no URL change).
+ * Hydration happens ONCE, in BackendInterviewSessionGuard, so there is exactly
+ * one resume request per navigation. This component never resumes on init —
+ * only when the user explicitly retries a backend outage.
+ *
+ * The countdown is DISPLAY ONLY. The server deadline is authoritative and keeps
+ * running while the submit-confirmation dialog is open; pausing the display
+ * would let the UI show more time than actually remains.
  */
 @Component({
   selector: 'codelab-interview-session',
@@ -70,158 +71,290 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InterviewSessionComponent implements OnInit, OnDestroy {
-  private readonly session = inject(InterviewSessionService);
-  private readonly timer = inject(InterviewTimerService);
+  private readonly session = inject(BackendInterviewSessionService);
+  private readonly timer = inject(BackendInterviewTimerService);
   private readonly integrity = inject(AssessmentIntegrityService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject(ElementRef<HTMLElement>);
 
-  // Focus is returned here when the keyboard-shortcuts dialog closes.
   private readonly shortcutsBtn = viewChild<ElementRef<HTMLButtonElement>>('shortcutsBtn');
 
+  // ── session state ─────────────────────────────────────────────────
+  readonly questions = this.session.questions;
   readonly currentIndex = this.session.currentIndex;
-  readonly total = this.session.total;
-  readonly answeredIndices = this.session.answeredIndices;
+  readonly total = this.session.questionCount;
+  readonly currentQuestion = this.session.currentQuestion;
+  readonly status = this.session.status;
+  readonly retrying = signal(false);
 
-  // Assessment Integrity Mode (browser-based deterrent — Interview Mode only).
+  readonly questionText = computed(() => this.currentQuestion()?.questionText ?? '');
+  readonly currentOptions = computed<readonly InterviewOptionViewModel[]>(
+    () => this.currentQuestion()?.options ?? []
+  );
+  /** Explicit server type — the ONLY multi-select signal. */
+  readonly questionType = computed(() => this.currentQuestion()?.type ?? 'single');
+
+  /** Option highlighting follows the OPTIMISTIC selection so clicks feel instant. */
+  readonly selectedIds = computed<readonly number[]>(() => {
+    const questionId = this.currentQuestion()?.questionId;
+    return questionId ? this.session.selectionFor(questionId) : [];
+  });
+
+  /**
+   * Paginator markers follow CONFIRMED server answers, so a failed save never
+   * leaves a question looking answered.
+   */
+  readonly answeredIndices = computed<ReadonlySet<number>>(() => {
+    const confirmed = this.session.confirmedAnswers();
+    const marked = new Set<number>();
+    this.questions().forEach((question, index) => {
+      if ((confirmed.get(question.questionId)?.length ?? 0) > 0) marked.add(index);
+    });
+    return marked;
+  });
+
+  readonly answeredCount = computed(() => this.answeredIndices().size);
+
+  // ── save / navigation gating ──────────────────────────────────────
+  readonly isSavingCurrent = computed(() => {
+    const questionId = this.currentQuestion()?.questionId;
+    return !!questionId && this.session.isQuestionSaving(questionId);
+  });
+
+  readonly hasFailedCurrent = computed(() => {
+    const questionId = this.currentQuestion()?.questionId;
+    return !!questionId && this.session.hasFailedSave(questionId);
+  });
+
+  /**
+   * ONE gate for every navigation path — Prev, Next, paginator pages, keyboard
+   * and submit. Leaving a question with an unaccepted answer would strand it.
+   */
+  readonly navigationBlocked = computed(
+    () => this.isSavingCurrent() || this.hasFailedCurrent() || this.isFinalizing()
+  );
+
+  /** Forward gate: at least one selection. Never a correctness or completeness test. */
+  readonly canNavigateNext = computed(() => this.selectedIds().length > 0);
+
+  readonly inputsLocked = computed(
+    () => this.isFinalizing() || this.status() === 'submitted' || this.status() === 'expired'
+  );
+
+  // ── integrity + timer ─────────────────────────────────────────────
   readonly focusChanges = this.integrity.focusLossCount;
   readonly fullscreenSupported = this.integrity.fullscreenSupported();
-  // Drives the "Full Screen Enabled" indicator; stays correct when the user
-  // exits fullscreen with Esc/F11 rather than through the button.
   readonly isFullscreen = this.integrity.isFullscreen;
   private warningOpen = false;
 
-  // Total-assessment countdown (calm typography, NOT the per-question Scoreboard).
   readonly timeRemaining = this.timer.formatted;
   readonly isLowTime = this.timer.isLowTime;
 
-  // The "Show Results" (submit) affordance appears on the final question.
   readonly isLastQuestion = computed(
     () => this.total() > 0 && this.currentIndex() === this.total() - 1
   );
 
+  // ── submission ────────────────────────────────────────────────────
+  private readonly _finalizing = signal(false);
+  readonly isFinalizing = this._finalizing.asReadonly();
+  private submitDialogRef: MatDialogRef<InterviewSubmitDialogComponent, boolean> | null = null;
+  private submitStarted = false;
+  readonly submitError = signal<string | null>(null);
+
   constructor() {
-    // Timer expiry → auto-submit ONCE, no confirmation. Set up before the timer
-    // starts (in ngOnInit) so an expiry can never be missed.
+    // Expiry → submit ONCE. Wired before the timer starts so it can never be missed.
     this.timer.expired$
       .pipe(takeUntilDestroyed())
-      .subscribe(() => this.submit(true));
+      .subscribe(() => void this.handleExpiry());
 
-    // When the user returns after a focus-loss with a pending warning, show the
-    // (accessible, themed) warning dialog. The timer keeps running throughout.
     this.integrity.warningOnReturn$
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.openIntegrityWarning());
   }
 
-  readonly currentQuestion = computed<QuizQuestion | null>(
-    () => this.session.assessment()?.questions?.[this.currentIndex()] ?? null
-  );
-
-  readonly questionText = computed<string>(() => this.currentQuestion()?.questionText ?? '');
-  readonly currentOptions = computed<Option[]>(() => this.currentQuestion()?.options ?? []);
-
-  /**
-   * Forward-navigation gate. Single source of truth lives on the session service
-   * so the keyboard path (onGlobalKey) and the paginator's Next button share ONE
-   * condition. At least one selection on the current question — never a
-   * correct-answer count, which would leak how many answers are right.
-   */
-  readonly canNavigateNext = this.session.canNavigateNext;
-
-  readonly selectedIds = computed<number[]>(
-    () => this.session.answersByIndex()[this.currentIndex()] ?? []
-  );
-
   ngOnInit(): void {
-    if (!this.session.hasActiveSession()) {
-      this.router.navigate(['/interview']);
+    // The guard already hydrated (or failed). Never resume again here.
+    if (this.status() === 'submitted') {
+      void this.router.navigate(['/interview/results', this.session.sessionId()]);
       return;
     }
-    this.session.activateDeferredFeedback();
-    this.startTimer();
 
-    // Assessment Integrity Mode (deterrent, Interview Mode only). A fresh start
-    // resets the count; a resume keeps the restored count. Begin watching for
-    // focus loss — listeners auto-clean on destroy via the DestroyRef.
-    if (!this.session.wasRestored()) {
-      this.integrity.reset();
-    }
+    this.startDisplayTimer();
+
+    // Integrity was reset once at session creation; a refresh restores the
+    // count from its own key, so it is deliberately NOT reset here.
     this.integrity.activate(this.destroyRef);
-    // Resumed with a warning still pending (focus lost, then refreshed) → surface
-    // it now that the user is back.
-    if (this.integrity.warningPending()) {
-      this.openIntegrityWarning();
-    }
+    if (this.integrity.warningPending()) this.openIntegrityWarning();
   }
 
   ngOnDestroy(): void {
-    // Stop the countdown, and — only when NOT submitted (i.e. the user abandoned
-    // the assessment) — tear the session down + restore immediate feedback. On
-    // submit, the data is kept for the Results page (submit() already reset the
-    // feedback policy).
     this.timer.stop();
-    if (this.session.status() !== 'submitted') {
-      this.session.clear();
-    }
-    // Reset the integrity policy when leaving the assessment (the count was
-    // already copied into the InterviewResult on submit). Listeners are removed
-    // via the DestroyRef passed to activate().
+    // The session is NOT cleared on leave: the backend owns it and the minimal
+    // reference must survive so the user can resume or load their result.
     this.integrity.reset();
   }
 
-  // Manual (early) submit — from the "Show Results" button. Confirms first. The
-  // countdown is PAUSED while the dialog is open (the confirmation shouldn't cost
-  // the user time) and resumed if they choose to continue.
-  onShowResults(): void {
-    if (this.session.status() !== 'active') return;
-    this.timer.pause();
+  private startDisplayTimer(): void {
+    if (this.status() !== 'active') return;
+    // Anchored to the server's own remaining time — never a full restart.
+    this.timer.syncFromServer(this.session.serverRemainingSeconds(), this.session.durationSeconds());
+  }
 
-    const answered = this.answeredIndices().size;
-    const ref = this.dialog.open<InterviewSubmitDialogComponent, InterviewSubmitDialogData, boolean>(
-      InterviewSubmitDialogComponent,
-      {
-        width: '360px',
-        panelClass: 'themed-confirm-dialog',
-        autoFocus: 'dialog',
-        data: {
-          answered,
-          unanswered: Math.max(0, this.total() - answered),
-          timeRemaining: this.timeRemaining()
-        }
+  /** Retry after a backend outage. The reference was deliberately preserved. */
+  async retryResume(): Promise<void> {
+    if (this.retrying()) return;
+    this.retrying.set(true);
+    try {
+      const outcome = await this.session.resumeFromStoredReference();
+      if (outcome.kind === 'active') {
+        this.startDisplayTimer();
+      } else if (outcome.kind === 'submitted') {
+        await this.router.navigate(['/interview/results', this.session.sessionId()]);
+      } else if (outcome.kind === 'unauthorized' || outcome.kind === 'none') {
+        await this.router.navigate(['/interview']);
       }
-    );
-    ref.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.submit(false);
-      } else {
-        // Continue Assessment (or dismissed) → resume the countdown and persist
-        // the new expiry so a refresh keeps the correct remaining time.
-        const expiresAt = this.timer.resume();
-        this.session.setTiming(expiresAt, this.timer.durationSeconds);
+    } finally {
+      this.retrying.set(false);
+    }
+  }
+
+  // ── answers ───────────────────────────────────────────────────────
+
+  /** Receives the COMPLETE next selection from the options component. */
+  async onSelectionChange(optionIds: number[]): Promise<void> {
+    const question = this.currentQuestion();
+    if (!question || this.inputsLocked()) return;
+    await this.session.updateAnswer(question.questionId, optionIds);
+  }
+
+  /**
+   * Resend the selection whose save failed.
+   *
+   * The intent comes from the service, NOT from `selectedIds()` — after a
+   * failure the display shows the confirmed server answer again, so reading the
+   * screen would resend the wrong value.
+   */
+  async retrySave(): Promise<void> {
+    const question = this.currentQuestion();
+    if (!question) return;
+    await this.session.retryFailedSave(question.questionId);
+  }
+
+  // ── navigation ────────────────────────────────────────────────────
+
+  onNavigate(index: number): void {
+    if (this.navigationBlocked()) return;
+    this.session.setCurrentIndex(index);   // also persists v2 currentIndex
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      swallow('interview-session#onNavigate', err);
+    }
+  }
+
+  /**
+   * ← / → mirror the paginator, routed through onNavigate() so there is one
+   * navigation path. Guards, in order: an open dialog owns the keyboard; form
+   * controls keep native arrow behaviour (that is how a keyboard user picks a
+   * radio); modifier combos belong to the browser.
+   */
+  @HostListener('window:keydown', ['$event'])
+  onGlobalKey(event: KeyboardEvent): void {
+    if (event.defaultPrevented) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (this.dialog.openDialogs.length > 0) return;
+
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return;
+
+    // Same gate as every other navigation path.
+    if (this.navigationBlocked()) return;
+
+    const index = this.currentIndex();
+
+    if (event.key === 'ArrowLeft') {
+      if (index <= 0) return;
+      event.preventDefault();
+      this.onNavigate(index - 1);
+      return;
+    }
+
+    if (index >= this.total() - 1) return;
+    if (!this.canNavigateNext()) return;   // left alone rather than swallowed
+    event.preventDefault();
+    this.onNavigate(index + 1);
+  }
+
+  // ── submission ────────────────────────────────────────────────────
+
+  /**
+   * Manual submit. The countdown deliberately CONTINUES while the dialog is
+   * open — the server deadline does not pause, so neither may the display.
+   */
+  onShowResults(): void {
+    if (this.status() !== 'active' || this.navigationBlocked()) return;
+
+    const answered = this.answeredCount();
+    this.submitDialogRef = this.dialog.open<
+      InterviewSubmitDialogComponent, InterviewSubmitDialogData, boolean
+    >(InterviewSubmitDialogComponent, {
+      width: '360px',
+      panelClass: 'themed-confirm-dialog',
+      autoFocus: 'dialog',
+      data: {
+        answered,
+        unanswered: Math.max(0, this.total() - answered),
+        timeRemaining: this.timeRemaining()
       }
+    });
+
+    this.submitDialogRef.afterClosed().subscribe((confirmed) => {
+      this.submitDialogRef = null;
+      // An expiry that closed the dialog has already started its own submit.
+      if (confirmed && !this.submitStarted) void this.submit();
     });
   }
 
-  // Finalize the assessment: stop the timer, score + store the result, and go to
-  // the Results page. Idempotent via the status guard (a manual submit and a
-  // timer-expiry submit racing produce exactly one result + navigation).
-  private submit(byExpiry: boolean): void {
-    if (this.session.status() !== 'active') return;
-    const timeUsed = this.timer.elapsedSeconds();
-    const timeRemaining = this.timer.remainingSeconds();
-    this.timer.stop();
-    // Copy the integrity focus-change count into the result (neutral info only —
-    // never affects the score).
-    this.session.submit(timeUsed, timeRemaining, byExpiry, this.integrity.focusLossCount());
-    this.router.navigate(['/interview/results']);
+  /** Timer hit zero: close any dialog, lock, and submit exactly once. */
+  private async handleExpiry(): Promise<void> {
+    this.submitDialogRef?.close(false);
+    this.submitDialogRef = null;
+    await this.submit();
   }
 
-  // ── Assessment Integrity Mode ───────────────────────────────────
-  // Show the accessible, themed warning once per return (no stacking). The timer
-  // keeps running while it's open. On dismiss, clear the pending flag.
+  /**
+   * Finalize on the backend. Pending saves settle first so the server scores
+   * what the user actually chose; `submittedByExpiry` is never sent — the
+   * backend decides that from its own clock.
+   */
+  private async submit(): Promise<void> {
+    if (this.submitStarted) return;   // suppress duplicates in the UI
+    this.submitStarted = true;
+    this._finalizing.set(true);
+    this.submitError.set(null);
+    this.timer.stop();
+
+    try {
+      await this.session.submit();
+      await this.router.navigate(['/interview/results', this.session.sessionId()]);
+    } catch {
+      // Backend unavailable → stay locked, keep the reference, offer a retry.
+      this.submitStarted = false;
+      this._finalizing.set(false);
+      this.submitError.set($localize`Could not submit your assessment. Please try again.`);
+    }
+  }
+
+  async retrySubmit(): Promise<void> {
+    await this.submit();
+  }
+
+  // ── integrity / dialogs ───────────────────────────────────────────
+
   private openIntegrityWarning(): void {
     if (this.warningOpen) return;
     this.warningOpen = true;
@@ -237,25 +370,6 @@ export class InterviewSessionComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Open the shared keyboard-shortcuts dialog in INTERVIEW mode. Same component,
-   * config and design language as the topic-quiz header — only `data.mode`
-   * differs, so the two surfaces never duplicate a template.
-   *
-   * Accessibility:
-   *  - `autoFocus: 'dialog'` puts initial focus inside the dialog (on the
-   *    container, so the title is announced rather than a button label).
-   *  - MatDialog installs a focus trap; Tab/Shift+Tab stay within the dialog.
-   *  - Escape closes it (MatDialog default).
-   *  - `restoreFocus: true` returns focus to whatever was focused on open; the
-   *    explicit refocus below guarantees it lands back on the shortcuts button
-   *    even if something else moved focus while the dialog was open.
-   *
-   * Keyboard isolation: Interview Mode registers NO global key handler (unlike
-   * the topic quiz's runOnGlobalKey), so there is nothing to switch off. The
-   * focus trap is what keeps keystrokes — including the arrow keys that move
-   * between radio options — from reaching the assessment behind the dialog.
-   */
   openKeyboardShortcuts(): void {
     const ref = this.dialog.open(KeyboardShortcutsDialogComponent, {
       panelClass: 'keyboard-shortcuts-dialog',
@@ -265,8 +379,6 @@ export class InterviewSessionComponent implements OnInit, OnDestroy {
       restoreFocus: true,
       ariaLabelledBy: 'ksd-title',
       ariaDescribedBy: 'ksd-desc',
-      // Material leaves this false by default; setting it makes assistive tech
-      // treat the dialog as modal and ignore the assessment behind it.
       ariaModal: true,
       data: { mode: 'interview' } as KeyboardShortcutsDialogData
     });
@@ -277,121 +389,19 @@ export class InterviewSessionComponent implements OnInit, OnDestroy {
       .subscribe(() => this.shortcutsBtn()?.nativeElement?.focus());
   }
 
-  // Optional, user-initiated fullscreen (browsers require a gesture). No-op if
-  // unsupported/denied — the assessment works either way.
   enterFullscreen(): void {
     const el = document.documentElement ?? this.host.nativeElement;
-    this.integrity.enterFullscreen(el).catch((err) => swallow('interview-session#enterFullscreen', err));
+    this.integrity.enterFullscreen(el).catch((err) =>
+      swallow('interview-session#enterFullscreen', err)
+    );
   }
 
-  // Scoped copy deterrents — bound only to the assessment content box in the
-  // template (never global). Do not block form controls, buttons, or navigation.
+  /** Scoped copy deterrents — bound only to the assessment content box. */
   blockCopy(event: Event): void {
     event.preventDefault();
   }
 
-  // Start the total-assessment countdown once (survives question navigation).
-  // Duration comes from the generated assessment; a `?interviewSeconds=` query
-  // param overrides it so Playwright can exercise expiry without waiting 30 min.
-  private startTimer(): void {
-    const assessment = this.session.assessment();
-    if (!assessment) return;
-
-    if (this.session.wasRestored() && this.session.expiresAt() > 0) {
-      // Resume after a refresh: restore the countdown from the persisted expiry
-      // timestamp so the remaining time is correct (never reset to full). If it
-      // already elapsed, the timer emits expiry → auto-submit.
-      this.timer.restore(this.session.expiresAt(), this.session.timerDurationSeconds());
-      return;
-    }
-
-    // Fresh start: begin the countdown and record its timing for resume.
-    const duration = this.readDurationOverride() ?? assessment.durationSeconds;
-    this.timer.start(duration);
-    this.session.setTiming(this.timer.expiresAt, duration);
-  }
-
-  private readDurationOverride(): number | null {
-    try {
-      // Stashed by the builder from a `?interviewSeconds=` query param (test-only
-      // hook so Playwright can exercise expiry without waiting the full duration).
-      const raw = sessionStorage.getItem('__interviewSeconds');
-      const n = raw ? Number(raw) : NaN;
-      return Number.isFinite(n) && n > 0 ? n : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * ← / → move between questions, matching the paginator's Prev/Next.
-   *
-   * Deliberately routed through onNavigate() so an arrow press is identical to
-   * clicking the paginator (same index update, same scroll-to-top) — there is no
-   * second navigation path to drift out of sync.
-   *
-   * FORWARD navigation requires the current question to be answered — the same
-   * `canNavigateNext` rule the paginator's Next button uses. BACKWARD navigation
-   * is always allowed, so a mis-press can never trap you on a question you
-   * haven't answered, and direct page jumps stay open for review.
-   *
-   * Three guards, in order of subtlety:
-   *  1. An open dialog owns the keyboard. The listener is on `window`, so
-   *     keystrokes inside the shortcuts / submit / integrity dialogs would
-   *     otherwise navigate the assessment behind them.
-   *  2. Form controls keep their native keyboard behaviour. When an answer
-   *     option has focus, arrows move between radios — that is how a keyboard
-   *     user picks an answer, and hijacking it would break that. Mirrors the
-   *     topic quiz guard in quiz-setup.service#runOnGlobalKey.
-   *  3. Modifier combos (Ctrl/Meta/Alt + arrow) belong to the browser/OS.
-   */
-  @HostListener('window:keydown', ['$event'])
-  onGlobalKey(event: KeyboardEvent): void {
-    if (event.defaultPrevented) return;
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-
-    if (this.dialog.openDialogs.length > 0) return;
-
-    const target = event.target as HTMLElement | null;
-    const tag = target?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
-      return;
-    }
-
-    const index = this.currentIndex();
-
-    if (event.key === 'ArrowLeft') {
-      if (index <= 0) return;                  // already on the first question
-      event.preventDefault();
-      this.onNavigate(index - 1);
-      return;
-    }
-
-    if (index >= this.total() - 1) return;     // already on the last question
-
-    // Forward only once the current question has an answer (any question type).
-    // Deliberately does NOT preventDefault when blocked, so the key is left
-    // alone rather than silently swallowed.
-    if (!this.canNavigateNext()) return;
-
-    event.preventDefault();
-    this.onNavigate(index + 1);
-  }
-
-  // Paginator / prev / next → move the session index (no router navigation).
-  // Bring the new question to the top (the user may have scrolled down).
-  onNavigate(index: number): void {
-    this.session.goTo(index);
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      swallow('interview-session#onNavigate', err);
-    }
-  }
-
-  // Persist the current question's selection (drives the answered counter).
-  onSelectionChange(optionIds: number[]): void {
-    this.session.setAnswer(this.currentIndex(), optionIds);
+  async backToBuilder(): Promise<void> {
+    await this.router.navigate(['/interview']);
   }
 }

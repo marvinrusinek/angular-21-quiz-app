@@ -13,13 +13,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { formatDuration } from '../../../shared/utils/format-time';
 import { InterviewResult } from '../../../shared/models/InterviewResult.model';
 import { InterviewDifficulty } from '../../../shared/models/AssessmentConfig.model';
-import { QuizQuestion } from '../../../shared/models/QuizQuestion.model';
 import { InterviewAttemptHistoryEntry } from '../../../shared/models/interview-history.model';
 import { InterviewHistoryService } from '../../../shared/services/features/interview/interview-history.service';
 import { InterviewAnalyticsService } from '../../../shared/services/features/interview/interview-analytics.service';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { TopicPerformanceListComponent } from '../../../components/interview/topic-performance/topic-performance-list.component';
-import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
 import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
 
 /**
@@ -29,10 +27,12 @@ import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-in
  * InterviewAnalyticsService + the Topic Performance presentation.
  *
  * Strictly historical + read-only: no session, no timer, no answer controls, no
- * path back into an active interview. When the attempt retained a per-question
- * review snapshot it reopens the read-only Review Answers list (reusing
- * InterviewReviewComponent); legacy attempts without one show the "not retained"
- * note instead.
+ * path back into an active interview.
+ *
+ * It no longer renders a per-question review. Sanitized v2 history keeps
+ * analytics only — the questions, answers, correctness and explanations live on
+ * the backend and are shown for the current attempt while its session reference
+ * is alive. The page says so rather than implying the review is retained.
  */
 @Component({
   selector: 'codelab-interview-history-detail',
@@ -42,7 +42,6 @@ import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-in
     RouterLink,
     ThemeToggleComponent,
     TopicPerformanceListComponent,
-    InterviewReviewComponent,
     ScrollDownIndicatorComponent
   ],
   templateUrl: './interview-history-detail.component.html',
@@ -96,28 +95,20 @@ export class InterviewHistoryDetailComponent {
     return r ? this.analyticsService.analyze(r) : null;
   });
 
-  // Whether this attempt retained a per-question review snapshot.
-  readonly hasReview = computed(() => (this.entry()?.review?.length ?? 0) > 0);
-
-  // Rebuild the read-only Review inputs from the stored snapshot. These are inert
-  // plain-data QuizQuestion/answers shapes — never a live/scoreable session.
-  readonly reviewQuestions = computed<QuizQuestion[]>(() =>
-    (this.entry()?.review ?? []).map((s) => ({
-      questionText: s.questionText,
-      explanation: s.explanation,
-      type: s.type,
-      sourceQuizId: s.sourceQuizId,
-      options: s.options.map((o) => ({ optionId: o.optionId, text: o.text, correct: o.correct }))
-    }))
-  );
-
-  readonly reviewAnswers = computed<Record<number, number[]>>(() => {
-    const out: Record<number, number[]> = {};
-    for (const [i, s] of (this.entry()?.review ?? []).entries()) {
-      out[i] = [...s.selectedOptionIds];
-    }
-    return out;
-  });
+  /**
+   * ALWAYS false for sanitized (v2) history.
+   *
+   * Per-question review used to be reconstructed from a stored snapshot that
+   * carried question text, option text, correctness and explanations — a
+   * durable answer key in localStorage, which is exactly what the backend
+   * migration removes. Review for the CURRENT attempt is served from the
+   * backend result while its session reference lives in sessionStorage; a past
+   * attempt keeps only its analytics summary.
+   *
+   * Kept as a signal rather than deleted so the template's existing
+   * @if/@else — and its "review not retained" note — still reads naturally.
+   */
+  readonly hasReview = computed(() => false);
 
   // Performance context — reuse the shared trends (no independent recalculation).
   readonly trends = this.history.trends;
@@ -145,25 +136,29 @@ export class InterviewHistoryDetailComponent {
   }
 }
 
-// Reconstruct an InterviewResult from a compact history entry. When a review
-// snapshot was retained, answered/unanswered/incorrect are derived accurately
-// from it (a question with no selection is unanswered, not incorrect). Without
-// one, we fall back to treating every question as answered — focusChanges is not
-// retained and is not shown.
+/**
+ * Reconstruct an InterviewResult from a compact history entry, for the topic
+ * analytics pipeline only.
+ *
+ * Sanitized v2 records carry answered/unanswered/incorrect from the BACKEND, so
+ * they are used verbatim when present. Migrated v1 records have neither those
+ * fields nor a review snapshot to infer them from, so they fall back to
+ * treating every question as answered rather than inventing a split.
+ */
 function toResult(e: InterviewAttemptHistoryEntry): InterviewResult {
-  const unanswered = e.review
-    ? e.review.filter((q) => (q.selectedOptionIds?.length ?? 0) === 0).length
-    : 0;
-  const answered = Math.max(0, e.totalQuestions - unanswered);
+  const unanswered = e.unanswered ?? 0;
+  const answered = e.answered ?? Math.max(0, e.totalQuestions - unanswered);
   return {
     total: e.totalQuestions,
     answered,
     unanswered,
     correct: e.score,
-    incorrect: Math.max(0, answered - e.score),
+    incorrect: e.incorrect ?? Math.max(0, answered - e.score),
     percentage: e.percentage,
-    timeUsedSeconds: e.durationSeconds ?? 0,
+    timeUsedSeconds: e.timeUsedSeconds ?? e.durationSeconds ?? 0,
     timeRemainingSeconds: 0,
+    // A role preset mixes difficulties, so there is no single value to show.
+    // 'mixed' is the honest label here, not a substituted difficulty.
     difficulty: (e.configuredDifficulty ?? 'mixed') as InterviewDifficulty,
     topicIds: [...(e.selectedTopicIds ?? [])],
     perTopic: e.topicPerformance.map((t) => ({
@@ -174,6 +169,6 @@ function toResult(e: InterviewAttemptHistoryEntry): InterviewResult {
       percentage: t.percentage
     })),
     submittedByExpiry: e.completionReason === 'time-expired',
-    focusChanges: 0
+    focusChanges: e.focusChanges ?? 0
   };
 }

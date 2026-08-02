@@ -63,7 +63,28 @@ const INTERNAL_FIELDS = [
   'databasePath',
   'database_path',
   'quizDataPath',
-  'allowedOrigins'
+  'allowedOrigins',
+  // Internal attempt identity. The client is given `sessionId`; `attemptId` is
+  // the row-level key the scoring tables join on and must not leave the server.
+  'attemptId',
+  'attempt_id',
+  // Raw SQLite column names. These would each be a whole serialized record —
+  // `result_json` in particular is the complete frozen answer key. Banning the
+  // column names means a `SELECT *` row handed to res.json fails loudly instead
+  // of shipping storage internals.
+  'result_json',
+  'resultJson',
+  'config_json',
+  'configJson',
+  'questions_json',
+  'questionsJson',
+  'answers_json',
+  'answersJson'
+  // NOT listed: `selected_option_ids`. normalizeKey() collapses separators, so
+  // it is indistinguishable from `selectedOptionIds` — a field the save and
+  // review DTOs legitimately return. Banning it would reject every valid
+  // response. The column is kept out of responses by the mappers, which build
+  // allow-listed literals and never spread a database row.
 ];
 
 const POLICIES: Record<ResponsePolicyName, ReadonlySet<string>> = {

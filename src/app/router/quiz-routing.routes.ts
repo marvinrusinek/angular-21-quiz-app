@@ -12,8 +12,7 @@ import { BuildYourInterviewComponent } from
     '../containers/interview/build-your-interview/build-your-interview.component';
 import { InterviewSessionComponent } from
     '../containers/interview/interview-session/interview-session.component';
-import { InterviewSessionHandoffComponent } from
-    '../containers/interview/interview-session-handoff/interview-session-handoff.component';
+import { BackendInterviewSessionGuard } from './guards/backend-interview-session-guard';
 import { InterviewResultsComponent } from
     '../containers/interview/interview-results/interview-results.component';
 import { InterviewHistoryComponent } from
@@ -24,12 +23,11 @@ import { InterviewCertificateComponent } from
     '../containers/interview/interview-certificate/interview-certificate.component';
 
 import { QuizGuard } from './guards/quiz-guard';
-import { InterviewSessionGuard } from './guards/interview-session-guard';
 import { PracticeSessionGuard } from './guards/practice-session-guard';
 import { PracticeResultGuard } from './guards/practice-result-guard';
 import { WeakAreasPracticeComponent } from '../containers/practice/weak-areas-practice/weak-areas-practice.component';
 import { WeakAreasPracticeResultsComponent } from '../containers/practice/weak-areas-practice-results/weak-areas-practice-results.component';
-import { InterviewResultGuard } from './guards/interview-result-guard';
+import { BackendInterviewResultGuard } from './guards/backend-interview-result-guard';
 
 export const routes: Routes = [
   {
@@ -62,28 +60,28 @@ export const routes: Routes = [
     path: 'interview',
     component: BuildYourInterviewComponent
   },
-  // URL-less Interview session (no question index in the URL). Guarded: requires
-  // an active generated assessment; direct/stale access redirects to the builder.
-  {
-    path: 'interview/session',
-    component: InterviewSessionComponent,
-    canActivate: [InterviewSessionGuard]
-  },
-  // Stage 9C handoff. The builder now creates the assessment on the backend and
-  // navigates here with the (non-secret) session id; the bearer token stays in
-  // sessionStorage. Stage 9D replaces this shell with the real backend-backed
-  // session component and removes this comment.
+  // Backend-backed Interview session. The builder creates the assessment on the
+  // server and navigates here with the (non-secret) session id; the bearer
+  // token stays in sessionStorage. BackendInterviewSessionGuard is the SINGLE
+  // hydration path — it resumes once and routes on the outcome.
   {
     path: 'interview/session/:sessionId',
-    component: InterviewSessionHandoffComponent
+    component: InterviewSessionComponent,
+    canActivate: [BackendInterviewSessionGuard]
   },
-  // Interview Results ("Assessment Complete"). Guarded: requires a submitted
-  // result; direct/stale access redirects to the builder.
+  // Legacy id-less path: send anyone holding an old link back to the builder.
+  { path: 'interview/session', redirectTo: 'interview', pathMatch: 'full' },
+  // Interview Results ("Assessment Complete"). The path carries the NON-SECRET
+  // session id and nothing else — no token, score, percentage or answers in the
+  // URL, query, fragment or router state. The guard loads the frozen backend
+  // result through the one shared pipeline the page then renders.
   {
-    path: 'interview/results',
+    path: 'interview/results/:sessionId',
     component: InterviewResultsComponent,
-    canActivate: [InterviewResultGuard]
+    canActivate: [BackendInterviewResultGuard]
   },
+  // Id-less legacy path: nothing identifies which attempt to show.
+  { path: 'interview/results', redirectTo: 'interview', pathMatch: 'full' },
   // Interview History — read-only record of past attempts. Deep-linkable (reads
   // the durable history store); no session/result required. `:id` reopens ONE
   // attempt's read-only summary. More specific path is listed first.

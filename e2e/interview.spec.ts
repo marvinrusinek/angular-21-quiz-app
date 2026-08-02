@@ -1,5 +1,8 @@
 import { test, expect, Page } from '@playwright/test';
 
+/** Results carries the non-secret session id — never a token or a score. */
+const RESULTS_URL = /\/interview\/results\/[^/?#]+/;
+
 /**
  * Interview ("Assessment") Mode end-to-end coverage + a topic-quiz regression
  * guard proving Interview Mode leaves the normal quizzes untouched.
@@ -18,7 +21,8 @@ async function configureAndStart(page: Page, count: '10' | '20' | '30' = '10') {
   for (let i = 0; i < n; i++) await boxes.nth(i).check({ force: true });
   await page.locator(`.chip--button:has-text("${count}")`).first().click();
   await page.locator('.start-interview-btn').click();
-  await page.waitForURL('**/interview/session');
+  // The session route carries the backend session id.
+  await page.waitForURL(/\/interview\/session\/[^/?#]+/);
   await expect(page.locator('.interview-question-box')).toBeVisible();
 }
 
@@ -37,9 +41,14 @@ async function answerAllAndSubmit(page: Page, count: number) {
   await page.locator('.show-results-btn').click();
   await expect(page.getByText('Submit Assessment?')).toBeVisible();
   await page.locator('button:has-text("Submit Assessment")').last().click();
-  await page.waitForURL('**/interview/results');
+  await page.waitForURL(RESULTS_URL);
 }
 
+/**
+ * Everything downstream of SUBMIT now reads the FROZEN backend result: the
+ * guard loads it through one pipeline, Results renders it, and Review uses the
+ * server's own review data. History keeps a sanitized analytics summary only.
+ */
 test.describe('Interview Mode', () => {
   test('main flow: selection card → build → session → submit → results → review', async ({ page }) => {
     await page.goto('/quiz');
@@ -68,7 +77,7 @@ test.describe('Interview Mode', () => {
     await expect(page.getByText('Submit Assessment?')).toBeVisible();
     await page.locator('button:has-text("Submit Assessment")').last().click();
 
-    await page.waitForURL('**/interview/results');
+    await page.waitForURL(RESULTS_URL);
     await expect(page.locator('.interview-results__title')).toHaveText(/Assessment Complete/);
     await expect(page.locator('.score-pct')).toBeVisible();
 
@@ -123,13 +132,13 @@ test.describe('Interview Mode', () => {
     await expect(page).toHaveURL(/\/interview\/history\/.+/);
     await expect(page.locator('.ihd__readonly')).toContainText('Read Only');
 
-    // A freshly completed attempt RETAINS its per-question review, so the detail
-    // page embeds the read-only Review Answers list. The "was not retained" note
-    // is the LEGACY branch (entry.review empty) and must NOT appear here.
-    await expect(page.locator('.ihd-review')).toBeVisible();
-    await expect(page.locator('#ihd-review-heading')).toHaveText(/Review Answers/);
-    await expect(page.locator('.rv-item')).toHaveCount(10);
-    await expect(page.locator('.ihd-note')).toHaveCount(0);
+    // History retains ANALYTICS ONLY. The questions, answers and explanations
+    // live on the server, so a historical record neither embeds the review nor
+    // advertises an action that would promise it.
+    await expect(page.locator('app-interview-review')).toHaveCount(0);
+    await expect(page.locator('.rv-item')).toHaveCount(0);
+    await expect(page.locator('.ihd-note'))
+      .toContainText('available only for the current browser session');
 
     // Topic Performance is reused here too.
     await expect(page.locator('.topic-row').first()).toBeVisible();
@@ -169,7 +178,7 @@ test.describe('Interview Mode', () => {
 
     // 4. Clearing the retained history removes the score automatically (no
     //    separate readiness store) — verify on the history page after clearing.
-    await page.evaluate(() => localStorage.removeItem('interviewAttemptHistory:v1'));
+    await page.evaluate(() => localStorage.removeItem('interviewAttemptHistory:v2'));
     await page.goto('/interview/history');
     await expect(page.locator('.interview-history__empty')).toContainText('No completed interviews yet');
     await expect(page.locator('.readiness__score')).toHaveCount(0);
@@ -208,7 +217,7 @@ test.describe('Interview Mode', () => {
     await expect(page.locator('.ihd__readonly')).toContainText('Read Only');   // no session restored
 
     // 4. Clearing history removes Topic Trends automatically (no separate store).
-    await page.evaluate(() => localStorage.removeItem('interviewAttemptHistory:v1'));
+    await page.evaluate(() => localStorage.removeItem('interviewAttemptHistory:v2'));
     await page.goto('/interview/history');
     await expect(page.locator('.interview-history__empty')).toBeVisible();
     await expect(page.locator('.topic-trends')).toHaveCount(0);
@@ -231,7 +240,7 @@ test.describe('Interview Mode', () => {
     await page.locator('.show-results-btn').click();
     await expect(page.getByText('Submit Assessment?')).toBeVisible();
     await page.locator('button:has-text("Submit Assessment")').last().click();
-    await page.waitForURL('**/interview/results');
+    await page.waitForURL(RESULTS_URL);
 
     const score = await page.locator('.score-pct').innerText();
 
@@ -297,12 +306,31 @@ test.describe('Interview Mode', () => {
     await expect(page.locator('.pg-page.current')).toHaveText('3');
   });
 
-  test('timer expiry auto-submits once', async ({ page }) => {
+  /**
+   * PENDING — and deliberately so.
+   *
+   * The deadline is now the SERVER's. `durationSeconds` is on the backend's
+   * rejected-request-keys list precisely so a client cannot set the length of
+   * its own assessment, and the `?interviewSeconds=` hook that used to shorten
+   * the local timer no longer influences anything. Driving real expiry would
+   * mean waiting out a 15-minute session, and the only ways to avoid that are
+   * to let the client dictate the duration or to add a test-only backdoor to
+   * the API — both of which would undo the property this migration exists to
+   * establish.
+   *
+   * The behaviour itself IS covered: expiry-fires-once and
+   * submit-without-submittedByExpiry are unit-tested in
+   * interview-session.component.spec.ts, and the backend decides
+   * `submittedByExpiry` from its own clock (backend/test/interview-submission).
+   * Re-enable this if a signed, non-production short-session affordance is ever
+   * added to the API.
+   */
+  test.fixme('timer expiry auto-submits once', async ({ page }) => {
     await page.goto('/interview?interviewSeconds=3');
     await configureAndStart(page, '10');
     await expect(page.locator('.interview-timer__value')).toBeVisible();
 
-    await page.waitForURL('**/interview/results', { timeout: 15_000 });
+    await page.waitForURL(RESULTS_URL, { timeout: 20_000 });
     await expect(page.locator('.interview-results__title')).toHaveText(/Assessment Complete/);
     await expect(page.locator('.interview-results__expiry')).toContainText("Time's up");
   });

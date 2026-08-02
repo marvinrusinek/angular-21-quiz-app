@@ -5,6 +5,7 @@
     <button
       type="button"
       class="pg-nav pg-prev"
+      [disabled]="disabled()"
       (click)="goPrevious()"
       aria-label="Previous question"
       i18n-aria-label
@@ -25,7 +26,8 @@
             [class.answered]="isAnswered(item.index)"
             [attr.aria-current]="isCurrent(item.index) ? 'true' : null"
             [attr.aria-label]="pageLabel(item.index)"
-            (click)="select.emit(item.index)"
+            [disabled]="disabled()"
+            (click)="goTo(item.index)"
           >
             {{ item.index + 1 }}
           </button>
@@ -47,7 +49,7 @@
     <button
       type="button"
       class="pg-nav pg-next"
-      [disabled]="!canNext()"
+      [disabled]="disabled() || !canNext()"
       [attr.title]="canNext() ? null : 'Answer this question to continue'"
       (click)="goNext()"
       aria-label="Next question"

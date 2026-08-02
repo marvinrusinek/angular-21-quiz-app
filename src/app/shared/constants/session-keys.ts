@@ -44,10 +44,17 @@ export const SK_ASSESSMENT_INTEGRITY = 'assessmentIntegrity';
 
 // Interview Mode performance history — a durable, versioned localStorage store of
 // the latest completed assessments (compact analytics only; NEVER full questions/
-// answers). Powers the Performance Trends chart. The ':v1' suffix is deliberate:
-// it is long-term analytics data whose schema is versioned independently, and it
-// is kept fully separate from topic-quiz progress/best-score/achievement stores.
-export const SK_INTERVIEW_HISTORY = 'interviewAttemptHistory:v1';
+// answers). Powers the Performance Trends chart. Kept fully separate from
+// topic-quiz progress/best-score/achievement stores.
+//
+// v2 is the SANITIZED schema. v1 additionally retained a per-question review
+// snapshot — question text, option text, per-option `correct` flags and
+// explanations — i.e. a durable answer key on disk. That is migrated to v2 and
+// discarded on first load; see InterviewHistoryService#migrateV1.
+export const SK_INTERVIEW_HISTORY = 'interviewAttemptHistory:v2';
+
+/** The v1 key. Read once during migration, then removed. Never written. */
+export const SK_INTERVIEW_HISTORY_V1 = 'interviewAttemptHistory:v1';
 
 // Angular Interview Master Certificate — a durable localStorage record of the
 // ONE issued certificate (unlocked flag, issue date, stable certificate id, and
