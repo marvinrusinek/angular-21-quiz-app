@@ -13,15 +13,53 @@
  * orphan holding a port.
  */
 const { spawn } = require('node:child_process');
+const net = require('node:net');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const TARGETS = [
-  { name: 'api', color: '[36m', args: ['run', 'dev'], cwd: path.join(ROOT, 'backend') },
-  { name: 'web', color: '[35m', args: ['start'], cwd: ROOT }
+  { name: 'api', color: '[36m', port: 3000, args: ['run', 'dev'], cwd: path.join(ROOT, 'backend') },
+  { name: 'web', color: '[35m', port: 4200, args: ['start'], cwd: ROOT }
 ];
+
+/**
+ * A busy port is the most common way this fails — a leftover server, or a
+ * Playwright run that started its own backend. Reporting it plainly beats a
+ * twenty-line EADDRINUSE stack trace from whichever process lost the race.
+ */
+function findPortOwner(port) {
+  return new Promise((resolve) => {
+    const socket = net
+      .connect({ port, host: '127.0.0.1' })
+      .setTimeout(700)
+      .on('connect', () => { socket.destroy(); resolve(true); })
+      .on('timeout', () => { socket.destroy(); resolve(false); })
+      .on('error', () => resolve(false));
+  });
+}
+
+async function assertPortsFree() {
+  const busy = [];
+  for (const target of TARGETS) {
+    if (await findPortOwner(target.port)) busy.push(target);
+  }
+  if (busy.length === 0) return;
+
+  console.error('\n[dev] Cannot start — already in use:');
+  for (const target of busy) {
+    console.error(`  :${target.port}  (${target.name})`);
+  }
+  console.error(
+    '\n[dev] Something is already serving it — a previous `npm run dev`, or a\n' +
+    '      Playwright run that starts its own backend on :3000. Stop it, or on\n' +
+    '      Windows find and end the owner:\n\n' +
+    `        Get-NetTCPConnection -LocalPort ${busy[0].port} -State Listen |\n` +
+    '          ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n'
+  );
+  process.exit(1);
+}
 
 const RESET = '[0m';
 const children = [];
@@ -46,7 +84,7 @@ function shutdown(reason, code) {
   setTimeout(() => process.exit(code ?? 0), 500);
 }
 
-for (const target of TARGETS) {
+function start(target) {
   // Windows needs a shell to launch npm.cmd — Node refuses to spawn .cmd
   // directly (EINVAL) since the 2024 command-injection hardening.
   const child = spawn(npm, target.args, {
@@ -73,10 +111,18 @@ for (const target of TARGETS) {
   child.on('error', (err) => shutdown(`${target.name} failed to start: ${err.message}`, 1));
 }
 
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => shutdown('interrupted', 0));
+async function main() {
+  await assertPortsFree();
+
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => shutdown('interrupted', 0));
+  }
+
+  console.log('[dev] api → http://localhost:3000/api/health');
+  console.log('[dev] web → http://localhost:4200');
+  console.log('[dev] Ctrl-C stops both.\n');
+
+  for (const target of TARGETS) start(target);
 }
 
-console.log('[dev] api → http://localhost:3000/api/health');
-console.log('[dev] web → http://localhost:4200');
-console.log('[dev] Ctrl-C stops both.\n');
+main();
