@@ -1,0 +1,26 @@
+# Keep the build context small and the image free of anything private or
+# machine-specific.
+
+node_modules
+dist
+coverage
+
+# Local session databases. These are USER DATA from development runs and must
+# never be baked into a deployed image.
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+
+# Real environment values.
+.env
+.env.*
+
+# Tests are not needed at runtime; the image ships compiled sources only.
+test
+jest.config.js
+jest.config.ts
+
+*.md
+.git
+.gitignore

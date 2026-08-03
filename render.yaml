@@ -1,0 +1,44 @@
+# Render Blueprint for the Interview API.
+#
+# Import this from the Render dashboard (New → Blueprint) and it creates the
+# service with the right settings. Host-agnostic alternatives (Fly.io,
+# Railway) work from the same backend/Dockerfile — see backend/DEPLOY.md.
+#
+# ONE deliberate cost decision: a persistent disk requires a paid instance
+# type. The free tier has an EPHEMERAL filesystem, so every redeploy or idle
+# spin-down would wipe the session database and any interview submitted before
+# it would become unreachable. `starter` is the cheapest plan that keeps a
+# submitted result loadable.
+
+services:
+  - type: web
+    name: interview-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    # The Dockerfile copies data/quiz.json relative to the backend directory.
+    dockerContext: ./backend
+    plan: starter
+    region: oregon
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Render supplies PORT; the app reads it. Do not hard-code it.
+
+      # EXACT origins allowed to call this API. The config rejects a wildcard
+      # outright and requires https in production, so this cannot be loosened
+      # by accident. Add your local origin only if you want to point a dev
+      # frontend at the hosted API.
+      - key: ALLOWED_ORIGINS
+        value: https://marvinrusinek.github.io
+
+      # Sessions live on the mounted disk, never in the image.
+      - key: DATABASE_PATH
+        value: /data/sessions.db
+
+    disk:
+      name: interview-sessions
+      mountPath: /data
+      sizeGB: 1
