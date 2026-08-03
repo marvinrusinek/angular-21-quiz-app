@@ -40,17 +40,32 @@ DATABASE_PATH=/data/sessions.db
 Mount a volume at `/data` and let the platform inject `PORT`. On Fly:
 `fly launch --dockerfile backend/Dockerfile` then `fly volumes create data`.
 
-### Why a paid instance
+### Sessions are EPHEMERAL on the free tier — what that actually costs
 
-`better-sqlite3` writes to a real file. A free tier with an **ephemeral**
-filesystem loses the database on every redeploy and idle spin-down, and any
-interview submitted beforehand becomes unreachable — the Results page would
-show "Cannot reach the interview service" for an assessment the user completed.
-Render's `starter` plan is the cheapest tier that keeps a disk.
+The blueprint runs free, with the database in `/tmp`. `better-sqlite3` writes a
+real file, and a free instance's filesystem is wiped on every redeploy and
+after ~15 minutes idle. Concretely:
 
-If you accept that trade-off, drop the `disk:` block and set
-`DATABASE_PATH=/tmp/sessions.db`. Sessions then survive only until the next
-restart. Nothing else breaks: history is client-side and already sanitized.
+- **A submitted interview becomes unreachable after a restart.** Its Results
+  page reports the service as unavailable.
+- **The score is NOT lost.** Interview History is client-side and already
+  sanitized, so the attempt, percentage and per-topic breakdown survive. Only
+  the per-question review — which lives on the server by design — is gone.
+- **An interview in progress is safe.** Answering sends traffic, and a service
+  with traffic does not idle out. Assessments run 15 minutes anyway.
+- **Cold starts.** The first request after an idle period takes roughly 30-60
+  seconds. Starting an interview can feel slow, or time out into the retry
+  state. Clicking Start again works once the service is warm.
+
+Unrelated to hosting, but often confused with it: the session **reference**
+(id + token) lives in `sessionStorage`, which is per-tab. Reloading a tab
+resumes fine; a NEW tab cannot see the interview, though the original tab can
+still finish it. That is deliberate — the token is kept out of `localStorage`
+so it cannot outlive the tab.
+
+**To make sessions durable:** set `plan: starter` in `render.yaml`, uncomment
+the `disk:` block, and set `DATABASE_PATH=/data/sessions.db`. Nothing else
+changes.
 
 ---
 

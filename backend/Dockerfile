@@ -49,10 +49,14 @@ COPY --from=build /app/package.json ./package.json
 # not user data, and it must never live under a static route.
 COPY data/quiz.json ./data/quiz.json
 
-# Sessions live on a MOUNTED VOLUME, not in the image — a redeploy replaces the
-# container, and an in-image database would take every in-flight assessment
-# with it. Override DATABASE_PATH to point at the mount.
-ENV DATABASE_PATH=/data/sessions.db
+# Sessions are written OUTSIDE the image — a redeploy replaces the container,
+# and an in-image database would take every in-flight assessment with it.
+#
+# /tmp is the zero-cost default: always writable, no volume required. It is
+# also EPHEMERAL, so sessions do not survive a restart. For durable sessions,
+# mount a volume and override DATABASE_PATH (e.g. /data/sessions.db); the
+# directory below is created ready for exactly that.
+ENV DATABASE_PATH=/tmp/sessions.db
 RUN mkdir -p /data && chown -R node:node /data
 
 # Drop root. The process only needs to read /app and write /data.

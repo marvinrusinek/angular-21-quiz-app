@@ -4,11 +4,26 @@
 # service with the right settings. Host-agnostic alternatives (Fly.io,
 # Railway) work from the same backend/Dockerfile — see backend/DEPLOY.md.
 #
-# ONE deliberate cost decision: a persistent disk requires a paid instance
-# type. The free tier has an EPHEMERAL filesystem, so every redeploy or idle
-# spin-down would wipe the session database and any interview submitted before
-# it would become unreachable. `starter` is the cheapest plan that keeps a
-# submitted result loadable.
+# Runs on the FREE tier with an EPHEMERAL database in /tmp — a deliberate
+# trade-off, not an oversight. What it means in practice:
+#
+#   * Sessions do not survive a restart. Render spins a free service down after
+#     ~15 minutes idle and wipes its filesystem, so an interview submitted
+#     before that becomes unreachable and its Results page reports the service
+#     as unavailable.
+#   * The user does NOT lose their score. Interview History is client-side and
+#     already sanitized, so the attempt, percentage and per-topic breakdown all
+#     survive. Only the per-question review — which lives on the server by
+#     design — is gone.
+#   * An interview in progress is safe: answering sends traffic, and a service
+#     with traffic does not idle out. Assessments are 15 minutes anyway.
+#   * The first request after an idle period pays a cold start of roughly
+#     30-60 seconds. Starting an interview can feel slow, or time out and show
+#     the retry state.
+#
+# To make sessions durable later: switch `plan` to `starter`, restore the
+# `disk:` block shown at the bottom of this file, and set DATABASE_PATH back to
+# /data/sessions.db. Nothing else changes.
 
 services:
   - type: web
@@ -17,7 +32,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     # The Dockerfile copies data/quiz.json relative to the backend directory.
     dockerContext: ./backend
-    plan: starter
+    plan: free
     region: oregon
     healthCheckPath: /api/health
 
@@ -34,11 +49,15 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://marvinrusinek.github.io
 
-      # Sessions live on the mounted disk, never in the image.
+      # Ephemeral on purpose — see the note at the top. /tmp is always
+      # writable, so this needs no mounted volume and no paid plan.
       - key: DATABASE_PATH
-        value: /data/sessions.db
+        value: /tmp/sessions.db
 
-    disk:
-      name: interview-sessions
-      mountPath: /data
-      sizeGB: 1
+# Durable sessions, when you want them: set `plan: starter` above, point
+# DATABASE_PATH at /data/sessions.db, and uncomment this.
+#
+#    disk:
+#      name: interview-sessions
+#      mountPath: /data
+#      sizeGB: 1
