@@ -1,5 +1,14 @@
-import { GeneratedAssessment } from '../models/GeneratedAssessment.model';
-import { InterviewResult, InterviewTopicScore } from '../models/InterviewResult.model';
+/**
+ * Exact-set answer checking for LOCALLY-SCORED modes.
+ *
+ * Interview Mode no longer scores anything in the browser — the backend owns
+ * correctness, and `computeInterviewResult` was removed with the legacy
+ * pipeline in Stage 9F. What remains is the shared exact-set rule used by
+ * Weak Areas Practice (via practice-scoring.ts), which is deliberately still a
+ * client-side mode over the local quiz bank.
+ *
+ * The filename is kept only to avoid churning its importers.
+ */
 import { QuizQuestion } from '../models/QuizQuestion.model';
 
 function setsEqual(a: Set<number>, b: Set<number>): boolean {
@@ -23,71 +32,4 @@ export function isAnswerCorrect(question: QuizQuestion, selectedIds: number[]): 
       .filter((id): id is number => id != null)
   );
   return setsEqual(selected, correctIds);
-}
-
-/**
- * Score a submitted assessment from the generated questions + the user's
- * answers. A question is CORRECT only when the selected optionIds exactly match
- * the set of correct optionIds (so a partial multi-answer is incorrect). Topic
- * breakdown is grouped by each question's preserved `sourceQuizId` — never
- * inferred from wording. This reads the assessment only; it never touches
- * topic-quiz progress/best-score/achievement state.
- */
-export function computeInterviewResult(
-  assessment: GeneratedAssessment,
-  answersByIndex: Record<number, number[]>,
-  timeUsedSeconds: number,
-  timeRemainingSeconds: number,
-  submittedByExpiry: boolean,
-  titleForQuizId: (quizId: string) => string,
-  focusChanges = 0
-): InterviewResult {
-  const questions = assessment.questions ?? [];
-  const total = questions.length;
-  let correct = 0;
-  let answered = 0;
-
-  const perTopicMap = new Map<string, { title: string; correct: number; total: number }>();
-
-  for (const [i, q] of questions.entries()) {
-    const selectedIds = answersByIndex[i] ?? [];
-    const isAnswered = selectedIds.filter((id) => id != null).length > 0;
-    if (isAnswered) answered++;
-    const isCorrect = isAnswerCorrect(q, selectedIds);
-    if (isCorrect) correct++;
-
-    const quizId = q.sourceQuizId ?? 'unknown';
-    const entry = perTopicMap.get(quizId) ?? { title: titleForQuizId(quizId), correct: 0, total: 0 };
-    entry.total++;
-    if (isCorrect) entry.correct++;
-    perTopicMap.set(quizId, entry);
-  }
-
-  const perTopic: InterviewTopicScore[] = [...perTopicMap.entries()].map(([quizId, e]) => ({
-    quizId,
-    title: e.title,
-    correct: e.correct,
-    total: e.total,
-    percentage: e.total ? Math.round((e.correct / e.total) * 100) : 0
-  }));
-
-  return {
-    total,
-    answered,
-    unanswered: total - answered,
-    correct,
-    incorrect: answered - correct,
-    percentage: total ? Math.round((correct / total) * 100) : 0,
-    timeUsedSeconds,
-    timeRemainingSeconds,
-    difficulty: assessment.config.difficulty,
-    // Role-preset metadata, if this assessment came from one. Undefined for
-    // Custom, so Custom results keep their existing shape exactly.
-    presetId: assessment.config.presetId,
-    presetName: assessment.config.presetName,
-    topicIds: assessment.config.topicIds,
-    perTopic,
-    submittedByExpiry,
-    focusChanges: Math.max(0, focusChanges)
-  };
 }

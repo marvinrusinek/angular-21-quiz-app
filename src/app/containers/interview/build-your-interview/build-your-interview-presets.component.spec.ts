@@ -11,7 +11,6 @@ import { InterviewApiService } from '../../../shared/services/api/interview-api.
 
 import { BuildYourInterviewComponent } from './build-your-interview.component';
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
-import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 import { setQuizDataCache } from '../../../shared/quiz-data-cache';
 import { Quiz } from '../../../shared/models/Quiz.model';
@@ -20,8 +19,6 @@ import quizData from '../../../../assets/data/quiz.json';
 
 const REAL_CATALOG = ((quizData as { quizzes?: unknown[] }).quizzes ?? quizData) as Quiz[];
 
-const startPreset = jest.fn();
-const start = jest.fn();
 
 /**
  * Stage 9C: the builder creates the assessment on the BACKEND. The fixture
@@ -70,7 +67,6 @@ function render(): ComponentFixture<BuildYourInterviewComponent> {
           ensureQuizzesLoaded: () => ({ pipe: () => ({ subscribe: () => void 0 }) })
         }
       },
-      { provide: InterviewSessionService, useValue: { start, startPreset } },
       { provide: InterviewApiService, useValue: { createSession } },
       { provide: QuizStartSpinnerService, useValue: { showForStart: async () => void 0 } }
     ]
@@ -86,8 +82,6 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
   beforeEach(() => {
     setQuizDataCache(REAL_CATALOG, []);
     sessionStorage.clear();
-    startPreset.mockClear();
-    start.mockClear();
     createSession.mockReset();
     createSession.mockReturnValue(of(CREATED));
   });
@@ -168,8 +162,7 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     const fixture = render();
     fixture.componentInstance.selectPreset('senior');
     fixture.detectChanges();
-    expect(startPreset).not.toHaveBeenCalled();
-    expect(start).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
   });
 
   it('Start uses the SELECTED preset rather than the Custom config', async () => {
@@ -181,8 +174,6 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
     // Stage 9C: the preset goes to the BACKEND as just its id.
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(createSession).toHaveBeenCalledWith({ mode: 'preset', presetId: 'mid-level' });
-    expect(startPreset).not.toHaveBeenCalled();
-    expect(start).not.toHaveBeenCalled();
   });
 
   // REGRESSION: the Start button bound to startDisabled(), which only describes
@@ -222,7 +213,6 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
 
     expect(createSession).toHaveBeenCalledTimes(1);
     expect(createSession).toHaveBeenCalledWith({ mode: 'preset', presetId: 'junior' });
-    expect(startPreset).not.toHaveBeenCalled();
   });
 
   it('keeps the real Start button DISABLED when a preset cannot be filled', () => {
@@ -279,8 +269,6 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
       mode: 'custom', difficulty: 'beginner',
       topicIds: ['typescript', 'templates'], questionCount: 10
     });
-    expect(start).not.toHaveBeenCalled();
-    expect(startPreset).not.toHaveBeenCalled();
   });
 
   it('every preset is startable against the real question bank', () => {

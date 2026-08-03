@@ -30,7 +30,6 @@ import { AssessmentIntegrityService } from '../../../shared/services/features/in
 import { buildInterviewSessionRequest } from '../../../shared/services/interview/interview-builder-request.mapper';
 import { isApiConfigured } from '../../../shared/tokens/api-base-url.token';
 import type { CreateInterviewSessionRequest } from '../../../shared/models/api/interview-api.dto';
-import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 import { swallow } from '../../../shared/utils/error-logging';
 import { isEligibleInterviewTopic } from '../../../shared/utils/interview-topics';
@@ -100,7 +99,6 @@ export class BuildYourInterviewComponent implements OnInit {
   // Still injected for the eligibility PREVIEW (counts/capacity shown while
   // configuring). It no longer generates the assessment — the backend does.
   private readonly builder = inject(AssessmentBuilderService);
-  private readonly session = inject(InterviewSessionService);
   private readonly api = inject(InterviewApiService);
   private readonly backendSession = inject(BackendInterviewSessionService);
   private readonly integrity = inject(AssessmentIntegrityService);
@@ -379,14 +377,6 @@ export class BuildYourInterviewComponent implements OnInit {
   setCount(count: AssessmentQuestionCount): void {
     if (this.isCountDisabled(count)) return;
     this.builderForm.questionCount().value.set(count);
-  }
-
-  private currentConfig(): AssessmentConfig {
-    return {
-      difficulty: this.difficulty()!,
-      topicIds: [...this.selectedTopicIds()],   // copy: config must not alias the model
-      questionCount: this.questionCount()
-    };
   }
 
   /**

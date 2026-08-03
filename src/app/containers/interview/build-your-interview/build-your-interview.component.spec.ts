@@ -40,7 +40,6 @@ import { Quiz, QuizDifficulty } from '../../../shared/models/Quiz.model';
 import { setQuizDataCache } from '../../../shared/quiz-data-cache';
 
 import { QuizDataService } from '../../../shared/services/data/quizdata.service';
-import { InterviewSessionService } from '../../../shared/services/features/interview/interview-session.service';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 
 import { BuildYourInterviewComponent } from './build-your-interview.component';
@@ -254,12 +253,9 @@ describe('BuildYourInterviewComponent', () => {
    */
   it('creates ONE backend session on Start and navigates with the session id', async () => {
     const api = TestBed.inject(InterviewApiService);
-    const session = TestBed.inject(InterviewSessionService);
     const builder = TestBed.inject(AssessmentBuilderService);
 
     const createSpy = jest.spyOn(api, 'createSession').mockReturnValue(of(CREATED));
-    const startSpy = jest.spyOn(session, 'start');
-    const presetSpy = jest.spyOn(session, 'startPreset');
     const buildSpy = jest.spyOn(builder, 'build');
 
     setDifficulty('beginner');
@@ -276,9 +272,8 @@ describe('BuildYourInterviewComponent', () => {
       questionCount: 20
     });
 
-    // NO local generation, NO old session service.
-    expect(startSpy).not.toHaveBeenCalled();
-    expect(presetSpy).not.toHaveBeenCalled();
+    // NO local generation: the legacy pipeline is gone, and the builder must
+    // never fall back to generating an assessment in the browser.
     expect(buildSpy).not.toHaveBeenCalled();
 
     expect(spinner.showForStart).toHaveBeenCalledTimes(1);
@@ -288,13 +283,11 @@ describe('BuildYourInterviewComponent', () => {
   it('does NOT fall back to local generation when the API fails', async () => {
     sessionStorage.clear();   // isolate from the successful-create test above
     const api = TestBed.inject(InterviewApiService);
-    const session = TestBed.inject(InterviewSessionService);
     const builder = TestBed.inject(AssessmentBuilderService);
 
     jest.spyOn(api, 'createSession').mockReturnValue(
       throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0))
     );
-    const startSpy = jest.spyOn(session, 'start');
     const buildSpy = jest.spyOn(builder, 'build');
     const presetBuildSpy = jest.spyOn(builder, 'buildFromPreset');
 
@@ -304,7 +297,6 @@ describe('BuildYourInterviewComponent', () => {
 
     await component.startInterview();
 
-    expect(startSpy).not.toHaveBeenCalled();
     expect(buildSpy).not.toHaveBeenCalled();
     expect(presetBuildSpy).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
