@@ -46,9 +46,15 @@ describe('API base URL', () => {
     expect(resolveApiBaseUrl(true)).toBe(DEV_API_BASE_URL);
   });
 
-  it('THROWS in production until the backend host is configured', () => {
-    // Better a loud failure than a build that silently points at nothing.
-    expect(() => resolveApiBaseUrl(false)).toThrow(/not configured for production/i);
+  /**
+   * It used to throw here. That was wrong: this runs in an injection factory,
+   * so it took down every component injecting InterviewApiService and the
+   * /interview route rendered nothing at all on GitHub Pages. Resolution is now
+   * total; the call site fails closed. See api-base-url.token.spec.ts.
+   */
+  it('returns an EMPTY origin in production rather than throwing', () => {
+    expect(() => resolveApiBaseUrl(false)).not.toThrow();
+    expect(resolveApiBaseUrl(false)).toBe('');
   });
 
   it('strips trailing slashes so callers can append a path', () => {

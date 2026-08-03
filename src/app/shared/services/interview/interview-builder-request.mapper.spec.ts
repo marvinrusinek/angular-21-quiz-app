@@ -93,9 +93,16 @@ describe('API configuration resolver', () => {
     expect(resolveApiBaseUrl(true)).toBe('http://localhost:3000/api');
   });
 
-  it('production without a configured origin is NOT configured and throws', () => {
+  /**
+   * Resolution must be TOTAL: it runs in an injection factory, and throwing
+   * here took down every component injecting InterviewApiService — the
+   * /interview route rendered nothing at all on GitHub Pages. The fail-closed
+   * decision belongs to isApiConfigured() at the call site.
+   */
+  it('production without a configured origin is NOT configured, and resolves to empty', () => {
     expect(isApiConfigured(false)).toBe(false);
-    expect(() => resolveApiBaseUrl(false)).toThrow(/not configured for production/i);
+    expect(() => resolveApiBaseUrl(false)).not.toThrow();
+    expect(resolveApiBaseUrl(false)).toBe('');
   });
 
   it('normalizes trailing slashes deterministically', () => {

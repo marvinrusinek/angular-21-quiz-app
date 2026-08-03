@@ -18,12 +18,15 @@ export const DEV_API_BASE_URL = 'http://localhost:3000/api';
 
 /**
  * Production backend origin. Deliberately EMPTY until the backend is hosted:
- * a placeholder domain would silently ship a broken build that looks
- * configured. `resolveApiBaseUrl` throws on an empty production value, so the
- * mistake surfaces immediately instead of as failed requests at runtime.
+ * a placeholder domain would silently ship a build that looks configured and
+ * fails at runtime.
+ *
+ * While it is empty, Interview Mode fails closed with a clear message and the
+ * rest of the app — Topic Quizzes, Practice, history — is unaffected.
  *
  * When the host is chosen, set this AND add the origin to the CSP
- * `connect-src` directive in index.html.
+ * `connect-src` directive in index.html. Setting only one of the two leaves
+ * every request blocked by the browser before it is sent.
  */
 export const PROD_API_BASE_URL = '';
 
@@ -38,15 +41,20 @@ export function isApiConfigured(devMode: boolean = isDevMode()): boolean {
   return devMode || PROD_API_BASE_URL.trim().length > 0;
 }
 
+/**
+ * Resolve the base URL, or '' when production has no configured origin.
+ *
+ * This must NEVER throw. It is called from an injection factory, and anything
+ * that injects InterviewApiService — the Build Your Interview page, the result
+ * guard — would fail to construct, taking the whole route down with it. That
+ * is exactly what happened on GitHub Pages: the builder page did not render at
+ * all, instead of showing the intended "not configured" message.
+ *
+ * Failing closed is the job of `isApiConfigured()` at the call site, and of the
+ * request layer, which refuses to issue a call against an empty base URL.
+ */
 export function resolveApiBaseUrl(devMode: boolean = isDevMode()): string {
   if (devMode) return DEV_API_BASE_URL;
-
-  if (PROD_API_BASE_URL.trim().length === 0) {
-    throw new Error(
-      'API_BASE_URL is not configured for production. Set PROD_API_BASE_URL and add the ' +
-        'origin to the CSP connect-src directive.'
-    );
-  }
   return PROD_API_BASE_URL;
 }
 

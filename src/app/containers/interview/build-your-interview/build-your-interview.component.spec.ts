@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 
 import { API_BASE_URL } from '../../../shared/tokens/api-base-url.token';
@@ -339,5 +339,71 @@ describe('BuildYourInterviewComponent', () => {
     }
     // The old answer-bearing key is never written.
     expect(sessionStorage.getItem('interviewSession')).toBeNull();
+  });
+});
+
+/**
+ * REGRESSION (live site, 2026-08-03): on GitHub Pages the /interview route
+ * rendered NOTHING. `resolveApiBaseUrl` threw when production had no
+ * configured origin, and because it runs inside an injection factory, this
+ * component — which injects InterviewApiService — could not be constructed.
+ * The intended "not configured" message never got a chance to appear.
+ *
+ * The page must build with no API origin, and refuse only at Start.
+ */
+describe('BuildYourInterviewComponent — production with NO configured API origin', () => {
+  let fixture: ComponentFixture<BuildYourInterviewComponent>;
+
+  beforeEach(async () => {
+    setQuizDataCache(CATALOG, []);
+
+    await TestBed.configureTestingModule({
+      imports: [BuildYourInterviewComponent],
+      providers: [
+        { provide: QuizDataService, useValue: { quizzesSig: signal(CATALOG), ensureQuizzesLoaded: () => of(CATALOG) } },
+        { provide: Router, useValue: { navigate: jest.fn().mockResolvedValue(true) } },
+        { provide: QuizStartSpinnerService, useValue: { showForStart: jest.fn().mockResolvedValue(undefined) } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Exactly what an unconfigured production build resolves to.
+        { provide: API_BASE_URL, useValue: '' }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(BuildYourInterviewComponent);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => setQuizDataCache([], []));
+
+  it('RENDERS — the page must not die because the API is unconfigured', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.start-interview-btn')).not.toBeNull();
+    expect(el.textContent).toContain('Build Your Interview');
+    // Topic selection still works: it reads the local catalogue, not the API.
+    expect(el.querySelectorAll('.chip').length).toBeGreaterThan(0);
+  });
+
+  it('refuses at Start with a clear message, and issues no request', async () => {
+    const component = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+
+    component.setDifficulty('beginner');
+    component.toggleTopic('ts', true);
+    component.toggleTopic('templates', true);
+    fixture.detectChanges();
+
+    await component.startInterview();
+    fixture.detectChanges();
+
+    // Jest reports isDevMode() === true, so `isApiConfigured()` lets this
+    // through and the REQUEST-LAYER backstop is what refuses — the same path
+    // StackBlitz takes, where the build is dev but no backend is reachable.
+    // A real production build fails one step earlier, at isApiConfigured().
+    // Either way: a safe message, and nothing on the wire.
+    expect(component.createError()).toBeTruthy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.builder-error')?.textContent)
+      .toMatch(/Cannot reach the interview service|not configured/);
+    http.expectNone(() => true);
   });
 });

@@ -15,7 +15,7 @@ import type {
   InterviewResultViewModel,
   InterviewSessionViewModel
 } from '../../models/interview/interview-view-models';
-import { toInterviewApiError } from './interview-api.errors';
+import { InterviewApiError, toInterviewApiError } from './interview-api.errors';
 import { toResultViewModel, toSessionViewModel } from './interview-api.mappers';
 
 /**
@@ -42,7 +42,24 @@ export class InterviewApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = inject(API_BASE_URL);
 
+  /**
+   * True when a backend origin is configured for this build.
+   *
+   * With no origin, `baseUrl` is '' and every URL below would collapse to a
+   * RELATIVE path — the request would hit the static site host and return its
+   * index.html, which is far worse than failing. Callers check
+   * `isApiConfigured()` first; this is the backstop for anything that does not.
+   */
+  private get configured(): boolean {
+    return this.baseUrl.trim().length > 0;
+  }
+
+  private notConfigured<T>(): Observable<T> {
+    return throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0));
+  }
+
   createSession(request: CreateInterviewSessionRequest): Observable<CreatedInterviewSession> {
+    if (!this.configured) return this.notConfigured();
     return this.http
       .post<ActiveInterviewSessionDto>(`${this.baseUrl}/interview-sessions`, request)
       .pipe(
@@ -59,6 +76,7 @@ export class InterviewApiService {
   }
 
   resumeSession(sessionId: string, token: string): Observable<InterviewSessionViewModel> {
+    if (!this.configured) return this.notConfigured();
     return this.http
       .get<ActiveInterviewSessionDto>(this.sessionUrl(sessionId), { headers: this.auth(token) })
       .pipe(
@@ -73,6 +91,7 @@ export class InterviewApiService {
     questionId: string,
     selectedOptionIds: readonly number[]
   ): Observable<SaveInterviewAnswerResponse> {
+    if (!this.configured) return this.notConfigured();
     const body: SaveInterviewAnswerRequest = { selectedOptionIds: [...selectedOptionIds] };
 
     return this.http
@@ -86,6 +105,7 @@ export class InterviewApiService {
 
   /** The submit request carries NO body fields — the server owns every value. */
   submitSession(sessionId: string, token: string): Observable<InterviewResultViewModel> {
+    if (!this.configured) return this.notConfigured();
     return this.http
       .post<InterviewResultDto>(`${this.sessionUrl(sessionId)}/submit`, {}, { headers: this.auth(token) })
       .pipe(
@@ -95,6 +115,7 @@ export class InterviewApiService {
   }
 
   getResult(sessionId: string, token: string): Observable<InterviewResultViewModel> {
+    if (!this.configured) return this.notConfigured();
     return this.http
       .get<InterviewResultDto>(`${this.sessionUrl(sessionId)}/result`, { headers: this.auth(token) })
       .pipe(
