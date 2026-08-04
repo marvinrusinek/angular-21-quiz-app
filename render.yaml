@@ -46,8 +46,14 @@ services:
       # outright and requires https in production, so this cannot be loosened
       # by accident. Add your local origin only if you want to point a dev
       # frontend at the hosted API.
+      #
+      # The second entry is the StackBlitz preview. Its host contains a SESSION
+      # HASH that StackBlitz regenerates, so this will stop matching eventually
+      # and the preview will fail CORS again — replace it with the new origin
+      # when that happens, or ask for suffix matching, which the origin check
+      # deliberately does not do today.
       - key: ALLOWED_ORIGINS
-        value: https://marvinrusinek.github.io
+        value: https://marvinrusinek.github.io,https://angular22quizapp-uyfq--4200--87cf54cd.local-credentialless.webcontainer.io
 
       # Ephemeral on purpose — see the note at the top. /tmp is always
       # writable, so this needs no mounted volume and no paid plan.
