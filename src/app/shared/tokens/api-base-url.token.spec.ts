@@ -106,3 +106,56 @@ describe('InterviewApiService with NO configured origin', () => {
     http.expectNone(() => true);   // nothing left the app
   });
 });
+
+/**
+ * Which API a build talks to depends on WHERE THE PAGE IS SERVED FROM, not on
+ * the build mode alone.
+ *
+ * StackBlitz serves a dev build from its own domain. Choosing on `isDevMode()`
+ * alone sent it to http://localhost:3000 — the VIEWER's machine, where no
+ * backend runs — so Interview Mode reported the service unreachable no matter
+ * what was deployed.
+ */
+describe('API selection follows the serving origin', () => {
+  it.each([
+    ['localhost', 'localhost'],
+    ['loopback IPv4', '127.0.0.1'],
+    ['loopback IPv6', '[::1]']
+  ])('a dev build on %s uses the LOCAL backend', (_label, hostname) => {
+    expect(resolveApiBaseUrl(true, hostname)).toBe(DEV_API_BASE_URL);
+  });
+
+  it.each([
+    ['StackBlitz webcontainer', 'abc123.local-credentialless.webcontainer-api.io'],
+    ['StackBlitz project', 'angular-quiz.stackblitz.io'],
+    ['GitHub Pages', 'marvinrusinek.github.io']
+  ])('a dev build served from %s uses the HOSTED API', (_label, hostname) => {
+    expect(resolveApiBaseUrl(true, hostname)).toBe(PROD_API_BASE_URL);
+  });
+
+  it('a production build always uses the hosted API, even on localhost', () => {
+    expect(resolveApiBaseUrl(false, 'localhost')).toBe(PROD_API_BASE_URL);
+    expect(resolveApiBaseUrl(false, 'marvinrusinek.github.io')).toBe(PROD_API_BASE_URL);
+  });
+
+  it('isApiConfigured agrees with whatever was resolved', () => {
+    for (const [devMode, hostname] of [
+      [true, 'localhost'], [true, 'x.stackblitz.io'], [false, 'marvinrusinek.github.io']
+    ] as Array<[boolean, string]>) {
+      expect(isApiConfigured(devMode, hostname))
+        .toBe(resolveApiBaseUrl(devMode, hostname).trim().length > 0);
+    }
+  });
+
+  it('an unknown hostname does not fall back to localhost', () => {
+    // Guards the failure mode directly: never send a non-local page to a
+    // backend that only exists on someone else's machine.
+    //
+    // Passing `undefined` is NOT the same test — an explicit undefined invokes
+    // the default parameter, which reads globalThis.location. The real
+    // no-location case (a worker, SSR) yields an undefined hostname through
+    // that default and is covered by the isLocalHost check itself.
+    expect(resolveApiBaseUrl(true, '')).toBe(PROD_API_BASE_URL);
+    expect(resolveApiBaseUrl(true, 'example.com')).toBe(PROD_API_BASE_URL);
+  });
+});

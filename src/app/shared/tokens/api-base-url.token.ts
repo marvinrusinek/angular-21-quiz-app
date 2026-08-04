@@ -37,8 +37,24 @@ export const PROD_API_BASE_URL = 'https://interview-api-c842.onrender.com/api';
  * production with no configured origin, Interview Mode must refuse to create a
  * session rather than attempt a request or fall back to local generation.
  */
-export function isApiConfigured(devMode: boolean = isDevMode()): boolean {
-  return devMode || PROD_API_BASE_URL.trim().length > 0;
+export function isApiConfigured(
+  devMode: boolean = isDevMode(),
+  hostname: string | undefined = globalThis.location?.hostname
+): boolean {
+  return resolveApiBaseUrl(devMode, hostname).trim().length > 0;
+}
+
+/**
+ * True when the page is served from the developer's own machine.
+ *
+ * `isDevMode()` alone is not enough to decide which API to call. A dev BUILD
+ * can be served from somewhere that is not localhost — StackBlitz is the case
+ * that matters here — and there `http://localhost:3000` resolves to whatever
+ * happens to be on the viewer's machine, usually nothing. Only a page actually
+ * loaded from localhost should talk to a local backend.
+ */
+function isLocalHost(hostname: string | undefined): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 }
 
 /**
@@ -53,8 +69,14 @@ export function isApiConfigured(devMode: boolean = isDevMode()): boolean {
  * Failing closed is the job of `isApiConfigured()` at the call site, and of the
  * request layer, which refuses to issue a call against an empty base URL.
  */
-export function resolveApiBaseUrl(devMode: boolean = isDevMode()): string {
-  if (devMode) return DEV_API_BASE_URL;
+export function resolveApiBaseUrl(
+  devMode: boolean = isDevMode(),
+  hostname: string | undefined = globalThis.location?.hostname
+): string {
+  // A dev build on the developer's machine talks to the local backend; a dev
+  // build served from anywhere else (StackBlitz) uses the hosted API, because
+  // no local backend exists for that viewer.
+  if (devMode && isLocalHost(hostname)) return DEV_API_BASE_URL;
   return PROD_API_BASE_URL;
 }
 
