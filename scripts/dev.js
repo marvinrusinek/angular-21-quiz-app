@@ -13,6 +13,7 @@
  * orphan holding a port.
  */
 const { spawn } = require('node:child_process');
+const { existsSync } = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 
@@ -111,7 +112,34 @@ function start(target) {
   child.on('error', (err) => shutdown(`${target.name} failed to start: ${err.message}`, 1));
 }
 
+/**
+ * The backend is a separate npm project with its own dependencies, and one of
+ * them (better-sqlite3) is a NATIVE module. Two failure modes are worth naming
+ * rather than leaving as "command not found: ts-node":
+ *
+ *   * a fresh clone where `npm install` was only run at the root;
+ *   * an environment that cannot build native addons at all — StackBlitz's
+ *     WebContainer runs a JS-only Node, so the backend cannot run there. Use
+ *     `npm start` alone there; it talks to the hosted API.
+ */
+function assertBackendInstalled() {
+  const backendModules = path.join(ROOT, 'backend', 'node_modules', 'ts-node');
+  if (existsSync(backendModules)) return;
+
+  console.error(
+    '\n[dev] The backend has no dependencies installed.\n\n' +
+    '      The backend is a separate npm project:\n\n' +
+    '        npm --prefix backend install\n\n' +
+    '      If you are on StackBlitz or another WebContainer, the backend cannot\n' +
+    '      run there at all — better-sqlite3 is a native module. Run just:\n\n' +
+    '        npm start\n\n' +
+    '      which uses the hosted API instead of a local one.\n'
+  );
+  process.exit(1);
+}
+
 async function main() {
+  assertBackendInstalled();
   await assertPortsFree();
 
   for (const signal of ['SIGINT', 'SIGTERM']) {
