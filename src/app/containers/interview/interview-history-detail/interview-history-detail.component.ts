@@ -3,14 +3,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
+  signal,
   ViewEncapsulation
 } from '@angular/core';
 import { TitleCasePipe, ViewportScroller } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 
 import { formatDuration } from '../../../shared/utils/format-time';
+import { swallow } from '../../../shared/utils/error-logging';
 import { InterviewResult } from '../../../shared/models/InterviewResult.model';
 import { InterviewDifficulty } from '../../../shared/models/AssessmentConfig.model';
 import { InterviewAttemptHistoryEntry } from '../../../shared/models/interview-history.model';
@@ -19,6 +23,10 @@ import { InterviewAnalyticsService } from '../../../shared/services/features/int
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { TopicPerformanceListComponent } from '../../../components/interview/topic-performance/topic-performance-list.component';
 import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
+import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
+import { InterviewResultReferenceStorage } from '../../../shared/services/interview/interview-result-reference.storage';
+import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
+import type { InterviewResultViewModel } from '../../../shared/models/interview/interview-view-models';
 
 /**
  * Read-only historical Interview summary. Reopens the details for ONE past
@@ -42,6 +50,7 @@ import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-in
     RouterLink,
     ThemeToggleComponent,
     TopicPerformanceListComponent,
+    InterviewReviewComponent,
     ScrollDownIndicatorComponent
   ],
   templateUrl: './interview-history-detail.component.html',
@@ -54,8 +63,14 @@ export class InterviewHistoryDetailComponent {
   private readonly history = inject(InterviewHistoryService);
   private readonly analyticsService = inject(InterviewAnalyticsService);
   private readonly viewport = inject(ViewportScroller);
+  private readonly resultRefs = inject(InterviewResultReferenceStorage);
+  private readonly api = inject(InterviewApiService);
 
   constructor() {
+    // The review lives on the server; ask for it as soon as the attempt is
+    // known, so the page fills in without the user doing anything.
+    effect(() => void this.loadPastReview());
+
     // Deep-link support: arriving with #review (e.g. the "Review Answers"
     // shortcut on a History card) scrolls straight to the answers once rendered.
     afterNextRender(() => {
@@ -96,19 +111,49 @@ export class InterviewHistoryDetailComponent {
   });
 
   /**
-   * ALWAYS false for sanitized (v2) history.
+   * The FROZEN backend review for this past attempt, fetched on demand.
    *
-   * Per-question review used to be reconstructed from a stored snapshot that
-   * carried question text, option text, correctness and explanations — a
-   * durable answer key in localStorage, which is exactly what the backend
-   * migration removes. Review for the CURRENT attempt is served from the
-   * backend result while its session reference lives in sessionStorage; a past
-   * attempt keeps only its analytics summary.
-   *
-   * Kept as a signal rather than deleted so the template's existing
-   * @if/@else — and its "review not retained" note — still reads naturally.
+   * History itself stores no questions, options, correctness or explanations —
+   * that answer key is exactly what the backend migration took out of the
+   * browser. What history keeps is a durable POINTER (session id + read-only
+   * token), so the review can be asked for from the server instead.
    */
-  readonly hasReview = computed(() => false);
+  private readonly _pastResult = signal<InterviewResultViewModel | null>(null);
+  readonly reviewQuestions = computed(() => this._pastResult()?.review ?? []);
+  readonly pastResult = this._pastResult.asReadonly();
+  readonly hasReview = computed(() => this.reviewQuestions().length > 0);
+
+  /** Distinguishes "still loading" from "genuinely unavailable" in the view. */
+  private readonly _reviewLoading = signal(false);
+  readonly reviewLoading = this._reviewLoading.asReadonly();
+
+  /**
+   * Fetch the review for the attempt currently being viewed.
+   *
+   * Silent on failure by design: the attempt's summary is already on screen and
+   * still correct, so a missing review degrades to the explanatory note rather
+   * than an error banner. It legitimately goes missing when the backend has
+   * dropped the session — on the free tier that happens on every restart.
+   */
+  private async loadPastReview(): Promise<void> {
+    const sessionId = this.entry()?.sessionId;
+    if (!sessionId || this._pastResult()?.sessionId === sessionId) return;
+
+    const reference = this.resultRefs.find(sessionId);
+    if (!reference) return;
+
+    this._reviewLoading.set(true);
+    try {
+      this._pastResult.set(
+        await firstValueFrom(this.api.getResult(sessionId, reference.sessionToken))
+      );
+    } catch (err: unknown) {
+      this._pastResult.set(null);
+      swallow('interview-history-detail#loadPastReview', err);
+    } finally {
+      this._reviewLoading.set(false);
+    }
+  }
 
   // Performance context — reuse the shared trends (no independent recalculation).
   readonly trends = this.history.trends;

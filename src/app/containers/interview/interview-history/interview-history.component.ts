@@ -23,6 +23,7 @@ import {
   InterviewHistoryFilter,
   InterviewHistoryService
 } from '../../../shared/services/features/interview/interview-history.service';
+import { InterviewResultReferenceStorage } from '../../../shared/services/interview/interview-result-reference.storage';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { InterviewReadinessComponent } from '../../../components/interview/interview-readiness/interview-readiness.component';
 import { InterviewReadinessService } from '../../../shared/services/features/interview/interview-readiness.service';
@@ -74,6 +75,7 @@ export class InterviewHistoryComponent implements OnInit {
   }
 
   private readonly history = inject(InterviewHistoryService);
+  private readonly resultRefs = inject(InterviewResultReferenceStorage);
   private readonly readinessService = inject(InterviewReadinessService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -218,5 +220,17 @@ export class InterviewHistoryComponent implements OnInit {
     const fromPerf = entry.topicPerformance.map((t) => t.topicName).filter(Boolean);
     if (fromPerf.length > 0) return fromPerf;
     return [...(entry.selectedTopicIds ?? [])];
+  }
+
+  /**
+   * Whether a PAST attempt can still be reviewed.
+   *
+   * Review lives on the server, so this needs two things: the attempt must
+   * carry a backend sessionId (migrated v1 records do not), and a durable
+   * pointer to that session must still exist. The button is hidden rather
+   * than shown-and-broken, so it never promises data that is gone.
+   */
+  canReview(entry: InterviewAttemptHistoryEntry): boolean {
+    return !!entry.sessionId && this.resultRefs.find(entry.sessionId) !== null;
   }
 }

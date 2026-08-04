@@ -51,19 +51,28 @@
       </section>
 
       @if (hasReview()) {
-        <!-- Unreachable for sanitized history: hasReview() is always false.
-             Per-question review is served by the backend for the current
-             attempt only. Kept as an explicit branch so the alternative below
-             reads as a deliberate state rather than an accident. -->
+        <!-- The read-only Review Answers list, rebuilt from the FROZEN backend
+             review for this attempt. History stores a pointer, never the
+             questions or answers themselves. Embedded: the detail header
+             already shows attempt #/date/%. -->
         <section id="review" class="ihd-review" aria-labelledby="ihd-review-heading">
           <h2 id="ihd-review-heading" class="ihd-review__heading" i18n>Review Answers</h2>
+          <app-interview-review
+            [questions]="reviewQuestions()"
+            [result]="pastResult()"
+            [embedded]="true"
+          />
         </section>
+      } @else if (reviewLoading()) {
+        <p class="ihd-note" role="status" aria-live="polite" i18n>
+          Loading your answers&hellip;
+        </p>
       } @else {
-        <!-- History keeps analytics only. The questions, answers and
-             explanations live on the server and are shown for the attempt you
-             just completed, while its session reference is still active. -->
+        <!-- The answers live on the server, and this attempt's are no longer
+             retrievable — the session has been cleaned up. The summary above is
+             unaffected. -->
         <p class="ihd-note" role="note" i18n>
-          Detailed review is available only for the current browser session.
+          Detailed answers are no longer available for this interview.
         </p>
       }
     </div>

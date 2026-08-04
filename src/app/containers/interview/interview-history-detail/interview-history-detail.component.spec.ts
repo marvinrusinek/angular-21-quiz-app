@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideApiBaseUrl } from '../../../shared/tokens/api-base-url.token';
 
 import { InterviewAttemptHistoryEntry } from '../../../shared/models/interview-history.model';
 import { SK_INTERVIEW_HISTORY } from '../../../shared/constants/session-keys';
@@ -34,7 +37,12 @@ function render(id: string): ComponentFixture<InterviewHistoryDetailComponent> {
     imports: [InterviewHistoryDetailComponent],
     providers: [
       provideRouter([]),
-      { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id })) } }
+      { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id })) } },
+      // The page asks the BACKEND for a past review; no durable pointer is
+      // seeded here, so it never issues a request and shows the note instead.
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      provideApiBaseUrl('http://test.local/api')
     ]
   });
   const fixture = TestBed.createComponent(InterviewHistoryDetailComponent);
@@ -63,25 +71,24 @@ describe('InterviewHistoryDetailComponent', () => {
     expect(ro?.getAttribute('aria-label')).toContain('Read only');
   });
 
-  it('10. states that detailed review is only available in the current session', () => {
+  it('10. explains when a past attempt has no retrievable answers', () => {
     seed([entry('a1', 1)]);
     const el = render('a1').nativeElement as HTMLElement;
+    // No durable pointer for this attempt, so the server is never asked and
+    // the page says so rather than implying the answers were kept locally.
     expect(el.querySelector('.ihd-note')?.textContent)
-      .toContain('available only for the current browser session');
+      .toContain('no longer available');
     expect(el.querySelector('app-interview-review')).toBeNull();
   });
 
-  it('NEVER renders a per-question review for a sanitized record', () => {
-    // Even if a stale store still carried review data, the component must not
-    // render it: the field is gone from the schema and hasReview() is false.
+  it('never renders answers from LOCAL storage — they come from the backend', () => {
+    // Even if a stale store still carried v1 review data, it must not render:
+    // the field is gone from the schema and the page fetches from the server.
     seed([{ ...entry('a1', 1), review: [{ questionText: 'leftover' }] } as never]);
     const el = render('a1').nativeElement as HTMLElement;
 
-    expect(el.querySelector('app-interview-review')).toBeNull();
-    expect(el.querySelector('.rv-item')).toBeNull();
     expect(el.textContent).not.toContain('leftover');
-    expect(el.querySelector('.ihd-note')?.textContent)
-      .toContain('available only for the current browser session');
+    expect(el.querySelector('.rv-item')).toBeNull();
   });
 
   it('reuses the shared Topic Performance component', () => {

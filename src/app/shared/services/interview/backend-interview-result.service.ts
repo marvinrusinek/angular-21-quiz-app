@@ -5,6 +5,7 @@ import { InterviewApiService } from '../api/interview-api.service';
 import { InterviewApiError } from '../api/interview-api.errors';
 import { BackendInterviewSessionService } from './backend-interview-session.service';
 import { InterviewSessionReferenceStorage } from './interview-session-reference.storage';
+ import { InterviewResultReferenceStorage } from './interview-result-reference.storage';
 import { toSanitizedAttempt } from './interview-result-history.adapter';
 import { AssessmentIntegrityService } from '../features/interview/assessment-integrity.service';
 import { InterviewHistoryService } from '../features/interview/interview-history.service';
@@ -44,6 +45,7 @@ export class BackendInterviewResultService {
   private readonly api = inject(InterviewApiService);
   private readonly session = inject(BackendInterviewSessionService);
   private readonly storage = inject(InterviewSessionReferenceStorage);
+  private readonly resultRefs = inject(InterviewResultReferenceStorage);
   private readonly history = inject(InterviewHistoryService);
   private readonly integrity = inject(AssessmentIntegrityService);
 
@@ -79,16 +81,22 @@ export class BackendInterviewResultService {
       return this.adopt(submitted);
     }
 
-    const reference = this.storage.read();
-    if (!reference) return this.fail('none');
-    // A route id the stored reference does not authorize is not ours to fetch.
-    if (reference.sessionId !== routeSessionId) return this.fail('none');
+    // The ACTIVE session reference (sessionStorage, dies with the tab) is
+    // preferred; a durable pointer to a SUBMITTED attempt (localStorage) lets
+    // Interview History reopen a past review in a later tab.
+    const active = this.storage.read();
+    const token = active?.sessionId === routeSessionId
+      ? active.sessionToken
+      : this.resultRefs.find(routeSessionId)?.sessionToken;
+
+    // A route id nothing authorizes is not ours to fetch.
+    if (!token) return this.fail('none');
 
     this._loading.set(true);
     this._error.set(null);
     try {
       const result = await firstValueFrom(
-        this.api.getResult(reference.sessionId, reference.sessionToken)
+        this.api.getResult(routeSessionId, token)
       );
       if (!isUsableResult(result)) return this.fail('malformed');
       return this.adopt(result);
@@ -136,6 +144,14 @@ export class BackendInterviewResultService {
   private adopt(result: InterviewResultViewModel): ResultLoadOutcome {
     this._result.set(result);
     this._error.set(null);
+
+    // Durable pointer so Interview History can reopen this review in a later
+    // tab. The id and token only — the review itself stays on the server.
+    const token = this.storage.read()?.sessionId === result.sessionId
+      ? this.storage.read()?.sessionToken
+      : this.resultRefs.find(result.sessionId)?.sessionToken;
+    if (token) this.resultRefs.remember(result.sessionId, token);
+
     this.history.recordAttempt(
       // focusChanges is client-observed: never sent to the backend, never part
       // of the score, retained only as an aggregate.

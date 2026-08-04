@@ -131,13 +131,22 @@
             }
 
             <div class="ih-card__actions">
-              <!-- No Review Answers shortcut. Per-question review is served by
-                   the backend for the CURRENT attempt only; history retains
-                   analytics, not questions, answers or explanations. Offering
-                   the action here would promise data the browser no longer
-                   holds. -->
+              <!-- Reopens the read-only Review Answers for a PAST attempt.
+                   Shown only when a durable pointer to that session still
+                   exists, because the review is fetched from the backend —
+                   history itself stores analytics, never questions or answers.
+                   The Results route renders it. -->
+              @if (canReview(c.entry)) {
+                <a
+                  class="ih-btn ih-btn--primary"
+                  [routerLink]="['/interview/results', c.entry.sessionId]"
+                  [attr.aria-label]="'Review answers for Interview #' + c.number"
+                  i18n-aria-label
+                  i18n
+                >Review Answers</a>
+              }
               <a
-                class="ih-btn ih-btn--primary"
+                class="ih-btn"
                 [routerLink]="['/interview/history', c.entry.id]"
                 [attr.aria-label]="'View summary for Interview #' + c.number"
                 i18n-aria-label

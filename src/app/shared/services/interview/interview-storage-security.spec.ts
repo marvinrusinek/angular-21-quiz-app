@@ -159,10 +159,35 @@ describe('after a completed interview', () => {
     }
   });
 
-  it('the session TOKEN never reaches localStorage', () => {
-    expect(JSON.stringify(parsedEntries(localStorage))).not.toContain(TOKEN);
-    expect(JSON.stringify(parsedEntries(localStorage))).not.toContain('sessionToken');
-    // ...and remains available in sessionStorage for the current session only.
+  /**
+   * The token rule is NARROW, not absolute.
+   *
+   * An ACTIVE session's token stays in sessionStorage and dies with the tab, so
+   * a durable copy could never be used to resume, alter or re-submit an
+   * assessment. A SUBMITTED attempt's token is deliberately kept in
+   * localStorage so Interview History can reopen that review later — the
+   * backend makes it READ-ONLY once submitted (saveAnswer and submit both
+   * return CONFLICT; only getResult succeeds).
+   */
+  it('a durable token appears ONLY in the submitted-result pointer', () => {
+    const entries = parsedEntries(localStorage);
+    const withToken = entries.filter((e) => JSON.stringify(e.value).includes(TOKEN));
+
+    expect(withToken.map((e) => e.key)).toEqual(['interviewResultRefs:v1']);
+
+    // ...and that pointer carries nothing but the pointer.
+    const refs = (withToken[0]!.value as { refs: Array<Record<string, unknown>> }).refs;
+    expect(refs).toHaveLength(1);
+    expect(Object.keys(refs[0]!).sort()).toEqual(['savedAtMs', 'sessionId', 'sessionToken']);
+  });
+
+  it('the analytics history never carries a token', () => {
+    const history = localStorage.getItem('interviewAttemptHistory:v2') ?? '';
+    expect(history).not.toContain(TOKEN);
+    expect(history).not.toContain('sessionToken');
+  });
+
+  it('the ACTIVE session reference still lives in sessionStorage only', () => {
     expect(sessionStorage.getItem('interviewSessionRef:v2')).toContain(TOKEN);
   });
 
