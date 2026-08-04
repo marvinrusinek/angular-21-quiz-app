@@ -2,7 +2,12 @@ import {
   buildInterviewSessionRequest,
   InterviewBuilderRequestError
 } from './interview-builder-request.mapper';
-import { isApiConfigured, resolveApiBaseUrl, normalizeBaseUrl } from '../../tokens/api-base-url.token';
+import {
+  isApiConfigured,
+  normalizeBaseUrl,
+  PROD_API_BASE_URL,
+  resolveApiBaseUrl
+} from '../../tokens/api-base-url.token';
 
 const custom = {
   presetId: null,
@@ -99,10 +104,12 @@ describe('API configuration resolver', () => {
    * /interview route rendered nothing at all on GitHub Pages. The fail-closed
    * decision belongs to isApiConfigured() at the call site.
    */
-  it('production without a configured origin is NOT configured, and resolves to empty', () => {
-    expect(isApiConfigured(false)).toBe(false);
+  it('production resolves the configured origin, and isApiConfigured tracks it', () => {
+    // Written against the constant, so it holds whether or not a host is
+    // currently configured — the RELATIONSHIP is what matters.
     expect(() => resolveApiBaseUrl(false)).not.toThrow();
-    expect(resolveApiBaseUrl(false)).toBe('');
+    expect(resolveApiBaseUrl(false)).toBe(PROD_API_BASE_URL);
+    expect(isApiConfigured(false)).toBe(PROD_API_BASE_URL.trim().length > 0);
   });
 
   it('normalizes trailing slashes deterministically', () => {

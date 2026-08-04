@@ -28,7 +28,7 @@ export const DEV_API_BASE_URL = 'http://localhost:3000/api';
  * `connect-src` directive in index.html. Setting only one of the two leaves
  * every request blocked by the browser before it is sent.
  */
-export const PROD_API_BASE_URL = '';
+export const PROD_API_BASE_URL = 'https://interview-api-c842.onrender.com/api';
 
 /**
  * Whether the API is configured for the current build.

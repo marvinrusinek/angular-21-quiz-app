@@ -8,7 +8,8 @@ import { isMultiSelectQuestion } from '../../models/interview/interview-view-mod
 import {
   normalizeBaseUrl,
   resolveApiBaseUrl,
-  DEV_API_BASE_URL
+  DEV_API_BASE_URL,
+  PROD_API_BASE_URL
 } from '../../tokens/api-base-url.token';
 import type {
   ActiveInterviewSessionDto,
@@ -52,9 +53,11 @@ describe('API base URL', () => {
    * /interview route rendered nothing at all on GitHub Pages. Resolution is now
    * total; the call site fails closed. See api-base-url.token.spec.ts.
    */
-  it('returns an EMPTY origin in production rather than throwing', () => {
+  it('resolves the CONFIGURED origin in production, and never throws', () => {
+    // Asserted against the constant rather than a literal, so this holds both
+    // before and after a backend host is configured.
     expect(() => resolveApiBaseUrl(false)).not.toThrow();
-    expect(resolveApiBaseUrl(false)).toBe('');
+    expect(resolveApiBaseUrl(false)).toBe(PROD_API_BASE_URL);
   });
 
   it('strips trailing slashes so callers can append a path', () => {
