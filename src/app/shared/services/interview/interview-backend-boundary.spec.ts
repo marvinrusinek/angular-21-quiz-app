@@ -20,16 +20,37 @@ const SRC = join(__dirname, '..', '..', '..');
 
 const read = (relative: string): string => readFileSync(join(SRC, relative), 'utf8');
 
+/**
+ * Source with comments stripped.
+ *
+ * The boundary is about what the code DOES. A comment explaining *why* a file
+ * no longer reads `assets/data/quiz.json` must not be mistaken for the file
+ * still reading it — otherwise documenting the rule would break the rule.
+ */
+const code = (relative: string): string =>
+  read(relative)
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !trimmed.startsWith('//') && !trimmed.startsWith('*') && !trimmed.startsWith('/*');
+    })
+    .join('\n');
+
 /** Interview runtime files (specs excluded — they may reference anything). */
 const INTERVIEW_RUNTIME = [
+  'containers/interview/build-your-interview/build-your-interview.component.ts',
   'containers/interview/interview-session/interview-session.component.ts',
   'containers/interview/interview-results/interview-results.component.ts',
+  'containers/interview/interview-history/interview-history.component.ts',
+  'containers/interview/interview-history-detail/interview-history-detail.component.ts',
   'components/interview/interview-review/interview-review.component.ts',
   'components/interview/interview-review/interview-review-status.ts',
   'components/interview/interview-options/interview-options.component.ts',
   'shared/services/interview/backend-interview-session.service.ts',
   'shared/services/interview/backend-interview-result.service.ts',
   'shared/services/interview/interview-result-history.adapter.ts',
+  'shared/services/interview/interview-catalog.service.ts',
+  'shared/services/features/interview/interview-readiness.service.ts',
   'router/guards/backend-interview-session-guard.ts',
   'router/guards/backend-interview-result-guard.ts'
 ];
@@ -55,24 +76,15 @@ describe('the legacy Interview pipeline is gone', () => {
   });
 });
 
-/**
- * The Results page is the ONE documented exception: it calls
- * `achievements.evaluate(getQuizData())` to refresh TOPIC-QUIZ achievement
- * progress after an interview. That reads the topic catalogue, never interview
- * questions or answers, and the next describe pins it to a single call site.
- */
-const QUIZ_BANK_EXEMPT = new Set([
-  'containers/interview/interview-results/interview-results.component.ts'
-]);
-
 describe('no Interview runtime file touches the local quiz bank or local scoring', () => {
   it.each(INTERVIEW_RUNTIME)('%s', (relative) => {
-    const source = read(relative);
+    const source = code(relative);
 
-    // The quiz bank: questions, options and per-option `correct` flags.
-    if (!QUIZ_BANK_EXEMPT.has(relative)) {
-      expect(source).not.toMatch(/^import .*quiz-data-cache/m);
-    }
+    // The quiz bank: questions, options and per-option correctness flags.
+    expect(source).not.toMatch(/^import .*quiz-data-cache/m);
+    expect(source).not.toContain('getQuizData');
+    expect(source).not.toContain('assets/data/quiz.json');
+    expect(source).not.toMatch(/^import .*quiz-data-loader/m);
     expect(source).not.toMatch(/^import .*quizdata\.service/m);
     expect(source).not.toMatch(/^import .*assessment-builder\.service/m);
 
@@ -90,16 +102,12 @@ describe('exactly one Interview scoring authority', () => {
   it('the results page renders backend fields and computes no score', () => {
     const results = read('containers/interview/interview-results/interview-results.component.ts');
     expect(results).toContain('BackendInterviewResultService');
-    // The ONE getQuizData() call here feeds topic-quiz ACHIEVEMENT evaluation,
-    // never interview scoring — pinned so it cannot quietly grow. Comment
-    // mentions are ignored; only real code is counted.
-    const calls = results
-      .split('\n')
-      .filter((line) => !line.trim().startsWith('//') && !line.trim().startsWith('*'))
-      .join('\n')
-      .match(/getQuizData\(\)/g) ?? [];
-    expect(calls).toHaveLength(1);
-    expect(results).toContain('achievements.evaluate(getQuizData())');
+    // Achievements are refreshed WITHOUT the quiz bank. Interview Master reads
+    // history and Angular Explorer is meta over earned ids, so the catalogue is
+    // never needed — and the topic-quiz achievements stay with the topic-quiz
+    // flow, which already evaluates them.
+    expect(results).toContain('evaluateInterviewAchievements()');
+    expect(results).not.toContain('evaluate(getQuizData())');
   });
 
   it('review derives correctness from the backend id lists only', () => {

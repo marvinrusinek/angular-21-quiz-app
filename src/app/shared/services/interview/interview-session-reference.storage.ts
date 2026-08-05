@@ -25,7 +25,17 @@ import { readSessionJson, removeSessionKey, writeSessionJson } from '../../utils
  * flags and explanations. That is exactly what this migration removes from the
  * browser, so it is purged on first run.
  */
-export const LEGACY_ACTIVE_INTERVIEW_KEYS: readonly string[] = ['interviewSession'];
+export const LEGACY_ACTIVE_INTERVIEW_KEYS: readonly string[] = [
+  'interviewSession',
+  /**
+   * `interviewResultRefs:v1` briefly held read-only bearer tokens for SUBMITTED
+   * sessions in localStorage, so Interview History could reopen a past review.
+   * The rule is now absolute — no Interview token is persisted outside
+   * `interviewSessionRef:v2` in sessionStorage — so any value already written
+   * is purged on first run rather than left to expire on its own.
+   */
+  'interviewResultRefs:v1'
+];
 
 /**
  * Keys NOT touched, and why:

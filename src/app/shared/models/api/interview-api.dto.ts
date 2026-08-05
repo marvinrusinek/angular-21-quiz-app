@@ -142,3 +142,25 @@ export interface ApiErrorBodyDto {
     readonly message: string;
   };
 }
+
+// ── public quiz metadata ────────────────────────────────────────────
+
+/**
+ * One topic as the PUBLIC metadata endpoint describes it.
+ *
+ * Deliberately not a `Quiz`: there are no `questions`, no `options`, no
+ * correctness and no explanations here. It is everything the Interview builder
+ * needs to offer a topic and size an assessment, and nothing more.
+ */
+export interface QuizMetadataDto {
+  readonly quizId: string;
+  readonly milestone: string;
+  readonly summary: string;
+  readonly image: string;
+  readonly difficulty: string;
+  readonly questionCount: number;
+}
+
+export interface QuizMetadataListDto {
+  readonly quizzes: readonly QuizMetadataDto[];
+}

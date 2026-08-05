@@ -9,7 +9,9 @@ import type {
   CreateInterviewSessionRequest,
   InterviewResultDto,
   SaveInterviewAnswerRequest,
-  SaveInterviewAnswerResponse
+  SaveInterviewAnswerResponse,
+  QuizMetadataDto,
+  QuizMetadataListDto
 } from '../../models/api/interview-api.dto';
 import type {
   InterviewResultViewModel,
@@ -56,6 +58,22 @@ export class InterviewApiService {
 
   private notConfigured<T>(): Observable<T> {
     return throwError(() => new InterviewApiError('BACKEND_UNAVAILABLE', 0));
+  }
+
+  /**
+   * PUBLIC topic metadata for the builder: ids, titles, difficulty and how many
+   * questions each topic holds. No questions, options, correctness or
+   * explanations — the endpoint does not serve them and the builder does not
+   * need them.
+   */
+  getQuizMetadata(): Observable<readonly QuizMetadataDto[]> {
+    if (!this.configured) return this.notConfigured();
+    return this.http
+      .get<QuizMetadataListDto>(`${this.baseUrl}/quizzes`)
+      .pipe(
+        map((dto) => dto.quizzes ?? []),
+        catchError((err: unknown) => throwError(() => toInterviewApiError(err)))
+      );
   }
 
   createSession(request: CreateInterviewSessionRequest): Observable<CreatedInterviewSession> {

@@ -6,10 +6,8 @@ import {
   InterviewReadinessBand,
   InterviewReadinessFactor
 } from '../../../models/interview-readiness.model';
-import { getQuizData } from '../../../quiz-data-cache';
-import { eligibleInterviewTopicIds } from '../../../utils/interview-topics';
 import { aggregateTopicPercentages } from '../../../utils/interview-topic-history';
-import { QuizDataService } from '../../data/quizdata.service';
+import { InterviewCatalogService } from '../../interview/interview-catalog.service';
 import { InterviewHistoryService } from './interview-history.service';
 
 // Factor weights — the single source of truth for the readiness formula. Recent
@@ -43,15 +41,30 @@ const avg = (xs: number[]): number => (xs.length ? xs.reduce((s, x) => s + x, 0)
 @Service()
 export class InterviewReadinessService {
   private readonly history = inject(InterviewHistoryService);
-  private readonly quizData = inject(QuizDataService);
+  private readonly catalog = inject(InterviewCatalogService);
 
-  // Eligible topics from the SAME definition the Interview Builder uses (a quiz
-  // that can actually be practiced). Reads the reactive quizzesSig so it updates
-  // when the catalogue loads; falls back to the bootstrap cache (populated by the
-  // APP_INITIALIZER) so a direct visit before the signal fills still has a total.
+  /**
+   * The topic-coverage DENOMINATOR: how many topics an interview could cover.
+   *
+   * Sourced from the BACKEND catalogue — the same list the builder offers, so
+   * the two can never disagree. It reads ids and nothing else; no questions,
+   * options, correctness or explanations are involved.
+   *
+   * When the catalogue has not loaded, this falls back to the topics the user's
+   * own history shows they have already attempted. That keeps coverage
+   * meaningful (never dividing by zero, never claiming full coverage) without
+   * reaching for the local quiz bank.
+   */
   private readonly eligibleTopicIds = computed<string[]>(() => {
-    const fromSignal = this.quizData.quizzesSig();
-    return eligibleInterviewTopicIds(fromSignal.length > 0 ? fromSignal : getQuizData());
+    const fromCatalog = this.catalog.topics().map((topic) => topic.id);
+    if (fromCatalog.length > 0) return fromCatalog;
+
+    const seen = new Set<string>();
+    for (const attempt of this.history.history()) {
+      for (const topic of attempt.topicPerformance) seen.add(topic.topicId);
+      for (const id of attempt.selectedTopicIds ?? []) seen.add(id);
+    }
+    return [...seen];
   });
 
   /** null when there are no completed interviews (section is hidden). */

@@ -120,7 +120,24 @@
     >
       <legend i18n>Topics</legend>
 
-      @if (!topicsEnabled()) {
+      @if (catalogLoading()) {
+        <p class="builder-hint" role="status" aria-live="polite" i18n>
+          Loading topics&hellip;
+        </p>
+      } @else if (catalogUnavailable()) {
+        <!-- Topics come from the interview service. There is deliberately no
+             fallback to the bundled quiz bank: offering topics the server
+             cannot build an assessment from would fail later and less
+             clearly. -->
+        <p class="builder-error" role="alert">
+          <span i18n>
+            Cannot reach the interview service, so topics are unavailable.
+          </span>
+          <button type="button" class="link-btn" (click)="retryCatalog()" i18n>
+            Try Again
+          </button>
+        </p>
+      } @else if (!topicsEnabled()) {
         <p class="builder-hint" i18n>Select a difficulty to choose topics.</p>
       } @else {
         <div class="topics-toolbar">

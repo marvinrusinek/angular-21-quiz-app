@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 
 import { BackendInterviewResultService } from './backend-interview-result.service';
@@ -160,34 +160,31 @@ describe('after a completed interview', () => {
   });
 
   /**
-   * The token rule is NARROW, not absolute.
+   * The token rule is ABSOLUTE: no Interview bearer token is persisted outside
+   * `interviewSessionRef:v2` in sessionStorage — not even a read-only one for
+   * an already-submitted session. A durable token was briefly kept so History
+   * could reopen a past review; it is gone, and the key it lived in is purged.
    *
-   * An ACTIVE session's token stays in sessionStorage and dies with the tab, so
-   * a durable copy could never be used to resume, alter or re-submit an
-   * assessment. A SUBMITTED attempt's token is deliberately kept in
-   * localStorage so Interview History can reopen that review later — the
-   * backend makes it READ-ONLY once submitted (saveAnswer and submit both
-   * return CONFLICT; only getResult succeeds).
+   * The consequence is deliberate: once sessionStorage is lost, historical
+   * attempts are summary-only.
    */
-  it('a durable token appears ONLY in the submitted-result pointer', () => {
-    const entries = parsedEntries(localStorage);
-    const withToken = entries.filter((e) => JSON.stringify(e.value).includes(TOKEN));
-
-    expect(withToken.map((e) => e.key)).toEqual(['interviewResultRefs:v1']);
-
-    // ...and that pointer carries nothing but the pointer.
-    const refs = (withToken[0]!.value as { refs: Array<Record<string, unknown>> }).refs;
-    expect(refs).toHaveLength(1);
-    expect(Object.keys(refs[0]!).sort()).toEqual(['savedAtMs', 'sessionId', 'sessionToken']);
+  it('NO Interview token exists anywhere in localStorage', () => {
+    const serialized = JSON.stringify(parsedEntries(localStorage));
+    expect(serialized).not.toContain(TOKEN);
+    expect(serialized).not.toContain('sessionToken');
+    expect(localStorage.getItem('interviewResultRefs:v1')).toBeNull();
   });
 
-  it('the analytics history never carries a token', () => {
+  it('the analytics history carries summaries only', () => {
     const history = localStorage.getItem('interviewAttemptHistory:v2') ?? '';
     expect(history).not.toContain(TOKEN);
     expect(history).not.toContain('sessionToken');
+    for (const banned of ['review', 'questions', 'options', 'correctOptionIds', 'explanation']) {
+      expect(history).not.toContain(banned);
+    }
   });
 
-  it('the ACTIVE session reference still lives in sessionStorage only', () => {
+  it('the token lives in sessionStorage, and only there', () => {
     expect(sessionStorage.getItem('interviewSessionRef:v2')).toContain(TOKEN);
   });
 
@@ -213,5 +210,67 @@ describe('after a completed interview', () => {
     expect(sessionStorage.getItem('interviewSession')).toBeNull();
     expect(localStorage.getItem('interviewSession')).toBeNull();
     expect(localStorage.getItem('interviewAttemptHistory:v1')).toBeNull();
+  });
+});
+
+/**
+ * Review reachability follows the TOKEN, and the token is per-tab. These pin
+ * the two sides of that rule, because it is the whole reason historical
+ * attempts are summary-only.
+ */
+describe('review reachability follows the session token', () => {
+  it('reloads within the SAME browser session', async () => {
+    // A fresh service (a refresh) has no in-memory result and must re-fetch
+    // using the sessionStorage token.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        BackendInterviewResultService,
+        BackendInterviewSessionService,
+        InterviewSessionReferenceStorage,
+        InterviewHistoryService,
+        { provide: InterviewApiService, useValue: api }
+      ]
+    });
+    const reloaded = TestBed.inject(BackendInterviewResultService);
+    expect(reloaded.result()).toBeNull();
+
+    const outcome = await reloaded.load('is_1');
+    expect(outcome.kind).toBe('loaded');
+    expect(reloaded.result()!.review).toHaveLength(2);
+  });
+
+  it('is UNAVAILABLE once sessionStorage is gone, even with history intact', async () => {
+    // Closing the tab: sessionStorage clears, localStorage survives.
+    sessionStorage.clear();
+    expect(localStorage.getItem('interviewAttemptHistory:v2')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        BackendInterviewResultService,
+        BackendInterviewSessionService,
+        InterviewSessionReferenceStorage,
+        InterviewHistoryService,
+        { provide: InterviewApiService, useValue: api }
+      ]
+    });
+
+    api.getResult.mockClear();
+    const outcome = await TestBed.inject(BackendInterviewResultService).load('is_1');
+
+    expect(outcome.kind).toBe('none');
+    // Nothing to authenticate with, so the backend is never even asked.
+    expect(api.getResult).not.toHaveBeenCalled();
+  });
+
+  it('never puts a raw token in a URL', () => {
+    // The results route carries the non-secret id only.
+    const router = TestBed.inject(Router);
+    const url = router.serializeUrl(router.createUrlTree(['/interview/results', 'is_1']));
+    expect(url).toBe('/interview/results/is_1');
+    expect(url).not.toContain(TOKEN);
   });
 });

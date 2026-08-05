@@ -60,6 +60,24 @@ export class AchievementService {
    * scores. Persists any newly earned achievement and returns ONLY the ones
    * earned by THIS evaluation (so a repeat call returns []).
    */
+  /**
+   * Evaluate only what a completed INTERVIEW can unlock, without the quiz bank.
+   *
+   * Interview Mode is backend-driven and must not load `assets/data/quiz.json`
+   * merely to refresh achievements. It does not need to: `interview-master`
+   * reads Interview History, and `angular-explorer` is a meta achievement over
+   * already-earned ids. The topic-quiz achievements — which genuinely do need
+   * the catalogue — stay the responsibility of the topic-quiz flow, where they
+   * are already evaluated (Quiz Selection and the topic Results page).
+   *
+   * Passing an empty catalogue is safe rather than merely convenient: every
+   * quiz-dependent rule requires a NON-EMPTY group, so none can be satisfied by
+   * accident, and an already-earned achievement is never re-awarded.
+   */
+  evaluateInterviewAchievements(): AchievementDefinition[] {
+    return this.evaluate([]);
+  }
+
   evaluate(quizzes: Quiz[]): AchievementDefinition[] {
     const best = this.bestScoreService.getBestScores();
     const earned = this.readEarned();

@@ -10,7 +10,7 @@ import { API_BASE_URL } from '../../../shared/tokens/api-base-url.token';
 import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
 
 import { BuildYourInterviewComponent } from './build-your-interview.component';
-import { QuizDataService } from '../../../shared/services/data/quizdata.service';
+import { InterviewCatalogService } from '../../../shared/services/interview/interview-catalog.service';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 import { setQuizDataCache } from '../../../shared/quiz-data-cache';
 import { Quiz } from '../../../shared/models/Quiz.model';
@@ -18,6 +18,19 @@ import { findInterviewPreset } from '../../../shared/models/interview-preset.mod
 import quizData from '../../../../assets/data/quiz.json';
 
 const REAL_CATALOG = ((quizData as { quizzes?: unknown[] }).quizzes ?? quizData) as Quiz[];
+
+/**
+ * What the BACKEND catalogue reports. Mutable so a test can simulate a bank
+ * too small to fill a preset — the old setQuizDataCache() trick no longer
+ * applies, because the builder does not read the local quiz bank.
+ */
+let catalogQuizzes: Quiz[] = REAL_CATALOG;
+const asTopic = (quiz: Quiz) => ({
+  id: quiz.quizId,
+  name: quiz.milestone,
+  difficulty: quiz.difficulty as string,
+  questionCount: quiz.questions?.length ?? 0
+});
 
 
 /**
@@ -60,14 +73,46 @@ function render(): ComponentFixture<BuildYourInterviewComponent> {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: API_BASE_URL, useValue: 'http://test.local/api' },
+      { provide: InterviewApiService, useValue: { createSession } },
+      /**
+       * Topic metadata comes from the BACKEND now. These tests are about preset
+       * behaviour, not catalogue loading, so the catalogue is provided already
+       * populated — the real service fetches asynchronously, which this file's
+       * synchronous render() helper cannot await.
+       */
       {
-        provide: QuizDataService,
+        provide: InterviewCatalogService,
         useValue: {
-          quizzesSig: signal(REAL_CATALOG),
-          ensureQuizzesLoaded: () => ({ pipe: () => ({ subscribe: () => void 0 }) })
+          topics: () => catalogQuizzes.map(asTopic),
+          loading: signal(false),
+          unavailable: signal(false),
+          load: async () => void 0,
+          reload: async () => void 0,
+          topicsFor: (difficulty: string | null) => {
+            if (!difficulty) return [];
+            return catalogQuizzes
+              .filter((quiz) => difficulty === 'mixed' || quiz.difficulty === difficulty)
+              .map(asTopic);
+          },
+          availableQuestions: (ids: readonly string[]) =>
+            REAL_CATALOG
+              .filter((quiz) => ids.includes(quiz.quizId))
+              .reduce((sum, quiz) => sum + (quiz.questions?.length ?? 0), 0),
+          questionsByDifficulty: (ids: readonly string[]) => {
+            const counted = new Set<string>();
+            const byDifficulty: Record<string, number> = {
+              beginner: 0, intermediate: 0, advanced: 0
+            };
+            for (const quiz of catalogQuizzes) {
+              if (!ids.includes(quiz.quizId) || counted.has(quiz.quizId)) continue;
+              counted.add(quiz.quizId);
+              const key = quiz.difficulty as string;
+              if (key in byDifficulty) byDifficulty[key] += quiz.questions?.length ?? 0;
+            }
+            return byDifficulty;
+          }
         }
       },
-      { provide: InterviewApiService, useValue: { createSession } },
       { provide: QuizStartSpinnerService, useValue: { showForStart: async () => void 0 } }
     ]
   });
@@ -80,6 +125,9 @@ const text = (el: HTMLElement): string => el.textContent ?? '';
 
 describe('BuildYourInterviewComponent — Quick Setup presets', () => {
   beforeEach(() => {
+    // Restore the full catalogue — the starvation tests mutate it, and without
+    // this the next test inherits a bank too small to fill any preset.
+    catalogQuizzes = REAL_CATALOG;
     setQuizDataCache(REAL_CATALOG, []);
     sessionStorage.clear();
     createSession.mockReset();
@@ -216,8 +264,8 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
   });
 
   it('keeps the real Start button DISABLED when a preset cannot be filled', () => {
-    const starved = REAL_CATALOG.map((q) => ({ ...q, questions: (q.questions ?? []).slice(0, 1) }));
-    setQuizDataCache(starved as Quiz[], []);
+    // Starve the BACKEND catalogue — the builder no longer reads the local bank.
+    catalogQuizzes = REAL_CATALOG.map((q) => ({ ...q, questions: (q.questions ?? []).slice(0, 1) })) as Quiz[];
     const fixture = render();
     fixture.componentInstance.selectPreset('senior');
     fixture.detectChanges();
@@ -283,8 +331,8 @@ describe('BuildYourInterviewComponent — Quick Setup presets', () => {
 
   it('disables Start and explains the shortfall when capacity is insufficient', () => {
     // Starve the bank so no preset can be filled.
-    const starved = REAL_CATALOG.map((q) => ({ ...q, questions: (q.questions ?? []).slice(0, 1) }));
-    setQuizDataCache(starved as Quiz[], []);
+    // Starve the BACKEND catalogue — the builder no longer reads the local bank.
+    catalogQuizzes = REAL_CATALOG.map((q) => ({ ...q, questions: (q.questions ?? []).slice(0, 1) })) as Quiz[];
 
     const fixture = render();
     fixture.componentInstance.selectPreset('senior');

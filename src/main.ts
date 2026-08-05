@@ -20,6 +20,7 @@ import { PwaUpdateService } from './app/shared/services/pwa-update.service';
 import { GlobalErrorHandler, installGlobalErrorLogging } from './app/shared/utils/error-logging';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
 import { provideApiBaseUrl } from './app/shared/tokens/api-base-url.token';
+import { InterviewSessionReferenceStorage } from './app/shared/services/interview/interview-session-reference.storage';
 import { validateQuizData } from './app/shared/utils/quiz-data-validation';
 
 installGlobalErrorLogging();
@@ -67,6 +68,21 @@ bootstrapApplication(AppComponent, {
       } catch (err: any) {
         console.error('[bootstrap] failed to load assets/data/quiz.json', err);
         setQuizDataCache([], []);
+      }
+    }),
+    /**
+     * Purge Interview storage keys that must no longer exist on disk.
+     *
+     * `interviewSession` (v1) held a full generated assessment INCLUDING the
+     * answer key; `interviewResultRefs:v1` briefly held read-only bearer
+     * tokens. Removing them from the code is not enough — a returning user
+     * still has the values in their browser, so they are deleted on startup.
+     * Idempotent, and scoped to an explicit key list.
+     */
+    provideAppInitializer(() => {
+      const removed = inject(InterviewSessionReferenceStorage).purgeLegacyKeys();
+      if (removed.length > 0) {
+        console.log(`[bootstrap] purged legacy Interview keys: ${removed.join(', ')}`);
       }
     }),
     // Prompt deployed users to reload onto a freshly-deployed bundle.

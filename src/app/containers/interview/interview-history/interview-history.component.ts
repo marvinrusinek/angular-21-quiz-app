@@ -23,7 +23,7 @@ import {
   InterviewHistoryFilter,
   InterviewHistoryService
 } from '../../../shared/services/features/interview/interview-history.service';
-import { InterviewResultReferenceStorage } from '../../../shared/services/interview/interview-result-reference.storage';
+import { InterviewSessionReferenceStorage } from '../../../shared/services/interview/interview-session-reference.storage';
 import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-toggle.component';
 import { InterviewReadinessComponent } from '../../../components/interview/interview-readiness/interview-readiness.component';
 import { InterviewReadinessService } from '../../../shared/services/features/interview/interview-readiness.service';
@@ -75,7 +75,7 @@ export class InterviewHistoryComponent implements OnInit {
   }
 
   private readonly history = inject(InterviewHistoryService);
-  private readonly resultRefs = inject(InterviewResultReferenceStorage);
+  private readonly sessionRef = inject(InterviewSessionReferenceStorage);
   private readonly readinessService = inject(InterviewReadinessService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -223,14 +223,15 @@ export class InterviewHistoryComponent implements OnInit {
   }
 
   /**
-   * Whether a PAST attempt can still be reviewed.
+   * Whether this attempt can still be reviewed.
    *
-   * Review lives on the server, so this needs two things: the attempt must
-   * carry a backend sessionId (migrated v1 records do not), and a durable
-   * pointer to that session must still exist. The button is hidden rather
-   * than shown-and-broken, so it never promises data that is gone.
+   * Review lives on the server, and the ONLY credential for it is the active
+   * session reference in sessionStorage — which dies with the tab. So this is
+   * true just for the attempt taken in THIS browser session; every older entry
+   * is summary-only. The button is hidden rather than shown-and-broken, so it
+   * never promises data that cannot be fetched.
    */
   canReview(entry: InterviewAttemptHistoryEntry): boolean {
-    return !!entry.sessionId && this.resultRefs.find(entry.sessionId) !== null;
+    return !!entry.sessionId && this.sessionRef.read()?.sessionId === entry.sessionId;
   }
 }

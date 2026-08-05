@@ -43,6 +43,18 @@ import { QuizDataService } from '../../../shared/services/data/quizdata.service'
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 
 import { BuildYourInterviewComponent } from './build-your-interview.component';
+/** The builder now reads topic metadata from the BACKEND, not the quiz bank. */
+function toMetadata(quizzes: Quiz[]) {
+  return quizzes.map((q) => ({
+    quizId: q.quizId,
+    milestone: q.milestone,
+    summary: q.summary ?? '',
+    image: q.image ?? '',
+    difficulty: q.difficulty as string,
+    questionCount: q.questions?.length ?? 0
+  }));
+}
+
 
 function makeQuiz(quizId: string, difficulty: QuizDifficulty, n: number): Quiz {
   const questions = Array.from({ length: n }, (_, i) => ({
@@ -80,7 +92,13 @@ describe('BuildYourInterviewComponent', () => {
     await TestBed.configureTestingModule({
       imports: [BuildYourInterviewComponent],
       providers: [
-        { provide: QuizDataService, useValue: { quizzesSig: signal(CATALOG), ensureQuizzesLoaded: () => of(CATALOG) } },
+        {
+          provide: InterviewApiService,
+          useValue: {
+            getQuizMetadata: () => of(toMetadata(CATALOG)),
+            createSession: jest.fn(() => of(CREATED))
+          }
+        },
         { provide: Router, useValue: router },
         { provide: QuizStartSpinnerService, useValue: spinner },
         // Stage 9C: the builder now creates the session through the API.
@@ -360,7 +378,8 @@ describe('BuildYourInterviewComponent — production with NO configured API orig
     await TestBed.configureTestingModule({
       imports: [BuildYourInterviewComponent],
       providers: [
-        { provide: QuizDataService, useValue: { quizzesSig: signal(CATALOG), ensureQuizzesLoaded: () => of(CATALOG) } },
+        // Unconfigured origin: the real service is used, so every call fails
+        // closed exactly as it would in an unconfigured production build.
         { provide: Router, useValue: { navigate: jest.fn().mockResolvedValue(true) } },
         { provide: QuizStartSpinnerService, useValue: { showForStart: jest.fn().mockResolvedValue(undefined) } },
         provideHttpClient(),
@@ -380,30 +399,41 @@ describe('BuildYourInterviewComponent — production with NO configured API orig
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.start-interview-btn')).not.toBeNull();
     expect(el.textContent).toContain('Build Your Interview');
-    // Topic selection still works: it reads the local catalogue, not the API.
+    // Difficulty chips still render — they are static, not catalogue-driven.
     expect(el.querySelectorAll('.chip').length).toBeGreaterThan(0);
   });
 
-  it('refuses at Start with a clear message, and issues no request', async () => {
+  it('shows a backend-unavailable state for topics, and offers a retry', async () => {
+    const component = fixture.componentInstance;
+    await Promise.resolve();
+    component.setDifficulty('beginner');
+    fixture.detectChanges();
+
+    // Topics come from the API and there is deliberately NO fallback to the
+    // bundled quiz bank, so the page says the service is unreachable.
+    expect(component.catalogUnavailable()).toBe(true);
+    expect(component.availableTopics()).toEqual([]);
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.builder-error')?.textContent)
+      .toContain('Cannot reach the interview service');
+    expect(el.textContent).toContain('Try Again');
+  });
+
+  it('cannot start an interview while the catalogue is unavailable', async () => {
     const component = fixture.componentInstance;
     const http = TestBed.inject(HttpTestingController);
+    await Promise.resolve();
 
     component.setDifficulty('beginner');
     component.toggleTopic('ts', true);
-    component.toggleTopic('templates', true);
     fixture.detectChanges();
 
     await component.startInterview();
-    fixture.detectChanges();
 
-    // Jest reports isDevMode() === true, so `isApiConfigured()` lets this
-    // through and the REQUEST-LAYER backstop is what refuses — the same path
-    // StackBlitz takes, where the build is dev but no backend is reachable.
-    // A real production build fails one step earlier, at isApiConfigured().
-    // Either way: a safe message, and nothing on the wire.
-    expect(component.createError()).toBeTruthy();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.builder-error')?.textContent)
-      .toMatch(/Cannot reach the interview service|not configured/);
+    // No capacity is known, so the configuration is invalid and nothing is
+    // ever put on the wire.
+    expect(component.startDisabled()).toBe(true);
     http.expectNone(() => true);
   });
 });

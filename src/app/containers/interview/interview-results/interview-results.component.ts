@@ -27,7 +27,6 @@ import { InterviewReadinessService } from '../../../shared/services/features/int
 import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
 import { InterviewCertificateStatusComponent } from '../../../components/interview/interview-certificate-status/interview-certificate-status.component';
 import { AchievementService } from '../../../shared/services/achievements/achievement.service';
-import { getQuizData } from '../../../shared/quiz-data-cache';
 
 /**
  * Interview Results ("Assessment Complete"). Self-contained score summary +
@@ -66,13 +65,12 @@ export class InterviewResultsComponent {
   private readonly achievements = inject(AchievementService);
 
   constructor() {
-    // A completed interview is a fresh source of achievement progress: it can
-    // unlock Interview Master (highest readiness + strong score) and, in turn,
-    // Angular Explorer. Runs after the guard loaded the result and recorded
-    // history, and BEFORE the certificate-status child checks eligibility.
-    // Idempotent. getQuizData() here is the TOPIC-QUIZ catalogue used for
-    // achievement evaluation — it is never consulted for interview scoring.
-    this.achievements.evaluate(getQuizData());
+    // A completed interview can unlock Interview Master and, in turn, Angular
+    // Explorer. Evaluated WITHOUT the quiz bank: Interview Mode is
+    // backend-driven and must not load assets/data/quiz.json. Topic-quiz
+    // achievements stay with the topic-quiz flow, which already evaluates them.
+    // Runs before the certificate-status child checks eligibility. Idempotent.
+    this.achievements.evaluateInterviewAchievements();
   }
 
   /**

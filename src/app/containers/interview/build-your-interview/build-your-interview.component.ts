@@ -2,29 +2,25 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   inject,
   OnInit,
   signal,
   ViewEncapsulation
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { form, minLength, required, requiredError, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
 import {
-  AssessmentConfig,
   AssessmentQuestionCount,
   DURATION_SECONDS_BY_COUNT,
   InterviewDifficulty
 } from '../../../shared/models/AssessmentConfig.model';
 
-import { QuizDataService } from '../../../shared/services/data/quizdata.service';
-import { AssessmentBuilderService } from '../../../shared/services/features/assessment/assessment-builder.service';
 import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
 import { InterviewApiError } from '../../../shared/services/api/interview-api.errors';
+import { InterviewCatalogService } from '../../../shared/services/interview/interview-catalog.service';
 import { BackendInterviewSessionService } from '../../../shared/services/interview/backend-interview-session.service';
 import { AssessmentIntegrityService } from '../../../shared/services/features/interview/assessment-integrity.service';
 import { buildInterviewSessionRequest } from '../../../shared/services/interview/interview-builder-request.mapper';
@@ -32,7 +28,6 @@ import { isApiConfigured } from '../../../shared/tokens/api-base-url.token';
 import type { CreateInterviewSessionRequest } from '../../../shared/models/api/interview-api.dto';
 import { QuizStartSpinnerService } from '../../../shared/services/ui/quiz-start-spinner.service';
 import { swallow } from '../../../shared/utils/error-logging';
-import { isEligibleInterviewTopic } from '../../../shared/utils/interview-topics';
 import {
   findInterviewPreset,
   INTERVIEW_PRESETS,
@@ -95,10 +90,7 @@ export interface InterviewBuilderModel {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuildYourInterviewComponent implements OnInit {
-  private readonly quizDataService = inject(QuizDataService);
-  // Still injected for the eligibility PREVIEW (counts/capacity shown while
-  // configuring). It no longer generates the assessment — the backend does.
-  private readonly builder = inject(AssessmentBuilderService);
+  private readonly catalog = inject(InterviewCatalogService);
   private readonly api = inject(InterviewApiService);
   private readonly backendSession = inject(BackendInterviewSessionService);
   private readonly integrity = inject(AssessmentIntegrityService);
@@ -114,9 +106,9 @@ export class BuildYourInterviewComponent implements OnInit {
   readonly createError = this._createError.asReadonly();
   private readonly spinner = inject(QuizStartSpinnerService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly quizzes = this.quizDataService.quizzesSig;
+  readonly catalogLoading = this.catalog.loading;
+  readonly catalogUnavailable = this.catalog.unavailable;
 
   readonly difficultyOptions: readonly DifficultyOption[] = [
     { value: 'beginner', label: 'Beginner' },
@@ -150,7 +142,7 @@ export class BuildYourInterviewComponent implements OnInit {
     validate(path.questionCount, ({ value }) => {
       const { selectedTopicIds } = this.model();
       if (selectedTopicIds.length === 0) return null;   // topic rule reports this
-      const available = this.builder.countEligible(selectedTopicIds).total;
+      const available = this.catalog.availableQuestions(selectedTopicIds);
       return available >= value()
         ? null
         : requiredError({ message: 'Not enough questions for this selection.' });
@@ -168,16 +160,14 @@ export class BuildYourInterviewComponent implements OnInit {
   readonly availableTopics = computed<TopicOption[]>(() => {
     const difficulty = this.difficulty();
     if (!difficulty) return [];
-    return this.quizzes()
-      // Shared definition of an eligible Interview Mode topic (has questions) —
-      // the same one the Readiness coverage denominator uses.
-      .filter(isEligibleInterviewTopic)
-      .filter((quiz) => difficulty === 'mixed' || quiz.difficulty === difficulty)
-      .map((quiz) => ({
-        id: quiz.quizId,
-        name: quiz.milestone,
-        count: quiz.questions?.length ?? 0
-      }));
+    // BACKEND metadata: ids, titles and counts. The catalogue service drops
+    // topics with no questions, so nothing unbuildable is ever offered — and
+    // no local quiz bank is consulted.
+    return this.catalog.topicsFor(difficulty).map((topic) => ({
+      id: topic.id,
+      name: topic.name,
+      count: topic.questionCount
+    }));
   });
 
   // PRESENTATION ONLY: groups availableTopics() into categories for display.
@@ -238,15 +228,32 @@ export class BuildYourInterviewComponent implements OnInit {
       : null;
   });
 
+  /**
+   * Whether a preset's topics can supply its full count, from BACKEND metadata.
+   *
+   * Only difficulties the preset actually draws on count toward usable
+   * capacity — that is what keeps Advanced questions out of the Junior preset.
+   */
   readonly presetCapacity = computed(() => {
     const preset = this.selectedPreset();
-    return preset ? this.builder.presetCapacity(preset) : null;
+    if (!preset) return null;
+
+    const byDifficulty = this.catalog.questionsByDifficulty(preset.topicIds);
+    const distribution = preset.difficultyDistribution as unknown as Record<string, number>;
+
+    // A difficulty the preset never draws on contributes nothing, which is what
+    // keeps Advanced questions out of the Junior preset.
+    const usable = Object.entries(byDifficulty).reduce(
+      (sum, [difficulty, count]) => sum + ((distribution[difficulty] ?? 0) > 0 ? count : 0),
+      0
+    );
+    return { byDifficulty, usable, required: preset.questionCount };
   });
 
   readonly presetTopicNames = computed<string[]>(() => {
     const preset = this.selectedPreset();
     if (!preset) return [];
-    const byId = new Map(this.quizzes().map((q) => [q.quizId, q.milestone ?? q.quizId]));
+    const byId = new Map(this.catalog.topics().map((t) => [t.id, t.name]));
     return preset.topicIds.map((id) => byId.get(id) ?? id);
   });
 
@@ -282,9 +289,9 @@ export class BuildYourInterviewComponent implements OnInit {
 
   readonly topicsEnabled = computed(() => this.difficulty() !== null);
 
-  readonly eligiblePool = computed(() =>
-    this.builder.countEligible(this.selectedTopicIds())
-  );
+  readonly eligiblePool = computed(() => ({
+    total: this.catalog.availableQuestions(this.selectedTopicIds())
+  }));
 
   readonly selectedTopicNames = computed(() => {
     const selected = new Set(this.selectedTopicIds());
@@ -328,7 +335,7 @@ export class BuildYourInterviewComponent implements OnInit {
    * state and makes the two updates a single atomic model change.
    */
   setDifficulty(difficulty: InterviewDifficulty | null): void {
-    const eligible = new Set(difficulty ? this.builder.eligibleTopicIds(difficulty) : []);
+    const eligible = new Set(this.catalog.topicsFor(difficulty).map((t) => t.id));
     this.model.update((current) => ({
       ...current,
       difficulty,
@@ -337,13 +344,16 @@ export class BuildYourInterviewComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Ensure the quiz catalog is loaded so topics appear even on a direct load /
-    // refresh of /interview (quizzesSig is otherwise only filled after visiting
-    // the selection page). Returns cached quizzes immediately when available.
-    this.quizDataService
-      .ensureQuizzesLoaded()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe();
+    // Topics come from the BACKEND, so fetch them on entry. Cached after the
+    // first success, and there is deliberately no fallback to the bundled quiz
+    // bank — offering topics the server cannot build from would be worse than
+    // saying it is unreachable.
+    void this.catalog.load();
+  }
+
+  /** Retry after a backend outage. */
+  async retryCatalog(): Promise<void> {
+    await this.catalog.reload();
   }
 
   isTopicSelected(id: string): boolean {

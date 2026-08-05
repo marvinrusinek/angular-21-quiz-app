@@ -24,7 +24,7 @@ import { ThemeToggleComponent } from '../../../components/theme-toggle/theme-tog
 import { TopicPerformanceListComponent } from '../../../components/interview/topic-performance/topic-performance-list.component';
 import { ScrollDownIndicatorComponent } from '../../../components/scroll-down-indicator/scroll-down-indicator.component';
 import { InterviewReviewComponent } from '../../../components/interview/interview-review/interview-review.component';
-import { InterviewResultReferenceStorage } from '../../../shared/services/interview/interview-result-reference.storage';
+import { InterviewSessionReferenceStorage } from '../../../shared/services/interview/interview-session-reference.storage';
 import { InterviewApiService } from '../../../shared/services/api/interview-api.service';
 import type { InterviewResultViewModel } from '../../../shared/models/interview/interview-view-models';
 
@@ -63,7 +63,7 @@ export class InterviewHistoryDetailComponent {
   private readonly history = inject(InterviewHistoryService);
   private readonly analyticsService = inject(InterviewAnalyticsService);
   private readonly viewport = inject(ViewportScroller);
-  private readonly resultRefs = inject(InterviewResultReferenceStorage);
+  private readonly sessionRef = inject(InterviewSessionReferenceStorage);
   private readonly api = inject(InterviewApiService);
 
   constructor() {
@@ -139,8 +139,10 @@ export class InterviewHistoryDetailComponent {
     const sessionId = this.entry()?.sessionId;
     if (!sessionId || this._pastResult()?.sessionId === sessionId) return;
 
-    const reference = this.resultRefs.find(sessionId);
-    if (!reference) return;
+    // Only the ACTIVE session reference can authorize this, and it lives in
+    // sessionStorage. Once the tab is gone the attempt is summary-only.
+    const reference = this.sessionRef.read();
+    if (reference?.sessionId !== sessionId) return;
 
     this._reviewLoading.set(true);
     try {
