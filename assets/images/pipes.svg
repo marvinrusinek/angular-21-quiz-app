@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" role="img"
+     aria-label="Angular pipes transform a value for display: a raw input passes through a pipe and becomes formatted output, shown for titlecase, currency, and async">
+  <defs>
+    <marker id="pipe-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#dd0031"/>
+    </marker>
+    <style>
+      .inbox  { fill:#ffffff; stroke:#b9b9b9; stroke-width:2; }
+      .outbox { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .pipe   { fill:#dd0031; }
+      .mono   { font-family:'Consolas','SF Mono',Menlo,monospace; text-anchor:middle;
+                dominant-baseline:middle; font-size:15px; }
+      .in     { fill:#3a3a3a; }
+      .out    { fill:#1a1a1a; font-weight:700; }
+      .pl     { fill:#ffffff; font-weight:700; }
+      .flow   { stroke:#dd0031; stroke-width:2.4; fill:none; }
+      .title  { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+                fill:#1a1a1a; font-size:23px; text-anchor:middle; }
+      .sub    { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+                font-size:13px; text-anchor:middle; }
+      .head   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#9a9a9a;
+                font-size:11px; text-anchor:middle; font-weight:700;
+                letter-spacing:0.5px; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="600" height="340" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="300" y="34">Angular Pipes</text>
+  <text class="sub"   x="300" y="56">A value passes through a pipe and comes out formatted</text>
+
+  <!-- Column headers -->
+  <text class="head" x="99"  y="82">VALUE</text>
+  <text class="head" x="300" y="82">PIPE</text>
+  <text class="head" x="501" y="82">OUTPUT</text>
+
+  <!-- Row 1: titlecase -->
+  <rect class="inbox"  x="24"  y="96" width="150" height="48" rx="10"/>
+  <text class="mono in"  x="99" y="121">'hello world'</text>
+  <rect class="pipe"   x="225" y="96" width="150" height="48" rx="10"/>
+  <text class="mono pl"  x="300" y="121">| titlecase</text>
+  <rect class="outbox" x="426" y="96" width="150" height="48" rx="10"/>
+  <text class="mono out" x="501" y="121">Hello World</text>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M174 120 L223 120"/>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M375 120 L424 120"/>
+
+  <!-- Row 2: currency -->
+  <rect class="inbox"  x="24"  y="164" width="150" height="48" rx="10"/>
+  <text class="mono in"  x="99" y="189">1299.5</text>
+  <rect class="pipe"   x="225" y="164" width="150" height="48" rx="10"/>
+  <text class="mono pl"  x="300" y="189">| currency</text>
+  <rect class="outbox" x="426" y="164" width="150" height="48" rx="10"/>
+  <text class="mono out" x="501" y="189">$1,299.50</text>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M174 188 L223 188"/>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M375 188 L424 188"/>
+
+  <!-- Row 3: async -->
+  <rect class="inbox"  x="24"  y="232" width="150" height="48" rx="10"/>
+  <text class="mono in"  x="99" y="257">data$</text>
+  <rect class="pipe"   x="225" y="232" width="150" height="48" rx="10"/>
+  <text class="mono pl"  x="300" y="257">| async</text>
+  <rect class="outbox" x="426" y="232" width="150" height="48" rx="10"/>
+  <text class="mono out" x="501" y="257">latest value</text>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M174 256 L223 256"/>
+  <path class="flow" marker-end="url(#pipe-arrow)" d="M375 256 L424 256"/>
+
+  <text class="sub" x="300" y="312">The original data stays unchanged &#8212; only the display is transformed</text>
+</svg>

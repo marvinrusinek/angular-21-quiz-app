@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" role="img"
+     aria-label="A well-organized Angular project structure: src/app split into core, shared, and feature folders, with each feature holding its own components and services">
+  <defs>
+    <symbol id="ca-folder" viewBox="0 0 23 18">
+      <path fill="currentColor" stroke="#00000022" stroke-width="0.6"
+            d="M0.6 3 h6 l2.2 2.2 h12 q2 0 2 2 v7.6 q0 2 -2 2 h-20.2 q-2 0 -2 -2 v-11.8 q0 -2 2 -2 z"/>
+    </symbol>
+    <symbol id="ca-file" viewBox="0 0 18 20">
+      <path fill="#ffffff" stroke="#9aa0a6" stroke-width="1.2"
+            d="M2 1 h9 l5 5 v12 q0 1.6 -1.6 1.6 h-10.8 q-1.6 0 -1.6 -1.6 v-15 q0 -1.6 1.6 -1.6 z"/>
+      <path fill="none" stroke="#9aa0a6" stroke-width="1.2" d="M11 1 v5 h5"/>
+    </symbol>
+    <style>
+      .folder-amber { color:#f5a623; }
+      .folder-red   { color:#dd0031; }
+      .name    { font-family:'Consolas','SF Mono',Menlo,monospace; font-size:15px;
+                 dominant-baseline:middle; }
+      .dir     { fill:#2a2a2a; font-weight:700; }
+      .dir-hot { fill:#dd0031; font-weight:700; }
+      .file    { fill:#4a4a4a; font-weight:400; }
+      .rail    { stroke:#cfcfcf; stroke-width:2; fill:none; }
+      .title   { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+                 fill:#1a1a1a; font-size:23px; text-anchor:middle; }
+      .sub     { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+                 font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="600" height="450" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="300" y="36">Component Architecture</text>
+  <text class="sub"   x="300" y="58">Organize by feature for a scalable, maintainable structure</text>
+
+  <!-- Tree rails (parent -> child connectors) -->
+  <!-- src/app -> core, shared, features -->
+  <path class="rail" d="M49 109 V214"/>
+  <path class="rail" d="M49 138 H74"/>
+  <path class="rail" d="M49 176 H74"/>
+  <path class="rail" d="M49 214 H74"/>
+  <!-- features -> dashboard, orders -->
+  <path class="rail" d="M87 225 V366"/>
+  <path class="rail" d="M87 252 H112"/>
+  <path class="rail" d="M87 366 H112"/>
+  <!-- dashboard -> its component + service -->
+  <path class="rail" d="M125 263 V328"/>
+  <path class="rail" d="M125 290 H150"/>
+  <path class="rail" d="M125 328 H150"/>
+  <!-- orders -> its component -->
+  <path class="rail" d="M125 377 V404"/>
+  <path class="rail" d="M125 404 H150"/>
+
+  <!-- Row 1: src/app/ (L0) -->
+  <use href="#ca-folder" class="folder-amber" x="38" y="91" width="23" height="18"/>
+  <text class="name dir" x="70" y="100">src/app/</text>
+
+  <!-- Row 2: core/ (L1) -->
+  <use href="#ca-folder" class="folder-amber" x="76" y="129" width="23" height="18"/>
+  <text class="name dir" x="108" y="138">core/</text>
+
+  <!-- Row 3: shared/ (L1) -->
+  <use href="#ca-folder" class="folder-amber" x="76" y="167" width="23" height="18"/>
+  <text class="name dir" x="108" y="176">shared/</text>
+
+  <!-- Row 4: features/ (L1, highlighted) -->
+  <use href="#ca-folder" class="folder-red" x="76" y="205" width="23" height="18"/>
+  <text class="name dir-hot" x="108" y="214">features/</text>
+
+  <!-- Row 5: dashboard/ (L2) -->
+  <use href="#ca-folder" class="folder-amber" x="114" y="243" width="23" height="18"/>
+  <text class="name dir" x="146" y="252">dashboard/</text>
+
+  <!-- Row 6: dashboard.component.ts (L3) -->
+  <use href="#ca-file" x="153" y="280" width="16" height="20"/>
+  <text class="name file" x="176" y="290">dashboard.component.ts</text>
+
+  <!-- Row 7: dashboard.service.ts (L3) -->
+  <use href="#ca-file" x="153" y="318" width="16" height="20"/>
+  <text class="name file" x="176" y="328">dashboard.service.ts</text>
+
+  <!-- Row 8: orders/ (L2) -->
+  <use href="#ca-folder" class="folder-amber" x="114" y="357" width="23" height="18"/>
+  <text class="name dir" x="146" y="366">orders/</text>
+
+  <!-- Row 9: orders.component.ts (L3) -->
+  <use href="#ca-file" x="153" y="394" width="16" height="20"/>
+  <text class="name file" x="176" y="404">orders.component.ts</text>
+</svg>

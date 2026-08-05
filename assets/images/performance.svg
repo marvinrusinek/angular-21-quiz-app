@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 460" role="img"
+     aria-label="A speed gauge with the needle in the green zone, representing Angular performance">
+  <defs>
+    <style>
+      .arc   { fill:none; stroke-width:26; stroke-linecap:round; }
+      .red   { stroke:#dd0031; }
+      .amber { stroke:#f6a821; }
+      .green { stroke:#3fae2a; }
+      .track { fill:none; stroke:#eeeeee; stroke-width:26; stroke-linecap:round; }
+      .needle{ stroke:#1a1a1a; stroke-width:6; stroke-linecap:round; }
+      .hub   { fill:#1a1a1a; }
+      .tick  { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#8a8a8a; font-size:14px; font-weight:600; }
+      .fast  { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#3fae2a; font-size:20px; font-weight:700; text-anchor:middle; }
+      .title { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700; fill:#1a1a1a; font-size:22px; text-anchor:middle; }
+      .sub   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b; font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="620" height="460" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="310" y="52">Angular Performance</text>
+  <text class="sub"   x="310" y="76">Faster load &#183; fewer updates &#183; smaller bundles</text>
+
+  <!-- Gauge arcs (semicircle, left = slow/red, right = fast/green) -->
+  <path class="track"       d="M 160 320 A 150 150 0 0 1 460 320"/>
+  <path class="arc red"     d="M 160 320 A 150 150 0 0 1 235 190"/>
+  <path class="arc amber"   d="M 235 190 A 150 150 0 0 1 385 190"/>
+  <path class="arc green"   d="M 385 190 A 150 150 0 0 1 460 320"/>
+
+  <!-- Needle pointing into the green (fast) zone -->
+  <line class="needle" x1="310" y1="320" x2="414" y2="260"/>
+  <circle class="hub" cx="310" cy="320" r="10"/>
+
+  <!-- Ticks + label -->
+  <text class="tick" x="150" y="345" text-anchor="middle">slow</text>
+  <text class="tick" x="470" y="345" text-anchor="middle">fast</text>
+  <text class="fast" x="310" y="400">Optimized for speed</text>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 460" role="img"
+     aria-label="A signal notifying a computed signal and an effect when its value changes">
+  <defs>
+    <marker id="sg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#dd0031"/>
+    </marker>
+    <style>
+      .node   { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .src    { fill:#dd0031; }
+      .lbl    { font-family:'Consolas',Menlo,monospace; text-anchor:middle;
+                dominant-baseline:middle; font-weight:700; font-size:18px; }
+      .lbl-w  { fill:#ffffff; } .lbl-d { fill:#dd0031; }
+      .val    { font-family:'Segoe UI',Roboto,Arial,sans-serif; text-anchor:middle;
+                dominant-baseline:middle; font-size:13px; }
+      .val-w  { fill:#ffe1e7; } .val-d { fill:#6b6b6b; }
+      .flow   { stroke:#dd0031; stroke-width:2.5; fill:none; }
+      .edge   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#8a8a8a; font-size:12px;
+                font-weight:600; text-anchor:middle; }
+      .title  { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700; fill:#1a1a1a;
+                font-size:22px; text-anchor:middle; }
+      .sub    { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b; font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="620" height="460" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="310" y="46">Angular Signals</text>
+  <text class="sub"   x="310" y="70">A reactive value that notifies its consumers when it changes</text>
+
+  <!-- Source signal -->
+  <rect class="node src" x="60" y="195" width="180" height="80" rx="14"/>
+  <text class="lbl lbl-w" x="150" y="228">signal()</text>
+  <text class="val val-w" x="150" y="252">count = 1</text>
+
+  <!-- computed -->
+  <rect class="node" x="380" y="110" width="180" height="76" rx="14"/>
+  <text class="lbl lbl-d" x="470" y="140">computed()</text>
+  <text class="val val-d" x="470" y="164">double = 2</text>
+
+  <!-- effect -->
+  <rect class="node" x="380" y="285" width="180" height="76" rx="14"/>
+  <text class="lbl lbl-d" x="470" y="315">effect()</text>
+  <text class="val val-d" x="470" y="339">log / sync</text>
+
+  <!-- edges -->
+  <path class="flow" marker-end="url(#sg-arrow)" d="M240 222 C310 200, 320 165, 378 152"/>
+  <path class="flow" marker-end="url(#sg-arrow)" d="M240 250 C310 275, 320 310, 378 322"/>
+  <text class="edge" x="312" y="176">recomputes</text>
+  <text class="edge" x="312" y="300">re-runs</text>
+</svg>

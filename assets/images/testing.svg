@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 460" role="img"
+     aria-label="The testing pyramid: many fast unit tests at the base, fewer end-to-end tests at the top">
+  <defs>
+    <style>
+      .layer  { stroke:#dd0031; stroke-width:2.5; }
+      .unit   { fill:#ffffff; }
+      .integ  { fill:#ffe1e7; }
+      .e2e    { fill:#dd0031; }
+      .lbl    { font-family:'Segoe UI',Roboto,Arial,sans-serif; text-anchor:middle;
+                dominant-baseline:middle; font-weight:700; }
+      .lbl-d  { fill:#3d3d3d; }
+      .lbl-w  { fill:#ffffff; }
+      .sublbl { font-family:'Segoe UI',Roboto,Arial,sans-serif; text-anchor:middle;
+                fill:#6b6b6b; font-size:12px; font-weight:600; }
+      .side   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#8a8a8a;
+                font-size:13px; font-weight:600; }
+      .title  { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+                fill:#1a1a1a; font-size:22px; text-anchor:middle; }
+      .sub    { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+                font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="620" height="460" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title" x="310" y="40">Angular Testing</text>
+  <text class="sub"   x="310" y="64">The testing pyramid &#8212; many fast unit tests, fewer end-to-end tests</text>
+
+  <!-- Bottom: Unit -->
+  <polygon class="layer unit"  points="176.7,310 443.3,310 510,410 110,410"/>
+  <text class="lbl lbl-d" x="310" y="352" font-size="18">Unit tests (Jest)</text>
+  <text class="sublbl"    x="310" y="374">fast &#183; isolated &#183; many</text>
+
+  <!-- Middle: Integration -->
+  <polygon class="layer integ" points="243.3,210 376.7,210 443.3,310 176.7,310"/>
+  <text class="lbl lbl-d" x="310" y="262" font-size="16">Integration</text>
+
+  <!-- Top: E2E -->
+  <polygon class="layer e2e" points="310,108 376.7,210 243.3,210"/>
+  <text class="lbl lbl-w" x="310" y="180" font-size="14">E2E</text>
+  <text class="lbl lbl-w" x="310" y="196" font-size="10">Playwright</text>
+
+  <!-- Side annotations -->
+  <text class="side" x="545" y="150">fewer</text>
+  <text class="side" x="545" y="392">more</text>
+  <text class="side" x="70"  y="150" text-anchor="middle">slower</text>
+  <text class="side" x="70"  y="392" text-anchor="middle">faster</text>
+</svg>

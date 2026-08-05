@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 430" role="img"
+     aria-label="The three kinds of Angular directives: components (a directive with a template), structural directives that add or remove DOM, and attribute directives that change an element's look or behavior">
+  <defs>
+    <style>
+      .box   { fill:#ffffff; stroke:#dd0031; stroke-width:2.5; }
+      .accent{ fill:#dd0031; }
+      .ttl   { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+               fill:#1a1a1a; font-size:19px; }
+      .sub   { font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#5a5a5a;
+               font-size:13px; }
+      .code  { font-family:'Consolas','SF Mono',Menlo,monospace; fill:#dd0031;
+               font-weight:700; font-size:13px; }
+      .title { font-family:'Segoe UI',Roboto,Arial,sans-serif; font-weight:700;
+               fill:#1a1a1a; font-size:23px; text-anchor:middle; }
+      .stitle{ font-family:'Segoe UI',Roboto,Arial,sans-serif; fill:#6b6b6b;
+               font-size:13px; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="600" height="430" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text class="title"  x="300" y="36">Angular Directives</text>
+  <text class="stitle" x="300" y="58">Three kinds of directives shape your templates</text>
+
+  <!-- Card 1: Component -->
+  <rect class="box" x="90" y="82" width="420" height="86" rx="12"/>
+  <rect class="accent" x="108" y="102" width="6" height="46" rx="3"/>
+  <text class="ttl" x="132" y="118">Component</text>
+  <text class="sub" x="132" y="142">A directive with its own template.</text>
+
+  <!-- Card 2: Structural -->
+  <rect class="box" x="90" y="186" width="420" height="86" rx="12"/>
+  <rect class="accent" x="108" y="206" width="6" height="46" rx="3"/>
+  <text class="ttl"  x="132" y="222">Structural</text>
+  <text class="sub"  x="132" y="246"><tspan class="code">&#64;if &#183; &#64;for &#183; &#64;switch</tspan> &#8212; adds or removes DOM.</text>
+
+  <!-- Card 3: Attribute -->
+  <rect class="box" x="90" y="290" width="420" height="86" rx="12"/>
+  <rect class="accent" x="108" y="310" width="6" height="46" rx="3"/>
+  <text class="ttl"  x="132" y="326">Attribute</text>
+  <text class="sub"  x="132" y="350"><tspan class="code">ngClass &#183; ngStyle</tspan> &#8212; changes look &amp; behavior.</text>
+</svg>
