@@ -113,14 +113,15 @@ function start(target) {
 }
 
 /**
- * The backend is a separate npm project with its own dependencies, and one of
- * them (better-sqlite3) is a NATIVE module. Two failure modes are worth naming
- * rather than leaving as "command not found: ts-node":
+ * The backend is a separate npm project with its own dependencies. Two failure
+ * modes are worth naming rather than leaving as "command not found: ts-node":
  *
  *   * a fresh clone where `npm install` was only run at the root;
- *   * an environment that cannot build native addons at all — StackBlitz's
- *     WebContainer runs a JS-only Node, so the backend cannot run there. Use
- *     `npm start` alone there; it talks to the hosted API.
+ *   * StackBlitz's WebContainer, where the backend cannot run at all. It used
+ *     to be blocked by better-sqlite3 being a native addon; `pg` is pure
+ *     JavaScript, but WebContainer still cannot open the raw TCP socket a
+ *     Postgres connection needs. Use `npm start` alone there; it talks to the
+ *     hosted API.
  */
 function assertBackendInstalled() {
   const backendModules = path.join(ROOT, 'backend', 'node_modules', 'ts-node');
@@ -131,7 +132,7 @@ function assertBackendInstalled() {
     '      The backend is a separate npm project:\n\n' +
     '        npm --prefix backend install\n\n' +
     '      If you are on StackBlitz or another WebContainer, the backend cannot\n' +
-    '      run there at all — better-sqlite3 is a native module. Run just:\n\n' +
+    '      run there at all — Postgres needs a raw TCP socket. Run just:\n\n' +
     '        npm start\n\n' +
     '      which uses the hosted API instead of a local one.\n'
   );

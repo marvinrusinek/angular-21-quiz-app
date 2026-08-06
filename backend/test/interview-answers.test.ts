@@ -1,16 +1,14 @@
 import request from 'supertest';
 import type { Express } from 'express';
-import { resolve } from 'node:path';
 
 import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
-import { openDatabase, type DatabaseHandle } from '../src/db/database';
-import { migrate } from '../src/db/migrate';
+import { type DatabaseHandle } from '../src/db/database';
 import { createSessionRepository, type SessionRepository } from '../src/interview/session.repository';
 import { InterviewSessionService } from '../src/interview/session.service';
 import { seededRandomSource } from '../src/interview/assessment.random';
 import { realRepository } from './helpers/fixtures';
-import { makeTempDir, removeTempDir } from './helpers/db';
+import { memoryDb } from './helpers/db';
 
 let clock = 1_700_000_000_000;
 let handle: DatabaseHandle;
@@ -30,11 +28,11 @@ function buildApp(repo: SessionRepository): Express {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   clock = 1_700_000_000_000;
-  handle = openDatabase({ databasePath: ':memory:' });
-  migrate(handle.db);
-  sessions = createSessionRepository(handle.db);
+  const ctx = await memoryDb();
+  handle = ctx.handle;
+  sessions = ctx.repo;
   app = buildApp(sessions);
 });
 afterEach(() => handle.close());
@@ -68,6 +66,13 @@ function resume(session: Created, token = session.token) {
 
 const firstOf = (s: Created, type: QuestionDto['type']) =>
   s.questions.find((q) => q.type === type)!;
+
+async function countAnswers(): Promise<number> {
+  const { rows } = await handle.query<{ n: number }>(
+    'SELECT COUNT(*)::int AS n FROM session_answers'
+  );
+  return Number(rows[0]!['n']);
+}
 
 function keysDeep(value: unknown, out: string[] = []): string[] {
   if (value === null || typeof value !== 'object') return out;
@@ -172,7 +177,7 @@ describe('saving selections', () => {
     expect(cleared.body.selectedOptionIds).toEqual([]);
     expect(cleared.body.answeredCount).toBe(0);
 
-    expect(handle.db.prepare('SELECT COUNT(*) AS n FROM session_answers').get()).toEqual({ n: 0 });
+    expect(await countAnswers()).toBe(0);
   });
 
   it('answeredCount rises and falls with real rows', async () => {
@@ -281,7 +286,7 @@ describe('question ownership', () => {
     // b's token against a's session
     const res = await save(a, question.questionId, [question.options[0]!.optionId], b.token);
     expect(res.status).toBe(401);
-    expect(handle.db.prepare('SELECT COUNT(*) AS n FROM session_answers').get()).toEqual({ n: 0 });
+    expect(await countAnswers()).toBe(0);
   });
 });
 
@@ -407,7 +412,7 @@ describe('expiry boundary', () => {
     const session = await sessionAt(-5000);
     const question = session.questions[0]!;
     await save(session, question.questionId, [question.options[0]!.optionId]);
-    expect(handle.db.prepare('SELECT COUNT(*) AS n FROM session_answers').get()).toEqual({ n: 0 });
+    expect(await countAnswers()).toBe(0);
   });
 
   it('an expired replacement leaves the PRIOR answer untouched', async () => {
@@ -420,14 +425,14 @@ describe('expiry boundary', () => {
     const res = await save(session, question.questionId, [question.options[1]!.optionId]);
     expect(res.status).toBe(409);
 
-    const stored = sessions.getAnswers(session.id);
+    const stored = await sessions.getAnswers(session.id);
     expect(stored[0]!.selectedOptionIds).toEqual([original]);
   });
 
   it('PERSISTS the expired state', async () => {
     const session = await sessionAt(-1);
     await save(session, session.questions[0]!.questionId, [session.questions[0]!.options[0]!.optionId]);
-    expect(sessions.getSessionById(session.id)!.status).toBe('expired');
+    expect((await sessions.getSessionById(session.id))!.status).toBe('expired');
   });
 
   it('resume after expiry reveals neither questions nor answers', async () => {
@@ -513,12 +518,13 @@ describe('response security', () => {
     const ids = question.options.slice(0, 2).map((o) => o.optionId);
     await save(session, question.questionId, ids);
 
-    const row = handle.db
-      .prepare('SELECT selected_option_ids FROM session_answers')
-      .get() as { selected_option_ids: string };
+    const { rows } = await handle.query<{ selected_option_ids: string }>(
+      'SELECT selected_option_ids FROM session_answers'
+    );
+    const stored = rows[0]!['selected_option_ids'];
 
-    expect(JSON.parse(row.selected_option_ids)).toEqual([...ids].sort((a, b) => a - b));
-    expect(row.selected_option_ids).not.toMatch(/correct|text|explanation/i);
+    expect(JSON.parse(stored)).toEqual([...ids].sort((a, b) => a - b));
+    expect(stored).not.toMatch(/correct|text|explanation/i);
   });
 
   it('both routes are no-store', async () => {
@@ -549,7 +555,7 @@ describe('concurrency', () => {
       save(session, question.questionId, second)
     ]);
 
-    const stored = sessions.getAnswers(session.id);
+    const stored = await sessions.getAnswers(session.id);
     expect(stored).toHaveLength(1);
     // The result must be exactly one of the two bodies — never a merge.
     const value = [...stored[0]!.selectedOptionIds];
@@ -558,45 +564,33 @@ describe('concurrency', () => {
 });
 
 describe('restart and frozen-bank independence', () => {
-  it('selections survive a close/reopen and resume identically', async () => {
-    const dir = makeTempDir();
-    try {
-      const path = resolve(dir, 'answers.db');
-      const first = openDatabase({ databasePath: path });
-      migrate(first.db);
-      const firstRepo = createSessionRepository(first.db);
-      app = buildApp(firstRepo);
+  it('selections survive a rebuilt app and resume identically', async () => {
+    // Under SQLite this closed and reopened a FILE. The database is a server
+    // now; the equivalent question is whether the answers live in the database
+    // rather than in the process, so the app and repository are rebuilt from
+    // scratch over the same database.
+    const session = await createSession();
+    const single = firstOf(session, 'single');
+    const multi = firstOf(session, 'multiple');
+    const multiIds = multi.options.slice(0, 2).map((o) => o.optionId).sort((a, b) => a - b);
 
-      const session = await createSession();
-      const single = firstOf(session, 'single');
-      const multi = firstOf(session, 'multiple');
-      const multiIds = multi.options.slice(0, 2).map((o) => o.optionId).sort((a, b) => a - b);
+    await save(session, single.questionId, [single.options[0]!.optionId]);
+    await save(session, multi.questionId, multiIds);
 
-      await save(session, single.questionId, [single.options[0]!.optionId]);
-      await save(session, multi.questionId, multiIds);
-      first.close();
+    app = buildApp(createSessionRepository(handle));
 
-      // Reopen — and rebuild the app against the reopened database.
-      const second = openDatabase({ databasePath: path });
-      migrate(second.db);
-      app = buildApp(createSessionRepository(second.db));
+    const res = await resume(session);
+    expect(res.status).toBe(200);
 
-      const res = await resume(session);
-      expect(res.status).toBe(200);
+    const byId = new Map(
+      res.body.answers.map((a: { questionId: string; selectedOptionIds: number[] }) =>
+        [a.questionId, a.selectedOptionIds])
+    );
+    expect(byId.get(single.questionId)).toEqual([single.options[0]!.optionId]);
+    expect(byId.get(multi.questionId)).toEqual(multiIds);
 
-      const byId = new Map(
-        res.body.answers.map((a: { questionId: string; selectedOptionIds: number[] }) =>
-          [a.questionId, a.selectedOptionIds])
-      );
-      expect(byId.get(single.questionId)).toEqual([single.options[0]!.optionId]);
-      expect(byId.get(multi.questionId)).toEqual(multiIds);
-
-      const keys = keysDeep(res.body);
-      for (const banned of BANNED) expect(keys).not.toContain(banned);
-      second.close();
-    } finally {
-      removeTempDir(dir);
-    }
+    const keys = keysDeep(res.body);
+    for (const banned of BANNED) expect(keys).not.toContain(banned);
   });
 
   it('validation uses the FROZEN snapshot, not the live quiz bank', async () => {

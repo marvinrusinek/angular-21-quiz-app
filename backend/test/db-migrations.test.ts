@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { openDatabase, DatabaseError, resolveDatabasePath } from '../src/db/database';
+import { DatabaseError, describeConnection, fromPool, openDatabase } from '../src/db/database';
 import {
   getAppliedMigrations,
   listMigrationFiles,
@@ -10,6 +10,7 @@ import {
   MigrationError
 } from '../src/db/migrate';
 import { makeTempDir, removeTempDir } from './helpers/db';
+import { createTestPool } from './helpers/pg-mem-pool';
 
 let tempDir: string;
 beforeEach(() => { tempDir = makeTempDir(); });
@@ -17,75 +18,82 @@ afterEach(() => removeTempDir(tempDir));
 
 const CLOCK = () => 1_700_000_000_000;
 
-describe('database open + PRAGMAs', () => {
-  it('opens an in-memory database', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(handle.location).toBe(':memory:');
-    handle.close();
+/** A migrated, empty database. Migration tests need the handle, not a repo. */
+function freshDb() {
+  return fromPool(createTestPool().pool, 'pg-mem');
+}
+
+describe('opening a connection', () => {
+  it('rejects a blank connection string', () => {
+    expect(() => openDatabase({ databaseUrl: '   ' })).toThrow(DatabaseError);
+    expect(() => openDatabase({ databaseUrl: '' })).toThrow(/not configured/i);
   });
 
-  it('creates the parent directory for a file database', () => {
-    const path = resolve(tempDir, 'nested/deeper/sessions.db');
-    const handle = openDatabase({ databasePath: path });
-    expect(existsSync(path)).toBe(true);
-    handle.close();
+  it('rejects a non-postgres connection string', () => {
+    // The most likely migration mistake is a leftover SQLite path. Fail at
+    // startup rather than at the first query.
+    expect(() => openDatabase({ databaseUrl: './data/sessions.db' }))
+      .toThrow(/postgres:\/\//i);
+    expect(() => openDatabase({ databaseUrl: 'mysql://u:p@host/db' }))
+      .toThrow(DatabaseError);
   });
 
-  it('ENABLES foreign keys — SQLite defaults them off', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(handle.db.pragma('foreign_keys', { simple: true })).toBe(1);
-    handle.close();
+  it('accepts postgres:// and postgresql://', async () => {
+    // Constructing a Pool does not connect, so this stays offline.
+    const a = openDatabase({ databaseUrl: 'postgres://u:p@host:5432/db' });
+    const b = openDatabase({ databaseUrl: 'POSTGRESQL://u:p@host:5432/db' });
+    expect(a.describe).toBe('host/db');
+    expect(b.describe).toBe('host/db');
+    await a.close();
+    await b.close();
   });
 
-  it('sets a busy timeout', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(handle.db.pragma('busy_timeout', { simple: true })).toBe(5000);
-    handle.close();
-  });
-
-  it('uses WAL for file databases but not for :memory:', () => {
-    const file = openDatabase({ databasePath: resolve(tempDir, 'wal.db') });
-    expect(String(file.db.pragma('journal_mode', { simple: true })).toLowerCase()).toBe('wal');
-    file.close();
-
-    const memory = openDatabase({ databasePath: ':memory:' });
-    expect(String(memory.db.pragma('journal_mode', { simple: true })).toLowerCase()).not.toBe('wal');
-    memory.close();
-  });
-
-  it('rejects a directory used as the database file', () => {
-    mkdirSync(resolve(tempDir, 'adir'));
-    expect(() => openDatabase({ databasePath: resolve(tempDir, 'adir') }))
-      .toThrow(/directory, not a file/i);
-  });
-
-  it('rejects a blank path', () => {
-    expect(() => openDatabase({ databasePath: '   ' })).toThrow(DatabaseError);
-  });
-
-  it('resolves relative paths against the working directory, like the quiz path', () => {
-    expect(resolveDatabasePath('./data/sessions.db')).toBe(
-      resolve(process.cwd(), 'data/sessions.db')
+  it('NEVER puts credentials in the description — it is logged at startup', () => {
+    const description = describeConnection(
+      'postgres://admin:sup3r-s3cret@ep-cool-name.neon.tech/interviews?sslmode=require'
     );
-    expect(resolveDatabasePath(':memory:')).toBe(':memory:');
+    expect(description).toBe('ep-cool-name.neon.tech/interviews');
+    expect(description).not.toContain('sup3r-s3cret');
+    expect(description).not.toContain('admin');
+    expect(description).not.toContain('sslmode');
   });
 
-  it('close() is idempotent', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    handle.close();
-    expect(() => handle.close()).not.toThrow();
+  it('describes an unparseable url without throwing', () => {
+    expect(describeConnection('not a url')).toBe('postgres');
+  });
+});
+
+describe('transactions', () => {
+  it('commits work performed on the pinned client', async () => {
+    const db = freshDb();
+    await db.transaction(async (client) => {
+      await client.query('CREATE TABLE t (x INTEGER)');
+      await client.query('INSERT INTO t (x) VALUES ($1)', [1]);
+    });
+    const { rows } = await db.query<{ x: number }>('SELECT x FROM t');
+    expect(rows).toEqual([{ x: 1 }]);
   });
 
-  it('errors name only the basename, never an absolute path', () => {
-    mkdirSync(resolve(tempDir, 'dir2'));
-    try {
-      openDatabase({ databasePath: resolve(tempDir, 'dir2') });
-      throw new Error('expected failure');
-    } catch (err) {
-      const message = (err as Error).message;
-      expect(message).toContain('dir2');
-      expect(message).not.toContain(tempDir);
-    }
+  it('ROLLS BACK everything when the callback throws', async () => {
+    const db = freshDb();
+    await db.query('CREATE TABLE t (x INTEGER)');
+
+    await expect(
+      db.transaction(async (client) => {
+        await client.query('INSERT INTO t (x) VALUES ($1)', [1]);
+        throw new Error('boom');
+      })
+    ).rejects.toThrow('boom');
+
+    const { rows } = await db.query('SELECT x FROM t');
+    expect(rows).toHaveLength(0);
+  });
+
+  it('propagates the ORIGINAL error, not a rollback failure', async () => {
+    const db = freshDb();
+    await expect(
+      db.transaction(async () => { throw new DatabaseError('original cause'); })
+    ).rejects.toThrow('original cause');
   });
 });
 
@@ -141,129 +149,159 @@ describe('migration discovery', () => {
 });
 
 describe('migration application', () => {
-  it('creates the version table and records the migration', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    const applied = migrate(handle.db, { now: CLOCK });
+  it('creates the version table and records the migration', async () => {
+    const db = freshDb();
+    const applied = await migrate(db, { now: CLOCK });
 
-    expect(applied).toEqual([1]);
-    const records = getAppliedMigrations(handle.db);
-    expect(records).toHaveLength(1);
+    // Every migration in the directory, in numeric order.
+    expect(applied).toEqual([1, 2]);
+    const records = await getAppliedMigrations(db);
+    expect(records).toHaveLength(2);
     expect(records[0]).toEqual({
       version: 1,
       name: 'interview_sessions',
       appliedAt: CLOCK()
     });
-    handle.close();
+    // applied_at is epoch MILLIS and must survive the BIGINT round trip as a
+    // NUMBER — pg hands back bigints as strings, and INTEGER would overflow.
+    expect(typeof records[0]!.appliedAt).toBe('number');
   });
 
-  it('is IDEMPOTENT — a second run applies nothing', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(migrate(handle.db, { now: CLOCK })).toEqual([1]);
-    expect(migrate(handle.db, { now: CLOCK })).toEqual([]);
-    expect(getAppliedMigrations(handle.db)).toHaveLength(1);
-    handle.close();
+  it('is IDEMPOTENT — a second run applies nothing', async () => {
+    const db = freshDb();
+    expect(await migrate(db, { now: CLOCK })).toEqual([1, 2]);
+    expect(await migrate(db, { now: CLOCK })).toEqual([]);
+    expect(await getAppliedMigrations(db)).toHaveLength(2);
   });
 
-  it('creates every expected table', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    migrate(handle.db, { now: CLOCK });
+  it('creates every expected table', async () => {
+    const db = freshDb();
+    await migrate(db, { now: CLOCK });
 
-    const names = (handle.db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
-      .all() as { name: string }[]).map((row) => row.name);
-
+    // Queried rather than read out of a catalog: this asserts the tables are
+    // USABLE, and it behaves the same on pg-mem and on real Postgres.
     for (const table of [
       'interview_sessions', 'session_questions', 'session_options',
       'session_answers', 'schema_migrations'
     ]) {
-      expect(names).toContain(table);
+      const { rows } = await db.query<{ n: number }>(`SELECT COUNT(*)::int AS n FROM ${table}`);
+      expect(rows[0]!['n']).toBe(table === 'schema_migrations' ? 2 : 0);
     }
-    handle.close();
   });
 
-  it('does NOT create a global unique index on option_id', () => {
-    const handle = openDatabase({ databasePath: ':memory:' });
-    migrate(handle.db, { now: CLOCK });
+  it('does NOT constrain option_id globally — only within a question', async () => {
+    const db = freshDb();
+    await migrate(db, { now: CLOCK });
 
-    const indexes = handle.db.prepare('PRAGMA index_list(session_options)').all() as {
-      unique: number; name: string;
-    }[];
-    for (const index of indexes) {
-      if (index.unique !== 1) continue;
-      const columns = (handle.db.prepare(`PRAGMA index_info(${index.name})`).all() as {
-        name: string;
-      }[]).map((c) => c.name);
-      // Any unique index MUST be scoped by session + question position.
-      if (columns.includes('option_id')) {
-        expect(columns).toContain('session_id');
-        expect(columns).toContain('question_position');
-      }
+    await db.query(
+      `INSERT INTO interview_sessions
+         (id, token_hash, attempt_id, config_json, duration_seconds,
+          created_at, expires_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')`,
+      ['s1', 'h'.repeat(64), 'a1', '{}', 900, CLOCK(), CLOCK() + 3_600_000]
+    );
+    for (const position of [0, 1]) {
+      await db.query(
+        `INSERT INTO session_questions
+           (session_id, position, question_id, source_quiz_id,
+            question_text, question_type, explanation)
+         VALUES ($1, $2, $3, 'rxjs', 'Q?', 'single', 'Because.')`,
+        ['s1', position, `q${position}`]
+      );
     }
-    handle.close();
+
+    // The SAME option_id in two different questions must be allowed: option ids
+    // are only unique per question in the source data.
+    const insertOption = (position: number) =>
+      db.query(
+        `INSERT INTO session_options
+           (session_id, question_position, option_id, option_text, display_order, is_correct)
+         VALUES ($1, $2, 101, 'A', 0, 1)`,
+        ['s1', position]
+      );
+
+    await insertOption(0);
+    await expect(insertOption(1)).resolves.toBeDefined();
+
+    // ...but a duplicate WITHIN one question must still be rejected.
+    await expect(insertOption(0)).rejects.toBeDefined();
   });
 
-  it('rolls back COMPLETELY when a migration fails — nothing is recorded', () => {
+  it('rolls back COMPLETELY when a migration fails — nothing is recorded', async () => {
     const dir = resolve(tempDir, 'failing');
     mkdirSync(dir);
     writeFileSync(resolve(dir, '001_ok.sql'), 'CREATE TABLE ok (x INTEGER);');
     // Valid first statement, invalid second — proves the transaction covers the
-    // whole file, not just the first statement.
+    // whole file, not just the first statement. Postgres has transactional DDL,
+    // so the CREATE is rolled back too.
     writeFileSync(
       resolve(dir, '002_bad.sql'),
       'CREATE TABLE partial (x INTEGER);\nTHIS IS NOT SQL;'
     );
 
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(() => migrate(handle.db, { directory: dir, now: CLOCK }))
-      .toThrow(/migration 2 failed/i);
+    const db = freshDb();
+    await expect(migrate(db, { directory: dir, now: CLOCK }))
+      .rejects.toThrow(/migration 2 failed/i);
 
-    const tables = (handle.db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
-      .all() as { name: string }[]).map((row) => row.name);
-
-    expect(tables).toContain('ok');          // migration 1 stands
-    expect(tables).not.toContain('partial'); // migration 2 fully rolled back
-    expect(getAppliedMigrations(handle.db).map((m) => m.version)).toEqual([1]);
-    handle.close();
+    await expect(db.query('SELECT * FROM ok')).resolves.toBeDefined();          // 1 stands
+    await expect(db.query('SELECT * FROM partial')).rejects.toBeDefined();      // 2 undone
+    expect((await getAppliedMigrations(db)).map((m) => m.version)).toEqual([1]);
   });
 
-  it('failure messages carry the migration NUMBER but no SQL values', () => {
+  it('failure messages carry the migration NUMBER but no SQL values', async () => {
     const dir = resolve(tempDir, 'failing2');
     mkdirSync(dir);
     writeFileSync(resolve(dir, '001_bad.sql'), "INSERT INTO nope VALUES ('SECRET-VALUE');");
 
-    const handle = openDatabase({ databasePath: ':memory:' });
+    // The full error is logged privately; only the sanitized one is thrown.
+    const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const db = freshDb();
     try {
-      migrate(handle.db, { directory: dir, now: CLOCK });
+      await migrate(db, { directory: dir, now: CLOCK });
       throw new Error('expected failure');
     } catch (err) {
       const message = (err as Error).message;
       expect(message).toMatch(/migration 1 failed/i);
+      // Driver messages are not a controlled surface — some echo the whole
+      // failing statement, values and all.
       expect(message).not.toContain('SECRET-VALUE');
+      expect(message).not.toContain('INSERT');
+    } finally {
+      logged.mockRestore();
     }
-    handle.close();
   });
 
-  it('applies pending migrations on an already-migrated database', () => {
+  it('applies pending migrations on an already-migrated database', async () => {
     const dir = resolve(tempDir, 'incremental');
     mkdirSync(dir);
     writeFileSync(resolve(dir, '001_a.sql'), 'CREATE TABLE a (x INTEGER);');
 
-    const handle = openDatabase({ databasePath: ':memory:' });
-    expect(migrate(handle.db, { directory: dir, now: CLOCK })).toEqual([1]);
+    const db = freshDb();
+    expect(await migrate(db, { directory: dir, now: CLOCK })).toEqual([1]);
 
     writeFileSync(resolve(dir, '002_b.sql'), 'CREATE TABLE b (x INTEGER);');
-    expect(migrate(handle.db, { directory: dir, now: CLOCK })).toEqual([2]);
-    expect(getAppliedMigrations(handle.db).map((m) => m.version)).toEqual([1, 2]);
-    handle.close();
+    expect(await migrate(db, { directory: dir, now: CLOCK })).toEqual([2]);
+    expect((await getAppliedMigrations(db)).map((m) => m.version)).toEqual([1, 2]);
   });
 });
 
 describe('the migration SQL itself', () => {
   it('contains no interpolation placeholders and is committed as .sql', () => {
     const sql = readFileSync(resolve(migrationsDirectory(), '001_interview_sessions.sql'), 'utf8');
-    expect(sql).toContain('CREATE TABLE interview_sessions');
+    expect(sql).toContain('CREATE TABLE');
+    expect(sql).toContain('interview_sessions');
     expect(sql).toContain('ON DELETE CASCADE');
     expect(sql).not.toContain('${');
+  });
+
+  it('uses BIGINT for every epoch-millis column', () => {
+    // Postgres INTEGER is 32-bit and silently too small for epoch millis
+    // (~1.7e12). Every timestamp column must be BIGINT.
+    const sql = readFileSync(resolve(migrationsDirectory(), '001_interview_sessions.sql'), 'utf8');
+    for (const column of ['created_at', 'expires_at', 'submitted_at', 'updated_at']) {
+      const declaration = new RegExp(`${column}\\s+(\\w+)`, 'i').exec(sql);
+      expect(declaration?.[1]?.toUpperCase()).toBe('BIGINT');
+    }
   });
 });

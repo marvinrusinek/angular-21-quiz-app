@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { DatabaseHandle, Queryable } from './database';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -83,23 +83,32 @@ export function listMigrationFiles(directory = migrationsDirectory()): readonly 
   return files;
 }
 
-function ensureVersionTable(db: Database.Database): void {
-  db.exec(`
+async function ensureVersionTable(db: Queryable): Promise<void> {
+  // applied_at is epoch MILLISECONDS, so BIGINT — Postgres INTEGER is 32-bit
+  // and would overflow.
+  await db.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version    INTEGER PRIMARY KEY,
-      name       TEXT    NOT NULL,
-      applied_at INTEGER NOT NULL
+      name       TEXT   NOT NULL,
+      applied_at BIGINT NOT NULL
     );
   `);
 }
 
-export function getAppliedMigrations(db: Database.Database): readonly AppliedMigration[] {
-  ensureVersionTable(db);
-  const rows = db
-    .prepare('SELECT version, name, applied_at FROM schema_migrations ORDER BY version')
-    .all() as { version: number; name: string; applied_at: number }[];
+export async function getAppliedMigrations(db: DatabaseHandle): Promise<readonly AppliedMigration[]> {
+  await ensureVersionTable(db);
+  const { rows } = await db.query<{ version: number; name: string; applied_at: string | number }>(
+    'SELECT version, name, applied_at FROM schema_migrations ORDER BY version'
+  );
 
-  return rows.map((row) => ({ version: row.version, name: row.name, appliedAt: row.applied_at }));
+  // pg returns BIGINT as a STRING to avoid precision loss. Every timestamp here
+  // is epoch ms, which is well inside Number.MAX_SAFE_INTEGER, so converting is
+  // safe — and callers expect a number.
+  return rows.map((row) => ({
+    version: Number(row.version),
+    name: row.name,
+    appliedAt: Number(row.applied_at)
+  }));
 }
 
 export interface MigrateOptions {
@@ -112,14 +121,17 @@ export interface MigrateOptions {
  * Apply every pending migration in order. Returns the versions applied by THIS
  * call, so a second run reports an empty list rather than redoing work.
  */
-export function migrate(db: Database.Database, options: MigrateOptions = {}): readonly number[] {
+export async function migrate(
+  db: DatabaseHandle,
+  options: MigrateOptions = {}
+): Promise<readonly number[]> {
   const directory = options.directory ?? migrationsDirectory();
   const now = options.now ?? (() => Date.now());
 
-  ensureVersionTable(db);
-
+  // getAppliedMigrations ensures the bookkeeping table itself, so there is no
+  // separate ensure call here.
   const files = listMigrationFiles(directory);
-  const applied = new Set(getAppliedMigrations(db).map((migration) => migration.version));
+  const applied = new Set((await getAppliedMigrations(db)).map((migration) => migration.version));
   const performed: number[] = [];
 
   for (const file of files) {
@@ -134,18 +146,27 @@ export function migrate(db: Database.Database, options: MigrateOptions = {}): re
 
     // Schema change + bookkeeping in ONE transaction: a failure rolls back
     // both, so a partially applied migration can never be recorded as applied.
-    const run = db.transaction(() => {
-      db.exec(sql);
-      db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
-        .run(file.version, file.name, now());
-    });
-
+    // Postgres supports transactional DDL, so this holds for CREATE TABLE too.
     try {
-      run();
+      await db.transaction(async (client) => {
+        await client.query(sql);
+        await client.query(
+          'INSERT INTO schema_migrations (version, name, applied_at) VALUES ($1, $2, $3)',
+          [file.version, file.name, now()]
+        );
+      });
     } catch (err: unknown) {
-      // Report the migration NUMBER and a category — never the SQL or values.
-      const detail = err instanceof Error ? err.message : 'unknown error';
-      throw new MigrationError(`Migration ${file.version} failed: ${detail}`);
+      // Report the migration NUMBER and the SQLSTATE — never the driver's
+      // message. Driver messages are not a controlled surface: some drivers
+      // (and pg-mem) echo the whole failing statement, literal values included,
+      // and a migration's values can be anything the schema carries.
+      //
+      // The full error still goes to the server's own log, which is private.
+      console.error(`[migrate] migration ${file.version} failed:`, err);
+
+      const sqlState = (err as { code?: unknown } | null)?.code;
+      const code = typeof sqlState === 'string' && sqlState.length > 0 ? sqlState : 'unknown';
+      throw new MigrationError(`Migration ${file.version} failed (SQLSTATE ${code})`);
     }
 
     performed.push(file.version);
@@ -155,9 +176,12 @@ export function migrate(db: Database.Database, options: MigrateOptions = {}): re
 }
 
 /** Convenience for startup: migrate or fail with a safe message. */
-export function migrateOrThrow(db: Database.Database, options: MigrateOptions = {}): readonly number[] {
+export async function migrateOrThrow(
+  db: DatabaseHandle,
+  options: MigrateOptions = {}
+): Promise<readonly number[]> {
   try {
-    return migrate(db, options);
+    return await migrate(db, options);
   } catch (err: unknown) {
     if (err instanceof MigrationError) throw err;
     throw new DatabaseError('Database migration failed');

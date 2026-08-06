@@ -1,6 +1,6 @@
 import { createApp } from './app';
 import { ConfigError, loadConfig, type AppConfig } from './config';
-import { createQuizRepository, describeBank, type QuizRepository } from './quiz/quiz.repository';
+import { createQuizRepositoryFromDatabase, describeBank, type QuizRepository } from './quiz/quiz.repository';
 import { openDatabase, type DatabaseHandle } from './db/database';
 import { migrate } from './db/migrate';
 import { createSessionRepository } from './interview/session.repository';
@@ -23,16 +23,20 @@ import { InterviewSessionService } from './interview/session.service';
  * serve is worse than one that never started, and this process holds the
  * answer key.
  */
-function main(): void {
+async function main(): Promise<void> {
   const config = loadConfigOrExit();
-  const quizRepository = loadQuizRepositoryOrExit(config);
+
+  // ORDER MATTERS: the quiz bank now lives in PostgreSQL, so the database must
+  // be open and migrated before the bank can be read. It is no longer loaded
+  // from a file, and there is no fallback to one.
+  const database = openDatabaseOrExit(config);
+  await runMigrationsOrExit(database, config);
+
+  const quizRepository = await loadQuizRepositoryOrExit(database, config);
   console.log(`[quiz] ${describeBank(quizRepository.stats)}`);
 
-  const database = openDatabaseOrExit(config);
-  runMigrationsOrExit(database, config);
-
   // Constructed here so route code never touches database lifecycle.
-  const sessionRepository = createSessionRepository(database.db);
+  const sessionRepository = createSessionRepository(database);
   const interviewSessionService = new InterviewSessionService({
     quizRepository,
     sessionRepository,
@@ -72,10 +76,22 @@ function loadConfigOrExit(): AppConfig {
   }
 }
 
-function loadQuizRepositoryOrExit(config: AppConfig): QuizRepository {
+/**
+ * Load the bank from PostgreSQL. FAILS CLOSED.
+ *
+ * An empty or unreadable bank exits before listening. There is no fallback to
+ * `data/quiz.json`: a server that silently served a stale file would defeat the
+ * point of making the database authoritative, and in production that file is
+ * not supposed to exist at all.
+ */
+async function loadQuizRepositoryOrExit(
+  database: DatabaseHandle,
+  config: AppConfig
+): Promise<QuizRepository> {
   try {
-    return createQuizRepository({ dataPath: config.quizDataPath });
+    return await createQuizRepositoryFromDatabase(database);
   } catch (err: unknown) {
+    await database.close();
     console.error(safeStartupMessage('quiz', 'quiz data failed to load', err, config));
     process.exit(1);
   }
@@ -83,16 +99,16 @@ function loadQuizRepositoryOrExit(config: AppConfig): QuizRepository {
 
 function openDatabaseOrExit(config: AppConfig): DatabaseHandle {
   try {
-    return openDatabase({ databasePath: config.databasePath });
+    return openDatabase({ databaseUrl: config.databaseUrl });
   } catch (err: unknown) {
     console.error(safeStartupMessage('db', 'database could not be opened', err, config));
     process.exit(1);
   }
 }
 
-function runMigrationsOrExit(database: DatabaseHandle, config: AppConfig): void {
+async function runMigrationsOrExit(database: DatabaseHandle, config: AppConfig): Promise<void> {
   try {
-    const applied = migrate(database.db);
+    const applied = await migrate(database);
     console.log(
       applied.length === 0
         ? '[db] schema up to date'

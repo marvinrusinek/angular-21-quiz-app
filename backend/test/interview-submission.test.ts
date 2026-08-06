@@ -1,11 +1,9 @@
 import request from 'supertest';
 import type { Express } from 'express';
-import { resolve } from 'node:path';
 
 import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
-import { openDatabase, type DatabaseHandle } from '../src/db/database';
-import { migrate } from '../src/db/migrate';
+import { type DatabaseHandle } from '../src/db/database';
 import { createSessionRepository, type SessionRepository } from '../src/interview/session.repository';
 import { InterviewSessionService } from '../src/interview/session.service';
 import { seededRandomSource } from '../src/interview/assessment.random';
@@ -13,7 +11,7 @@ import { computeTimeUsedSeconds, isSelectionCorrect, scoreInterview } from '../s
 import { assertResultInvariants, FrozenResultError, parseFrozenResult } from '../src/interview/result.types';
 import type { SessionQuestionSnapshot } from '../src/interview/session.types';
 import { realRepository } from './helpers/fixtures';
-import { makeTempDir, removeTempDir } from './helpers/db';
+import { memoryDb } from './helpers/db';
 
 let clock = 1_700_000_000_000;
 let handle: DatabaseHandle;
@@ -33,11 +31,11 @@ function buildApp(repo: SessionRepository): Express {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   clock = 1_700_000_000_000;
-  handle = openDatabase({ databasePath: ':memory:' });
-  migrate(handle.db);
-  sessions = createSessionRepository(handle.db);
+  const ctx = await memoryDb();
+  handle = ctx.handle;
+  sessions = ctx.repo;
   app = buildApp(sessions);
 });
 afterEach(() => handle.close());
@@ -70,13 +68,13 @@ const getResult = (s: Created, token = s.token) =>
   request(app).get(`/api/interview-sessions/${s.id}/result`).set('Authorization', `Bearer ${token}`);
 
 /** The frozen answer key — read from the SESSION snapshot, never the response. */
-function correctIdsFor(sessionId: string, questionId: string): number[] {
-  const snapshot = sessions.getSessionSnapshot(sessionId)!;
+async function correctIdsFor(sessionId: string, questionId: string): Promise<number[]> {
+  const snapshot = (await sessions.getSessionSnapshot(sessionId))!;
   const question = snapshot.questions.find((q) => q.questionId === questionId)!;
   return question.options.filter((o) => o.isCorrect).map((o) => o.optionId);
 }
-function wrongIdFor(sessionId: string, questionId: string): number {
-  const snapshot = sessions.getSessionSnapshot(sessionId)!;
+async function wrongIdFor(sessionId: string, questionId: string): Promise<number> {
+  const snapshot = (await sessions.getSessionSnapshot(sessionId))!;
   const question = snapshot.questions.find((q) => q.questionId === questionId)!;
   return question.options.find((o) => !o.isCorrect)!.optionId;
 }
@@ -235,7 +233,7 @@ describe('submission', () => {
   it('finalizes an active session before the deadline', async () => {
     const session = await createSession();
     const q0 = session.questions[0]!;
-    await save(session, q0.questionId, correctIdsFor(session.id, q0.questionId));
+    await save(session, q0.questionId, await correctIdsFor(session.id, q0.questionId));
 
     clock += 120_000;
     const res = await submit(session);
@@ -252,8 +250,8 @@ describe('submission', () => {
   it('scores a mixture of correct, incorrect and unanswered', async () => {
     const session = await createSession();
     const [q0, q1] = session.questions;
-    await save(session, q0!.questionId, correctIdsFor(session.id, q0!.questionId));
-    await save(session, q1!.questionId, [wrongIdFor(session.id, q1!.questionId)]);
+    await save(session, q0!.questionId, await correctIdsFor(session.id, q0!.questionId));
+    await save(session, q1!.questionId, [await wrongIdFor(session.id, q1!.questionId)]);
 
     const res = await submit(session);
     expect(res.body).toMatchObject({ total: 10, answered: 2, unanswered: 8, correct: 1, incorrect: 1 });
@@ -269,7 +267,7 @@ describe('submission', () => {
   it('submits with ALL answers correct', async () => {
     const session = await createSession();
     for (const question of session.questions) {
-      await save(session, question.questionId, correctIdsFor(session.id, question.questionId));
+      await save(session, question.questionId, await correctIdsFor(session.id, question.questionId));
     }
     const res = await submit(session);
     expect(res.body.percentage).toBe(100);
@@ -287,22 +285,22 @@ describe('submission', () => {
   it('finalizes a session already marked EXPIRED by a failed answer save', async () => {
     const session = await createSession();
     const q0 = session.questions[0]!;
-    await save(session, q0.questionId, correctIdsFor(session.id, q0.questionId));
+    await save(session, q0.questionId, await correctIdsFor(session.id, q0.questionId));
 
     clock += 900_001;
-    await save(session, q0.questionId, [wrongIdFor(session.id, q0.questionId)]);   // marks expired
-    expect(sessions.getSessionById(session.id)!.status).toBe('expired');
+    await save(session, q0.questionId, [await wrongIdFor(session.id, q0.questionId)]);   // marks expired
+    expect((await sessions.getSessionById(session.id))!.status).toBe('expired');
 
     const res = await submit(session);
     expect(res.status).toBe(200);
     expect(res.body.submittedByExpiry).toBe(true);
     expect(res.body.correct).toBe(1);   // the last SAVED answer counted
-    expect(sessions.getSessionById(session.id)!.status).toBe('submitted');
+    expect((await sessions.getSessionById(session.id))!.status).toBe('submitted');
   });
 
   it('is IDEMPOTENT — repeated submits return the identical result', async () => {
     const session = await createSession();
-    await save(session, session.questions[0]!.questionId, correctIdsFor(session.id, session.questions[0]!.questionId));
+    await save(session, session.questions[0]!.questionId, await correctIdsFor(session.id, session.questions[0]!.questionId));
 
     const first = await submit(session);
     clock += 60_000;              // time moves on; the frozen result must not
@@ -320,11 +318,13 @@ describe('submission', () => {
     expect(b.status).toBe(200);
     expect(a.body).toEqual(b.body);
 
-    const row = handle.db
-      .prepare('SELECT status, submitted_at FROM interview_sessions WHERE id = ?')
-      .get(session.id) as { status: string; submitted_at: number };
-    expect(row.status).toBe('submitted');
-    expect(row.submitted_at).toBe(clock);
+    const { rows } = await handle.query<{ status: string; submitted_at: string | number }>(
+      'SELECT status, submitted_at FROM interview_sessions WHERE id = $1',
+      [session.id]
+    );
+    expect(rows[0]!['status']).toBe('submitted');
+    // submitted_at is BIGINT, which pg returns as a string.
+    expect(Number(rows[0]!['submitted_at'])).toBe(clock);
   });
 
   it('rejects a submit body carrying any field', async () => {
@@ -361,14 +361,14 @@ describe('answers are locked after submission', () => {
   it('rejects a post-submission answer write with 409 and changes nothing', async () => {
     const session = await createSession();
     const q0 = session.questions[0]!;
-    const original = correctIdsFor(session.id, q0.questionId);
+    const original = await correctIdsFor(session.id, q0.questionId);
     await save(session, q0.questionId, original);
     await submit(session);
 
-    const res = await save(session, q0.questionId, [wrongIdFor(session.id, q0.questionId)]);
+    const res = await save(session, q0.questionId, [await wrongIdFor(session.id, q0.questionId)]);
     expect(res.status).toBe(409);
 
-    const stored = sessions.getAnswers(session.id);
+    const stored = await sessions.getAnswers(session.id);
     expect(stored[0]!.selectedOptionIds).toEqual([...original].sort((a, b) => a - b));
   });
 
@@ -405,13 +405,13 @@ describe('GET /result', () => {
 
   it('FINALIZES an expired-but-unfinalized session (documented decision)', async () => {
     const session = await createSession();
-    await save(session, session.questions[0]!.questionId, correctIdsFor(session.id, session.questions[0]!.questionId));
+    await save(session, session.questions[0]!.questionId, await correctIdsFor(session.id, session.questions[0]!.questionId));
     clock += 900_001;
 
     const res = await getResult(session);
     expect(res.status).toBe(200);
     expect(res.body.submittedByExpiry).toBe(true);
-    expect(sessions.getSessionById(session.id)!.status).toBe('submitted');
+    expect((await sessions.getSessionById(session.id))!.status).toBe('submitted');
 
     // …and remains stable afterwards.
     expect((await getResult(session)).body).toEqual(res.body);
@@ -490,51 +490,39 @@ describe('response security', () => {
 });
 
 describe('frozen result integrity', () => {
-  it('survives restart and a CHANGED quiz bank', async () => {
-    const dir = makeTempDir();
-    try {
-      const path = resolve(dir, 'result.db');
-      const first = openDatabase({ databasePath: path });
-      migrate(first.db);
-      app = buildApp(createSessionRepository(first.db));
+  it('survives a rebuilt app and a CHANGED quiz bank', async () => {
+    // Under SQLite this closed and reopened a FILE. The database is a server
+    // now, so what still matters is that the frozen result is read from storage
+    // rather than regenerated: the app and repository are rebuilt from scratch
+    // over the same database, as they would be after a redeploy.
+    const session = await createSession();
+    const q0 = session.questions[0]!;
+    const correct = (await sessions.getSessionSnapshot(session.id))!.questions
+      .find((q) => q.questionId === q0.questionId)!
+      .options.filter((o) => o.isCorrect).map((o) => o.optionId);
 
-      const session = await createSession();
-      const local = createSessionRepository(first.db);
-      const q0 = session.questions[0]!;
-      const correct = local.getSessionSnapshot(session.id)!.questions
-        .find((q) => q.questionId === q0.questionId)!
-        .options.filter((o) => o.isCorrect).map((o) => o.optionId);
+    await request(app).put(`/api/interview-sessions/${session.id}/answers/${q0.questionId}`)
+      .set('Authorization', `Bearer ${session.token}`)
+      .send({ selectedOptionIds: correct });
 
-      await request(app).put(`/api/interview-sessions/${session.id}/answers/${q0.questionId}`)
-        .set('Authorization', `Bearer ${session.token}`)
-        .send({ selectedOptionIds: correct });
+    const submitted = await submit(session);
 
-      const submitted = await submit(session);
-      first.close();
+    app = buildApp(createSessionRepository(handle));
 
-      // Reopen with a DIFFERENT quiz repository — as if quiz.json changed.
-      const second = openDatabase({ databasePath: path });
-      migrate(second.db);
-      app = buildApp(createSessionRepository(second.db));
-
-      const fetched = await getResult(session);
-      expect(fetched.status).toBe(200);
-      // Byte-for-byte identical: totals, review, options, explanations, order.
-      expect(fetched.body).toEqual(submitted.body);
-      second.close();
-    } finally {
-      removeTempDir(dir);
-    }
+    const fetched = await getResult(session);
+    expect(fetched.status).toBe(200);
+    // Byte-for-byte identical: totals, review, options, explanations, order.
+    expect(fetched.body).toEqual(submitted.body);
   });
 
   it('tampering with a saved answer AFTER submission does not change the result', async () => {
     const session = await createSession();
     const q0 = session.questions[0]!;
-    await save(session, q0.questionId, correctIdsFor(session.id, q0.questionId));
+    await save(session, q0.questionId, await correctIdsFor(session.id, q0.questionId));
     const submitted = await submit(session);
 
     // Direct database tampering — the frozen result must ignore it.
-    handle.db.prepare('UPDATE session_answers SET selected_option_ids = ?').run('[999999]');
+    await handle.query('UPDATE session_answers SET selected_option_ids = $1', ['[999999]']);
     expect((await getResult(session)).body).toEqual(submitted.body);
   });
 
@@ -542,8 +530,10 @@ describe('frozen result integrity', () => {
     const session = await createSession();
     await submit(session);
 
-    handle.db.prepare('UPDATE interview_sessions SET result_json = ? WHERE id = ?')
-      .run('{ not json', session.id);
+    await handle.query(
+      'UPDATE interview_sessions SET result_json = $1 WHERE id = $2',
+      ['{ not json', session.id]
+    );
 
     const res = await getResult(session);
     expect(res.status).toBe(500);
@@ -600,7 +590,7 @@ describe('result response contains no internal fields', () => {
   it.each(['submit', 'result'])('%s response carries no internal field', async (route) => {
     const session = await createSession();
     const q0 = session.questions[0]!;
-    await save(session, q0.questionId, correctIdsFor(session.id, q0.questionId));
+    await save(session, q0.questionId, await correctIdsFor(session.id, q0.questionId));
 
     const res = route === 'submit' ? await submit(session) : (await submit(session), await getResult(session));
     expect(res.status).toBe(200);

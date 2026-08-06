@@ -1,8 +1,3 @@
-import { resolve } from 'node:path';
-
-import { openDatabase } from '../src/db/database';
-import { migrate } from '../src/db/migrate';
-import { createSessionRepository } from '../src/interview/session.repository';
 import {
   buildInterviewAssessment,
   validateBuildRequest
@@ -11,7 +6,7 @@ import { seededRandomSource } from '../src/interview/assessment.random';
 import type { CreateSessionInput } from '../src/interview/session.types';
 import type { GeneratedInterviewSnapshot } from '../src/interview/assessment.types';
 import { realRepository } from './helpers/fixtures';
-import { makeTempDir, memoryDb, removeTempDir, type TestDb } from './helpers/db';
+import { memoryDb, reopen, type TestDb } from './helpers/db';
 
 /**
  * Internal integration: builder output → session repository → read back.
@@ -71,15 +66,15 @@ function build(seed = 99): GeneratedInterviewSnapshot {
 }
 
 let ctx: TestDb;
-beforeEach(() => { ctx = memoryDb(); });
+beforeEach(async () => { ctx = await memoryDb(); });
 afterEach(() => ctx.handle.close());
 
 describe('builder output persists faithfully', () => {
-  it('stores and reads back the assessment unchanged', () => {
+  it('stores and reads back the assessment unchanged', async () => {
     const snapshot = build();
-    ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
+    await ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
 
-    const stored = ctx.repo.getSessionSnapshot('sess_build_1')!;
+    const stored = (await ctx.repo.getSessionSnapshot('sess_build_1'))!;
     expect(stored.questions).toHaveLength(20);
 
     for (const [index, generated] of snapshot.questions.entries()) {
@@ -104,19 +99,19 @@ describe('builder output persists faithfully', () => {
     }
   });
 
-  it('preserves the generated QUESTION order, not source order', () => {
+  it('preserves the generated QUESTION order, not source order', async () => {
     const snapshot = build(1234);
-    ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
-    const stored = ctx.repo.getSessionSnapshot('sess_build_1')!;
+    await ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
+    const stored = (await ctx.repo.getSessionSnapshot('sess_build_1'))!;
 
     expect(stored.questions.map((q) => q.questionId))
       .toEqual(snapshot.questions.map((q) => q.questionId));
   });
 
-  it('keeps the config and duration the builder derived', () => {
+  it('keeps the config and duration the builder derived', async () => {
     const snapshot = build();
-    ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
-    const stored = ctx.repo.getSessionById('sess_build_1')!;
+    await ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
+    const stored = (await ctx.repo.getSessionById('sess_build_1'))!;
 
     expect(stored.durationSeconds).toBe(1800);
     expect(stored.config.questionCount).toBe(20);
@@ -124,7 +119,7 @@ describe('builder output persists faithfully', () => {
     expect(stored.config.difficulty).toBe('mixed');
   });
 
-  it('an assessment containing the same option id in two questions persists fine', () => {
+  it('an assessment containing the same option id in two questions persists fine', async () => {
     const snapshot = build(77);
     const idCounts = new Map<number, number>();
     for (const question of snapshot.questions) {
@@ -135,51 +130,43 @@ describe('builder output persists faithfully', () => {
     // Option ids repeat across questions by construction — that is the point.
     expect([...idCounts.values()].some((count) => count > 1)).toBe(true);
 
-    expect(() => ctx.repo.createSessionSnapshot(toCreateInput(snapshot))).not.toThrow();
+    await expect(ctx.repo.createSessionSnapshot(toCreateInput(snapshot))).resolves.toBeDefined();
   });
 
-  it('survives a real close/reopen with the frozen snapshot intact', () => {
-    const dir = makeTempDir();
-    try {
-      const path = resolve(dir, 'built.db');
-      const snapshot = build(555);
+  it('survives a fresh connection with the frozen snapshot intact', async () => {
+    // Under SQLite this closed and reopened a FILE. The database is a server
+    // now, so the equivalent question is whether anything was being served out
+    // of process memory: a brand-new handle and repository over the same
+    // database must see the identical snapshot.
+    const snapshot = build(555);
+    await ctx.repo.createSessionSnapshot(toCreateInput(snapshot));
 
-      const first = openDatabase({ databasePath: path });
-      migrate(first.db);
-      createSessionRepository(first.db).createSessionSnapshot(toCreateInput(snapshot));
-      first.close();
+    const fresh = reopen(ctx.handle);
+    const stored = (await fresh.repo.getSessionSnapshot('sess_build_1'))!;
 
-      const second = openDatabase({ databasePath: path });
-      migrate(second.db);
-      const stored = createSessionRepository(second.db).getSessionSnapshot('sess_build_1')!;
-
-      expect(stored.questions.map((q) => q.questionId))
-        .toEqual(snapshot.questions.map((q) => q.questionId));
-      expect(stored.questions[0]!.options.map((o) => o.displayOrder))
-        .toEqual(snapshot.questions[0]!.options.map((o) => o.displayOrder));
-      second.close();
-    } finally {
-      removeTempDir(dir);
-    }
+    expect(stored.questions.map((q) => q.questionId))
+      .toEqual(snapshot.questions.map((q) => q.questionId));
+    expect(stored.questions[0]!.options.map((o) => o.displayOrder))
+      .toEqual(snapshot.questions[0]!.options.map((o) => o.displayOrder));
   });
 
-  it('two builds of the same config persist as independent sessions', () => {
+  it('two builds of the same config persist as independent sessions', async () => {
     const first = build(1);
     const second = build(2);
 
-    ctx.repo.createSessionSnapshot(toCreateInput(first));
-    ctx.repo.createSessionSnapshot(
+    await ctx.repo.createSessionSnapshot(toCreateInput(first));
+    await ctx.repo.createSessionSnapshot(
       toCreateInput(second, { id: 'sess_build_2', attemptId: 'att_build_2' })
     );
 
-    const a = ctx.repo.getSessionSnapshot('sess_build_1')!;
-    const b = ctx.repo.getSessionSnapshot('sess_build_2')!;
+    const a = (await ctx.repo.getSessionSnapshot('sess_build_1'))!;
+    const b = (await ctx.repo.getSessionSnapshot('sess_build_2'))!;
     expect(a.questions.map((q) => q.questionId)).not.toEqual(b.questions.map((q) => q.questionId));
   });
 });
 
 describe('the builder does not leak into HTTP', () => {
-  it('generated snapshots carry correctness — which is why they stay backend-side', () => {
+  it('generated snapshots carry correctness — which is why they stay backend-side', async () => {
     const snapshot = build();
     const serialized = JSON.stringify(snapshot);
     // A blunt reminder of the stakes: this object MUST NOT be returned by any

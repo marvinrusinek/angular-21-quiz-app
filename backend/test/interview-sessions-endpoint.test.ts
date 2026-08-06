@@ -3,13 +3,13 @@ import type { Express } from 'express';
 
 import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
-import { openDatabase, type DatabaseHandle } from '../src/db/database';
-import { migrate } from '../src/db/migrate';
-import { createSessionRepository, type SessionRepository } from '../src/interview/session.repository';
+import { type DatabaseHandle } from '../src/db/database';
+import { type SessionRepository } from '../src/interview/session.repository';
 import { InterviewSessionService } from '../src/interview/session.service';
 import { hashToken, extractBearerToken, isWellFormedToken, tokenMatches } from '../src/interview/session.token';
 import { seededRandomSource } from '../src/interview/assessment.random';
 import { realRepository } from './helpers/fixtures';
+import { memoryDb } from './helpers/db';
 
 /** Mutable test clock — expiry is driven deliberately, never by wall time. */
 let clock = 1_700_000_000_000;
@@ -17,11 +17,11 @@ let handle: DatabaseHandle;
 let sessions: SessionRepository;
 let app: Express;
 
-beforeEach(() => {
+beforeEach(async () => {
   clock = 1_700_000_000_000;
-  handle = openDatabase({ databasePath: ':memory:' });
-  migrate(handle.db);
-  sessions = createSessionRepository(handle.db);
+  const ctx = await memoryDb();
+  handle = ctx.handle;
+  sessions = ctx.repo;
 
   const service = new InterviewSessionService({
     quizRepository: realRepository(),
@@ -86,15 +86,17 @@ describe('POST /api/interview-sessions — custom', () => {
     const res = await create();
     const raw = res.body.sessionToken as string;
 
-    const stored = handle.db
-      .prepare('SELECT token_hash FROM interview_sessions WHERE id = ?')
-      .get(res.body.sessionId) as { token_hash: string };
+    const { rows } = await handle.query<{ token_hash: string }>(
+      'SELECT token_hash FROM interview_sessions WHERE id = $1',
+      [res.body.sessionId]
+    );
+    const storedHash = rows[0]!['token_hash'];
 
-    expect(stored.token_hash).toBe(hashToken(raw));
-    expect(stored.token_hash).not.toBe(raw);
+    expect(storedHash).toBe(hashToken(raw));
+    expect(storedHash).not.toBe(raw);
 
-    // The raw token appears nowhere in the database file.
-    const dump = JSON.stringify(handle.db.prepare('SELECT * FROM interview_sessions').all());
+    // The raw token appears nowhere in the stored session row.
+    const dump = JSON.stringify((await handle.query('SELECT * FROM interview_sessions')).rows);
     expect(dump).not.toContain(raw);
   });
 
@@ -408,12 +410,12 @@ describe('expiry', () => {
     expect(res.body.error.code).toBe('SESSION_EXPIRED');
     expect(res.text).not.toContain('questionText');
 
-    expect(sessions.getSessionById(created.body.sessionId)!.status).toBe('expired');
+    expect((await sessions.getSessionById(created.body.sessionId))!.status).toBe('expired');
   });
 
   it('does not trust a stored "active" past its deadline', async () => {
     const created = await create();
-    expect(sessions.getSessionById(created.body.sessionId)!.status).toBe('active');
+    expect((await sessions.getSessionById(created.body.sessionId))!.status).toBe('active');
     clock += 10_000_000;
 
     const res = await request(app)
@@ -424,9 +426,10 @@ describe('expiry', () => {
 
   it('a SUBMITTED session is not served through the active route', async () => {
     const created = await create();
-    handle.db.prepare(
-      `UPDATE interview_sessions SET status = 'submitted', submitted_at = ? WHERE id = ?`
-    ).run(clock, created.body.sessionId);
+    await handle.query(
+      `UPDATE interview_sessions SET status = 'submitted', submitted_at = $1 WHERE id = $2`,
+      [clock, created.body.sessionId]
+    );
 
     const res = await request(app)
       .get(`/api/interview-sessions/${created.body.sessionId}`)
@@ -499,7 +502,7 @@ describe('route surface', () => {
 describe('persistence integrity', () => {
   it('the stored snapshot matches what was returned', async () => {
     const res = await create();
-    const stored = sessions.getSessionSnapshot(res.body.sessionId)!;
+    const stored = (await sessions.getSessionSnapshot(res.body.sessionId))!;
 
     expect(stored.questions).toHaveLength(10);
     expect(stored.questions.map((q) => q.questionId))
@@ -510,7 +513,11 @@ describe('persistence integrity', () => {
 
   it('a failed creation leaves nothing behind', async () => {
     await create({ ...CUSTOM, topicIds: ['nope'] });
-    expect(handle.db.prepare('SELECT COUNT(*) AS n FROM interview_sessions').get()).toEqual({ n: 0 });
-    expect(handle.db.prepare('SELECT COUNT(*) AS n FROM session_questions').get()).toEqual({ n: 0 });
+    for (const table of ['interview_sessions', 'session_questions']) {
+      const { rows } = await handle.query<{ n: number }>(
+        `SELECT COUNT(*)::int AS n FROM ${table}`
+      );
+      expect(Number(rows[0]!['n'])).toBe(0);
+    }
   });
 });

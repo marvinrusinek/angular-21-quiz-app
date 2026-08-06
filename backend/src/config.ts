@@ -17,8 +17,13 @@ export interface AppConfig {
   readonly allowedOrigins: readonly string[];
   /** Private quiz bank. MUST NOT live under any statically served directory. */
   readonly quizDataPath: string;
-  /** SQLite file for assessment sessions (used from Stage 4). */
-  readonly databasePath: string;
+  /**
+   * Postgres connection string for assessment sessions.
+   *
+   * REQUIRED in production and validated at startup: a server that boots
+   * without a database would accept interviews it cannot store.
+   */
+  readonly databaseUrl: string;
 }
 
 export class ConfigError extends Error {
@@ -95,6 +100,24 @@ function parseAllowedOrigins(raw: string | undefined, isProduction: boolean): re
   return entries;
 }
 
+/**
+ * The connection string is REQUIRED in production. In development it may be
+ * omitted, and the server then fails when it tries to connect rather than
+ * pretending to be configured.
+ */
+function parseDatabaseUrl(raw: string | undefined, isProduction: boolean): string {
+  const value = (raw ?? '').trim();
+
+  if (value.length === 0) {
+    if (isProduction) throw new ConfigError('DATABASE_URL is required in production');
+    return '';
+  }
+  if (!/^postgres(ql)?:\/\//i.test(value)) {
+    throw new ConfigError('DATABASE_URL must be a postgres:// connection string');
+  }
+  return value;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const nodeEnv = parseNodeEnv(env['NODE_ENV']);
   const isProduction = nodeEnv === 'production';
@@ -105,6 +128,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: parsePort(env['PORT']),
     allowedOrigins: parseAllowedOrigins(env['ALLOWED_ORIGINS'], isProduction),
     quizDataPath: (env['QUIZ_DATA_PATH'] ?? './data/quiz.json').trim(),
-    databasePath: (env['DATABASE_PATH'] ?? './data/sessions.db').trim()
+    databaseUrl: parseDatabaseUrl(env['DATABASE_URL'], isProduction)
   };
 }

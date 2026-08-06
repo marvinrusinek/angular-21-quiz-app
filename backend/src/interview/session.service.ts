@@ -170,14 +170,14 @@ export class InterviewSessionService {
     this.random = deps.random ?? cryptoRandomSource;
   }
 
-  createSession(request: CreateSessionRequest): ActiveInterviewSessionDto {
+  async createSession(request: CreateSessionRequest): Promise<ActiveInterviewSessionDto> {
     const snapshot = this.resolveAssessment(this.validateRequest(request));
     const createdAt = this.now();
     const expiresAt = createdAt + snapshot.durationSeconds * 1000;
 
-    const session = this.persistWithIdentityRetry(snapshot, createdAt, expiresAt);
+    const session = await this.persistWithIdentityRetry(snapshot, createdAt, expiresAt);
 
-    const stored = this.sessionRepository.getSessionSnapshot(session.sessionId);
+    const stored = await this.sessionRepository.getSessionSnapshot(session.sessionId);
     if (!stored) throw new SessionServiceError('INTERNAL', 'Session could not be read back');
 
     return toActiveSessionDto({
@@ -196,20 +196,20 @@ export class InterviewSessionService {
    * the bearer token matches, so the endpoint cannot be used to probe which
    * question ids exist in a session the caller does not own.
    */
-  saveAnswer(
+  async saveAnswer(
     sessionId: string,
     questionId: string,
     rawToken: string | null,
     body: unknown
-  ): SavedAnswerState {
-    this.authenticate(sessionId, rawToken);
+  ): Promise<SavedAnswerState> {
+    await this.authenticate(sessionId, rawToken);
 
     const selectedOptionIds = parseSelectedOptionIds(body);
 
     try {
       // One transaction: state, expiry, membership and the write. `now` is
       // captured once, inside this call, so the deadline cannot move.
-      return this.sessionRepository.saveAnswer({
+      return await this.sessionRepository.saveAnswer({
         sessionId,
         questionId,
         selectedOptionIds,
@@ -228,12 +228,12 @@ export class InterviewSessionService {
    * Works for active AND already-expired sessions — the client is never
    * required to have submitted at the exact moment the countdown hit zero.
    */
-  submitSession(sessionId: string, rawToken: string | null, body: unknown): InterviewResultDto {
-    this.authenticate(sessionId, rawToken);
+  async submitSession(sessionId: string, rawToken: string | null, body: unknown): Promise<InterviewResultDto> {
+    await this.authenticate(sessionId, rawToken);
     assertEmptySubmitBody(body);
 
     try {
-      const result = this.sessionRepository.finalizeSession({
+      const result = await this.sessionRepository.finalizeSession({
         sessionId,
         now: this.now(),
         topicTitleFor: (topicId) => this.topicTitle(topicId)
@@ -253,16 +253,16 @@ export class InterviewSessionService {
    * The transition is idempotent and produces the same frozen result the submit
    * route would.
    */
-  getResult(sessionId: string, rawToken: string | null): InterviewResultDto {
-    this.authenticate(sessionId, rawToken);
+  async getResult(sessionId: string, rawToken: string | null): Promise<InterviewResultDto> {
+    await this.authenticate(sessionId, rawToken);
 
-    const auth = this.sessionRepository.getSessionAuthenticationRecord(sessionId);
+    const auth = await this.sessionRepository.getSessionAuthenticationRecord(sessionId);
     if (!auth) throw unauthorized();
 
     const now = this.now();
 
     if (auth.status === 'submitted') {
-      const stored = this.sessionRepository.getSubmittedResult(sessionId);
+      const stored = await this.sessionRepository.getSubmittedResult(sessionId);
       if (!stored) throw new SessionServiceError('INTERNAL', 'Result could not be read');
       return toInterviewResultDto(stored);
     }
@@ -274,7 +274,7 @@ export class InterviewSessionService {
     }
 
     try {
-      const result = this.sessionRepository.finalizeSession({
+      const result = await this.sessionRepository.finalizeSession({
         sessionId,
         now,
         topicTitleFor: (topicId) => this.topicTitle(topicId)
@@ -290,19 +290,19 @@ export class InterviewSessionService {
     return this.quizRepository.getQuizById(topicId)?.milestone ?? topicId;
   }
 
-  resumeSession(sessionId: string, rawToken: string | null): ActiveInterviewSessionDto {
+  async resumeSession(sessionId: string, rawToken: string | null): Promise<ActiveInterviewSessionDto> {
     // A single generic failure for missing/malformed/unknown/mismatched, so the
     // response cannot be used to probe which session ids exist.
-    this.authenticate(sessionId, rawToken);
+    await this.authenticate(sessionId, rawToken);
 
-    const auth = this.sessionRepository.getSessionAuthenticationRecord(sessionId);
+    const auth = await this.sessionRepository.getSessionAuthenticationRecord(sessionId);
     if (!auth) throw unauthorized();
 
     const now = this.now();
 
     // Never trust a stored 'active' without checking the deadline.
     if (auth.status === 'active' && auth.expiresAt <= now) {
-      this.sessionRepository.markExpiredIfDue(sessionId, now);
+      await this.sessionRepository.markExpiredIfDue(sessionId, now);
       throw new SessionServiceError('SESSION_EXPIRED', 'This assessment has expired');
     }
     if (auth.status === 'expired') {
@@ -313,13 +313,13 @@ export class InterviewSessionService {
       throw new SessionServiceError('CONFLICT', 'This assessment has already been submitted');
     }
 
-    const stored = this.sessionRepository.getSessionSnapshot(sessionId);
+    const stored = await this.sessionRepository.getSessionSnapshot(sessionId);
     if (!stored) throw unauthorized();
 
     return toActiveSessionDto({
       session: stored.session,
       questions: stored.questions,
-      answers: this.savedAnswers(sessionId, stored.questions),
+      answers: await this.savedAnswers(sessionId, stored.questions),
       now
     });
   }
@@ -329,14 +329,14 @@ export class InterviewSessionService {
    * question position. A cleared answer has no row, so it simply does not
    * appear — the client's own model treats "no entry" as unanswered.
    */
-  private savedAnswers(
+  private async savedAnswers(
     sessionId: string,
     questions: readonly { position: number; questionId: string }[]
-  ): ActiveInterviewAnswerDto[] {
+  ): Promise<ActiveInterviewAnswerDto[]> {
     const questionIdByPosition = new Map(questions.map((q) => [q.position, q.questionId]));
 
-    return this.sessionRepository
-      .getAnswers(sessionId)
+    const answers = await this.sessionRepository.getAnswers(sessionId);
+    return answers
       .filter((answer) => answer.selectedOptionIds.length > 0)
       .sort((a, b) => a.position - b.position)
       .flatMap((answer) => {
@@ -349,9 +349,9 @@ export class InterviewSessionService {
   // ── internals ─────────────────────────────────────────────────────
 
   /** Verify the bearer token. Throws the SAME generic error for every failure. */
-  private authenticate(sessionId: string, rawToken: string | null): void {
+  private async authenticate(sessionId: string, rawToken: string | null): Promise<void> {
     if (!rawToken) throw unauthorized();
-    const auth = this.sessionRepository.getSessionAuthenticationRecord(sessionId);
+    const auth = await this.sessionRepository.getSessionAuthenticationRecord(sessionId);
     if (!auth) throw unauthorized();
     if (!tokenMatches(rawToken, auth.tokenHash)) throw unauthorized();
   }
@@ -451,11 +451,11 @@ export class InterviewSessionService {
    * response is a fresh identity — NOT retrying a validation or integrity
    * failure, which would just fail again.
    */
-  private persistWithIdentityRetry(
+  private async persistWithIdentityRetry(
     snapshot: GeneratedInterviewSnapshot,
     createdAt: number,
     expiresAt: number
-  ): { sessionId: string; rawToken: string } {
+  ): Promise<{ sessionId: string; rawToken: string }> {
     const MAX_ATTEMPTS = 3;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -463,7 +463,7 @@ export class InterviewSessionService {
       const input = this.toCreateInput(snapshot, identity, createdAt, expiresAt);
 
       try {
-        this.sessionRepository.createSessionSnapshot(input);
+        await this.sessionRepository.createSessionSnapshot(input);
         return { sessionId: identity.sessionId, rawToken: identity.rawToken };
       } catch (err: unknown) {
         const collided =

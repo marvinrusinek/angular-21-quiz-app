@@ -8,3 +8,15 @@ coverage/
 *.db-journal
 *.db-wal
 *.db-shm
+
+# ── Private quiz bank ───────────────────────────────────────────────
+# The real question bank and answer key must never be committed. It lives
+# outside this repository and is loaded into PostgreSQL by
+# scripts/import-quiz-bank.ts.
+#
+# `data/quiz.json` is NOT ignored yet: Angular Topic Quizzes still depend on
+# the public asset, so the file is removed at the dedicated removal stage
+# rather than being hidden from git while it is still tracked and shipping.
+private/
+*.private.json
+quiz-bank.real.json

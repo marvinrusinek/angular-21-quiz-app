@@ -1,3 +1,5 @@
+import type { Queryable } from '../db/database';
+import { loadQuizBankFromDatabase } from './quiz.db-source';
 import { readQuizDataFile, type LoadOptions } from './quiz.loader';
 import { validateAndNormalize } from './quiz.validation';
 import type {
@@ -57,6 +59,22 @@ function deepFreeze<T>(value: T): T {
     deepFreeze((value as Record<string, unknown>)[key]);
   }
   return value;
+}
+
+/**
+ * Build the repository from PostgreSQL — the authoritative source.
+ *
+ * There is deliberately NO fallback to `data/quiz.json`: if the database has no
+ * bank, this throws and the server refuses to start, rather than quietly
+ * serving a stale file that is not supposed to exist in production.
+ *
+ * The bank is read ONCE at startup and held frozen in memory, exactly as the
+ * file loader did. That keeps every consumer — the assessment builder, the
+ * session service, the routes — synchronous and unchanged.
+ */
+export async function createQuizRepositoryFromDatabase(db: Queryable): Promise<QuizRepository> {
+  const source = await loadQuizBankFromDatabase(db);
+  return createQuizRepository({ source });
 }
 
 export function createQuizRepository(options: RepositoryOptions = {}): QuizRepository {
