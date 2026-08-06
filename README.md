@@ -166,11 +166,13 @@ angular-22-quiz-app/
 cd angular-22-quiz-app
 npm install</code></pre>
 
-<!--<h3>PostgreSQL Setup</h3>
+<!--
+<h3>PostgreSQL Setup</h3>
 
 <h3>Environment Configuration</h3>
 
-<h3>Run the Backend API</h3>-->
+<h3>Run the Backend API</h3>
+-->
 
 <h3>Run the Angular Frontend</h3>
 
