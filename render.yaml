@@ -1,29 +1,28 @@
 # Render Blueprint for the Interview API.
 #
 # Import this from the Render dashboard (New → Blueprint) and it creates the
-# service with the right settings. Host-agnostic alternatives (Fly.io,
-# Railway) work from the same backend/Dockerfile — see backend/DEPLOY.md.
+# service with the right settings. Host-agnostic alternatives (Fly.io, Railway)
+# work from the same backend/Dockerfile — see backend/DEPLOY.md.
 #
-# Runs on the FREE tier with an EPHEMERAL database in /tmp — a deliberate
-# trade-off, not an oversight. What it means in practice:
+# Runs on the FREE tier against a managed Postgres (Neon free tier) supplied
+# through DATABASE_URL. Session state no longer lives on the container's disk.
+# What that changes:
 #
-#   * Sessions do not survive a restart. Render spins a free service down after
-#     ~15 minutes idle and wipes its filesystem, so an interview submitted
-#     before that becomes unreachable and its Results page reports the service
-#     as unavailable.
-#   * The user does NOT lose their score. Interview History is client-side and
-#     already sanitized, so the attempt, percentage and per-topic breakdown all
-#     survive. Only the per-question review — which lives on the server by
-#     design — is gone.
+#   * A submitted interview REMAINS readable after a restart or a redeploy.
+#     The database is a separate service now, so wiping the container's
+#     filesystem no longer takes the sessions with it.
+#   * A per-question review is still lost when the BROWSER TAB closes. The
+#     session token lives in sessionStorage by design, and without it the
+#     server will not release review data. Durable storage fixes the server
+#     half of this, not the credential half.
+#   * The user never loses their score either way. Interview History is
+#     client-side and already sanitized, so the attempt, percentage and
+#     per-topic breakdown survive regardless.
 #   * An interview in progress is safe: answering sends traffic, and a service
 #     with traffic does not idle out. Assessments are 15 minutes anyway.
-#   * The first request after an idle period pays a cold start of roughly
-#     30-60 seconds. Starting an interview can feel slow, or time out and show
-#     the retry state.
-#
-# To make sessions durable later: switch `plan` to `starter`, restore the
-# `disk:` block shown at the bottom of this file, and set DATABASE_PATH back to
-# /data/sessions.db. Nothing else changes.
+#   * The first request after an idle period still pays a cold start of roughly
+#     30-60 seconds, and a free-tier Postgres may need to wake as well. Starting
+#     an interview can feel slow, or time out and show the retry state.
 
 services:
   - type: web
@@ -33,6 +32,9 @@ services:
     # The Dockerfile copies data/quiz.json relative to the backend directory.
     dockerContext: ./backend
     plan: free
+    # Matches the Neon project's region (AWS us-west-2). Keep these two
+    # together: every interview action issues several queries, and a
+    # cross-region hop adds a round trip to each one.
     region: oregon
     healthCheckPath: /api/health
 
@@ -55,15 +57,16 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://marvinrusinek.github.io,https://angular22quizapp-uyfq--4200--87cf54cd.local-credentialless.webcontainer.io
 
-      # Ephemeral on purpose — see the note at the top. /tmp is always
-      # writable, so this needs no mounted volume and no paid plan.
-      - key: DATABASE_PATH
-        value: /tmp/sessions.db
-
-# Durable sessions, when you want them: set `plan: starter` above, point
-# DATABASE_PATH at /data/sessions.db, and uncomment this.
-#
-#    disk:
-#      name: interview-sessions
-#      mountPath: /data
-#      sizeGB: 1
+      # The Postgres connection string. Set it in the Render dashboard, NOT
+      # here — it carries credentials and this file is committed. `sync: false`
+      # makes Render prompt for the value and keeps it out of the blueprint.
+      #
+      # Use Neon's POOLED connection string (the host containing "-pooler").
+      # A free service that idles down and wakes repeatedly opens connections
+      # faster than a direct endpoint's limit comfortably allows.
+      #
+      # The server REQUIRES this in production and refuses to boot without it,
+      # so a missing value fails visibly at startup rather than at the first
+      # interview.
+      - key: DATABASE_URL
+        sync: false

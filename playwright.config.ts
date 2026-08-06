@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { E2E_DATABASE_PATH } from './e2e/support/e2e-database';
+import { E2E_ADMIN_DATABASE_URL, E2E_DATABASE_NAME, E2E_DATABASE_URL } from './e2e/support/e2e-database';
 
 /**
  * Playwright e2e config. These tests drive the app in a real browser to
@@ -73,7 +73,7 @@ export default defineConfig({
    * Interview Mode is backend-backed — the assessment is created, saved and
    * scored on the server — so the specs that drive it cannot run against
    * `ng serve` alone. The backend runs from `backend/` because it resolves its
-   * quiz bank and SQLite file relative to the working directory.
+   * quiz bank relative to the working directory.
    */
   webServer: [
     {
@@ -85,14 +85,21 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'npm run dev',
+      // The throwaway database is created HERE, not in globalSetup: Playwright
+      // launches webServer first, so a database created there would not exist
+      // yet when the backend opens its pool.
+      command: 'node ../e2e/support/ensure-e2e-database.js && npm run dev',
       cwd: 'backend',
       url: 'http://localhost:3000/api/health',
       timeout: 120_000,
       // NOT reused: an already-running backend would be pointed at the
       // developer's database, which is exactly what this isolation prevents.
       reuseExistingServer: false,
-      env: { DATABASE_PATH: E2E_DATABASE_PATH },
+      env: {
+        DATABASE_URL: E2E_DATABASE_URL,
+        E2E_DATABASE_NAME,
+        E2E_ADMIN_DATABASE_URL,
+      },
       stdout: 'pipe',
       stderr: 'pipe',
     },

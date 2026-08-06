@@ -18,12 +18,12 @@ import { ApiError } from '../shared/errors';
 export function createInterviewSessionsRouter(service: InterviewSessionService): Router {
   const router = Router();
 
-  router.post('/interview-sessions', (req, res, next) => {
+  router.post('/interview-sessions', async (req, res, next) => {
     // SESSION_CREATED is ACTIVE_ASSESSMENT plus a token exemption scoped to
     // THIS route. The global ban stays intact, so resume cannot leak it.
     setResponsePolicy(res, 'SESSION_CREATED');
     try {
-      const session = service.createSession(req.body ?? {});
+      const session = await service.createSession(req.body ?? {});
       // Safe log: no token, no ids, no content.
       console.log(
         `[interview] created ${session.config.mode} session with ${session.questions.length} questions`
@@ -34,22 +34,22 @@ export function createInterviewSessionsRouter(service: InterviewSessionService):
     }
   });
 
-  router.get('/interview-sessions/:sessionId', (req, res, next) => {
+  router.get('/interview-sessions/:sessionId', async (req, res, next) => {
     setResponsePolicy(res, 'ACTIVE_ASSESSMENT');
     try {
       const token = extractBearerToken(req.header('authorization'));
-      const session = service.resumeSession(req.params.sessionId ?? '', token);
+      const session = await service.resumeSession(req.params.sessionId ?? '', token);
       res.status(200).json(session);
     } catch (err: unknown) {
       next(translate(err));
     }
   });
 
-  router.put('/interview-sessions/:sessionId/answers/:questionId', (req, res, next) => {
+  router.put('/interview-sessions/:sessionId/answers/:questionId', async (req, res, next) => {
     setResponsePolicy(res, 'ACTIVE_ASSESSMENT');
     try {
       const token = extractBearerToken(req.header('authorization'));
-      const saved = service.saveAnswer(
+      const saved = await service.saveAnswer(
         req.params.sessionId ?? '',
         req.params.questionId ?? '',
         token,
@@ -72,11 +72,11 @@ export function createInterviewSessionsRouter(service: InterviewSessionService):
   // SUBMITTED_REVIEW is the only policy that permits correctOptionIds and
   // explanation. It is set on these two routes ONLY; active routes keep
   // rejecting both.
-  router.post('/interview-sessions/:sessionId/submit', (req, res, next) => {
+  router.post('/interview-sessions/:sessionId/submit', async (req, res, next) => {
     setResponsePolicy(res, 'SUBMITTED_REVIEW');
     try {
       const token = extractBearerToken(req.header('authorization'));
-      const result = service.submitSession(req.params.sessionId ?? '', token, req.body);
+      const result = await service.submitSession(req.params.sessionId ?? '', token, req.body);
       // Safe log: counts and the expiry flag only.
       console.log(
         `[interview] submitted ${result.total} questions (byExpiry=${result.submittedByExpiry})`
@@ -87,11 +87,11 @@ export function createInterviewSessionsRouter(service: InterviewSessionService):
     }
   });
 
-  router.get('/interview-sessions/:sessionId/result', (req, res, next) => {
+  router.get('/interview-sessions/:sessionId/result', async (req, res, next) => {
     setResponsePolicy(res, 'SUBMITTED_REVIEW');
     try {
       const token = extractBearerToken(req.header('authorization'));
-      res.status(200).json(service.getResult(req.params.sessionId ?? '', token));
+      res.status(200).json(await service.getResult(req.params.sessionId ?? '', token));
     } catch (err: unknown) {
       next(translate(err));
     }

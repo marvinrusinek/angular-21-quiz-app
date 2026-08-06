@@ -1,0 +1,75 @@
+{
+  "__README": "FAKE SAMPLE DATA — NOT THE REAL QUIZ BANK. Safe to commit. Used for local development and tests that need the SHAPE of a quiz bank rather than real content. The real bank lives outside this repository and is loaded into PostgreSQL by scripts/import-quiz-bank.ts.",
+  "__marker": "SAMPLE-QUIZ-BANK-DO-NOT-USE-IN-PRODUCTION",
+  "quizzes": [
+    {
+      "quizId": "sample-basics",
+      "milestone": "Sample Basics",
+      "summary": "Fake quiz used for development and tests.",
+      "image": "assets/img/sample.png",
+      "difficulty": "beginner",
+      "facts": [
+        "This is sample fact one.",
+        "This is sample fact two.",
+        "This is sample fact three."
+      ],
+      "questions": [
+        {
+          "questionText": "Sample question one: which option is the first?",
+          "explanation": "Sample explanation for question one.",
+          "options": [
+            { "text": "Sample option A", "correct": true },
+            { "text": "Sample option B" },
+            { "text": "Sample option C" }
+          ]
+        },
+        {
+          "questionText": "Sample question two: select every sample answer.",
+          "explanation": "Sample explanation for question two.",
+          "options": [
+            { "text": "Sample answer one", "correct": true },
+            { "text": "Sample answer two", "correct": true },
+            { "text": "Sample distractor" }
+          ]
+        },
+        {
+          "questionText": "Sample question three: is this sample data?",
+          "explanation": "Sample explanation for question three.",
+          "options": [
+            { "text": "True", "correct": true },
+            { "text": "False" }
+          ]
+        }
+      ]
+    },
+    {
+      "quizId": "sample-advanced",
+      "milestone": "Sample Advanced",
+      "summary": "A second fake quiz, so multi-topic behaviour can be exercised.",
+      "image": "assets/img/sample-advanced.png",
+      "difficulty": "advanced",
+      "facts": ["Another sample fact."],
+      "questions": [
+        {
+          "questionText": "Sample advanced question: which sample is advanced?",
+          "explanation": "Sample explanation for the advanced question.",
+          "options": [
+            { "text": "The advanced sample" },
+            { "text": "This one", "correct": true }
+          ]
+        },
+        {
+          "questionText": "Sample advanced question two: pick the sample.",
+          "explanation": "Sample explanation, advanced question two.",
+          "options": [
+            { "text": "Sample choice one", "correct": true },
+            { "text": "Sample choice two" },
+            { "text": "Sample choice three" },
+            { "text": "Sample choice four" }
+          ]
+        }
+      ]
+    }
+  ],
+  "resources": []
+}

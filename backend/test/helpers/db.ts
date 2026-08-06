@@ -1,38 +1,51 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { resolve } from 'node:path';
+import { join } from 'node:path';
 
-import { openDatabase, type DatabaseHandle } from '../../src/db/database';
+import { fromPool, type DatabaseHandle } from '../../src/db/database';
 import { migrate } from '../../src/db/migrate';
 import { createSessionRepository, type SessionRepository } from '../../src/interview/session.repository';
 import type { CreateSessionInput, CreateSessionQuestionInput } from '../../src/interview/session.types';
-
-/** Every file-backed test gets its own temp directory; nothing is shared. */
-export function makeTempDir(): string {
-  return mkdtempSync(resolve(tmpdir(), 'quiz-backend-test-'));
-}
-
-export function removeTempDir(dir: string): void {
-  rmSync(dir, { recursive: true, force: true });
-}
+import { createTestPool } from './pg-mem-pool';
 
 export interface TestDb {
   readonly handle: DatabaseHandle;
   readonly repo: SessionRepository;
 }
 
-/** In-memory: fast, for tests that do NOT exercise persistence. */
-export function memoryDb(): TestDb {
-  const handle = openDatabase({ databasePath: ':memory:' });
-  migrate(handle.db, { now: () => 1_700_000_000_000 });
-  return { handle, repo: createSessionRepository(handle.db) };
+/**
+ * A migrated, empty database for one test.
+ *
+ * Replaces the old SQLite in-memory handle. Each call is isolated, so tests
+ * never share rows. Persistence tests reuse ONE handle rather than reopening a
+ * file — the equivalent of a restart is now dropping and re-acquiring the
+ * connection, not reopening a path.
+ */
+export async function memoryDb(): Promise<TestDb> {
+  const { pool } = createTestPool();
+  const handle = fromPool(pool, 'pg-mem');
+  await migrate(handle, { now: () => 1_700_000_000_000 });
+  return { handle, repo: createSessionRepository(handle) };
 }
 
-/** File-backed: required for restart/persistence tests. */
-export function fileDb(dir: string, name = 'sessions.db'): TestDb {
-  const handle = openDatabase({ databasePath: resolve(dir, name) });
-  migrate(handle.db, { now: () => 1_700_000_000_000 });
-  return { handle, repo: createSessionRepository(handle.db) };
+/**
+ * Persistence across a "restart": the same underlying database, reached
+ * through a NEW handle and repository, so nothing in-process is carried over.
+ */
+export function reopen(handle: DatabaseHandle): TestDb {
+  return { handle, repo: createSessionRepository(handle) };
+}
+
+// ── temp directories ────────────────────────────────────────────────
+// The database no longer lives on disk, but migration DISCOVERY still reads
+// real `.sql` files, so those tests still need a scratch directory.
+
+export function makeTempDir(): string {
+  return mkdtempSync(join(tmpdir(), 'interview-test-'));
+}
+
+export function removeTempDir(dir: string): void {
+  rmSync(dir, { recursive: true, force: true });
 }
 
 // ── fixtures ────────────────────────────────────────────────────────

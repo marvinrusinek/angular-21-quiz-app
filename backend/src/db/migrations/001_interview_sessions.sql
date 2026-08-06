@@ -1,4 +1,4 @@
--- Interview session persistence.
+-- Interview session persistence (PostgreSQL).
 --
 -- Sessions store a FROZEN SNAPSHOT of their own questions and options — the
 -- text, the ordering and the answer key — rather than referring back to the
@@ -8,28 +8,37 @@
 --
 -- `is_correct` and `explanation` live here because scoring happens server-side.
 -- They are never mapped into an active-session DTO; see api/response-policy.ts.
+--
+-- PORTED FROM SQLITE. Two differences matter:
+--
+--   * Timestamps are epoch MILLISECONDS and must be BIGINT. Postgres INTEGER is
+--     32-bit and overflows at ~2.1e9, while an epoch-ms value is ~1.7e12, so
+--     INTEGER here would reject every write. SQLite's INTEGER is 64-bit, which
+--     is why this was invisible before.
+--   * Booleans stay 0/1 SMALLINTs rather than becoming BOOLEAN, so the
+--     repository's reads and these CHECK constraints port unchanged.
 
-CREATE TABLE interview_sessions (
-  id                  TEXT    PRIMARY KEY
-                              CHECK (length(trim(id)) > 0),
-  token_hash          TEXT    NOT NULL
-                              CHECK (length(trim(token_hash)) > 0),
-  status              TEXT    NOT NULL
-                              CHECK (status IN ('active', 'submitted', 'expired')),
-  config_json         TEXT    NOT NULL
-                              CHECK (length(trim(config_json)) > 0),
-  duration_seconds    INTEGER NOT NULL
-                              CHECK (duration_seconds > 0),
-  created_at          INTEGER NOT NULL
-                              CHECK (created_at > 0),
-  expires_at          INTEGER NOT NULL
-                              CHECK (expires_at > created_at),
-  submitted_at        INTEGER,
-  submitted_by_expiry INTEGER NOT NULL DEFAULT 0
-                              CHECK (submitted_by_expiry IN (0, 1)),
+CREATE TABLE IF NOT EXISTS interview_sessions (
+  id                  TEXT     PRIMARY KEY
+                               CHECK (length(trim(id)) > 0),
+  token_hash          TEXT     NOT NULL
+                               CHECK (length(trim(token_hash)) > 0),
+  status              TEXT     NOT NULL
+                               CHECK (status IN ('active', 'submitted', 'expired')),
+  config_json         TEXT     NOT NULL
+                               CHECK (length(trim(config_json)) > 0),
+  duration_seconds    INTEGER  NOT NULL
+                               CHECK (duration_seconds > 0),
+  created_at          BIGINT   NOT NULL
+                               CHECK (created_at > 0),
+  expires_at          BIGINT   NOT NULL
+                               CHECK (expires_at > created_at),
+  submitted_at        BIGINT,
+  submitted_by_expiry SMALLINT NOT NULL DEFAULT 0
+                               CHECK (submitted_by_expiry IN (0, 1)),
   result_json         TEXT,
-  attempt_id          TEXT    NOT NULL UNIQUE
-                              CHECK (length(trim(attempt_id)) > 0),
+  attempt_id          TEXT     NOT NULL UNIQUE
+                               CHECK (length(trim(attempt_id)) > 0),
 
   -- A submitted session must record WHEN it was submitted; an active one must
   -- not carry a frozen result. This keeps the lifecycle honest at the storage
@@ -38,7 +47,7 @@ CREATE TABLE interview_sessions (
   CHECK (status <> 'active'    OR result_json  IS NULL)
 );
 
-CREATE TABLE session_questions (
+CREATE TABLE IF NOT EXISTS session_questions (
   session_id     TEXT    NOT NULL,
   position       INTEGER NOT NULL
                          CHECK (position >= 0),
@@ -61,16 +70,16 @@ CREATE TABLE session_questions (
     ON DELETE CASCADE
 );
 
-CREATE TABLE session_options (
-  session_id        TEXT    NOT NULL,
-  question_position INTEGER NOT NULL,
-  option_id         INTEGER NOT NULL,
-  option_text       TEXT    NOT NULL
-                            CHECK (length(trim(option_text)) > 0),
-  display_order     INTEGER NOT NULL
-                            CHECK (display_order >= 0),
-  is_correct        INTEGER NOT NULL
-                            CHECK (is_correct IN (0, 1)),
+CREATE TABLE IF NOT EXISTS session_options (
+  session_id        TEXT     NOT NULL,
+  question_position INTEGER  NOT NULL,
+  option_id         INTEGER  NOT NULL,
+  option_text       TEXT     NOT NULL
+                             CHECK (length(trim(option_text)) > 0),
+  display_order     INTEGER  NOT NULL
+                             CHECK (display_order >= 0),
+  is_correct        SMALLINT NOT NULL
+                             CHECK (is_correct IN (0, 1)),
 
   -- Scoped by (session, question): option ids are unique WITHIN a question and
   -- deliberately NOT globally. Question 3 of two different source quizzes both
@@ -84,14 +93,14 @@ CREATE TABLE session_options (
     ON DELETE CASCADE
 );
 
-CREATE TABLE session_answers (
+CREATE TABLE IF NOT EXISTS session_answers (
   session_id          TEXT    NOT NULL,
   question_position   INTEGER NOT NULL,
   -- JSON array of option ids. Parsed AND revalidated on every read; never
   -- trusted merely because this process wrote it.
   selected_option_ids TEXT    NOT NULL
                               CHECK (length(trim(selected_option_ids)) > 0),
-  updated_at          INTEGER NOT NULL
+  updated_at          BIGINT  NOT NULL
                               CHECK (updated_at > 0),
 
   PRIMARY KEY (session_id, question_position),
@@ -101,6 +110,6 @@ CREATE TABLE session_answers (
 );
 
 -- Supports the expiry sweep without scanning finished sessions.
-CREATE INDEX idx_interview_sessions_expires
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_expires
   ON interview_sessions (expires_at)
   WHERE status = 'active';

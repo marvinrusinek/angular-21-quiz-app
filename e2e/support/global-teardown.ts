@@ -2,14 +2,15 @@ import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  DEV_DATABASE_PATH,
-  E2E_DATABASE_PATH,
-  E2E_DB_DIR,
-  fingerprint,
+  E2E_DATABASE_NAME,
+  devDatabaseName,
+  e2eDatabaseExists,
+  fingerprintDevDatabase,
   removeE2eDatabase,
   sameFingerprint,
   type DatabaseFingerprint
 } from './e2e-database';
+import { E2E_STATE_DIR } from './global-setup';
 
 /**
  * Runs after the suite whether it passed or failed, so a red run cleans up as
@@ -17,11 +18,14 @@ import {
  * database or a touched development database is a real defect in the harness,
  * not a cosmetic one.
  */
-export default function globalTeardown(): void {
-  const leftovers = removeE2eDatabase();
+export default async function globalTeardown(): Promise<void> {
+  // DROP ... WITH (FORCE) evicts the backend's still-open pool: Playwright
+  // stops the webServer AFTER this hook. Under SQLite this needed a retry loop
+  // for Windows file locks; a server-side drop has no such problem.
+  const dropped = await removeE2eDatabase();
 
   let before: DatabaseFingerprint | null = null;
-  const snapshotPath = join(E2E_DB_DIR, 'dev-db-fingerprint.json');
+  const snapshotPath = join(E2E_STATE_DIR, 'dev-db-fingerprint.json');
   try {
     before = JSON.parse(readFileSync(snapshotPath, 'utf8')) as DatabaseFingerprint;
   } catch {
@@ -29,32 +33,20 @@ export default function globalTeardown(): void {
   }
   rmSync(snapshotPath, { force: true });
 
-  // A database the OS still has locked is NOT a failure: Playwright stops the
-  // webServer after this hook, so the lock disappears moments later. Retry once
-  // the runner itself exits, by which point the backend is gone.
-  if (leftovers.length > 0) {
-    process.on('exit', () => {
-      const stillThere = removeE2eDatabase(4, 100);
-      if (stillThere.length > 0) {
-        // The next run's startup sweep will collect it — never a hard failure
-        // on a green suite because of a filesystem lock.
-        console.warn(`[e2e-db] left behind (will be swept next run): ${stillThere.join(', ')}`);
-      }
-    });
-  }
-
-  // A CHANGED development database is a genuine harness defect, so this does
-  // fail the run.
-  if (before && !sameFingerprint(before, fingerprint(DEV_DATABASE_PATH))) {
+  // A CHANGED development database is a genuine harness defect, so this fails
+  // the run.
+  if (before && !sameFingerprint(before, await fingerprintDevDatabase())) {
     throw new Error(
-      `[e2e-db] the development database at ${DEV_DATABASE_PATH} changed during the run — ` +
+      `[e2e-db] the development database ${devDatabaseName()} changed during the run — ` +
       'E2E must never open it.'
     );
   }
 
-  console.log(
-    leftovers.length === 0
-      ? `[e2e-db] removed ${E2E_DATABASE_PATH} (+ -wal, -shm); development database untouched`
-      : `[e2e-db] retrying removal of ${E2E_DATABASE_PATH} at exit; development database untouched`
-  );
+  if (!dropped && await e2eDatabaseExists()) {
+    // Not a hard failure: the next run's startup sweep collects it.
+    console.warn(`[e2e-db] could not drop ${E2E_DATABASE_NAME} (will be swept next run)`);
+    return;
+  }
+
+  console.log(`[e2e-db] dropped ${E2E_DATABASE_NAME}; development database untouched`);
 }

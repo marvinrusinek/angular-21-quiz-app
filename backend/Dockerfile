@@ -5,22 +5,22 @@
 # without correctness, and full review only after submission.
 #
 # Multi-stage so the runtime image carries no compiler, no dev dependencies and
-# no TypeScript sources. Both stages share one base image because
-# better-sqlite3 is a NATIVE module — binaries compiled against one libc will
-# not load under another, so builder and runtime must match exactly.
+# no TypeScript sources.
+#
+# PORTED FROM SQLITE. `pg` is pure JavaScript, so the native toolchain
+# (python3/make/g++) that better-sqlite3 needed is gone, and the two stages no
+# longer have to share a base image to keep a compiled binary loadable. Session
+# state now lives in a managed Postgres reached over DATABASE_URL rather than on
+# the container's disk, which is what makes a submitted interview readable after
+# a redeploy.
 
 # ── build ───────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS build
 
-# better-sqlite3 compiles from source; node-gyp needs python3, make and g++.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 make g++ \
- && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Dependencies first: this layer is cached until the manifests change, so a
-# source-only edit skips the native rebuild entirely.
+# source-only edit reuses the installed tree.
 COPY package.json package-lock.json* ./
 RUN npm ci
 
@@ -29,16 +29,15 @@ COPY scripts ./scripts
 COPY src ./src
 RUN npm run build
 
-# Re-resolve to production dependencies only. `npm ci --omit=dev` prunes the
-# dev tree while KEEPING the already-compiled better-sqlite3 binary.
+# Re-resolve to production dependencies only.
 RUN npm ci --omit=dev
 
 # ── runtime ─────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime
 
 ENV NODE_ENV=production
-# The app resolves its quiz bank and database relative to the working
-# directory (process.cwd()), so this must stay /app.
+# The app resolves its quiz bank relative to the working directory
+# (process.cwd()), so this must stay /app.
 WORKDIR /app
 
 COPY --from=build /app/node_modules ./node_modules
@@ -49,17 +48,13 @@ COPY --from=build /app/package.json ./package.json
 # not user data, and it must never live under a static route.
 COPY data/quiz.json ./data/quiz.json
 
-# Sessions are written OUTSIDE the image — a redeploy replaces the container,
-# and an in-image database would take every in-flight assessment with it.
-#
-# /tmp is the zero-cost default: always writable, no volume required. It is
-# also EPHEMERAL, so sessions do not survive a restart. For durable sessions,
-# mount a volume and override DATABASE_PATH (e.g. /data/sessions.db); the
-# directory below is created ready for exactly that.
-ENV DATABASE_PATH=/tmp/sessions.db
-RUN mkdir -p /data && chown -R node:node /data
+# DATABASE_URL is supplied by the environment and is REQUIRED in production —
+# the config refuses to start without it. It is deliberately NOT defaulted here:
+# a server that silently pointed at the wrong database would be worse than one
+# that refuses to boot, and the URL carries credentials, which must never be
+# baked into an image layer.
 
-# Drop root. The process only needs to read /app and write /data.
+# Drop root. The process only needs to read /app and reach the network.
 USER node
 
 EXPOSE 3000

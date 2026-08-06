@@ -12,7 +12,9 @@ describe('loadConfig — defaults', () => {
     expect(config.isProduction).toBe(false);
     expect(config.port).toBe(3000);
     expect(config.quizDataPath).toBe('./data/quiz.json');
-    expect(config.databasePath).toBe('./data/sessions.db');
+    // No default connection string: a development server with no DATABASE_URL
+    // should fail when it tries to connect, not silently target something.
+    expect(config.databaseUrl).toBe('');
     expect(config.allowedOrigins).toEqual([
       'http://localhost:4200',
       'http://127.0.0.1:4200'
@@ -79,7 +81,11 @@ describe('loadConfig — allowed origins', () => {
     ).toThrow(/https/i);
 
     const config = loadConfig(
-      env({ NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://example.github.io' })
+      env({
+        NODE_ENV: 'production',
+        ALLOWED_ORIGINS: 'https://example.github.io',
+        DATABASE_URL: 'postgres://u:p@host/db'
+      })
     );
     expect(config.isProduction).toBe(true);
     expect(config.allowedOrigins).toEqual(['https://example.github.io']);
@@ -93,11 +99,43 @@ describe('loadConfig — allowed origins', () => {
 });
 
 describe('loadConfig — data paths', () => {
-  it('accepts overrides for the private quiz bank and database', () => {
-    const config = loadConfig(
-      env({ QUIZ_DATA_PATH: '/srv/private/quiz.json', DATABASE_PATH: '/srv/private/s.db' })
-    );
+  it('accepts an override for the private quiz bank', () => {
+    const config = loadConfig(env({ QUIZ_DATA_PATH: '/srv/private/quiz.json' }));
     expect(config.quizDataPath).toBe('/srv/private/quiz.json');
-    expect(config.databasePath).toBe('/srv/private/s.db');
+  });
+});
+
+describe('loadConfig — database url', () => {
+  it('accepts postgres:// and postgresql://', () => {
+    expect(
+      loadConfig(env({ DATABASE_URL: 'postgres://u:p@host/db' })).databaseUrl
+    ).toBe('postgres://u:p@host/db');
+    expect(
+      loadConfig(env({ DATABASE_URL: '  postgresql://u:p@host/db  ' })).databaseUrl
+    ).toBe('postgresql://u:p@host/db');
+  });
+
+  it('rejects a non-postgres connection string', () => {
+    // Catches the most likely migration mistake: a leftover SQLite file path.
+    expect(() => loadConfig(env({ DATABASE_URL: './data/sessions.db' })))
+      .toThrow(/postgres:\/\//i);
+    expect(() => loadConfig(env({ DATABASE_URL: 'mysql://u:p@host/db' })))
+      .toThrow(ConfigError);
+  });
+
+  it('REQUIRES a connection string in production', () => {
+    // A production server that boots without a database would accept
+    // interviews it cannot store.
+    expect(() =>
+      loadConfig(env({ NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://x.io' }))
+    ).toThrow(/DATABASE_URL is required in production/i);
+
+    expect(() =>
+      loadConfig(env({
+        NODE_ENV: 'production',
+        ALLOWED_ORIGINS: 'https://x.io',
+        DATABASE_URL: '   '
+      }))
+    ).toThrow(/required in production/i);
   });
 });
