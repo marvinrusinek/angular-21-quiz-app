@@ -162,13 +162,29 @@ angular-22-quiz-app/
 
 <h3>Installation</h3>
 
-<p>git clone https://github.com/marvinrusinek/angular-22-quiz-app.git<br />
-cd angular-22-quiz-app<br />
-npm install</p>
+<pre><code>git clone https://github.com/marvinrusinek/angular-22-quiz-app.git
+cd angular-22-quiz-app
+npm install</code></pre>
 
-<h3>Run the Development Server</h3>
+<h3>PostgreSQL Setup</h3>
+
+<!-- PostgreSQL database creation/setup instructions -->
+
+<h3>Environment Configuration</h3>
+
+<!-- Required backend environment variables -->
+
+<h3>Run the Backend API</h3>
+
+<!-- Actual command used to start your Express backend -->
+
+<h3>Run the Angular Frontend</h3>
 
 <pre><code>ng serve</code></pre>
+
+<p>Open your browser and navigate to:</p>
+
+<pre><code>http://localhost:4200</code></pre>
 
 <p>Open your browser and navigate to:</p>
 
