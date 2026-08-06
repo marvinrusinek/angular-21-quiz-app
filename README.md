@@ -58,21 +58,20 @@ The application combines topic-based Angular quizzes with a timed Interview Mode
 
 <h2>✨ Core Features</h2>
 
-<p><strong>Topic Quizzes</strong> — Single/multiple-answer questions, timers, shuffling, immediate feedback, explanations and review.</p>
+<p><strong>Topic Quizzes</strong> — Single- and multiple-answer questions, timers, shuffling, immediate feedback, explanations, and detailed review.</p>
 <p><strong>Interview Mode</strong> — Configurable mixed-topic assessments with difficulty-based presets, timed sessions, deferred feedback, session persistence, and backend scoring.</p>
-<p><strong>Interview Analytics</strong> — Results, history, performance trends and topic-level performance.</p>
+<p><strong>Interview Analytics</strong> — Results, history, performance trends, and topic-level performance.</p>
 <p><strong>Weak Areas Practice</strong> — Analyzes previous quiz performance to identify weaker topics and generate targeted practice opportunities.</p>
 <p><strong>Progress & Achievements</strong> — Progress tracking and achievement system across the learning experience.</p>
 <p><strong>Modern UX</strong> — Angular Material, responsive layouts, dark/light themes, keyboard navigation, accessibility-focused interactions, and PWA support.</p>
-<p><strong>Testing:</strong> Angular unit testing, Playwright end-to-end testing</p>
+<p><strong>Testing & Reliability</strong> — Angular unit testing and Playwright end-to-end coverage, including backend session and database isolation.</p>
 
 <hr>
 
 <h2>🧭 Architecture Overview</h2>
 
 <p>
-The application follows a modular Angular architecture in which container components orchestrate application flow,
-specialized services encapsulate business logic, and reactive state keeps the UI synchronized with user interactions.
+The application follows a modular frontend/backend architecture. Angular container components orchestrate application flow, focused services encapsulate business logic, and reactive state keeps the UI synchronized with user interactions. Interview Mode communicates with a Node/Express REST API responsible for session persistence, answer submission, server-side scoring, and protected result retrieval.
 </p>
 
 <p>
