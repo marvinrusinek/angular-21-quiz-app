@@ -83,7 +83,7 @@ event coordination, and cross-component communication.
 <h3>High-Level Flow</h3>
 
 <pre><code>
-Angular 22 Frontend
+                         Angular 22 Frontend
                                 │
                  ┌──────────────┴──────────────┐
                  │                             │
