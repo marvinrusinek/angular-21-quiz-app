@@ -9,17 +9,17 @@ The application combines topic-based Angular quizzes with a timed Interview Mode
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Angular-22-red">
-<img src="https://img.shields.io/badge/TypeScript-Enabled-blue">
-<img src="https://img.shields.io/badge/RxJS-Reactive-purple">
-<img src="https://img.shields.io/badge/Signals-Integrated-orange">
-<img src="https://img.shields.io/badge/Status-Active%20Development-brightgreen">
+  <img src="https://img.shields.io/badge/Angular-22-red" alt="Angular 22">
+  <img src="https://img.shields.io/badge/TypeScript-Enabled-blue" alt="TypeScript">
+  <img src="https://img.shields.io/badge/RxJS-Reactive-purple" alt="RxJS">
+  <img src="https://img.shields.io/badge/Signals-Integrated-orange" alt="Angular Signals">
+  <img src="https://img.shields.io/badge/Status-Active%20Development-brightgreen" alt="Active Development">
 </p>
 
 <p align="center">
-<a href="https://marvinrusinek.github.io/angular-22-quiz-app" target="_blank">
-▶ Launch Live Demo
-</a>
+  <a href="https://marvinrusinek.github.io/angular-22-quiz-app">
+    ▶ Launch Live Demo
+  </a>
 </p>
 
 <hr>
@@ -163,10 +163,9 @@ angular-22-quiz-app/
 
 <h3>Installation</h3>
 
-<pre><code>git clone https://github.com/marvinrusinek/angular-22-quiz-app.git
-cd angular-22-quiz-app
-npm install
-</code></pre>
+<p>git clone https://github.com/marvinrusinek/angular-22-quiz-app.git<br />
+cd angular-22-quiz-app<br />
+npm install</p>
 
 <h3>Run the Development Server</h3>
 
@@ -180,7 +179,7 @@ npm install
 
 <hr>
 
-<h2>🗺️ Roadmap/h2>
+<h2>🗺️ Roadmap</h2>
 
 <ul>
 <li>Expand quiz review with advanced filtering and sorting</li>
