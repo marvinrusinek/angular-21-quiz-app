@@ -62,7 +62,7 @@ The application combines topic-based Angular quizzes with a timed Interview Mode
 <p><strong>Interview Mode</strong> — Configurable mixed-topic assessments with difficulty-based presets, timed sessions, deferred feedback, session persistence, and backend scoring.</p>
 <p><strong>Interview Analytics</strong> — Results, history, performance trends, and topic-level performance.</p>
 <p><strong>Weak Areas Practice</strong> — Analyzes previous quiz performance to identify weaker topics and generate targeted practice opportunities.</p>
-<p><strong>Progress & Achievements</strong> — Progress tracking and achievement system across the learning experience.</p>
+<p><strong>Progress & Achievements</strong> — Progress tracking and achievements across the learning experience.</p>
 <p><strong>Modern UX</strong> — Angular Material, responsive layouts, dark/light themes, keyboard navigation, accessibility-focused interactions, and PWA support.</p>
 <p><strong>Testing & Reliability</strong> — Angular unit testing and Playwright end-to-end coverage, including backend session and database isolation.</p>
 
