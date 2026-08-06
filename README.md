@@ -149,11 +149,11 @@ Score • Feedback • Quiz Review • Results
 <h2>🛠️ Technology Stack</h2>
 
 <ul>
-<li><strong>Framework:</strong> Angular 21</li>
+<li><strong>Framework:</strong> Angular 22</li>
 <li><strong>Language:</strong> TypeScript</li>
 <li><strong>State Management:</strong> Angular Signals, RxJS</li>
 <li><strong>UI:</strong> Angular Material, SCSS</li>
-<li><strong>Forms:</strong> Reactive Forms</li>
+<li><strong>Forms:</strong> Reactive Forms, Signal Forms</li>
 <li><strong>Testing:</strong> Unit Testing, End-to-End Testing</li>
 <li><strong>Platform:</strong> Progressive Web App (PWA)</li>
 </ul>
