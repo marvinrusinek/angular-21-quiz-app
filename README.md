@@ -48,7 +48,7 @@ The application combines topic-based Angular quizzes with a timed Interview Mode
 <li>Angular 22 architecture using standalone components, Signals, RxJS, Signal Forms, and focused service layers</li>
 <li>Backend-driven Interview Mode with timed mixed-topic assessments, session persistence, answer submission, server-side scoring, and protected result retrieval</li>
 <li>Topic Quiz system supporting single-answer, multiple-answer, immediate feedback, explanations, timers, shuffling, and detailed results</li>
-<li>Performance analytics including Interview History, performance trends, topic-level analysis, and Weak Areas Practice</li>
+<li>Performance analytics including interview history, performance trends, topic-level analysis, and Weak Areas Practice</li>
 <li>Production-oriented security including strict CSP and backend boundaries that prevent interview answers from being exposed to the active client session</li>
 <li>Comprehensive automated testing covering Angular unit tests and Playwright end-to-end workflows</li>
 <li>PWA and responsive UI built with Angular Material and accessibility-conscious interaction patterns</li>
@@ -59,12 +59,12 @@ The application combines topic-based Angular quizzes with a timed Interview Mode
 <h2>✨ Core Features</h2>
 
 <p><strong>Topic Quizzes</strong> — Single/multiple-answer questions, timers, shuffling, immediate feedback, explanations and review.</p>
-<p><strong>Interview Mode</strong> — Configurable mixed-topic assessments, difficulty selection, timed sessions, deferred feedback and backend scoring.</p>
+<p><strong>Interview Mode</strong> — Configurable mixed-topic assessments with difficulty-based presets, timed sessions, deferred feedback, session persistence, and backend scoring.</p>
 <p><strong>Interview Analytics</strong> — Results, history, performance trends and topic-level performance.</p>
 <p><strong>Weak Areas Practice</strong> — Analyzes previous quiz performance to identify weaker topics and generate targeted practice opportunities.</p>
 <p><strong>Progress & Achievements</strong> — Progress tracking and achievement system across the learning experience.</p>
 <p><strong>Modern UX</strong> — Angular Material, responsive layouts, dark/light themes, keyboard navigation, accessibility-focused interactions, and PWA support.</p>
-<p><strong>Testing & Reliability</strong> — Unit tests and Playwright E2E coverage, including backend/session isolation.</p>
+<p><strong>Testing:</strong> Angular unit testing, Playwright end-to-end testing</p>
 
 <hr>
 
