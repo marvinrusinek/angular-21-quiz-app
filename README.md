@@ -168,23 +168,13 @@ npm install</code></pre>
 
 <h3>PostgreSQL Setup</h3>
 
-<!-- PostgreSQL database creation/setup instructions -->
-
 <h3>Environment Configuration</h3>
 
-<!-- Required backend environment variables -->
-
 <h3>Run the Backend API</h3>
-
-<!-- Actual command used to start your Express backend -->
 
 <h3>Run the Angular Frontend</h3>
 
 <pre><code>ng serve</code></pre>
-
-<p>Open your browser and navigate to:</p>
-
-<pre><code>http://localhost:4200</code></pre>
 
 <p>Open your browser and navigate to:</p>
 
