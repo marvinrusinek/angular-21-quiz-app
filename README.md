@@ -1,7 +1,11 @@
 <h1 align="center">🚀 Angular Quiz App</h1>
 
-<p align="center">
-A feature-rich quiz platform built with <strong>Angular 22</strong> that demonstrates modern frontend engineering through <strong>Angular Signals</strong> and <strong>RxJS</strong> for reactive state management, together with a modular service-oriented architecture.
+<p>
+<strong>A full-featured Angular learning and interview-preparation platform built with Angular 22, TypeScript, Signals, RxJS, Angular Material, and a Node/Express backend.</strong>
+</p>
+
+<p>
+The application combines topic-based Angular quizzes with a timed Interview Mode, performance analytics, weak-area practice, progress tracking, and detailed answer review. It demonstrates modern Angular architecture, reactive state management, backend-driven assessment sessions, automated testing, accessibility, and production-oriented application design.
 </p>
 
 <p align="center">
@@ -30,81 +34,37 @@ A feature-rich quiz platform built with <strong>Angular 22</strong> that demonst
 
 <h2>🎯 Goal / Purpose</h2>
 
-<p>
-This project demonstrates modern Angular application architecture through a feature-rich quiz platform built with
-<strong>Angular 22</strong>, <strong>Signals</strong>, <strong>RxJS</strong>, and a
-<strong>modular service-oriented architecture</strong>.
-</p>
+<p>The goal of this project is to provide an interactive environment for learning, practicing, and assessing modern Angular knowledge while serving as a real-world demonstration of production-oriented Angular engineering.</p>
 
-<p>
-It showcases scalable frontend engineering practices including reactive state management, dynamic UI rendering,
-component decoupling, performance optimization, and maintainable application design.
-</p>
+<p>Beyond traditional topic quizzes, the application includes a timed Interview Mode, performance analytics, weak-area practice, progress tracking, and detailed review workflows designed to support both learning and technical interview preparation.</p>
 
-<p>
-The application has undergone extensive refactoring to reduce component complexity, improve separation of concerns,
-increase testability, and organize quiz behavior into focused services and reusable UI layers.
-</p>
+<p>The project also serves as an evolving engineering platform for applying modern Angular patterns, improving application architecture, strengthening testing and accessibility, and exploring secure frontend/backend boundaries.</p>
 
 <hr>
 
 <h2>🏆 Engineering Highlights</h2>
 
 <ul>
-<li>Built with <strong>Angular 22</strong>, <strong>TypeScript</strong>, <strong>RxJS</strong>, and <strong>Angular Signals</strong></li>
-<li>Architected using a <strong>modular service-oriented design</strong> with standalone components and clear separation of concerns</li>
-<li>Combines <strong>Signals</strong> for reactive UI state with <strong>RxJS</strong> for asynchronous and event-driven workflows</li>
-<li>Supports <strong>single-answer</strong> and <strong>multiple-answer</strong> quiz modes with distinct interaction, scoring, and feedback logic</li>
-<li>Implements question timing, answer validation, score analysis, explanation rendering, and quiz progress tracking</li>
-<li>Includes comprehensive <strong>unit</strong> and <strong>end-to-end testing</strong> to improve reliability and reduce regressions</li>
+<li>Angular 22 architecture using standalone components, Signals, RxJS, Signal Forms, and focused service layers</li>
+<li>Backend-driven Interview Mode with timed mixed-topic assessments, session persistence, answer submission, server-side scoring, and protected result retrieval</li>
+<li>Topic Quiz system supporting single-answer, multiple-answer, immediate feedback, explanations, timers, shuffling, and detailed results</li>
+<li>Performance analytics including Interview History, performance trends, topic-level analysis, and Weak Areas Practice</li>
+<li>Production-oriented security including strict CSP and backend boundaries that prevent interview answers from being exposed to the active client session</li>
+<li>Comprehensive automated testing covering Angular unit tests and Playwright end-to-end workflows</li>
+<li>PWA and responsive UI built with Angular Material and accessibility-conscious interaction patterns</li>
 </ul>
 
 <hr>
 
 <h2>✨ Core Features</h2>
 
-<h3>🧠 Multiple Question Types</h3>
-<p>
-Supports both <strong>single-answer</strong> and <strong>multiple-answer</strong> questions,
-each with its own selection rules, validation, scoring, and feedback behavior.
-</p>
-
-<h3>💡 Immediate Feedback & Explanations</h3>
-<p>
-Provides real-time answer feedback with detailed explanation text to reinforce learning
-and improve quiz engagement.
-</p>
-
-<h3>⏱️ Timer-Based Quiz Flow</h3>
-<p>
-Supports timed questions with automatic timeout handling, progress updates,
-and consistent navigation behavior.
-</p>
-
-<h3>🔀 Question & Answer Shuffling</h3>
-<p>
-Randomizes both question order and answer choices while preserving correct scoring,
-feedback, quiz review, and results.
-</p>
-
-<h3>📊 Quiz Review & Score Analysis</h3>
-<p>
-Includes a detailed post-quiz review with score analysis, correct answers,
-user selections, and performance summaries.
-</p>
-
-<h3>📈 Live Progress Tracking</h3>
-<p>
-Tracks score and quiz progress throughout each session, giving users continuous
-feedback as they advance.
-</p>
-
-<h3>🧪 Robust Testing</h3>
-
-<p>
-Comprehensive unit and end-to-end tests help ensure application reliability
-and prevent regressions as new features are added.
-</p>
+<p><strong>Topic Quizzes</strong> — Single/multiple-answer questions, timers, shuffling, immediate feedback, explanations and review.</p>
+<p><strong>Interview Mode</strong> — Configurable mixed-topic assessments, difficulty selection, timed sessions, deferred feedback and backend scoring.</p>
+<p><strong>Interview Analytics</strong> — Results, history, performance trends and topic-level performance.</p>
+<p><strong>Weak Areas Practice</strong> — Analyzes previous quiz performance to identify weaker topics and generate targeted practice opportunities.</p>
+<p><strong>Progress & Achievements</strong> — Progress tracking and achievement system across the learning experience.</p>
+<p><strong>Modern UX</strong> — Angular Material, responsive layouts, dark/light themes, keyboard navigation, accessibility-focused interactions, and PWA support.</p>
+<p><strong>Testing & Reliability</strong> — Unit tests and Playwright E2E coverage, including backend/session isolation.</p>
 
 <hr>
 
@@ -123,25 +83,21 @@ event coordination, and cross-component communication.
 <h3>High-Level Flow</h3>
 
 <pre><code>
-[User Interaction]
-        ↓
-[Container Components]
-Introduction / Quiz / Results
-        ↓
-[Question & Answer Components]
-        ↓
-[Service Layer]
- ├── QuizService
- ├── QuizStateService
- ├── SelectedOptionService
- ├── ExplanationTextService
- ├── TimerService
- └── SelectionMessageService
-        ↓
-[Signals + RxJS]
-        ↓
-[Reactive UI]
-Score • Feedback • Quiz Review • Results
+Angular 22 Frontend
+                                │
+                 ┌──────────────┴──────────────┐
+                 │                             │
+            Topic Quizzes                 Interview Mode
+                 │                             │
+        Angular Services             Interview API Services
+                 │                             │
+          Signals + RxJS                    REST API
+                 │                             │
+           Reactive UI                 Node / Express
+                                               │
+                                  Interview Session Layer
+                                               │
+                                          PostgreSQL
 </code></pre>
 
 <hr>
@@ -149,12 +105,13 @@ Score • Feedback • Quiz Review • Results
 <h2>🛠️ Technology Stack</h2>
 
 <ul>
-<li><strong>Framework:</strong> Angular 22</li>
-<li><strong>Language:</strong> TypeScript</li>
-<li><strong>State Management:</strong> Angular Signals, RxJS</li>
+<li><strong>Frontend:</strong> Angular 22, TypeScript</li>
+<li><strong>Reactive State:</strong> Angular Signals, RxJS</li>
 <li><strong>UI:</strong> Angular Material, SCSS</li>
 <li><strong>Forms:</strong> Reactive Forms, Signal Forms</li>
-<li><strong>Testing:</strong> Unit Testing, End-to-End Testing</li>
+<li><strong>Backend:</strong> Node.js, Express</li>
+<li><strong>Database:</strong> PostgreSQL</li>
+<li><strong>Testing:</strong> Unit Testing, Playwright End-to-End Testing</li>
 <li><strong>Platform:</strong> Progressive Web App (PWA)</li>
 </ul>
 
@@ -163,35 +120,34 @@ Score • Feedback • Quiz Review • Results
 <h2>📁 Project Structure</h2>
 <p>The project is organized into reusable UI components, feature containers, and focused service layers to promote separation of concerns, maintainability, and scalability.</p>
 <pre><code>
-src/
-├── app/
-│   ├── components/     # Reusable UI components
-│   ├── containers/     # Feature containers and page orchestration
-│   ├── shared/
-│   │   ├── services/   # Business logic and application state
-│   │   ├── models/     # Shared TypeScript models and interfaces
-│   │   └── utils/      # Utility functions and helpers
-│   ├── pipes/          # Custom Angular pipes
-│   ├── directives/     # Custom Angular directives
-│   └── animations/     # Reusable animations
-</code></pre>
-
-<pre><code>
-shared/
-├── services/
-│   ├── quiz/
-│   ├── answer/
-│   ├── feedback/
-│   ├── navigation/
-│   └── timer/
+angular-22-quiz-app/
+├── src/
+│   └── app/
+│       ├── components/
+│       ├── containers/
+│       ├── interview/
+│       ├── practice/
+│       └── shared/
+│           ├── services/
+│           ├── models/
+│           └── utils/
+│
+├── backend/
+│   ├── routes/
+│   ├── services/
+│   ├── data/
+│   └── database/
+│
+├── e2e/
+└── ...
 </code></pre>
 
 <hr>
 
 <h2>⭐ Support</h2>
 
-<p> If you enjoyed exploring this project or found it helpful, please consider giving it a ⭐ on GitHub. Your support helps drive continued improvements, new features, and ongoing maintenance.</p>
-<p>Stay tuned for additional quizzes and exciting new features!</p>
+<p>If you enjoyed exploring this project or found it helpful, please consider giving it a ⭐ on GitHub. Your support helps drive continued improvements, new features, and ongoing maintenance.</p>
+<p>The project continues to evolve with new Angular topics, assessment capabilities, and architectural improvements.</p>
 
 <hr>
 
@@ -200,8 +156,9 @@ shared/
 <h3>Prerequisites</h3>
 
 <ul>
-<li>Node.js 18 or later</li>
-<li>Angular CLI 20 or later</li>
+<li>Node.js 22 or later</li>
+<li>Angular CLI 22</li>
+<li>PostgreSQL</li>
 </ul>
 
 <h3>Installation</h3>
@@ -223,16 +180,13 @@ npm install
 
 <hr>
 
-<h2>🚀 Upcoming Features</h2>
+<h2>🗺️ Roadmap/h2>
 
 <ul>
-<li>Expand quiz coverage with additional Angular topics, including <strong>RxJS</strong> and <strong>Signals</strong></li>
-<li>Add enhanced quiz review capabilities, including advanced filtering and sorting</li>
-<li>Introduce difficulty-based quiz organization and learning progression</li>
-<li>Continue refining Angular Signals usage and modern Angular patterns throughout the application</li>
-<li>Further simplify complex feature areas through ongoing architectural refactoring</li>
-<li>Enhance accessibility, responsive design, and touch interactions</li>
-<li>Expand performance insights and post-quiz analytics</li>
+<li>Expand quiz review with advanced filtering and sorting</li>
+<li>Continue adopting modern Angular reactive patterns and APIs</li>
+<li>Further simplify complex feature areas through architectural refactoring</li>
+<li>Continue improving accessibility, responsive design, and touch interactions</li>
 </ul>
 
 <hr>
