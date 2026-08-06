@@ -42,6 +42,81 @@ export function toQuizMetadataListDto(
   return metadata.map(toQuizMetadataDto);
 }
 
+// ── TOPIC QUIZ questions (pre-answer) ───────────────────────────────
+
+/**
+ * Topic Quiz delivery DTOs.
+ *
+ * The public contract carries NO identifiers. A question is addressed by its
+ * exact text within a quiz, and an option by its exact text within that
+ * question — a property proven unique at every normalization level across the
+ * whole bank, and now enforced by UNIQUE constraints in PostgreSQL.
+ *
+ * Consequently these mappers name only the fields a client may see. In
+ * particular they do NOT emit `questionId` or `optionId`, which the Interview
+ * mappers above deliberately do keep: Interview Mode's contract is unchanged by
+ * this work, and the two must not be conflated.
+ *
+ * TEXT IS THE CONTRACT. Every string here is the exact value stored in
+ * PostgreSQL, byte for byte — no trimming, escaping or normalization. A client
+ * echoes back the string it received, so any transformation here would break
+ * the lookup on the way in.
+ */
+
+export interface TopicQuizOptionDto {
+  readonly text: string;
+}
+
+export interface TopicQuizQuestionDto {
+  readonly questionText: string;
+  readonly type: QuestionType;
+  /**
+   * Difficulty is a QUIZ-level property, repeated on each question for the
+   * client's convenience. Nullable to match `QuizMetadataDto.difficulty` and
+   * the database, which permits a quiz without one; every quiz in the current
+   * bank sets it.
+   */
+  readonly difficulty: string | null;
+  readonly options: readonly TopicQuizOptionDto[];
+}
+
+export interface TopicQuizQuestionsDto {
+  readonly quizId: string;
+  readonly questions: readonly TopicQuizQuestionDto[];
+}
+
+export function toTopicQuizOptionDto(option: PrivateOption): TopicQuizOptionDto {
+  // ONLY the text. `optionId` and `isCorrect` are not referenced, so neither
+  // can leak through a future change to PrivateOption.
+  return { text: option.text };
+}
+
+export function toTopicQuizQuestionDto(
+  question: PrivateQuestion,
+  difficulty: string | null
+): TopicQuizQuestionDto {
+  return {
+    questionText: question.questionText,
+    type: question.type,
+    difficulty,
+    // Source order preserved. Ordering is expressed ONLY by array position —
+    // there is no displayOrder field on the wire.
+    options: question.options.map(toTopicQuizOptionDto)
+  };
+}
+
+export function toTopicQuizQuestionsDto(quiz: {
+  readonly quizId: string;
+  readonly difficulty: string | null;
+  readonly questions: readonly PrivateQuestion[];
+}): TopicQuizQuestionsDto {
+  return {
+    quizId: quiz.quizId,
+    questions: quiz.questions.map((question) =>
+      toTopicQuizQuestionDto(question, quiz.difficulty))
+  };
+}
+
 // ── ACTIVE assessment ───────────────────────────────────────────────
 
 export interface ActiveInterviewOptionDto {

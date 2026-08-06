@@ -13,6 +13,7 @@
 
 export type ResponsePolicyName =
   | 'PUBLIC_METADATA'
+  | 'QUIZ_QUESTIONS'
   | 'ACTIVE_ASSESSMENT'
   | 'SESSION_CREATED'
   | 'SUBMITTED_REVIEW'
@@ -87,12 +88,78 @@ const INTERNAL_FIELDS = [
   // allow-listed literals and never spread a database row.
 ];
 
+/**
+ * Every form of question/option IDENTITY.
+ *
+ * The Topic Quiz contract addresses a question by its exact TEXT within a quiz,
+ * and nothing else. Public identifiers were removed deliberately, so any of
+ * these appearing on the wire is a contract regression:
+ *
+ *   - `questionId` / `optionId` — the legacy positional scheme, retained in the
+ *     database only as `legacy_*` provenance
+ *   - `id` — a PostgreSQL surrogate key, an internal implementation detail
+ *   - `*Index` / `displayOrder` / `sourceIndex` — positional identity by
+ *     another name; ordering is expressed ONLY by array position
+ *   - `*Key` — the normalized lookup columns, which are internal
+ *
+ * `quizId` is deliberately NOT here: it is the one public identifier, and
+ * normalizeKey keeps it distinct from `id` because matching is exact rather
+ * than substring-based.
+ */
+const IDENTIFIER_FIELDS = [
+  'questionId',
+  'question_id',
+  'optionId',
+  'option_id',
+  'id',
+  'questionIndex',
+  'question_index',
+  'optionIndex',
+  'option_index',
+  'legacyQuestionId',
+  'legacy_question_id',
+  'legacyOptionId',
+  'legacy_option_id',
+  'displayOrder',
+  'display_order',
+  'sourceIndex',
+  'source_index',
+  'questionKey',
+  'question_key',
+  'optionKey',
+  'option_key',
+  'quizPk',
+  'quiz_pk',
+  'questionPk',
+  'question_pk'
+];
+
 const POLICIES: Record<ResponsePolicyName, ReadonlySet<string>> = {
   /**
    * Metadata listings. Also bans `questions`/`options` so a metadata route can
    * never grow into a full question dump by accident.
    */
   PUBLIC_METADATA: banned(...ANSWER_KEY_FIELDS, ...INTERNAL_FIELDS, 'explanation', 'questions', 'options'),
+
+  /**
+   * Topic Quiz question delivery — the pre-answer payload.
+   *
+   * The STRICTEST policy in this module, and deliberately its own rather than a
+   * reuse of ACTIVE_ASSESSMENT: that policy permits `questionId` and `optionId`
+   * because Interview Mode's shipped contract needs them. Reusing it here would
+   * silently allow identifiers back into a contract defined to have none.
+   *
+   * Bans identity, correctness, explanations and backend internals. Allows only
+   * `quizId`, `questions`, `questionText`, `type`, `difficulty`, `options` and
+   * `text`.
+   */
+  QUIZ_QUESTIONS: banned(
+    ...ANSWER_KEY_FIELDS,
+    ...INTERNAL_FIELDS,
+    ...IDENTIFIER_FIELDS,
+    'explanation',
+    'facts'
+  ),
 
   /**
    * Live assessment. Options ARE allowed; correctness, FET and the session
