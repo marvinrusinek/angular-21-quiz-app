@@ -13,10 +13,12 @@ import { SelectedOption } from '../../../models/SelectedOption.model';
 import { ExplanationTextService } from '../explanation/explanation-text.service';
 import { FeedbackService } from '../feedback/feedback.service';
 import { QuizQuestionManagerService } from '../../flow/quizquestionmgr.service';
+import { QuestionVerdictService } from '../verdict/question-verdict.service';
 import { QuizService } from '../../data/quiz.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { SelectionMessageService } from '../selection-message/selection-message.service';
 import { isOptionCorrect } from '../../../utils/is-option-correct';
+import { norm } from '../../../utils/text-norm';
 
 /**
  * Manages feedback display, option highlighting, and disable logic for QQC.
@@ -29,6 +31,7 @@ export class QqcFeedbackManagerService {
   private readonly feedbackService = inject(FeedbackService);
   private readonly quizQuestionManagerService = inject(QuizQuestionManagerService);
   private readonly quizService = inject(QuizService);
+  private readonly verdicts = inject(QuestionVerdictService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly selectionMessageService = inject(SelectionMessageService);
 
@@ -81,8 +84,46 @@ export class QqcFeedbackManagerService {
     );
 
     for (const opt of currentQuestion.options) {
-      opt.highlight = !opt.correct && allCorrectSelected;
+      opt.highlight = !this.isCorrectOption(currentQuestion, opt) && allCorrectSelected;
     }
+  }
+
+  /**
+   * Is this option correct, for FEEDBACK purposes?
+   *
+   * Correctness comes from QuestionVerdictService, not from `option.correct`.
+   * Read-only: safe to call from highlight/deactivate paths, which run during
+   * state derivation. Selection submission stays with the 9A writer seam.
+   *
+   * Order matches the per-option highlight helper:
+   *   1. the user selected it -> their own verdict
+   *   2. resolved | expired   -> authorized full reveal
+   *   3. incomplete           -> false, BEFORE any local read
+   *   4. idle/checking/error  -> temporary compatibility path
+   *
+   * Case 3 is the security invariant: on an unresolved question an unselected
+   * option reveals nothing, and the fallback cannot run for it.
+   */
+  private isCorrectOption(question: QuizQuestion | null, option: Option): boolean {
+    const quizId = (this.quizService as any)?.quizId as string | undefined;
+    const questionText = question?.questionText;
+    const optionText = option?.text;
+
+    if (quizId && questionText && optionText) {
+      const own = this.verdicts.verdictForOption(quizId, questionText, optionText);
+      if (own !== null) return own;
+
+      const state = this.verdicts.verdictFor(quizId, questionText);
+      if (state.phase === 'resolved' || state.phase === 'expired') {
+        const target = norm(optionText);
+        return state.correctOptionTexts.some((text) => norm(text) === target);
+      }
+      if (state.phase === 'incomplete') return false;
+    }
+
+    // TEMPORARY COMPATIBILITY PATH — reachable only for idle/checking/error,
+    // because the timeout reveal is not migrated until STAGE 9D.
+    return isOptionCorrect(option);
   }
 
   /**
@@ -97,7 +138,9 @@ export class QqcFeedbackManagerService {
 
     if (currentQuestion?.options?.length) {
       for (const opt of currentQuestion.options) {
-        if (!opt.correct) {
+        // Terminal path only (guarded by allCorrectSelected above), so the
+        // verdict is resolved and the full reveal is authorized.
+        if (!this.isCorrectOption(currentQuestion, opt)) {
           opt.selected = false;
           opt.highlight = true;
           opt.active = false;
