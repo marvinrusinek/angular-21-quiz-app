@@ -5,13 +5,14 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "test": "jest",
+    "test": "jest && jest --config jest.e2e-support.config.js",
     "test:watch": "jest --watch",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "deploy": "ng build --configuration=production && ngh --dir=dist/demo/browser --no-silent",
     "dev": "node scripts/dev.js",
-    "dev:api": "npm --prefix backend run dev"
+    "dev:api": "npm --prefix backend run dev",
+    "test:e2e-support": "jest --config jest.e2e-support.config.js"
   },
   "dependencies": {
     "@angular/animations": "22.1.0",

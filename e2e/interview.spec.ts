@@ -92,6 +92,9 @@ test.describe('Interview Mode', () => {
   });
 
   test('performance trends: first attempt shows the empty state, a second attempt renders the chart', async ({ page }) => {
+    // Several full interviews, each answer and submit a round trip to a
+    // remote database. The 60s default was sized for local SQLite.
+    test.setTimeout(150_000);
     // First completed interview → recorded, but the trend needs ≥ 2 attempts, so
     // Results shows the "first recorded interview" empty state (no chart).
     await page.goto('/interview');
@@ -117,6 +120,9 @@ test.describe('Interview Mode', () => {
   });
 
   test('interview history: results → history list → read-only summary', async ({ page }) => {
+    // Several full interviews, each answer and submit a round trip to a
+    // remote database. The 60s default was sized for local SQLite.
+    test.setTimeout(120_000);
     await page.goto('/interview');
     await configureAndStart(page, '10');
     await answerAllAndSubmit(page, 10);
@@ -130,24 +136,35 @@ test.describe('Interview Mode', () => {
     await expect(page.locator('.ih-summary dd').first()).toHaveText('1');
     await expect(page.locator('.ih-card')).toHaveCount(1);
 
+    // TWO actions. `Review Answers` is offered only while a durable pointer to
+    // the session still exists, because the review is fetched from the backend;
+    // `View Summary` is always available because the analytics are local.
+    await expect(page.locator('.ih-card__actions a')).toHaveCount(2);
+    await expect(page.locator('.ih-card__actions a:has-text("Review Answers")')).toBeVisible();
+
     // View Summary opens the read-only historical detail (no session restore).
     await page.locator('.ih-card__actions a:has-text("View Summary")').click();
     await expect(page).toHaveURL(/\/interview\/history\/.+/);
     await expect(page.locator('.ihd__readonly')).toContainText('Read Only');
 
-    // History retains ANALYTICS ONLY. The questions, answers and explanations
-    // live on the server, so a historical record neither embeds the review nor
-    // advertises an action that would promise it.
-    await expect(page.locator('app-interview-review')).toHaveCount(0);
-    await expect(page.locator('.rv-item')).toHaveCount(0);
-    await expect(page.locator('.ihd-note'))
-      .toContainText('available only for the current browser session');
+    // History itself stores ANALYTICS ONLY — never questions, answers or
+    // explanations. Those are fetched from the server for THIS attempt, which
+    // is possible here because the session reference is still in sessionStorage
+    // for this tab. A generous timeout: this is a real backend round trip, not
+    // a local read.
+    await expect(page.locator('app-interview-review')).toHaveCount(1, { timeout: 30_000 });
+    await expect(page.locator('.rv-item').first()).toBeVisible({ timeout: 30_000 });
+    // Loading has settled, so neither note is showing.
+    await expect(page.locator('.ihd-note')).toHaveCount(0);
 
     // Topic Performance is reused here too.
     await expect(page.locator('.topic-row').first()).toBeVisible();
   });
 
   test('interview readiness: limited state → score → updates → cleared with history', async ({ page }) => {
+    // Several full interviews, each answer and submit a round trip to a
+    // remote database. The 60s default was sized for local SQLite.
+    test.setTimeout(210_000);
     // 1. First interview → limited-data readiness (no numeric score yet).
     await page.goto('/interview');
     await configureAndStart(page, '10');
@@ -188,6 +205,9 @@ test.describe('Interview Mode', () => {
   });
 
   test('topic trends: more-data-needed → direction after a repeat → expand → linked summary → cleared', async ({ page }) => {
+    // Several full interviews, each answer and submit a round trip to a
+    // remote database. The 60s default was sized for local SQLite.
+    test.setTimeout(150_000);
     // 1. First interview → topics appear as "More data needed".
     await page.goto('/interview');
     await configureAndStart(page, '10');
