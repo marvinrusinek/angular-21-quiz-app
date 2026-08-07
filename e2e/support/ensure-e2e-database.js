@@ -13,7 +13,10 @@
  * Plain JavaScript on purpose: this runs via the shell in front of `npm run
  * dev`, with no transpiler in the chain.
  */
+const { execFileSync } = require('node:child_process');
 const { Client } = require('pg');
+
+const { assertSafeSeedTarget } = require('./seed-target-guard');
 
 const NAME_PREFIX = 'e2e_';
 
@@ -54,4 +57,48 @@ if (!name.startsWith(NAME_PREFIX)) {
   } finally {
     await client.end();
   }
+
+  seedQuizBank();
 })().catch((err) => fail(`could not create ${name}: ${err.message}`));
+
+/**
+ * Import the quiz bank into the throwaway database.
+ *
+ * REQUIRED since the backend became PostgreSQL-authoritative: it now fails
+ * closed on an empty bank ("No quizzes found in PostgreSQL"), so a freshly
+ * created E2E database would stop the server booting and take the whole run
+ * with it. Creating the database is no longer enough — it has to be populated.
+ *
+ * Runs the real import script rather than reimplementing it, so E2E exercises
+ * the same validation and the same derived ids as production. The connection is
+ * passed EXPLICITLY: the import script loads `.env` when present, and relying on
+ * environment precedence to keep it pointed at the throwaway database would be
+ * one silent mistake away from writing to the developer's own.
+ */
+function seedQuizBank() {
+  const databaseUrl = (process.env.DATABASE_URL || '').trim();
+
+  // Fail closed unless this URL targets exactly THIS run's throwaway database.
+  // Seeding runs the import, which deletes and reinserts every question, so a
+  // wrong target would silently rewrite the developer's own data. The guard is
+  // a pure function with its own unit tests — see seed-target-guard.test.js.
+  try {
+    assertSafeSeedTarget(databaseUrl, name);
+  } catch (err) {
+    fail(err.message);
+  }
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        '--require', 'ts-node/register',
+        'scripts/import-quiz-bank.ts',
+        '--file', './data/quiz.json',
+        '--database-url', databaseUrl
+      ],
+      { cwd: process.cwd(), stdio: 'inherit' }
+    );
+  } catch (err) {
+    fail(`quiz-bank import failed: ${err.message}`);
+  }
+}
