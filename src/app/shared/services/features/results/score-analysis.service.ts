@@ -44,15 +44,28 @@ export class ScoreAnalysisService {
       // the answer key at exactly the moment it is supposed to be unnecessary.
       const authorized = this.authorizedReveal(quizId, questionText);
 
+      // An INCOMPLETE verdict is an authoritative "not correct".
+      //
+      // It must not fall through to the bank scan below. It used to, and that
+      // was a real scoring defect: on a multi-answer question the user could
+      // select an option the LOCAL flags call correct, leave the question
+      // unfinished, and the scan would credit it — because the scan compares
+      // the selection against the bank's idea of the correct set rather than
+      // the server's. The verdict knows the question was never completed.
+      const knownIncomplete = this.isIncomplete(quizId, questionText);
+
       const correctTexts = authorized
         ? authorized.correctOptionTexts.map((t) => norm(t))
-        // TEMPORARY: no terminal verdict for this question (never answered, or
-        // a snapshot rebuilt outside an attempt). Falls back to the bank until
-        // the public asset is removed.
-        : options.filter((o) => o.correct === true).map((o) => norm(o.text ?? ''));
+        : knownIncomplete
+          ? []
+          // TEMPORARY: no verdict at all for this question (never answered, or
+          // a snapshot rebuilt outside an attempt). Falls back to the bank
+          // until the public asset is removed.
+          : options.filter((o) => o.correct === true).map((o) => norm(o.text ?? ''));
 
       // Mirror the accordion exactly: ALL correct answers must be selected.
-      const wasCorrect = correctTexts.length > 0
+      const wasCorrect = !knownIncomplete
+        && correctTexts.length > 0
         && correctTexts.every((ct) => selectedTexts.includes(ct));
 
       // Ids are resolved FROM the authorized texts, not by re-reading
@@ -83,6 +96,19 @@ export class ScoreAnalysisService {
    * deliberately does not — an unfinished question's correct set is exactly
    * what must not leak — and `idle`/`checking`/`error` have nothing to give.
    */
+  /**
+   * Did the verdict positively establish that this question was NOT completed?
+   *
+   * Distinct from "no verdict": `incomplete` is an answer, `idle` is silence.
+   * Only the former may veto credit on its own.
+   */
+  private isIncomplete(quizId: string | undefined, questionText: string): boolean {
+    if (!quizId || !questionText) return false;
+
+    const verdicts = this.tryGet<QuestionVerdictService>(QuestionVerdictService);
+    return verdicts?.verdictFor(quizId, questionText).phase === 'incomplete';
+  }
+
   private authorizedReveal(
     quizId: string | undefined,
     questionText: string
