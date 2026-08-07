@@ -18,6 +18,7 @@ import { NextButtonStateService } from './next-button-state.service';
 import { OptionFeedbackStateService } from './option-feedback-state.service';
 import { OptionIdResolverService } from './option-id-resolver.service';
 import { OptionLockStateService } from './option-lock-state.service';
+import { QuestionVerdictService } from '../features/verdict/question-verdict.service';
 import { QuizService } from '../data/quiz.service';
 import { SelectionCrudService } from './selection-crud.service';
 import { SelectionPersistenceService } from './selection-persistence.service';
@@ -33,6 +34,7 @@ export class SelectedOptionService {
   private nextButtonStateService = inject(NextButtonStateService);
   private persistence = inject(SelectionPersistenceService);
   private quizService = inject(QuizService);
+  private verdicts = inject(QuestionVerdictService);
   private selectionCrud = inject(SelectionCrudService);
 
   // ── properties ──────────────────────────────────────────────────
@@ -153,6 +155,44 @@ export class SelectedOptionService {
     const next = new Map(this.uiSelectedTextsSig());
     next.set(questionIndex, texts);
     this.uiSelectedTextsSig.set(next);
+
+    this.submitToVerdictService(questionIndex, texts);
+  }
+
+  /**
+   * Hand the current selection to the correctness authority.
+   *
+   * This is the ONLY place a Topic Quiz selection is submitted for evaluation,
+   * which matters for two reasons. Correctness queries — highlighting, the
+   * timer-stop check — run during rendering and must stay side-effect free, so
+   * the write has to live on the selection path rather than inside a predicate.
+   * And when Stage 10 makes evaluation asynchronous, this is the single point
+   * that becomes a network call.
+   *
+   * Identity is (quizId, exact questionText) with options addressed by text —
+   * never an id or an index.
+   *
+   * `norm()` above is trim + lowercase; the verdict service canonicalizes with
+   * NFC + trim + collapse-whitespace + lowercase, so it accepts these strings
+   * unchanged. (The bank contains no field with internal double spaces, so the
+   * one difference between the two never arises in practice.)
+   */
+  private submitToVerdictService(questionIndex: number, texts: ReadonlySet<string>): void {
+    try {
+      const quizId = this.quizService?.quizId;
+      const questionText = this.quizService?.questionsSig?.()?.[questionIndex]?.questionText;
+      if (!quizId || !questionText) return;
+
+      // Fire and forget: the verdict lands in the service's own state, which
+      // consumers read. Errors are swallowed deliberately — a failed check must
+      // leave the LAST CONFIRMED verdict in place rather than clearing it, and
+      // the service already records an `error` phase for callers that care.
+      this.verdicts
+        .checkAnswer(quizId, questionText, [...texts])
+        .subscribe({ error: () => { /* last confirmed state is retained */ } });
+    } catch (err: unknown) {
+      swallow('selectedoption.service#submitToVerdictService', err);
+    }
   }
 
   /** Reactive read of the current question's UI-selected texts (for the M-A lock). */
