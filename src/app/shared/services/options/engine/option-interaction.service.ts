@@ -11,6 +11,7 @@ import { SelectedOption } from '../../../models/SelectedOption.model';
 import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT } from '../../../constants/session-keys';
 import { writeSessionString } from '../../../utils/session-storage';
 
+import { QuestionVerdictService } from '../../features/verdict/question-verdict.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -74,6 +75,7 @@ interface ClickContext extends ClickContextBase {
 export class OptionInteractionService {
   // ── injects ─────────────────────────────────────────────────────
   private quizService = inject(QuizService);
+  private verdicts = inject(QuestionVerdictService);
   private quizStateService = inject(QuizStateService);
   private selectedOptionService = inject(SelectedOptionService);
   private selectionMessageService = inject(SelectionMessageService);
@@ -131,6 +133,25 @@ export class OptionInteractionService {
    * Selection RULES are untouched — this only reads the selection phase 2
    * already computed.
    */
+  /**
+   * Has every correct option been selected, according to the verdict?
+   *
+   * Returns null when no verdict exists, so the caller can fall back rather
+   * than mistake "unknown" for "not complete".
+   *
+   * Read-only, and safe here because phase 3 runs after the submission.
+   */
+  private allCorrectFromVerdict(question: QuizQuestion | null): boolean | null {
+    const quizId = (this.quizService as any)?.quizId as string | undefined;
+    const questionText = question?.questionText;
+    if (!quizId || !questionText) return null;
+
+    const state = this.verdicts.verdictFor(quizId, questionText);
+    if (state.phase === 'resolved') return state.isResolvedCorrect === true;
+    if (state.phase === 'incomplete') return false;
+    return null;   // idle | checking | expired | error → caller decides
+  }
+
   private submitSelectionForVerdict(ctx: ClickContext): void {
     try {
       const texts: string[] = [];
@@ -271,8 +292,20 @@ export class OptionInteractionService {
 
     this.updateSelectionHistory(state, newState, index);
 
+    // COMPLETION comes from the verdict recorded moments ago, in this same
+    // click, before these effects ran. `isResolvedCorrect === true` means every
+    // correct option is selected — the SUPERSET rule — which is exactly what
+    // the index-intersection below computed, and it drives dot status, the
+    // completion branch and the timer-stop argument.
+    //
+    // TEMPORARY FALLBACK: the local computation still runs when no verdict was
+    // recorded (submission failed, or a caller reached phase 3 without one).
+    // Removed once the timeout paths move in STAGE 9D, which is what still
+    // needs the local read.
+    const verdictAllCorrect = this.allCorrectFromVerdict(question);
     const correctIndicesSet = this.resolveCorrectIndicesSet(question, state, questionOptions);
-    const allCorrectFound = correctIndicesSet.size > 0 && [...correctIndicesSet].every(i => futureKeys.has(i));
+    const allCorrectFound = verdictAllCorrect
+      ?? (correctIndicesSet.size > 0 && [...correctIndicesSet].every(i => futureKeys.has(i)));
 
     // DEFERRED DOT PERSIST: single-answer persists immediately; multi-answer
     // persists 'correct' only when ALL correct are selected (a partial 'correct'
