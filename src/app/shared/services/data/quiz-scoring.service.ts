@@ -5,6 +5,8 @@ import { SK_CORRECT_ANSWERS_COUNT, SK_SAVED_QUESTION_INDEX } from '../../constan
 import { QuizScore } from '../../models/QuizScore.model';
 
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { QuestionVerdictService } from '../features/verdict/question-verdict.service';
+import { QuizService } from './quiz.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 
 import { getQuizData } from '../../quiz-data-cache';
@@ -183,6 +185,12 @@ export class QuizScoringService {
     // without the union, completing a multi-answer on revisit would never credit.
     const selected = new Set<string>(this._confirmedCorrectClicks.get(qIndex) ?? []);
     if (extraSelectedTexts) for (const t of extraSelectedTexts) selected.add(norm(t));
+
+    // VERDICT FIRST. It answers the same question authoritatively.
+    const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, scoringKey);
+    if (fromVerdict !== null) return fromVerdict;
+
+    // TEMPORARY: no verdict recorded for this question yet.
     const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
     if (pristineCorrectTexts.length <= 1) return true;                // single-answer
     return pristineCorrectTexts.every((t: string) => selected.has(t)); // multi: all correct selected
@@ -210,6 +218,14 @@ export class QuizScoringService {
         const ui = sos?.uiSelectedTextsForQuestion?.(qIndex);
         if (ui) for (const t of ui) selected.add(norm(t));
       } catch (err: unknown) { swallow('quiz-scoring.service.ts gate ui-union', err); }
+      // VERDICT FIRST — same question, authoritative answer.
+      const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, scoringKey);
+      if (fromVerdict !== null) {
+        if (!fromVerdict) isNowCorrect = false;
+        return isNowCorrect;
+      }
+
+      // TEMPORARY: no verdict recorded for this question yet.
       const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
       if (pristineCorrectTexts.length > 1) {
         const allConfirmed = pristineCorrectTexts.every((t: string) => selected.has(t));
@@ -222,6 +238,54 @@ export class QuizScoringService {
   // Resolve pristine correct texts by index lookup, then cross-validate against
   // confirmed clicks (in shuffled mode the index lookup can hit the wrong
   // question; the right one's correct texts ALL appear in confirmed clicks).
+  /**
+   * Is this question's multi-answer requirement satisfied, per the VERDICT?
+   *
+   * Returns null when no authorized verdict exists, so the caller falls back to
+   * the pristine scan below rather than mistaking "unknown" for "not complete".
+   *
+   * Both scoring gates ask exactly one question — "has every correct option
+   * been selected?" — which is the SUPERSET rule the verdict already decides.
+   * Asking the authority is both safer and more accurate than re-deriving it:
+   * the pristine scan has to guess which source question a display index refers
+   * to under shuffle, and cross-validates against confirmed clicks to recover.
+   * The verdict is keyed by question TEXT, so there is nothing to guess.
+   */
+  private multiAnswerCompleteFromVerdict(quizId: string, scoringKey: number): boolean | null {
+    if (!quizId) return null;
+
+    try {
+      const questionText = this.questionTextForScoringKey(scoringKey);
+      if (!questionText) return null;
+
+      const verdicts = this.injector.get(QuestionVerdictService, null);
+      if (!verdicts) return null;
+
+      const state = verdicts.verdictFor(quizId, questionText);
+      if (state.phase === 'resolved') return state.isResolvedCorrect === true;
+      if (state.phase === 'incomplete') return false;
+      return null;   // idle | checking | expired | error → caller decides
+    } catch (err: unknown) {
+      swallow('quiz-scoring.service.ts verdict gate', err);
+      return null;
+    }
+  }
+
+  /**
+   * The question text at a scoring key, SHUFFLE-AWARE.
+   *
+   * Scoring keys are display indexes, so `questions[key]` is the wrong question
+   * once shuffle is active — the same trap the pristine scan works around by
+   * cross-validating. The display-order array is the authoritative source.
+   */
+  private questionTextForScoringKey(scoringKey: number): string | null {
+    // Resolved through the injector rather than a constructor dependency:
+    // QuizService owns this service, so injecting it directly would be a cycle.
+    const service = this.injector.get(QuizService, null) as any;
+    const inDisplayOrder = service?.getQuestionsInDisplayOrder?.()?.[scoringKey]?.questionText;
+    return typeof inDisplayOrder === 'string' && inDisplayOrder.length > 0 ? inDisplayOrder : null;
+  }
+
   private resolvePristineCorrectTexts(
     quizId: string,
     scoringKey: number,
