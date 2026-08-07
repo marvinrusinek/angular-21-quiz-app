@@ -95,12 +95,9 @@ describe('SelectedOptionService', () => {
 
   const mockAnswerEval = {
     areAllCorrectAnswersSelected: jest.fn(() => false),
-    areAllCorrectAnswersSelectedForQuestion: jest.fn(() => false),
     isMultiAnswerQuestion: jest.fn(() => false),
     isQuestionComplete: jest.fn(() => false),
     isQuestionResolvedCorrectly: jest.fn(() => false),
-    isQuestionResolvedLeniently: jest.fn(() => false),
-    isAnyCorrectAnswerSelected: jest.fn(() => false),
     getResolutionStatus: jest.fn(() => null)
   };
 

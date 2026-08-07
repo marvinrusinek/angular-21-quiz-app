@@ -1003,14 +1003,6 @@ export class SelectedOptionService {
     this.setAnswered(true);  // mark question as answered
   }
 
-  public areAllCorrectAnswersSelectedActiveQuestion(): boolean {
-    return this.answerEval.areAllCorrectAnswersSelectedForQuestion(
-      this.quizService.currentQuestionIndexSig?.() ?? -1,
-      (idx) => this.getSelectedOptionsForQuestion(idx),
-      this._questionCache
-    );
-  }
-
   public storeQuestion(index: number, question: QuizQuestion): void {
     if (question) this._questionCache.set(index, question);
   }
@@ -1027,20 +1019,6 @@ export class SelectedOptionService {
     selected: Array<SelectedOption | Option> | null
   ): boolean {
     return this.answerEval.isQuestionResolvedCorrectly(question, selected);
-  }
-
-  public isQuestionResolvedLeniently(
-    question: QuizQuestion,
-    selected: Array<SelectedOption | Option> | null
-  ): boolean {
-    return this.answerEval.isQuestionResolvedLeniently(question, selected);
-  }
-
-  public isAnyCorrectAnswerSelected(
-    question: QuizQuestion,
-    selected: Array<SelectedOption | Option> | null
-  ): boolean {
-    return this.answerEval.isAnyCorrectAnswerSelected(question, selected);
   }
 
   public getResolutionStatus(
