@@ -226,47 +226,20 @@ export class SharedOptionInitService {
    */
   subscribeToTimerExpiration(comp: SharedOptionComponentLike): void {
     this.timerService.expired$.pipe(takeUntilDestroyed(comp.destroyRef)).subscribe(() => {
+      // TIME IS UP — that is ALL this subscriber may conclude.
+      //
+      // It used to also rebuild `timeoutCorrectOptionKeys` from the local bank
+      // (option.correct, then optionId, then text). That made it a SECOND,
+      // racing source of timeout correctness: this and the orchestrator's
+      // authorized reveal both subscribe to the same `expired$` emission, so
+      // whichever ran last won — and this one could overwrite verdict-derived
+      // keys with locally-derived ones.
+      //
+      // Timeout correctness now comes from exactly one place:
+      // QuestionVerdictService.revealExpiredQuestion() -> correctOptionTexts,
+      // written by QqcOrchTimerService. Painting waits for that verdict rather
+      // than filling the gap from data that is about to stop existing.
       comp.timerExpiredForQuestion.set(true);
-      const question = comp.currentQuestion()
-        || comp.config()?.currentQuestion
-        || comp.getQuestionAtDisplayIndex(comp.currentQuestionIndex)
-        || comp.getQuestionAtDisplayIndex(this.quizService.getCurrentQuestionIndex());
-      const displayOptions = comp.optionsToDisplay?.length
-        ? comp.optionsToDisplay
-        : question?.options ?? [];
-      const correctFromDisplay = displayOptions.filter((option) => option?.correct);
-      const correctOptions = question
-        ? this.quizService.optionsService.getCorrectOptionsForCurrentQuestion(question)
-        : [];
-      const keys = new Set<string>();
-
-      if (correctFromDisplay.length > 0) {
-        for (const [index, option] of displayOptions.entries()) {
-          if (option?.correct) keys.add(comp.keyOf(option, index));
-        }
-      } else if (correctOptions.length > 0) {
-        for (const [fallbackIndex, correctOption] of correctOptions.entries()) {
-          const displayIndex = displayOptions.findIndex((option) =>
-            option?.optionId != null && option.optionId === correctOption.optionId
-          );
-          if (displayIndex >= 0) {
-            keys.add(comp.keyOf(displayOptions[displayIndex], displayIndex));
-            continue;
-          }
-
-          const textMatchIndex = displayOptions.findIndex((option) =>
-            option?.text && correctOption.text && option.text === correctOption.text
-          );
-          if (textMatchIndex >= 0) {
-            keys.add(comp.keyOf(displayOptions[textMatchIndex], textMatchIndex));
-            continue;
-          }
-
-          keys.add(comp.keyOf(correctOption, fallbackIndex));
-        }
-      }
-
-      comp.timeoutCorrectOptionKeys = keys;
       comp.cdRef.markForCheck();
     });
   }

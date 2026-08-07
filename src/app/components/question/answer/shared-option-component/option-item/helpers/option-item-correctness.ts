@@ -54,6 +54,34 @@ function questionTextForDisplayIndex(quizService: QuizService, qIdx: number): st
   return typeof fallback === 'string' && fallback.length > 0 ? fallback : null;
 }
 
+/**
+ * Has the backend AUTHORIZED this question's timeout reveal yet?
+ *
+ * "The timer ran out" and "the server has told us the answers" are two
+ * different facts, and they arrive at different times. The timer fact is
+ * instant and local; the reveal is a round trip. Painting correctness on the
+ * timer fact alone is the race this exists to close — it is what forced the
+ * local `.correct` fallback to stay load-bearing, because something had to fill
+ * the gap between the two.
+ *
+ * Only `expired` counts. A question that merely RESOLVED is a different reveal
+ * on a different path, and `idle`/`checking`/`error` mean the reveal has not
+ * arrived — in which case the honest render is "no correctness yet".
+ */
+export function isTimeoutRevealAuthorized(
+  quizService: QuizService,
+  qIdx: number,
+  verdicts?: QuestionVerdictService
+): boolean {
+  if (!verdicts) return false;
+
+  const quizId = (quizService as any)?.quizId as string | undefined;
+  const questionText = questionTextForDisplayIndex(quizService, qIdx);
+  if (!quizId || !questionText) return false;
+
+  return verdicts.verdictFor(quizId, questionText).phase === 'expired';
+}
+
 export function isCurrentOptionCorrect(
   binding: OptionBindings | undefined,
   quizService: QuizService,

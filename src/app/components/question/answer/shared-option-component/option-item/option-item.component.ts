@@ -23,7 +23,10 @@ import { FeedbackPolicyService } from '../../../../../shared/services/features/i
 
 import { OptionItemTimerStateService } from '../../../../../shared/services/options/view/option-item-timer-state.service';
 
-import { isCurrentOptionCorrect as isOptCorrect } from './helpers/option-item-correctness';
+import {
+  isCurrentOptionCorrect as isOptCorrect,
+  isTimeoutRevealAuthorized
+} from './helpers/option-item-correctness';
 import { QuestionVerdictService } from '../../../../../shared/services/features/verdict/question-verdict.service';
 import { isSelectedForCurrentQuestion as isSelForCurrentQ } from './helpers/option-item-selection-matcher';
 
@@ -684,9 +687,21 @@ export class OptionItemComponent implements OnInit {
   shouldShowCorrectOnTimeout(): boolean {
     if (!this.isTimerExpiredForThisQuestion()) return false;
 
-    // When the timer expires, reveal ALL correct answers regardless of whether
-    // they were flagged for icons or highlighted before.
+    // TIME RUNNING OUT DOES NOT AUTHORIZE A REVEAL. The expiry flag is set
+    // locally and instantly; the answers come from the server. Between those
+    // two moments this must paint nothing, or it would be inventing
+    // correctness — which is exactly what the old `.correct` fallback did.
+    if (!this.isTimeoutRevealAuthorized()) return false;
+
+    // Authorized: reveal ALL correct answers, including options the user never
+    // selected and never flagged.
     return this.isCurrentOptionCorrect();
+  }
+
+  /** Has the expired verdict for THIS question arrived? */
+  private isTimeoutRevealAuthorized(): boolean {
+    const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
+    return isTimeoutRevealAuthorized(this.quizService, qIdx, this.verdicts);
   }
 
   getOptionBackgroundColor(): string | null {
