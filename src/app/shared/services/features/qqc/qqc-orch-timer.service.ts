@@ -1,12 +1,17 @@
 import { inject, Service } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { Option } from '../../../models/Option.model';
 
 import { NextButtonStateService } from '../../state/next-button-state.service';
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
+import { QuestionVerdictService } from '../verdict/question-verdict.service';
+import { QuizService } from '../../data/quiz.service';
 import { TimerService } from '../timer/timer.service';
 
+import { norm } from '../../../utils/text-norm';
 import { swallow } from '../../../utils/error-logging';
 
 import type { QuizQuestionComponent } from '../../../../components/question/quiz-question/quiz-question.component';
@@ -23,6 +28,25 @@ export class QqcOrchTimerService {
   private nextButtonStateService = inject(NextButtonStateService);
   private selectedOptionService = inject(SelectedOptionService);
   private timerService = inject(TimerService);
+  private quizService = inject(QuizService);
+  private verdicts = inject(QuestionVerdictService);
+
+  /**
+   * The authorized correct-option texts for the question that just expired.
+   *
+   * `revealExpiredQuestion` is the single reveal authority — this service never
+   * touches the local adapter or the question's own flags. Emits a normalized
+   * set so the caller can match against rendered option text.
+   */
+  private revealExpired(host: Host): Observable<ReadonlySet<string>> {
+    const quizId = (this.quizService as any)?.quizId as string | undefined;
+    const questionText = host.currentQuestion()?.questionText;
+    if (!quizId || !questionText) return of(new Set<string>());
+
+    return this.verdicts.revealExpiredQuestion(quizId, questionText).pipe(
+      map((result) => new Set(result.correctOptionTexts.map((text) => norm(text))))
+    );
+  }
 
   runOnQuestionTimedOut(host: Host, targetIndex?: number): void {
     if (host.timedOut()) return;
@@ -35,11 +59,33 @@ export class QqcOrchTimerService {
       const displayOpts = soc.optionsToDisplay?.length
         ? soc.optionsToDisplay
         : host.optionsToDisplay() ?? [];
-      const keys = new Set<string>();
-      for (const [i, opt] of displayOpts.entries()) {
-        if (opt?.correct) keys.add(soc.keyOf(opt, i));
-      }
-      soc.timeoutCorrectOptionKeys = keys;
+
+      // TIMEOUT REVEAL comes from the verdict service, not from the options'
+      // own `correct` flags. Expiry is the one moment a question may reveal
+      // answers the user never selected, so it goes through the same authority
+      // as every other reveal.
+      //
+      // Written from the subscription rather than inline: the local adapter
+      // resolves synchronously today, but Stage 10 makes this an HTTP call, and
+      // the reveal must paint when the answer ARRIVES rather than assume it is
+      // already there. `runOnQuestionTimedOut` is guarded by `host.timedOut()`
+      // above, so a second expiry cannot produce a second reveal.
+      this.revealExpired(host).subscribe({
+        next: (correctTexts: ReadonlySet<string>) => {
+          const keys = new Set<string>();
+          for (const [i, opt] of displayOpts.entries()) {
+            const text = norm(opt?.text ?? '');
+            if (text && correctTexts.has(text)) keys.add(soc.keyOf(opt, i));
+          }
+          soc.timeoutCorrectOptionKeys = keys;
+        },
+        error: () => {
+          // Fail SAFE: no reveal rather than a fallback to the local answer
+          // key. An empty set leaves the options unpainted, which is wrong-
+          // looking but never wrong — and it does not restart the timer.
+          soc.timeoutCorrectOptionKeys = new Set<string>();
+        }
+      });
     }
 
     const result = host.timerEffect.onQuestionTimedOut({
