@@ -1,7 +1,9 @@
-import { Service, signal, type Signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Service, inject, signal, type Signal } from '@angular/core';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
-import { canonicalize, evaluateLocally, revealExpiredLocally } from './local-verdict.adapter';
+import { canonicalize } from './local-verdict.adapter';
+import { TOPIC_QUIZ_VERDICT_ADAPTER } from './verdict-adapter';
 import {
   IDLE_VERDICT_STATE,
   QuestionVerdictError,
@@ -56,6 +58,24 @@ export class QuestionVerdictService {
    * be tracked by a computed that ran before the question was first seen.)
    */
   private readonly _states = signal<ReadonlyMap<string, QuestionVerdictState>>(new Map());
+
+  /** Where verdicts come from. Local bank today, `/check` after the cutover. */
+  private readonly adapter = inject(TOPIC_QUIZ_VERDICT_ADAPTER);
+
+  /**
+   * Per-question request counter, for discarding STALE responses.
+   *
+   * A user clicking A, then A+B, then A+B+C produces three overlapping checks,
+   * and nothing guarantees they come back in order. Without this, the first
+   * response landing last would overwrite the newest verdict with the oldest
+   * selection's — the UI would show a completed question as incomplete again,
+   * or re-open one the user had finished.
+   *
+   * Every submission takes the next number for its question; a response applies
+   * only while it still holds the latest. Cancellation is not enough on its own
+   * because a response already in flight cannot be recalled.
+   */
+  private readonly generations = new Map<string, number>();
 
   /**
    * Separator for the composite state key.
@@ -120,19 +140,40 @@ export class QuestionVerdictService {
     }
 
     this.markChecking(quizId, questionText, selectedOptionTexts);
+    const generation = this.nextGeneration(quizId, questionText);
 
-    let result: QuestionCheckResult;
-    try {
-      result = evaluateLocally(quizId, questionText, selectedOptionTexts);
-    } catch (err: unknown) {
-      this.markError(quizId, questionText);
-      return throwError(() =>
-        err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
-      );
-    }
+    return this.adapter.check(quizId, questionText, selectedOptionTexts).pipe(
+      tap((result) => {
+        // A response that is no longer the latest is DROPPED, not applied. It
+        // still reaches the subscriber — the caller asked for this specific
+        // result — but it may not move shared state backwards.
+        if (this.isCurrent(quizId, questionText, generation)) {
+          this.applyResult(quizId, questionText, selectedOptionTexts, result);
+        }
+      }),
+      catchError((err: unknown) => {
+        // A stale FAILURE must not clobber a newer success either.
+        if (this.isCurrent(quizId, questionText, generation)) {
+          this.markError(quizId, questionText);
+        }
+        return throwError(() =>
+          err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
+        );
+      })
+    );
+  }
 
-    this.applyResult(quizId, questionText, selectedOptionTexts, result);
-    return of(result);
+  /** Claim the next request number for this question. */
+  private nextGeneration(quizId: string, questionText: string): number {
+    const key = this.key(quizId, questionText);
+    const next = (this.generations.get(key) ?? 0) + 1;
+    this.generations.set(key, next);
+    return next;
+  }
+
+  /** Is this response still the newest one issued for its question? */
+  private isCurrent(quizId: string, questionText: string, generation: number): boolean {
+    return this.generations.get(this.key(quizId, questionText)) === generation;
   }
 
   /**
@@ -143,30 +184,45 @@ export class QuestionVerdictService {
    * is ignored entirely.
    */
   revealExpiredQuestion(quizId: string, questionText: string): Observable<QuestionExpiredResult> {
-    let result: QuestionExpiredResult;
-    try {
-      result = revealExpiredLocally(quizId, questionText);
-    } catch (err: unknown) {
-      this.markError(quizId, questionText);
-      return throwError(() =>
-        err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
-      );
-    }
+    // Expiry OUTRANKS any in-flight check: the deadline has passed, so a
+    // selection response still on its way must not overwrite the reveal.
+    const generation = this.nextGeneration(quizId, questionText);
 
-    const existing = this.verdictFor(quizId, questionText);
-    this.write(quizId, questionText, {
-      ...existing,
-      phase: 'expired',
-      correctOptionTexts: result.correctOptionTexts,
-      explanation: result.explanation,
-      // Expiry reveals the answer; it does not claim the user got it right.
-      isResolvedCorrect: existing.isResolvedCorrect,
-    });
-    return of(result);
+    return this.adapter.revealExpired(quizId, questionText).pipe(
+      map((result) => {
+        if (this.isCurrent(quizId, questionText, generation)) {
+          const existing = this.verdictFor(quizId, questionText);
+          this.write(quizId, questionText, {
+            ...existing,
+            phase: 'expired',
+            correctOptionTexts: result.correctOptionTexts,
+            explanation: result.explanation,
+            // Expiry reveals the answer; it does not claim the user got it right.
+            isResolvedCorrect: existing.isResolvedCorrect,
+          });
+        }
+        return result;
+      }),
+      catchError((err: unknown) => {
+        if (this.isCurrent(quizId, questionText, generation)) {
+          this.markError(quizId, questionText);
+        }
+        return throwError(() =>
+          err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
+        );
+      })
+    );
   }
 
-  /** Drop one question's verdict — e.g. a quiz restart. */
+  /**
+   * Drop one question's verdict — e.g. a quiz restart.
+   *
+   * The generation counter is bumped rather than deleted: a check already in
+   * flight must not be able to land afterwards and resurrect the state that was
+   * just cleared. Deleting would reset the count to zero and let it match.
+   */
   clearQuestion(quizId: string, questionText: string): void {
+    this.nextGeneration(quizId, questionText);
     const next = new Map(this._states());
     next.delete(this.key(quizId, questionText));
     this._states.set(next);
@@ -174,6 +230,11 @@ export class QuestionVerdictService {
 
   /** Drop everything. In-memory only, so nothing else needs cleaning up. */
   clearAll(): void {
+    // Same reasoning as clearQuestion: bump every counter so no in-flight
+    // response can apply against the cleared state.
+    for (const key of [...this.generations.keys()]) {
+      this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
+    }
     this._states.set(new Map());
   }
 
