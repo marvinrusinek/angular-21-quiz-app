@@ -3,7 +3,9 @@ import { Router, type RequestHandler } from 'express';
 import type { QuizRepository } from '../quiz/quiz.repository';
 import {
   AnswerCheckError,
+  canonicalize,
   checkAnswer,
+  findQuestion,
   type CheckOutcome
 } from '../quiz/answer-check';
 import {
@@ -12,6 +14,12 @@ import {
   verifyAttemptReceipt,
   RECEIPT_VERSION
 } from '../quiz/attempt-receipt';
+import {
+  QUESTION_DURATION_SECONDS,
+  QuestionReceiptError,
+  issueQuestionReceipt,
+  verifyQuestionReceipt
+} from '../quiz/question-receipt';
 import {
   toQuizMetadataListDto,
   toTopicQuizQuestionsDto,
@@ -146,14 +154,89 @@ export function createQuizzesRouter(deps: QuizRepository | QuizzesRouterDeps): R
   });
 
   /**
+   * Start ONE question's timer. Issues the signed per-question receipt.
+   *
+   * The Topic Quiz timer is per-question, so the deadline that authorizes a
+   * timeout reveal has to be per-question too. The attempt receipt's whole-quiz
+   * deadline (30s × question count) is far in the future when question 3 of 10
+   * expires at t=30s, and could never authorize that reveal.
+   *
+   * Requires a valid ATTEMPT receipt: a question timer only exists inside an
+   * attempt at that same quiz. That is also what stops a receipt issued for
+   * quiz A from starting timers in quiz B.
+   *
+   * Stateless by design — no `quiz_attempt_questions` table. The signed receipt
+   * IS the record of when this question started, which keeps the rate-limited
+   * check path free of database writes.
+   */
+  router.post('/quizzes/:quizId/questions/start', (req, res, next) => {
+    setResponsePolicy(res, 'ATTEMPT_ISSUED');
+
+    const quizId = req.params['quizId'];
+
+    let attempt;
+    try {
+      attempt = verifyAttemptReceipt(req.header('X-Attempt-Receipt'), options.receiptSecret);
+    } catch (err: unknown) {
+      next(err instanceof AttemptReceiptError
+        ? ApiError.unauthorized('Invalid attempt receipt')
+        : err);
+      return;
+    }
+
+    if (attempt.quizId !== quizId) {
+      next(ApiError.unauthorized('Invalid attempt receipt'));
+      return;
+    }
+
+    const quiz = repository.getQuizById(quizId);
+    if (!quiz) {
+      next(ApiError.notFound('Quiz not found'));
+      return;
+    }
+
+    // The question must exist in THIS quiz. Resolved through the SAME
+    // `findQuestion` the check route uses, so the two endpoints agree on
+    // whitespace and case — a question that can be answered can be started.
+    // Identity stays the public question text; no id or index enters here.
+    const body = (req.body ?? {}) as Record<string, unknown>;
+
+    let question;
+    try {
+      question = findQuestion(quiz, body['questionText']);
+    } catch (err: unknown) {
+      // Same error as a malformed body: whether a given string is a real
+      // question in this quiz is not something a prober gets to learn.
+      next(err instanceof AnswerCheckError ? ApiError.badRequest('Invalid submission') : err);
+      return;
+    }
+
+    const startedAt = now();
+    const expiresAt = startedAt + QUESTION_DURATION_SECONDS * 1000;
+
+    res.status(201).json({
+      quizId,
+      questionText: question.questionText,
+      durationSeconds: QUESTION_DURATION_SECONDS,
+      startedAt,
+      expiresAt,
+      questionReceipt: issueQuestionReceipt(
+        { v: RECEIPT_VERSION, quizId, questionText: question.questionText, startedAt, expiresAt },
+        options.receiptSecret
+      )
+    });
+  });
+
+  /**
    * Check ONE question's answer and, when the question is terminal, reveal that
    * question's correct options and explanation.
    *
-   * Everything that decides authorization comes from the SIGNED receipt: the
-   * quiz it belongs to and the deadline. A client cannot assert expiry, remaining
-   * time, or that a question was submitted by timeout.
+   * Everything that decides authorization comes from the SIGNED QUESTION
+   * receipt: the quiz, the question it is bound to, and that question's own
+   * deadline. A client cannot assert expiry, remaining time, or that a question
+   * was submitted by timeout.
    *
-   * Every rejection — missing receipt, tampered receipt, wrong quiz, unknown
+   * Every rejection — missing receipt, tampered receipt, wrong quiz, wrong
    * question, unknown option, duplicate selection — produces the same shape, so
    * a prober cannot tell how close it got.
    */
@@ -167,12 +250,12 @@ export function createQuizzesRouter(deps: QuizRepository | QuizzesRouterDeps): R
 
     let payload;
     try {
-      payload = verifyAttemptReceipt(req.header('X-Attempt-Receipt'), options.receiptSecret);
+      payload = verifyQuestionReceipt(req.header('X-Question-Receipt'), options.receiptSecret);
     } catch (err: unknown) {
       // 401: the caller is not authorized to check anything without a valid
       // receipt. The message never says why.
-      next(err instanceof AttemptReceiptError
-        ? ApiError.unauthorized('Invalid attempt receipt')
+      next(err instanceof QuestionReceiptError
+        ? ApiError.unauthorized('Invalid question receipt')
         : err);
       return;
     }
@@ -180,7 +263,7 @@ export function createQuizzesRouter(deps: QuizRepository | QuizzesRouterDeps): R
     // The receipt is bound to ONE quiz. A receipt for quiz A must not authorize
     // reveals in quiz B, which is what stops one attempt draining the bank.
     if (payload.quizId !== quizId) {
-      next(ApiError.unauthorized('Invalid attempt receipt'));
+      next(ApiError.unauthorized('Invalid question receipt'));
       return;
     }
 
@@ -192,13 +275,28 @@ export function createQuizzesRouter(deps: QuizRepository | QuizzesRouterDeps): R
 
     const body = (req.body ?? {}) as Record<string, unknown>;
 
+    // The receipt is bound to ONE question. Without this, a receipt whose
+    // deadline has passed would authorize the expiry reveal for EVERY question
+    // in the quiz — one 30-second wait would drain the entire answer key.
+    //
+    // Compared canonically, matching how `findQuestion` resolves the body's
+    // question: a client that may answer with different casing or spacing must
+    // not be locked out by the receipt binding.
+    const submitted = body['questionText'];
+    if (typeof submitted !== 'string'
+      || canonicalize(submitted) !== canonicalize(payload.questionText)) {
+      next(ApiError.unauthorized('Invalid question receipt'));
+      return;
+    }
+
     let outcome: CheckOutcome;
     try {
       outcome = checkAnswer({
         quiz,
         questionText: body['questionText'],
         selectedOptionTexts: body['selectedOptionTexts'],
-        // SERVER-DERIVED. The signed deadline against the server clock.
+        // SERVER-DERIVED, and per-question. The signed deadline for THIS
+        // question against the server clock.
         expired: now() >= payload.expiresAt
       });
     } catch (err: unknown) {

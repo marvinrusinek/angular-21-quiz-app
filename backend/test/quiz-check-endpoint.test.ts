@@ -146,11 +146,48 @@ async function startAttempt(quizId = 'rxjs') {
   return res.body as { attemptReceipt: string; expiresAt: number; durationSeconds: number };
 }
 
-function check(quizId: string, receipt: string, body: unknown) {
+/**
+ * Start ONE question's timer and return its signed receipt.
+ *
+ * The Topic Quiz timer is per-question, so this — not the attempt receipt — is
+ * what authorizes a reveal by expiry.
+ */
+async function startQuestion(quizId: string, questionText: string, attemptReceipt: string) {
+  const res = await request(app)
+    .post(`/api/quizzes/${quizId}/questions/start`)
+    .set('X-Attempt-Receipt', attemptReceipt)
+    .send({ questionText });
+  expect(res.status).toBe(201);
+  return res.body as { questionReceipt: string; expiresAt: number; startedAt: number };
+}
+
+/** Start WITHOUT asserting success — for rejection tests. */
+function startQuestionRaw(quizId: string, questionText: unknown, attemptReceipt: string) {
+  return request(app)
+    .post(`/api/quizzes/${quizId}/questions/start`)
+    .set('X-Attempt-Receipt', attemptReceipt)
+    .send({ questionText });
+}
+
+/** Raw check — the caller supplies the question receipt verbatim. */
+function check(quizId: string, questionReceipt: string, body: unknown) {
   return request(app)
     .post(`/api/quizzes/${quizId}/check`)
-    .set('X-Attempt-Receipt', receipt)
+    .set('X-Question-Receipt', questionReceipt)
     .send(body as object);
+}
+
+/**
+ * The normal client sequence: activate the question, then answer it.
+ *
+ * Used where the test is about ANSWER behaviour rather than receipt handling.
+ * `questionText` comes from the body, so the receipt is always bound to the
+ * question actually being submitted.
+ */
+async function answer(quizId: string, attemptReceipt: string, body: unknown) {
+  const { questionText } = body as { questionText: string };
+  const { questionReceipt } = await startQuestion(quizId, questionText, attemptReceipt);
+  return check(quizId, questionReceipt, body);
 }
 
 function keysDeep(value: unknown, out: string[] = []): string[] {
@@ -199,7 +236,7 @@ describe('POST /attempts', () => {
 describe('single and trueFalse resolve on any answer', () => {
   it('CORRECT single resolves with correct: true', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?',
       selectedOptionTexts: ['A multicast observable']
     });
@@ -215,7 +252,7 @@ describe('single and trueFalse resolve on any answer', () => {
 
   it('INCORRECT single still resolves, with correct: false', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?',
       selectedOptionTexts: ['A pipe']
     });
@@ -228,7 +265,7 @@ describe('single and trueFalse resolve on any answer', () => {
 
   it('CORRECT trueFalse resolves', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Is a Subject also an Observable?',
       selectedOptionTexts: ['True']
     });
@@ -238,7 +275,7 @@ describe('single and trueFalse resolve on any answer', () => {
 
   it('INCORRECT trueFalse resolves with correct: false', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Is a Subject also an Observable?',
       selectedOptionTexts: ['False']
     });
@@ -248,7 +285,7 @@ describe('single and trueFalse resolve on any answer', () => {
 
   it('rejects TWO selections on a single-answer question', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?',
       selectedOptionTexts: ['A multicast observable', 'A pipe']
     });
@@ -257,7 +294,7 @@ describe('single and trueFalse resolve on any answer', () => {
 
   it('an empty selection is incomplete, not an error', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?',
       selectedOptionTexts: []
     });
@@ -275,7 +312,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('ALL CORRECT ONLY → resolved', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['map', 'filter']
     });
 
@@ -289,7 +326,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('ALL CORRECT PLUS ONE INCORRECT → resolved AND correct', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['map', 'filter', 'Observable']
     });
 
@@ -302,7 +339,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('ONE CORRECT ONLY → incomplete, with one remaining', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['map']
     });
 
@@ -315,7 +352,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('INCORRECT ONLY → incomplete, and that pick is marked incorrect', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['Observable']
     });
 
@@ -326,7 +363,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('MISSING ONE CORRECT PLUS ONE INCORRECT → incomplete', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['map', 'Observable']
     });
 
@@ -342,7 +379,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
     const { attemptReceipt } = await startAttempt();
 
     // Three incorrect-ish selections do not reduce the remaining count.
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['Observable', 'Subject']
     });
     expect(res.body.remainingCorrectCount).toBe(2);
@@ -350,7 +387,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 
   it('NEVER reveals correctness for UNSELECTED options while incomplete', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: MULTI, selectedOptionTexts: ['map']
     });
 
@@ -368,7 +405,7 @@ describe('multiple-answer uses the SUPERSET rule (correctSet ⊆ selectedSet)', 
 describe('validation rejects safely', () => {
   it('rejects a DUPLICATE selected text', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Select every operator', selectedOptionTexts: ['map', 'map']
     });
     expect(res.status).toBe(400);
@@ -376,7 +413,7 @@ describe('validation rejects safely', () => {
 
   it('rejects an option belonging to ANOTHER question', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?', selectedOptionTexts: ['map']
     });
     expect(res.status).toBe(400);
@@ -384,26 +421,36 @@ describe('validation rejects safely', () => {
 
   it('rejects a question from ANOTHER quiz', async () => {
     const { attemptReceipt } = await startAttempt('rxjs');
-    const res = await check('rxjs', attemptReceipt, {
-      questionText: 'What does computed() return?',   // belongs to `signals`
+
+    // No receipt is issued for a question this quiz does not contain.
+    const started = await startQuestionRaw('rxjs', 'What does computed() return?', attemptReceipt);
+    expect(started.status).toBe(400);
+
+    // And a receipt legitimately held for an rxjs question does not authorize
+    // submitting the `signals` question against it.
+    const valid = await startQuestion('rxjs', 'Select every operator', attemptReceipt);
+    const res = await check('rxjs', valid.questionReceipt, {
+      questionText: 'What does computed() return?',
       selectedOptionTexts: ['A read-only signal']
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
   });
 
   it('rejects unknown question and unknown option text', async () => {
     const { attemptReceipt } = await startAttempt();
-    expect((await check('rxjs', attemptReceipt, {
-      questionText: 'No such question', selectedOptionTexts: ['map']
-    })).status).toBe(400);
-    expect((await check('rxjs', attemptReceipt, {
+
+    // An unknown question cannot even start a timer.
+    expect((await startQuestionRaw('rxjs', 'No such question', attemptReceipt)).status).toBe(400);
+
+    // An unknown OPTION is still rejected by the check itself.
+    expect((await answer('rxjs', attemptReceipt, {
       questionText: 'Select every operator', selectedOptionTexts: ['no such option']
     })).status).toBe(400);
   });
 
   it('rejects more selections than the question has options', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Is a Subject also an Observable?',
       selectedOptionTexts: ['True', 'False', 'Maybe']
     });
@@ -412,21 +459,37 @@ describe('validation rejects safely', () => {
 
   it('gives an IDENTICAL body for every rejection — no oracle', async () => {
     const { attemptReceipt } = await startAttempt();
-    const bodies = new Set<string>();
+
+    // Every rejection the CHECK route produces looks the same. The receipt is
+    // legitimate in each case, so only the submission differs.
+    const { questionReceipt } = await startQuestion('rxjs', 'Select every operator', attemptReceipt);
+    const checkBodies = new Set<string>();
     for (const body of [
-      { questionText: 'No such question', selectedOptionTexts: ['map'] },
       { questionText: 'Select every operator', selectedOptionTexts: ['no such option'] },
       { questionText: 'Select every operator', selectedOptionTexts: ['map', 'map'] },
-      { questionText: 'What does computed() return?', selectedOptionTexts: ['A promise'] }
+      { questionText: 'Select every operator', selectedOptionTexts: ['map', 'filter', 'Observable', 'Subject', 'map'] }
     ]) {
-      bodies.add(JSON.stringify((await check('rxjs', attemptReceipt, body)).body));
+      checkBodies.add(JSON.stringify((await check('rxjs', questionReceipt, body)).body));
     }
-    expect(bodies.size).toBe(1);
+    expect(checkBodies.size).toBe(1);
+
+    // …and so does every rejection the START route produces, whether the text
+    // is unknown, belongs to another quiz, or is not a string at all.
+    const startBodies = new Set<string>();
+    for (const questionText of [
+      'No such question',
+      'What does computed() return?',
+      42,
+      null
+    ]) {
+      startBodies.add(JSON.stringify((await startQuestionRaw('rxjs', questionText, attemptReceipt)).body));
+    }
+    expect(startBodies.size).toBe(1);
   });
 
   it('matches text case-insensitively and whitespace-insensitively', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: '  which   ANSWER is CORRECT?  ',
       selectedOptionTexts: ['  A MULTICAST   observable ']
     });
@@ -437,7 +500,7 @@ describe('validation rejects safely', () => {
 
   it('handles HTML-like option text exactly', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which selector is used for routing?',
       selectedOptionTexts: ['<router-outlet>']
     });
@@ -488,11 +551,12 @@ describe('the receipt is the authorization', () => {
 
 describe('expiry is server-authoritative', () => {
   it('reveals after the signed deadline, even with a PARTIAL selection', async () => {
-    const { attemptReceipt, expiresAt } = await startAttempt();
+    const { attemptReceipt } = await startAttempt();
+    const started = await startQuestion('rxjs', 'Select every operator', attemptReceipt);
 
-    clock = expiresAt + 1;   // server clock crosses the deadline
+    clock = started.expiresAt + 1;   // server clock crosses THIS question's deadline
 
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await check('rxjs', started.questionReceipt, {
       questionText: 'Select every operator', selectedOptionTexts: ['map']
     });
 
@@ -504,10 +568,11 @@ describe('expiry is server-authoritative', () => {
   });
 
   it('reveals after expiry with NO selection at all', async () => {
-    const { attemptReceipt, expiresAt } = await startAttempt();
-    clock = expiresAt + 1;
+    const { attemptReceipt } = await startAttempt();
+    const started = await startQuestion('rxjs', 'Select every operator', attemptReceipt);
+    clock = started.expiresAt + 1;
 
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await check('rxjs', started.questionReceipt, {
       questionText: 'Select every operator', selectedOptionTexts: []
     });
     expect(res.body.status).toBe('expired');
@@ -516,7 +581,7 @@ describe('expiry is server-authoritative', () => {
   it('IGNORES a client claim of expiry', async () => {
     const { attemptReceipt } = await startAttempt();
 
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Select every operator',
       selectedOptionTexts: ['map'],
       // None of these may influence anything.
@@ -531,10 +596,11 @@ describe('expiry is server-authoritative', () => {
   });
 
   it('reveals ONE question only — never the whole bank', async () => {
-    const { attemptReceipt, expiresAt } = await startAttempt();
-    clock = expiresAt + 1;
+    const { attemptReceipt } = await startAttempt();
+    const started = await startQuestion('rxjs', 'Which answer is correct?', attemptReceipt);
+    clock = started.expiresAt + 1;
 
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await check('rxjs', started.questionReceipt, {
       questionText: 'Which answer is correct?', selectedOptionTexts: []
     });
 
@@ -559,7 +625,7 @@ describe('the check route is rate limited, question delivery is not', () => {
     // test, so nothing refills and the bucket drains deterministically.
     let limited = false;
     for (let i = 0; i < 60 && !limited; i++) {
-      const res = await check('rxjs', attemptReceipt, BODY);
+      const res = await answer('rxjs', attemptReceipt, BODY);
       if (res.status === 429) {
         limited = true;
         expect(res.body).toEqual({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } });
@@ -578,19 +644,19 @@ describe('the check route is rate limited, question delivery is not', () => {
 
     let blocked = false;
     for (let i = 0; i < 60 && !blocked; i++) {
-      blocked = (await check('rxjs', attemptReceipt, BODY)).status === 429;
+      blocked = (await answer('rxjs', attemptReceipt, BODY)).status === 429;
     }
     expect(blocked).toBe(true);
 
     clock += 5_000;   // five tokens back
-    expect((await check('rxjs', attemptReceipt, BODY)).status).toBe(200);
+    expect((await answer('rxjs', attemptReceipt, BODY)).status).toBe(200);
   });
 });
 
 describe('reveal responses carry no identifiers or bulk data', () => {
   it('resolved response has EXACTLY the approved keys', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Which answer is correct?', selectedOptionTexts: ['A pipe']
     });
     expect(Object.keys(res.body).sort())
@@ -599,7 +665,7 @@ describe('reveal responses carry no identifiers or bulk data', () => {
 
   it('incomplete response has EXACTLY the approved keys', async () => {
     const { attemptReceipt } = await startAttempt();
-    const res = await check('rxjs', attemptReceipt, {
+    const res = await answer('rxjs', attemptReceipt, {
       questionText: 'Select every operator', selectedOptionTexts: ['map']
     });
     expect(Object.keys(res.body).sort())
@@ -613,7 +679,7 @@ describe('reveal responses carry no identifiers or bulk data', () => {
       { questionText: 'Which answer is correct?', selectedOptionTexts: ['A pipe'] },
       { questionText: 'Select every operator', selectedOptionTexts: ['map'] }
     ]) {
-      const keys = new Set(keysDeep((await check('rxjs', attemptReceipt, body)).body));
+      const keys = new Set(keysDeep((await answer('rxjs', attemptReceipt, body)).body));
       for (const banned of ['questionId', 'optionId', 'id', 'displayOrder',
                             'isCorrect', 'correctOptionIds', 'questions', 'options']) {
         expect(keys.has(banned)).toBe(false);
