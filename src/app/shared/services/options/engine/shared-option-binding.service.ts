@@ -862,8 +862,14 @@ export class SharedOptionBindingService {
     const isActuallySelected = b.isSelected;
 
     const optionKey = this.optionService.keyOf(b.option, i);
+    // AUTHORIZED KEYS ONLY. The `|| isOptionCorrect(b.option)` that used to sit
+    // here made the local answer key a fallback for timeout painting, which
+    // meant the reveal appeared to work while actually being computed in the
+    // browser. The keys are populated from the expired verdict's
+    // correctOptionTexts, so an empty set means "the reveal has not arrived" —
+    // and painting nothing is the correct render for that moment.
     const showCorrectOnTimeout = comp.timerExpiredForQuestion()
-      && (comp.timeoutCorrectOptionKeys?.has(optionKey) || isOptionCorrect(b.option));
+      && comp.timeoutCorrectOptionKeys?.has(optionKey) === true;
 
     const shouldHighlight = this.resolveShouldHighlight(
       comp, b, i, qIndex, isMulti, isActuallySelected, showCorrectOnTimeout
