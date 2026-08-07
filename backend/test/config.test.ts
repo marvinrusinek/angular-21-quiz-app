@@ -84,7 +84,10 @@ describe('loadConfig — allowed origins', () => {
       env({
         NODE_ENV: 'production',
         ALLOWED_ORIGINS: 'https://example.github.io',
-        DATABASE_URL: 'postgres://u:p@host/db'
+        DATABASE_URL: 'postgres://u:p@host/db',
+        // Every production-required value must be present, or this test would
+        // pass on the wrong error.
+        TOPIC_QUIZ_RECEIPT_SECRET: 'a-production-grade-secret-of-sufficient-length'
       })
     );
     expect(config.isProduction).toBe(true);

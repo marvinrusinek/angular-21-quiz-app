@@ -16,4 +16,9 @@ export interface AppDependencies {
   readonly sessionRepository?: SessionRepository;
   /** Absent in tests that only exercise metadata/health routes. */
   readonly interviewSessionService?: InterviewSessionService;
+  /**
+   * Injected clock for Topic Quiz attempt expiry, so tests can cross the
+   * deadline without waiting. Defaults to Date.now().
+   */
+  readonly now?: (() => number) | undefined;
 }

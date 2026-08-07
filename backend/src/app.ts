@@ -8,6 +8,7 @@ import { securityHeaders } from './shared/security-headers';
 import { createResponseGuard } from './api/response-guard';
 import { createHealthRouter } from './routes/health.route';
 import { createQuizzesRouter } from './routes/quizzes.route';
+import { createRateLimiter } from './shared/rate-limit';
 import { createInterviewSessionsRouter } from './routes/interview-sessions.route';
 
 /**
@@ -35,7 +36,24 @@ export function createApp(config: AppConfig, dependencies: AppDependencies): Exp
   app.use(express.json({ limit: '32kb' }));
 
   app.use('/api', createHealthRouter());
-  app.use('/api', createQuizzesRouter(dependencies.quizRepository));
+  /**
+   * The check endpoint releases correctness and an explanation per call, so it
+   * is the one route that needs its own throttle: unlimited, it is a complete
+   * answer-key oracle. Question DELIVERY is deliberately not limited here — it
+   * exposes only text the client is authorized to render.
+   */
+  const checkRateLimiter = createRateLimiter({
+    capacity: 40,          // generous for a real quiz run…
+    refillPerSecond: 1,    // …but ~185 reveals then take minutes, not seconds
+    now: dependencies.now
+  });
+
+  app.use('/api', createQuizzesRouter({
+    repository: dependencies.quizRepository,
+    receiptSecret: config.topicQuizReceiptSecret,
+    now: dependencies.now,
+    checkRateLimiter: checkRateLimiter.middleware
+  }));
 
   // Registered only when wired, so metadata-only test apps stay minimal and no
   // route can accidentally run without its service.
