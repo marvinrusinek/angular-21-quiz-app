@@ -12,6 +12,7 @@ import { SK_DOT_CONFIRMED, SK_MULTI_PERFECT } from '../../../constants/session-k
 import { writeSessionString } from '../../../utils/session-storage';
 
 import { QuestionVerdictService } from '../../features/verdict/question-verdict.service';
+import { TopicQuizDotVerdictSyncService } from '../../features/verdict/dot-verdict-sync.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -55,8 +56,6 @@ interface ClickContextBase {
   isPristineCorrect: (o: any) => boolean;
   targetKey: number;
   targetCompositeKey: string;
-  clickedIsCorrectEarly: boolean;
-  dotStatusEarly: string;
   isMultipleMode: boolean;
 }
 
@@ -76,6 +75,7 @@ export class OptionInteractionService {
   // ── injects ─────────────────────────────────────────────────────
   private quizService = inject(QuizService);
   private verdicts = inject(QuestionVerdictService);
+  private dotVerdictSync = inject(TopicQuizDotVerdictSyncService);
   private quizStateService = inject(QuizStateService);
   private selectedOptionService = inject(SelectedOptionService);
   private selectionMessageService = inject(SelectionMessageService);
@@ -223,10 +223,18 @@ export class OptionInteractionService {
     // loader fallbacks produce duplicate ids; keep each position distinct.
     const targetCompositeKey = `${targetKey}|${index}`;
 
-    // SET DOT STATUS EARLY — before any subscription-triggering code runs.
-    const clickedIsCorrectEarly = isPristineCorrect(binding.option);
-    const dotStatusEarly = clickedIsCorrectEarly ? 'correct' : 'wrong';
-    this.recordEarlyDotStatus(qIdx, binding, clickedIsCorrectEarly, dotStatusEarly, isPristineCorrect);
+    // DOT CORRECTNESS IS NO LONGER DECIDED HERE.
+    //
+    // This used to read `isPristineCorrect(binding.option)` and stamp the dot
+    // immediately, which is only possible while the answer key is in the
+    // browser. Phase 1 runs BEFORE the selection is submitted, so there is no
+    // verdict to consult yet — the write moves to phase 3, after
+    // `submitSelectionForVerdict`, and is skipped entirely while the verdict is
+    // still unknown. A pending check paints no correctness.
+    //
+    // The scoring service's per-click record is a separate concern (10I) and
+    // still runs on click.
+    this.recordCorrectClickForScoring(qIdx, binding, isPristineCorrect);
 
     const correctCountInBindings = this.resolveCorrectCountInBindings(state);
     const pristineCorrectCount = this.resolvePristineCorrectCount(correctCountInBindings, qIdx, state);
@@ -239,8 +247,7 @@ export class OptionInteractionService {
     }
 
     return {
-      qIdx, isPristineCorrect, targetKey, targetCompositeKey,
-      clickedIsCorrectEarly, dotStatusEarly, isMultipleMode
+      qIdx, isPristineCorrect, targetKey, targetCompositeKey, isMultipleMode
     };
   }
 
@@ -300,12 +307,17 @@ export class OptionInteractionService {
     updateOptionAndUI: (b: OptionBindings, i: number, ev: any, ctx?: any) => void
   ): void {
     const {
-      qIdx, isPristineCorrect, targetKey, clickedIsCorrectEarly, dotStatusEarly,
+      qIdx, isPristineCorrect, targetKey,
       isMultipleMode, question, questionOptions, isCurrentlySelected,
       futureSelection, futureKeys, newState, mockEvent
     } = ctx;
 
     this.updateSelectionHistory(state, newState, index);
+
+    // DOT CORRECTNESS, from the verdict submitted moments ago in phase 2.
+    // Null while the check is still in flight, in which case nothing is written
+    // and the dot keeps whatever it showed — no correctness is invented.
+    const dotStatus = this.recordDotStatusFromVerdict(qIdx, binding, question);
 
     // COMPLETION comes from the verdict recorded moments ago, in this same
     // click, before these effects ran. `isResolvedCorrect === true` means every
@@ -325,7 +337,7 @@ export class OptionInteractionService {
     // DEFERRED DOT PERSIST: single-answer persists immediately; multi-answer
     // persists 'correct' only when ALL correct are selected (a partial 'correct'
     // makes the refresh fallback lock auto-highlight an unselected answer).
-    this.persistDotConfirmedStatus(isMultipleMode, allCorrectFound, clickedIsCorrectEarly, dotStatusEarly, qIdx);
+    this.persistDotConfirmedStatus(isMultipleMode, allCorrectFound, dotStatus, qIdx);
 
     this.commitSelectionState(qIdx, futureSelection, futureKeys, state);
 
@@ -497,21 +509,63 @@ export class OptionInteractionService {
    * sessionStorage persist of dot_confirmed is deliberately left inline and
    * deferred until the question type is known.)
    */
-  private recordEarlyDotStatus(
+  /**
+   * Record a correct click for the SCORING service's multi-answer gate.
+   *
+   * Still answer-key-derived and still synchronous. Scoring is Stage 10I and is
+   * deliberately untouched here — this is split out from the old
+   * `recordEarlyDotStatus` so that removing the dot writes did not silently
+   * remove a scoring side effect too.
+   */
+  private recordCorrectClickForScoring(
     qIdx: number,
     binding: OptionBindings,
-    clickedIsCorrectEarly: boolean,
-    dotStatusEarly: 'correct' | 'wrong',
     isPristineCorrect: (o: any) => boolean
   ): void {
-    // Record correct clicks for the scoring service's multi-answer gate.
     try {
       if (isPristineCorrect(binding.option)) {
         (this.quizService as any)?.scoringService?.recordCorrectClick?.(qIdx, binding.option.text);
       }
     } catch { /* ignore */ }
-    this.selectedOptionService.clickConfirmedDotStatus.set(qIdx, dotStatusEarly);
-    this.selectedOptionService.lastClickedCorrectByQuestion.set(qIdx, clickedIsCorrectEarly);
+  }
+
+  /**
+   * Write the dot status for this click, from the VERDICT.
+   *
+   * Runs in phase 3, after `submitSelectionForVerdict`, so a synchronous
+   * adapter has already recorded the answer. Returns the status it wrote, or
+   * null when the verdict is not yet known — the caller then persists nothing
+   * and the dot stays as it was, which is the honest render for "checking".
+   *
+   * `verdictForOption` answers only for options the user actually selected,
+   * which is exactly the old semantic: these two maps record whether the option
+   * the user JUST CLICKED was right, not whether the question is finished.
+   */
+  private recordDotStatusFromVerdict(
+    qIdx: number,
+    binding: OptionBindings,
+    question: QuizQuestion | null
+  ): 'correct' | 'wrong' | null {
+    const clickedIsCorrect = this.clickedCorrectFromVerdict(question, binding.option);
+
+    if (clickedIsCorrect === null) {
+      // Still checking. Hand the wait to the sync service, which completes the
+      // write when the response lands, and paint no correctness meanwhile.
+      const quizId = (this.quizService as any)?.quizId as string | undefined;
+      const optionText = (binding.option as any)?.text as string | undefined;
+      if (quizId && question?.questionText && optionText) {
+        this.dotVerdictSync.awaitVerdict(qIdx, quizId, question.questionText, optionText);
+      }
+      return null;
+    }
+
+    // A newer synchronous answer supersedes any earlier pending wait.
+    this.dotVerdictSync.cancel(qIdx);
+
+    const dotStatus = clickedIsCorrect ? 'correct' : 'wrong';
+    this.selectedOptionService.clickConfirmedDotStatus.set(qIdx, dotStatus);
+    this.selectedOptionService.lastClickedCorrectByQuestion.set(qIdx, clickedIsCorrect);
+    return dotStatus;
   }
 
   /**
@@ -686,16 +740,20 @@ export class OptionInteractionService {
   private persistDotConfirmedStatus(
     isMultipleMode: boolean,
     allCorrectFound: boolean,
-    clickedIsCorrectEarly: boolean,
-    dotStatusEarly: string,
+    dotStatus: 'correct' | 'wrong' | null,
     qIdx: number
   ): void {
     try {
+      // A pending verdict persists NOTHING. Writing a guess here would be
+      // worse than writing nothing, because sessionStorage survives the reload
+      // that would otherwise correct it.
+      if (dotStatus === null && !allCorrectFound) return;
+
       if (!isMultipleMode) {
-        sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, dotStatusEarly);
+        if (dotStatus !== null) sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, dotStatus);
       } else if (allCorrectFound) {
         sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, 'correct');
-      } else if (!clickedIsCorrectEarly) {
+      } else if (dotStatus === 'wrong') {
         sessionStorage.setItem(SK_DOT_CONFIRMED + qIdx, 'wrong');
       }
       // For multi-answer partial correct: don't persist to sessionStorage.
