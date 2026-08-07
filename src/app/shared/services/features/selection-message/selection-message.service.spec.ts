@@ -192,7 +192,11 @@ describe('SelectionMessageService', () => {
       expect(msg).toBe('Select 1 more correct answer to continue...');
     });
 
-    it('should show total correct count for multi-answer with no selection', () => {
+    it('gives a COUNT-FREE multi-answer prompt before anything is selected', () => {
+      // The options below carry two `correct: true` flags. The prompt must not
+      // reflect that: how many correct answers exist is answer-key knowledge,
+      // and the user has not yet earned it. It used to read
+      // "Select 2 correct options to continue...".
       const msg = service.computeFinalMessage({
         index: 0,
         total: 6,
@@ -203,7 +207,27 @@ describe('SelectionMessageService', () => {
           { text: 'C', correct: false, selected: false, value: 3 },
         ],
       });
-      expect(msg).toBe('Select 2 correct options to continue...');
+      expect(msg).toBe('Select all that apply');
+      expect(msg).not.toMatch(/\d/);
+    });
+
+    it('the prompt does not change when the number of correct options does', () => {
+      // The decisive check: a question with THREE correct options produces the
+      // identical prompt. If the count leaked, these would differ.
+      const promptFor = (correctCount: number) =>
+        service.computeFinalMessage({
+          index: 0,
+          total: 6,
+          qType: QuestionType.MultipleAnswer,
+          opts: [
+            { text: 'A', correct: correctCount >= 1, selected: false, value: 1 },
+            { text: 'B', correct: correctCount >= 2, selected: false, value: 2 },
+            { text: 'C', correct: correctCount >= 3, selected: false, value: 3 },
+          ],
+        });
+
+      expect(promptFor(1)).toBe(promptFor(3));
+      expect(promptFor(1)).toBe('Select all that apply');
     });
 
     it('should return NEXT_BTN_MSG when all correct multi-answers selected', () => {

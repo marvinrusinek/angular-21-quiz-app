@@ -20,6 +20,17 @@ import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
 import { swallow } from '../../../utils/error-logging';
 
+/**
+ * The multiple-answer prompt shown BEFORE the user has answered.
+ *
+ * Deliberately count-free. It replaced "Select N correct options", which
+ * disclosed how many correct answers a question had before the user had earned
+ * that information — a fact that lives only in the private answer key. Once
+ * answering begins the authorized /check response supplies
+ * remainingCorrectCount, and "Select 1 more..." is fine.
+ */
+export const SELECT_ALL_THAT_APPLY_MSG = 'Select all that apply';
+
 const START_MSG = 'Please start the quiz by selecting an option.';
 const CONTINUE_MSG = 'Please select an option to continue...';
 const NEXT_BTN_MSG = 'Please click the Next button to continue.';
@@ -342,8 +353,15 @@ export class SelectionMessageService {
         this._wrongClickCounts.set(index, prevCount + 1);
         // On the last question, show "Show Results" only when ALL incorrect
         // options have been exhausted (correct auto-revealed).
+        //
+        // The incorrect count used to come from `opts.filter(o => !isOptionCorrect(o))`
+        // — a scan of the private answer key. It does not need to: a
+        // single-answer question has exactly ONE correct option by definition,
+        // so the number of wrong ones is simply "every option but one". That is
+        // derived from the option count, which is public, and is arithmetically
+        // identical to the old scan.
         if (isLastQuestion) {
-          const totalIncorrect = opts.filter(o => !isOptionCorrect(o)).length;
+          const totalIncorrect = Math.max(0, opts.length - 1);
           if (this._wrongClickCounts.get(index)! >= totalIncorrect) {
             return SHOW_RESULTS_MSG;
           }
@@ -369,9 +387,18 @@ export class SelectionMessageService {
         return isLastQuestion ? SHOW_RESULTS_MSG : NEXT_BTN_MSG;
       }
 
-      // Nothing selected → prompt for total correct count
+      // Nothing selected yet → a COUNT-FREE prompt.
+      //
+      // This used to read `Select ${totalCorrect} correct options`, which told
+      // the user how many correct answers existed BEFORE they had answered
+      // anything — a fact only the private answer key knows. The count is not
+      // recoverable from public question data, and exposing it through
+      // /questions would hand every visitor a materially useful hint.
+      //
+      // After the first selection the count is legitimate: it comes from the
+      // authorized /check response as remainingCorrectCount, below.
       if (totalSelected === 0) {
-        return `Select ${totalCorrect} correct options to continue...`;
+        return SELECT_ALL_THAT_APPLY_MSG;
       }
 
       // Some selected but not all correct yet → show remaining correct needed
@@ -421,8 +448,10 @@ export class SelectionMessageService {
       this.pushMessage(navMsg, i0);
       return;
     }
+    // Count-free for the same reason as the in-flow prompt above: this baseline
+    // is pushed when the question first renders, before any answer exists.
     const msg = qType === QuestionType.MultipleAnswer
-      ? `Select ${totalCorrect} correct options to continue...`
+      ? SELECT_ALL_THAT_APPLY_MSG
       : (i0 === 0 ? START_MSG : CONTINUE_MSG);
     this._lastMessageByIndex.set(i0, msg);
     this.pushMessage(msg, i0);
