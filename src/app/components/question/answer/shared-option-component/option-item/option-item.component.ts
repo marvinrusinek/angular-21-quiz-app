@@ -24,6 +24,7 @@ import { FeedbackPolicyService } from '../../../../../shared/services/features/i
 import { OptionItemTimerStateService } from '../../../../../shared/services/options/view/option-item-timer-state.service';
 
 import { isCurrentOptionCorrect as isOptCorrect } from './helpers/option-item-correctness';
+import { QuestionVerdictService } from '../../../../../shared/services/features/verdict/question-verdict.service';
 import { isSelectedForCurrentQuestion as isSelForCurrentQ } from './helpers/option-item-selection-matcher';
 
 import { isOptionCorrect } from '../../../../../shared/utils/is-option-correct';
@@ -72,6 +73,8 @@ export class OptionItemComponent implements OnInit {
   private readonly optionService = inject(OptionService);
   private readonly questionResolution = inject(QuestionResolutionService);
   private readonly quizService = inject(QuizService);
+  /** Correctness authority for per-option highlighting. */
+  private readonly verdicts = inject(QuestionVerdictService);
   private readonly selectedOptionService = inject(SelectedOptionService);
   private readonly timerService = inject(TimerService);
   private readonly timerState = inject(OptionItemTimerStateService);
@@ -1055,7 +1058,9 @@ export class OptionItemComponent implements OnInit {
 
   private isCurrentOptionCorrect(): boolean {
     const qIdx = this.quizService.currentQuestionIndex ?? this.currentQuestionIndex();
-    return isOptCorrect(this.binding(), this.quizService, qIdx);
+    // The verdict service is the correctness authority; the helper falls back
+    // to the local bank only for paths not yet migrated (see STAGE 9D).
+    return isOptCorrect(this.binding(), this.quizService, qIdx, this.verdicts);
   }
 
   private isTimerStamped(): boolean {
