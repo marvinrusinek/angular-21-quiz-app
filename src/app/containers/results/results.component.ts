@@ -37,7 +37,7 @@ import {
   writeSessionString,
 } from '../../shared/utils/session-storage';
 
-import { FinalResult, ScoreAnalysisItem } from '../../shared/models/Final-Result.model';
+import { FinalResult, ScoreAnalysisItem, toDurableFinalResult } from '../../shared/models/Final-Result.model';
 import { Quiz } from '../../shared/models/Quiz.model';
 import { QuizQuestion } from '../../shared/models/QuizQuestion.model';
 
@@ -506,7 +506,9 @@ export class ResultsComponent implements OnInit {
 
   private persistResultsToSession(result: FinalResult): void {
     try {
-      sessionStorage.setItem('finalResult', JSON.stringify(result));
+      // Sanitized: the authorized reveal stays in memory for this session and
+      // never becomes a durable answer cache. See toDurableFinalResult.
+      sessionStorage.setItem('finalResult', JSON.stringify(toDurableFinalResult(result)));
     } catch (err: unknown) {
       swallow('results.component.ts', err);
     }

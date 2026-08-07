@@ -5,7 +5,7 @@ import { distinctUntilChanged, map } from 'rxjs/operators';
 
 import { QuizStatus } from '../../models/quiz-status.enum';
 
-import { FinalResult } from '../../models/Final-Result.model';
+import { FinalResult, toDurableFinalResult } from '../../models/Final-Result.model';
 import { Option } from '../../models/Option.model';
 import { QuestionPayload } from '../../models/QuestionPayload.model';
 import { Quiz } from '../../models/Quiz.model';
@@ -1125,7 +1125,13 @@ export class QuizService {
     // Fallback to sessionStorage (tab switch / reload safe)
     try {
       const raw = sessionStorage.getItem('finalResult');
-      return raw ? (JSON.parse(raw) as FinalResult) : null;
+      if (!raw) return null;
+
+      // Scrubbed on READ as well as on write, so entries persisted by earlier
+      // builds stop handing back an answer key. Parsing never fails on them —
+      // the summary fields are unchanged — the reveal is simply dropped.
+      const parsed = JSON.parse(raw) as FinalResult;
+      return toDurableFinalResult(parsed);
     } catch (err: unknown) {
       console.error('QuizService.getFinalResultSnapshot sessionStorage parse failed:', err);
       return null;
