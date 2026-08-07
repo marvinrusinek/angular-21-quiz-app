@@ -207,6 +207,60 @@ describe('partial selections', () => {
   });
 });
 
+describe('isQuestionComplete follows the verdict', () => {
+  /** The method only checks that SOMETHING is selected; counts come from the verdict. */
+  const anySelection = [{ optionId: 1, text: 'map' }] as never;
+  const isComplete = () => evaluation.isQuestionComplete(question(), anySelection);
+
+  it('an UNTOUCHED question is not complete, despite local correct flags', () => {
+    expect(QUESTIONS[0]!.options[0]!.correct).toBe(true);
+    expect(verdicts.verdictFor(QUIZ, MULTI).phase).toBe('idle');
+
+    expect(isComplete()).toBe(false);
+  });
+
+  it('an EMPTY selection is not complete', () => {
+    submit(['map', 'filter']);   // verdict resolves…
+    expect(evaluation.isQuestionComplete(question(), [] as never)).toBe(false);
+  });
+
+  it('the locally-flagged set is NOT complete when the verdict says incomplete', () => {
+    // 'map' + 'Observable' both carry correct: true locally.
+    submit(['map', 'Observable']);
+    expect(isComplete()).toBe(false);
+  });
+
+  it('a set the bank calls incomplete IS complete when the verdict resolves it', () => {
+    // 'filter' carries no local flag.
+    submit(['map', 'filter']);
+    expect(isComplete()).toBe(true);
+  });
+
+  it('an ERROR verdict is not complete and does not consult the bank', () => {
+    submit(['no such option']);
+    expect(verdicts.verdictFor(QUIZ, MULTI).phase).toBe('error');
+    expect(isComplete()).toBe(false);
+  });
+
+  it('EXACT-SET is preserved: superset resolves but does not COMPLETE', () => {
+    // The historical contract. Scoring credits a superset; completion does not.
+    submit(['map', 'filter', 'Observable']);
+
+    expect(status().resolved).toBe(true);          // scoring rule
+    expect(isComplete()).toBe(false);              // completion rule
+  });
+
+  it('a partial selection is not complete', () => {
+    submit(['filter']);
+    expect(isComplete()).toBe(false);
+  });
+
+  it('an incorrect-only selection is not complete', () => {
+    submit(['Observable']);
+    expect(isComplete()).toBe(false);
+  });
+});
+
 describe('timeout', () => {
   it('an expired question is evaluated but not credited', () => {
     verdicts.revealExpiredQuestion(QUIZ, MULTI).subscribe();

@@ -52,44 +52,42 @@ export class AnswerEvaluationService {
 
   // ── Question completeness ──────────────────────────────────
 
+  /**
+   * Has this question been completed?
+   *
+   * EXACT-SET semantics, preserved from the original implementation: every
+   * correct option selected AND nothing incorrect selected. That is stricter
+   * than the Topic Quiz SCORING rule (`correctSet ⊆ selectedSet`), and
+   * deliberately so — the two answer different questions, and the caller
+   * (`answer-selection.service#updateQuestionCompletionState`) has always used
+   * the strict one.
+   *
+   * Correctness now comes from the verdict via `getResolutionStatus`, rather
+   * than a second interpretation of the same state. `strict: true` reproduces
+   * the old rule exactly: resolved (superset) AND no incorrect selections.
+   *
+   * `evaluated` is what makes idle/checking/error safe. Those return zero
+   * counts because nothing is KNOWN, not because nothing was correct — reading
+   * `resolved` alone would be right by luck here, but wrong the moment a caller
+   * starts trusting the counts.
+   */
   isQuestionComplete(
     question: QuizQuestion,
     selected: SelectedOption[]
   ): boolean {
     if (!question || !Array.isArray(question.options)) return false;
+
+    // No selection is not completion, whatever the verdict says. Kept ahead of
+    // the status call so an unanswered question never even looks it up.
     if (!selected || selected.length === 0) return false;
 
-    const totalCorrect = question.options.filter((o: Option) => isOptionCorrect(o)).length;
-    if (totalCorrect === 0) return false;
+    const status = this.getResolutionStatus(question, selected as unknown as Option[], true);
 
-    const selectedCorrectCount = selected.filter(sel => {
-      if (isOptionCorrect(sel)) {
-        return true;
-      }
+    // Unanswered, in flight, or failed — none of which is complete, and none
+    // of which entitles this to consult `option.correct`.
+    if (!status.evaluated) return false;
 
-      const selIdStr = String(sel.optionId);
-
-      const matchById = question.options.find(o =>
-        (o.optionId !== undefined && o.optionId !== null) && String(o.optionId) === selIdStr
-      );
-      if (matchById) return !!matchById.correct;
-
-      const numericId = Number(sel.optionId);
-      if (Number.isInteger(numericId)) {
-        const index = numericId - 1;
-        if (index >= 0 && index < question.options.length) {
-          const target = question.options[index];
-          if (target.optionId === undefined || target.optionId === null) {
-            return !!target.correct;
-          }
-        }
-      }
-      return false;
-    }).length;
-
-    const selectedIncorrectCount = selected.length - selectedCorrectCount;
-
-    return selectedCorrectCount === totalCorrect && selectedIncorrectCount === 0;
+    return status.resolved;
   }
 
   // ── Resolution status ──────────────────────────────────────
