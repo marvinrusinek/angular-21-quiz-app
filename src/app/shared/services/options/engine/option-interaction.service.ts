@@ -115,24 +115,20 @@ export class OptionInteractionService {
   }
 
   /**
-   * Hand the now-authoritative selection to the single submission owner.
+   * Was the CLICKED option correct, per the recorded verdict?
    *
-   * OWNERSHIP: `SelectedOptionService.setUiSelectedTextsForQuestion()` remains
-   * the only path to `QuestionVerdictService.checkAnswer()`. This does not call
-   * the verdict service directly, so there is exactly one submission path.
-   *
-   * DUPLICATE PREVENTION: that method early-returns when the text set is
-   * unchanged, so the later `ngDoCheck` sync — which publishes the same set —
-   * becomes a no-op rather than a second submission.
-   *
-   * The revisit snapshot is unioned in for the same reason the component does
-   * it: on a revisit the live bindings alone do not carry the first-visit
-   * picks, and a set that differs from what `ngDoCheck` will publish would
-   * defeat the equality guard and cause a duplicate submission.
-   *
-   * Selection RULES are untouched — this only reads the selection phase 2
-   * already computed.
+   * Null when the option carries no verdict — the caller then falls back.
+   * Distinct from allCorrectFromVerdict: this asks about ONE option the user
+   * selected, not whether the question is complete.
    */
+  private clickedCorrectFromVerdict(question: QuizQuestion | null, clickedOption: any): boolean | null {
+    const quizId = (this.quizService as any)?.quizId as string | undefined;
+    const questionText = question?.questionText;
+    const optionText = clickedOption?.text as string | undefined;
+    if (!quizId || !questionText || !optionText) return null;
+    return this.verdicts.verdictForOption(quizId, questionText, optionText);
+  }
+
   /**
    * Has every correct option been selected, according to the verdict?
    *
@@ -152,6 +148,25 @@ export class OptionInteractionService {
     return null;   // idle | checking | expired | error → caller decides
   }
 
+  /**
+   * Hand the now-authoritative selection to the single submission owner.
+   *
+   * OWNERSHIP: `SelectedOptionService.setUiSelectedTextsForQuestion()` remains
+   * the only path to `QuestionVerdictService.checkAnswer()`. This does not call
+   * the verdict service directly, so there is exactly one submission path.
+   *
+   * DUPLICATE PREVENTION: that method early-returns when the text set is
+   * unchanged, so the later `ngDoCheck` sync — which publishes the same set —
+   * becomes a no-op rather than a second submission.
+   *
+   * The revisit snapshot is unioned in for the same reason the component does
+   * it: on a revisit the live bindings alone do not carry the first-visit
+   * picks, and a set that differs from what `ngDoCheck` will publish would
+   * defeat the equality guard and cause a duplicate submission.
+   *
+   * Selection RULES are untouched — this only reads the selection phase 2
+   * already computed.
+   */
   private submitSelectionForVerdict(ctx: ClickContext): void {
     try {
       const texts: string[] = [];
@@ -326,7 +341,7 @@ export class OptionInteractionService {
     const isShuffleActive = (this.quizService as any)?.isShuffleEnabled?.() &&
       (this.quizService as any)?.shuffledQuestions?.length > 0;
 
-    this.stopTimerIfAnswerCorrect(isShuffleActive, isMultipleMode, isPristineCorrect, binding.option, allCorrectFound);
+    this.stopTimerIfAnswerCorrect(isShuffleActive, isMultipleMode, isPristineCorrect, binding.option, allCorrectFound, question);
 
     // In shuffled mode scoring/FET is handled by the SOC, so OIS must not score
     // or emit there. The pristine multi-answer probe guards against bindings
@@ -510,11 +525,21 @@ export class OptionInteractionService {
     isMultipleMode: boolean,
     isPristineCorrect: (o: any) => boolean,
     clickedOption: any,
-    allCorrectFound: boolean
+    allCorrectFound: boolean,
+    question: QuizQuestion | null
   ): void {
+    // The CLICKED option's own verdict, recorded before this phase ran.
+    //
+    // `verdictForOption` answers only for options the user actually selected,
+    // which is exactly right here: a single-answer question is terminal on any
+    // click, but the timer must stop only when the click was CORRECT. Terminal
+    // and correct are different questions, and this is the one that matters.
+    const clickedIsCorrect =
+      this.clickedCorrectFromVerdict(question, clickedOption) ?? isPristineCorrect(clickedOption);
+
     const shouldStopTimer = isShuffleActive
-      ? (!isMultipleMode && isPristineCorrect(clickedOption))
-      : (allCorrectFound || (!isMultipleMode && isPristineCorrect(clickedOption)));
+      ? (!isMultipleMode && clickedIsCorrect)
+      : (allCorrectFound || (!isMultipleMode && clickedIsCorrect));
     if (shouldStopTimer) {
       try { this.timerService.stopTimer?.(undefined, { force: true, bypassAntiThrash: true }); } catch (err: unknown) {
         console.error('OptionInteractionService.stopTimerIfAnswerCorrect timer stop failed:', err);
