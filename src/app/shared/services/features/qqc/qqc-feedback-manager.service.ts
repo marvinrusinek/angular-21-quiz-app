@@ -98,11 +98,17 @@ export class QqcFeedbackManagerService {
    * Order matches the per-option highlight helper:
    *   1. the user selected it -> their own verdict
    *   2. resolved | expired   -> authorized full reveal
-   *   3. incomplete           -> false, BEFORE any local read
-   *   4. idle/checking/error  -> temporary compatibility path
+   *   3. anything else        -> false
    *
-   * Case 3 is the security invariant: on an unresolved question an unselected
-   * option reveals nothing, and the fallback cannot run for it.
+   * Case 3 is the security invariant, and it now covers idle/checking/error as
+   * well as incomplete. It used to fall through to `isOptionCorrect(option)`
+   * because the timeout reveal was unmigrated and something had to paint it;
+   * 10F moved that onto the expired verdict, so the last caller that needed the
+   * fallback is gone.
+   *
+   * "No verdict yet" is not "not correct" — it is "not known", and the only
+   * honest render for it is no correctness at all. Guessing from the local bank
+   * would work right up until the bank leaves the bundle, then fail silently.
    */
   private isCorrectOption(question: QuizQuestion | null, option: Option): boolean {
     const quizId = (this.quizService as any)?.quizId as string | undefined;
@@ -118,12 +124,10 @@ export class QqcFeedbackManagerService {
         const target = norm(optionText);
         return state.correctOptionTexts.some((text) => norm(text) === target);
       }
-      if (state.phase === 'incomplete') return false;
     }
 
-    // TEMPORARY COMPATIBILITY PATH — reachable only for idle/checking/error,
-    // because the timeout reveal is not migrated until STAGE 9D.
-    return isOptionCorrect(option);
+    // No authorized verdict for this option — reveal nothing.
+    return false;
   }
 
   /**
