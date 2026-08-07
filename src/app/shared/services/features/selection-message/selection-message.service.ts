@@ -14,6 +14,7 @@ import { isOptionCorrect } from '../../../utils/is-option-correct';
 import { norm } from '../../../utils/text-norm';
 
 import { QuizDotStatusService } from '../../flow/quiz-dot-status.service';
+import { QuestionVerdictService } from '../verdict/question-verdict.service';
 import { QuizService } from '../../data/quiz.service';
 import { QuizStateService } from '../../state/quizstate.service';
 import { SelectedOptionService } from '../../state/selectedoption.service';
@@ -68,6 +69,7 @@ export class SelectionMessageService {
   private dotStatusService = inject(QuizDotStatusService);
   private explanationTextService = inject(ExplanationTextService);
   private quizService = inject(QuizService);
+  private verdicts = inject(QuestionVerdictService);
   private quizStateService = inject(QuizStateService);
   private selectedOptionService = inject(SelectedOptionService);
 
@@ -286,6 +288,32 @@ export class SelectionMessageService {
     });
   }
 
+  /**
+   * Missing correct options for the question at this DISPLAY index, from the
+   * verdict service — or null when no verdict has been recorded yet.
+   *
+   * Null rather than 0 so the caller can tell "nothing selected yet" from
+   * "nothing left to find"; a 0 here would wrongly read as complete.
+   *
+   * Shuffle-aware: the display-order array is the only correct source, since
+   * `index` is a display index.
+   */
+  private remainingCorrectFromVerdict(index: number): number | null {
+    try {
+      const service = this.quizService as any;
+      const quizId = service?.quizId;
+      const questionText =
+        service?.getQuestionsInDisplayOrder?.()?.[index]?.questionText
+        ?? service?.questions?.[index]?.questionText;
+      if (!quizId || !questionText) return null;
+
+      const state = this.verdicts.verdictFor(quizId, questionText);
+      return state.remainingCorrectCount;   // null unless a verdict exists
+    } catch {
+      return null;   // never let a message computation throw
+    }
+  }
+
   public computeFinalMessage(args: {
     index: number;
     total: number;
@@ -326,7 +354,13 @@ export class SelectionMessageService {
     }
 
     if (qType === QuestionType.MultipleAnswer) {
-      const remaining = totalCorrect - selectedCorrect;
+      // How many CORRECT options are still unselected, from the verdict
+      // service rather than a scan of `correct` flags. Incorrect picks cannot
+      // move this number — the verdict counts only missing correct options,
+      // which is exactly the existing behaviour (`totalCorrect -
+      // selectedCorrect` likewise ignored wrong selections).
+      const remaining = this.remainingCorrectFromVerdict(index)
+        ?? (totalCorrect - selectedCorrect);
       const totalSelected = selectedCorrect + selectedWrong;
 
       // All correct answers selected → Next button or Show Results
