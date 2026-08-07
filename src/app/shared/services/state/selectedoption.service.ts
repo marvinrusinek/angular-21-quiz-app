@@ -156,7 +156,15 @@ export class SelectedOptionService {
     next.set(questionIndex, texts);
     this.uiSelectedTextsSig.set(next);
 
-    this.submitToVerdictService(questionIndex, texts);
+    // An EMPTY set on a question that had no previous entry is a fresh render,
+    // not a selection change — nothing has been chosen yet. Submitting it would
+    // fire a check for every question the user merely looks at, which becomes a
+    // wasted network round trip once the verdict comes from the API.
+    //
+    // Deselecting back to empty IS a real change and still submits, because
+    // `current` is defined and non-empty in that case.
+    const isFreshEmptyRender = texts.size === 0 && current === undefined;
+    if (!isFreshEmptyRender) this.submitToVerdictService(questionIndex, texts);
   }
 
   /**
