@@ -7,7 +7,7 @@ import {
   QuestionVerdictError,
   type QuestionCheckResult,
   type QuestionExpiredResult,
-  type QuestionVerdictState
+  type QuestionVerdictState,
 } from './question-verdict.types';
 
 /**
@@ -126,9 +126,9 @@ export class QuestionVerdictService {
       result = evaluateLocally(quizId, questionText, selectedOptionTexts);
     } catch (err: unknown) {
       this.markError(quizId, questionText);
-      return throwError(() => (err instanceof QuestionVerdictError
-        ? err
-        : new QuestionVerdictError('Invalid submission')));
+      return throwError(() =>
+        err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
+      );
     }
 
     this.applyResult(quizId, questionText, selectedOptionTexts, result);
@@ -142,18 +142,15 @@ export class QuestionVerdictService {
    * the signed receipt's deadline decides instead, and a client claim of expiry
    * is ignored entirely.
    */
-  revealExpiredQuestion(
-    quizId: string,
-    questionText: string
-  ): Observable<QuestionExpiredResult> {
+  revealExpiredQuestion(quizId: string, questionText: string): Observable<QuestionExpiredResult> {
     let result: QuestionExpiredResult;
     try {
       result = revealExpiredLocally(quizId, questionText);
     } catch (err: unknown) {
       this.markError(quizId, questionText);
-      return throwError(() => (err instanceof QuestionVerdictError
-        ? err
-        : new QuestionVerdictError('Invalid submission')));
+      return throwError(() =>
+        err instanceof QuestionVerdictError ? err : new QuestionVerdictError('Invalid submission')
+      );
     }
 
     const existing = this.verdictFor(quizId, questionText);
@@ -163,7 +160,7 @@ export class QuestionVerdictService {
       correctOptionTexts: result.correctOptionTexts,
       explanation: result.explanation,
       // Expiry reveals the answer; it does not claim the user got it right.
-      isResolvedCorrect: existing.isResolvedCorrect
+      isResolvedCorrect: existing.isResolvedCorrect,
     });
     return of(result);
   }
@@ -200,7 +197,7 @@ export class QuestionVerdictService {
     this.write(quizId, questionText, {
       ...this.verdictFor(quizId, questionText),
       phase: 'checking',
-      selectedOptionTexts: [...selectedOptionTexts]
+      selectedOptionTexts: [...selectedOptionTexts],
     });
   }
 
@@ -209,7 +206,7 @@ export class QuestionVerdictService {
     // must never be displayed as though it were a recorded answer.
     this.write(quizId, questionText, {
       ...this.verdictFor(quizId, questionText),
-      phase: 'error'
+      phase: 'error',
     });
   }
 
@@ -232,7 +229,7 @@ export class QuestionVerdictService {
         // Nothing revealed yet.
         correctOptionTexts: [],
         explanation: null,
-        isResolvedCorrect: null
+        isResolvedCorrect: null,
       });
       return;
     }
@@ -244,13 +241,15 @@ export class QuestionVerdictService {
         selectedVerdicts: new Map(
           selected.map((text) => [
             canonicalize(text),
-            result.correctOptionTexts.some((correct) => canonicalize(correct) === canonicalize(text))
+            result.correctOptionTexts.some(
+              (correct) => canonicalize(correct) === canonicalize(text)
+            ),
           ])
         ),
         remainingCorrectCount: 0,
         correctOptionTexts: result.correctOptionTexts,
         explanation: result.explanation,
-        isResolvedCorrect: result.correct
+        isResolvedCorrect: result.correct,
       });
       return;
     }
@@ -260,7 +259,7 @@ export class QuestionVerdictService {
       phase: 'expired',
       selectedOptionTexts: selected,
       correctOptionTexts: result.correctOptionTexts,
-      explanation: result.explanation
+      explanation: result.explanation,
     });
   }
 }

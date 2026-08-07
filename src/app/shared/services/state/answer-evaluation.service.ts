@@ -7,6 +7,7 @@ import { QuizQuestion } from '../../models/QuizQuestion.model';
 import { SelectedOption } from '../../models/SelectedOption.model';
 
 import { OptionIdResolverService } from './option-id-resolver.service';
+import { QuestionVerdictService } from '../features/verdict/question-verdict.service';
 import { QuizService } from '../data/quiz.service';
 
 import { isOptionCorrect } from '../../utils/is-option-correct';
@@ -25,7 +26,9 @@ export interface ResolutionStatus {
 export class AnswerEvaluationService {
   constructor(
     private quizService: QuizService,
-    private idResolver: OptionIdResolverService
+    private idResolver: OptionIdResolverService,
+    /** The correctness authority. See areAllCorrectAnswersSelected below. */
+    private verdicts: QuestionVerdictService
   ) {}
 
   // ── Question completeness ──────────────────────────────────
@@ -261,10 +264,41 @@ export class AnswerEvaluationService {
   }
 
   // ── Static correctness checks ──────────────────────────────
+  /**
+   * Has this question reached its correct terminal state?
+   *
+   * Drives the multi-answer completion lock, the incorrect-option highlight and
+   * the timer stop, so its answer must not change during this migration.
+   *
+   * CORRECTNESS COMES FROM QuestionVerdictService, not from `option.correct`.
+   * The verdict is recorded when the selection is submitted
+   * (SelectedOptionService#submitToVerdictService); this only reads it, because
+   * it is called during rendering and must stay side-effect free.
+   *
+   * `isResolvedCorrect` rather than the phase alone: a SINGLE-answer question
+   * resolves on a wrong click too, and that must still report false here.
+   *
+   * COMPATIBILITY SEAM: when no verdict has been recorded yet — a code path
+   * that queries before any selection was published — this falls back to the
+   * local computation below. Removing that fallback is deferred until the
+   * remaining substages have moved every writer onto the service; doing it now
+   * would turn any missed writer into a silent behaviour change rather than a
+   * test failure.
+   */
   areAllCorrectAnswersSelected(
     question: QuizQuestion,
     selectedOptionIds: Set<number>
   ): boolean {
+    const quizId = this.quizService?.quizId;
+    const questionText = question?.questionText;
+
+    if (quizId && questionText) {
+      const verdict = this.verdicts.verdictFor(quizId, questionText);
+      if (verdict.isResolvedCorrect === true) return true;
+      if (verdict.phase === 'incomplete') return false;
+      // 'idle' | 'checking' | 'error' | resolved-but-incorrect → fall through.
+    }
+
     const correctIds = question.options
       .filter(o => isOptionCorrect(o))
       .map(o => o.optionId)
