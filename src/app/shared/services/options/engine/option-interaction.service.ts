@@ -101,7 +101,52 @@ export class OptionInteractionService {
     const base = this.resolveClickContext(binding, index, event, state);
     if (!base) return;
     const ctx = this.computeSelectionUpdate(base, binding, index, state, getQuestionAtDisplayIndex);
+
+    // SUBMIT BEFORE EVALUATE. Phase 2 has produced the complete new selection
+    // (`ctx.futureSelection`); phase 3 is what runs the correctness-dependent
+    // effects. Recording the verdict here is what makes those effects able to
+    // read a real verdict instead of an `idle` one — the ordering bug that
+    // forced the temporary `.correct` fallbacks in 9A/9B.
+    this.submitSelectionForVerdict(ctx);
+
     this.applyClickEffects(ctx, binding, index, state, emitExplanation, updateOptionAndUI);
+  }
+
+  /**
+   * Hand the now-authoritative selection to the single submission owner.
+   *
+   * OWNERSHIP: `SelectedOptionService.setUiSelectedTextsForQuestion()` remains
+   * the only path to `QuestionVerdictService.checkAnswer()`. This does not call
+   * the verdict service directly, so there is exactly one submission path.
+   *
+   * DUPLICATE PREVENTION: that method early-returns when the text set is
+   * unchanged, so the later `ngDoCheck` sync — which publishes the same set —
+   * becomes a no-op rather than a second submission.
+   *
+   * The revisit snapshot is unioned in for the same reason the component does
+   * it: on a revisit the live bindings alone do not carry the first-visit
+   * picks, and a set that differs from what `ngDoCheck` will publish would
+   * defeat the equality guard and cause a duplicate submission.
+   *
+   * Selection RULES are untouched — this only reads the selection phase 2
+   * already computed.
+   */
+  private submitSelectionForVerdict(ctx: ClickContext): void {
+    try {
+      const texts: string[] = [];
+      for (const selected of ctx.futureSelection ?? []) {
+        const text = (selected as any)?.text;
+        if (typeof text === 'string' && text.length > 0) texts.push(text);
+      }
+
+      const revisit = this.selectedOptionService.getRevisitDisplayTexts(ctx.qIdx);
+      if (revisit) texts.push(...revisit);
+
+      this.selectedOptionService.setUiSelectedTextsForQuestion(ctx.qIdx, texts);
+    } catch {
+      // Never let verdict submission break the click. A missing verdict leaves
+      // the migrated readers on their documented fallback.
+    }
   }
 
   // ── click phases ────────────────────────────────────────────────
