@@ -44,6 +44,7 @@ import { QuizPersistenceService } from '../../shared/services/state/quiz-persist
 import { QuizResetService } from '../../shared/services/flow/quiz-reset.service';
 import { QuizRouteService } from '../../shared/services/flow/quiz-route.service';
 import { QuizService } from '../../shared/services/data/quiz.service';
+import { QuestionVerdictService } from '../../shared/services/features/verdict/question-verdict.service';
 import { QuizSetupService } from '../../shared/services/flow/quiz-setup.service';
 import { QuizStateService } from '../../shared/services/state/quizstate.service';
 import { SelectedOptionService } from '../../shared/services/state/selectedoption.service';
@@ -113,6 +114,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
   private readonly quizResetService = inject(QuizResetService);
   private readonly quizRouteService = inject(QuizRouteService);
   public readonly quizService = inject(QuizService);
+  private readonly verdicts = inject(QuestionVerdictService);
   private readonly quizSetupService = inject(QuizSetupService);
   public readonly quizStateService = inject(QuizStateService);
   private readonly selectedOptionService = inject(SelectedOptionService);
@@ -397,7 +399,23 @@ export class QuizComponent implements OnInit, AfterViewInit {
     this.cdRef.markForCheck();
   }
 
+  /**
+   * Is a score-relevant verdict still pending, or failed?
+   *
+   * Delegates to the verdict service, which owns the state — scoring readiness
+   * must not be re-derived per call site or the two gates could disagree.
+   */
+  private hasBlockingVerdicts(): boolean {
+    const quizId = this.quizId() || this.quizService.quizId || undefined;
+    return this.verdicts.hasBlockingVerdicts(quizId);
+  }
+
   public get shouldShowResultsButton(): boolean {
+    // Hidden while any check is in flight or has failed, so the button never
+    // looks available for an action `advanceToResults` would then refuse. The
+    // keyboard shortcut reads this same getter, so both paths agree.
+    if (this.hasBlockingVerdicts()) return false;
+
     const serviceCount = this.quizService.questions?.length || 0;
     const effectiveTotal = Math.max(this.totalQuestions(), serviceCount);
     const idx = this.getEffectiveQuestionIndex();
@@ -582,6 +600,17 @@ export class QuizComponent implements OnInit, AfterViewInit {
   }
   public advanceToResults(): void {
     if (this.navigatingToResults()) return;
+
+    // FINALIZATION GATE. Both entry points (this button and the keyboard
+    // shortcut in quiz-setup.service) funnel through here, so the invariant is
+    // enforced once rather than duplicated per caller.
+    //
+    // Scoring must not run while a check is in flight or has failed: the result
+    // would either come from a superseded verdict or from the local answer key.
+    // The UI gate below (`shouldShowResultsButton`) hides the button in the
+    // same states, so this is a backstop rather than the primary UX.
+    if (this.hasBlockingVerdicts()) return;
+
     this.navigatingToResults.set(true);
 
     // Record elapsed time and stop timer (no navigation from service)

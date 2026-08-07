@@ -221,6 +221,39 @@ export class QuestionVerdictService {
    * flight must not be able to land afterwards and resurrect the state that was
    * just cleared. Deleting would reset the count to zero and let it match.
    */
+  /**
+   * Is any question's verdict still unresolved or failed?
+   *
+   * The finalization invariant: a quiz must not be scored while the answer to
+   * "was this right?" is still in flight or has failed. Before the API cutover
+   * that could not happen — the local adapter answers in the same tick — but
+   * once `/check` is a round trip, finalizing early would mean scoring from a
+   * superseded verdict, or falling back to the local answer key. Both are
+   * exactly what this migration removes.
+   *
+   * `checking` blocks because the user's LATEST selection has not been judged.
+   * `error` blocks because guessing is worse than making the user retry —
+   * silently counting it wrong would be an invented score.
+   *
+   * `idle` does NOT block: a question the user never answered is a legitimate
+   * final state (skipped, or timed out before any click), and nothing is
+   * pending on it.
+   *
+   * Scoped to one quiz when `quizId` is given, since state survives across a
+   * session and another quiz's leftovers must not block this one.
+   */
+  hasBlockingVerdicts(quizId?: string): boolean {
+    const prefix = quizId
+      ? `${quizId}${QuestionVerdictService.KEY_SEPARATOR}`
+      : null;
+
+    for (const [key, state] of this._states()) {
+      if (prefix !== null && !key.startsWith(prefix)) continue;
+      if (state.phase === 'checking' || state.phase === 'error') return true;
+    }
+    return false;
+  }
+
   clearQuestion(quizId: string, questionText: string): void {
     this.nextGeneration(quizId, questionText);
     const next = new Map(this._states());
