@@ -20,7 +20,26 @@ export interface ResolutionStatus {
   correctSelected: number;
   incorrectSelected: number;
   remainingCorrect: number;
+  /**
+   * Did an AUTHORIZED evaluation produce these numbers?
+   *
+   * False for idle/checking/error — the counts are then all zero because
+   * nothing is known, NOT because nothing was correct. Callers that would treat
+   * "0 correct" as a judgement must check this first; without it, "unanswered"
+   * and "answered entirely wrongly" look identical.
+   */
+  evaluated: boolean;
 }
+
+/** Nothing is known yet. Zeros here mean "unknown", not "none". */
+const UNEVALUATED: ResolutionStatus = {
+  resolved: false,
+  correctTotal: 0,
+  correctSelected: 0,
+  incorrectSelected: 0,
+  remainingCorrect: 0,
+  evaluated: false
+};
 
 @Injectable({ providedIn: 'root' })
 export class AnswerEvaluationService {
@@ -87,10 +106,17 @@ export class AnswerEvaluationService {
     selected: Option[],
     strict: boolean = false
   ): ResolutionStatus {
-    if (!question) {
-      return { resolved: false, correctTotal: 0, correctSelected: 0, incorrectSelected: 0, remainingCorrect: 0 };
-    }
+    if (!question) return UNEVALUATED;
 
+    // VERDICT FIRST. It is the correctness authority, and — critically — it
+    // also tells us when correctness is simply NOT KNOWN. Absence of a verdict
+    // used to fall through to the local bank; it now means unanswered, pending
+    // or failed, none of which entitle anyone to read the answer key.
+    const fromVerdict = this.statusFromVerdict(question, strict);
+    if (fromVerdict) return fromVerdict;
+
+    // TEMPORARY: no quiz/question identity to key a verdict by (a caller
+    // outside a live attempt). Removed with the public bank.
     const questionOptions = this.resolveAuthoritativeOptions(question);
     const correctTotal =
       questionOptions.filter(o => this.idResolver.coerceToBoolean(o.correct)).length;
@@ -104,7 +130,64 @@ export class AnswerEvaluationService {
     if (strict) resolved = resolved && incorrectSelected === 0;
 
     return { resolved, correctTotal, correctSelected, incorrectSelected,
-      remainingCorrect };
+      remainingCorrect, evaluated: true };
+  }
+
+  /**
+   * Resolution status from the AUTHORIZED verdict, or null when this question
+   * cannot be keyed to one at all.
+   *
+   * Counts come from `selectedVerdicts`, which covers only options the user
+   * actually picked — the same restriction the backend applies, so an
+   * unselected option's correctness is never inferred here either.
+   */
+  private statusFromVerdict(
+    question: QuizQuestion,
+    strict: boolean
+  ): ResolutionStatus | null {
+    const quizId = this.quizService?.quizId;
+    const questionText = question?.questionText;
+    if (!quizId || !questionText) return null;
+
+    const state = this.verdicts.verdictFor(quizId, questionText);
+
+    // Untouched, in flight, or failed. All three are "not known" — and none of
+    // them is permission to consult the local bank.
+    if (state.phase === 'idle' || state.phase === 'checking' || state.phase === 'error') {
+      return UNEVALUATED;
+    }
+
+    let correctSelected = 0;
+    let incorrectSelected = 0;
+    for (const wasCorrect of state.selectedVerdicts.values()) {
+      if (wasCorrect) correctSelected++;
+      else incorrectSelected++;
+    }
+
+    if (state.phase === 'incomplete') {
+      const remainingCorrect = state.remainingCorrectCount ?? 0;
+      return {
+        resolved: false,
+        correctTotal: correctSelected + remainingCorrect,
+        correctSelected,
+        incorrectSelected,
+        remainingCorrect,
+        evaluated: true
+      };
+    }
+
+    // resolved | expired — terminal, so the full correct set is authorized.
+    // `isResolvedCorrect` rather than the phase: a single-answer question
+    // resolves on a wrong click too, and expiry reveals without crediting.
+    const resolved = state.isResolvedCorrect === true;
+    return {
+      resolved: strict ? resolved && incorrectSelected === 0 : resolved,
+      correctTotal: state.correctOptionTexts.length,
+      correctSelected,
+      incorrectSelected,
+      remainingCorrect: 0,
+      evaluated: true
+    };
   }
 
   // Resolve the authoritative option set, overriding stale live correct-flags
