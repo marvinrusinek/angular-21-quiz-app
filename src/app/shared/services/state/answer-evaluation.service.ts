@@ -82,21 +82,6 @@ export class AnswerEvaluationService {
     return this.getResolutionStatus(question, selected as Option[], true).resolved;
   }
 
-  isQuestionResolvedLeniently(
-    question: QuizQuestion,
-    selected: Array<SelectedOption | Option> | null
-  ): boolean {
-    return this.getResolutionStatus(question, selected as Option[], false).resolved;
-  }
-
-  isAnyCorrectAnswerSelected(
-    question: QuizQuestion,
-    selected: Array<SelectedOption | Option> | null
-  ): boolean {
-    const status = this.getResolutionStatus(question, selected as Option[], false);
-    return status.correctSelected > 0;
-  }
-
   getResolutionStatus(
     question: QuizQuestion,
     selected: Option[],
@@ -251,16 +236,31 @@ export class AnswerEvaluationService {
   }
 
   // ── Multi-answer detection ─────────────────────────────────
+  /**
+   * Is this a multiple-answer question?
+   *
+   * TYPE IS DECLARED, NOT INFERRED. `GET /api/quizzes/:quizId/questions` returns
+   * `type` on every question, so counting correct options to guess it is both
+   * unnecessary and impossible after the cutover — the count is exactly the
+   * fact the answer key withholds.
+   *
+   * The single/trueFalse branch is explicit rather than falling through to the
+   * count, so a declared type is always trusted.
+   */
   isMultiAnswerQuestion(questionIndex: number): boolean {
     const q = this.quizService.questions?.[questionIndex];
     if (!q) return false;
-    if (q.type === QuestionType.MultipleAnswer) return true;
-    if (!Array.isArray(q.options)) return false;
 
-    const correctAnswersCount = (q.options ?? []).filter(
-      (o: Option) => isOptionCorrect(o)
-    ).length;
-    return correctAnswersCount > 1;
+    if (q.type === QuestionType.MultipleAnswer) return true;
+    if (q.type === QuestionType.SingleAnswer || q.type === QuestionType.TrueFalse) return false;
+
+    // COMPATIBILITY, REMOVE IN 10J: questions loaded from the local
+    // `quiz.json` carry no `type` field at all (see the quiz-data notes), so
+    // until question loading moves to the API there is nothing else to read.
+    // This is the last correctness read in this service, and it is a DATA
+    // SOURCE dependency rather than a correctness decision.
+    if (!Array.isArray(q.options)) return false;
+    return q.options.filter((o: Option) => isOptionCorrect(o)).length > 1;
   }
 
   // ── Static correctness checks ──────────────────────────────
@@ -315,39 +315,4 @@ export class AnswerEvaluationService {
     return true;
   }
 
-  areAllCorrectAnswersSelectedForQuestion(
-    questionIndex: number,
-    getSelectedOptionsForQuestion: (idx: number) => SelectedOption[],
-    questionCache: Map<number, QuizQuestion>
-  ): boolean {
-    try {
-      const qIndex = this.quizService.currentQuestionIndexSig?.() ?? questionIndex;
-
-      const question = questionCache.get(qIndex);
-      if (!question || !Array.isArray(question.options)) return false;
-
-      const selected = getSelectedOptionsForQuestion(qIndex) ?? [];
-      if (selected.length === 0) return false;
-
-      const correctOptions = question.options.filter((o: Option) => isOptionCorrect(o));
-      const correctIds = new Set(correctOptions.map((o) => String(o.optionId)));
-
-      const selectedIds = new Set(
-        selected.map((o) => String((o as any).optionId ?? ''))
-      );
-
-      for (const id of selectedIds) {
-        if (!correctIds.has(id)) return false;
-      }
-
-      return (
-        correctIds.size > 0 &&
-        selectedIds.size === correctIds.size &&
-        [...selectedIds].every((id) => correctIds.has(id))
-      );
-    } catch {
-      // Error evaluating correctness
-      return false;
-    }
-  }
 }
