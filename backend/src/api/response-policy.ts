@@ -14,6 +14,8 @@
 export type ResponsePolicyName =
   | 'PUBLIC_METADATA'
   | 'QUIZ_QUESTIONS'
+  | 'ATTEMPT_ISSUED'
+  | 'ANSWER_REVEAL'
   | 'ACTIVE_ASSESSMENT'
   | 'SESSION_CREATED'
   | 'SUBMITTED_REVIEW'
@@ -159,6 +161,77 @@ const POLICIES: Record<ResponsePolicyName, ReadonlySet<string>> = {
     ...IDENTIFIER_FIELDS,
     'explanation',
     'facts'
+  ),
+
+  /**
+   * The attempt-creation response: `{ quizId, durationSeconds, startedAt,
+   * expiresAt, attemptReceipt }`.
+   *
+   * The receipt itself is a signed, readable payload of timing metadata, so it
+   * is not answer-key material — but nothing else may ride along. Correctness,
+   * explanations, identifiers, the signing key and any signature internals are
+   * all banned.
+   */
+  ATTEMPT_ISSUED: banned(
+    ...ANSWER_KEY_FIELDS,
+    ...INTERNAL_FIELDS,
+    ...IDENTIFIER_FIELDS,
+    'explanation',
+    'questions',
+    'options',
+    // The signing key and anything that would expose the signature scheme.
+    'secret',
+    'receiptSecret',
+    'receipt_secret',
+    'topicQuizReceiptSecret',
+    'signingKey',
+    'signing_key',
+    'signature',
+    'hmac',
+    'payload'
+  ),
+
+  /**
+   * The per-question reveal — the ONLY policy outside submitted review that may
+   * carry correctness or an explanation.
+   *
+   * A TIGHTLY SCOPED widening. `correct`, `correctOptionTexts` and
+   * `explanation` become legal because that IS the response; everything that
+   * would turn one question's reveal into a bulk leak stays banned:
+   * identifiers, per-option `isCorrect` flags, `questions`/`options` arrays
+   * (which would imply data for more than the one question asked about), the
+   * signing key and every backend internal.
+   */
+  ANSWER_REVEAL: banned(
+    // Per-option boolean correctness stays banned. The incomplete response
+    // expresses verdicts as `selectedVerdicts[].correct`, scoped to the user's
+    // own picks — never `isCorrect` on an option object.
+    'isCorrect',
+    'is_correct',
+    'answerKey',
+    'answer_key',
+    'expectedAnswers',
+    'expected_answers',
+    'correctAnswers',
+    'correct_answers',
+    'correctOptionIds',
+    'correct_option_ids',
+    ...INTERNAL_FIELDS,
+    ...IDENTIFIER_FIELDS,
+    // Bulk shapes. A reveal is for ONE question; these keys would mean the
+    // response had grown to carry a collection.
+    'questions',
+    'options',
+    'quizzes',
+    'secret',
+    'receiptSecret',
+    'receipt_secret',
+    'topicQuizReceiptSecret',
+    'signingKey',
+    'signing_key',
+    'hmac'
+    // NOT banned: `correct`, `correctOptionTexts`, `explanation`,
+    // `selectedVerdicts`, `remainingCorrectCount` — the authorized payload.
   ),
 
   /**

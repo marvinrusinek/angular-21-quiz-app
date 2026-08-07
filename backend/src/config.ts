@@ -24,7 +24,28 @@ export interface AppConfig {
    * without a database would accept interviews it cannot store.
    */
   readonly databaseUrl: string;
+  /**
+   * HMAC key for Topic Quiz attempt receipts.
+   *
+   * REQUIRED in production. A weak or absent key would let a client forge its
+   * own deadline, and an expired receipt authorizes an answer reveal — so this
+   * is answer-key protection, not a nicety.
+   */
+  readonly topicQuizReceiptSecret: string;
 }
+
+/** Long enough that guessing is hopeless; short enough to be typeable. */
+export const MIN_RECEIPT_SECRET_LENGTH = 32;
+
+/**
+ * A FIXED, PUBLIC development key.
+ *
+ * Deliberately obvious rather than random: a random per-boot key would
+ * invalidate every receipt on restart and make local work confusing, and a
+ * *plausible-looking* constant might get copied into production. This one
+ * announces what it is.
+ */
+export const DEV_RECEIPT_SECRET = 'dev-only-insecure-topic-quiz-receipt-secret-000';
 
 export class ConfigError extends Error {
   public override readonly name = 'ConfigError';
@@ -118,6 +139,43 @@ function parseDatabaseUrl(raw: string | undefined, isProduction: boolean): strin
   return value;
 }
 
+/**
+ * The receipt signing key. FAILS CLOSED in production.
+ *
+ * Outside production an omitted key falls back to a clearly-labelled
+ * development constant, so `npm run dev` and the test suite work with no setup.
+ * That fallback is scoped to non-production ONLY — a production server with no
+ * key refuses to start rather than signing with something guessable.
+ *
+ * The VALUE is never returned in an error message or logged anywhere.
+ */
+function parseReceiptSecret(raw: string | undefined, isProduction: boolean): string {
+  const value = (raw ?? '').trim();
+
+  if (value.length === 0) {
+    if (isProduction) {
+      throw new ConfigError('TOPIC_QUIZ_RECEIPT_SECRET is required in production');
+    }
+    return DEV_RECEIPT_SECRET;
+  }
+
+  if (value.length < MIN_RECEIPT_SECRET_LENGTH) {
+    // Reports the REQUIRED length, never the supplied value or its actual
+    // length — the latter would narrow a brute-force search.
+    throw new ConfigError(
+      `TOPIC_QUIZ_RECEIPT_SECRET must be at least ${MIN_RECEIPT_SECRET_LENGTH} characters`
+    );
+  }
+
+  if (isProduction && value === DEV_RECEIPT_SECRET) {
+    throw new ConfigError(
+      'TOPIC_QUIZ_RECEIPT_SECRET must not be the development default in production'
+    );
+  }
+
+  return value;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const nodeEnv = parseNodeEnv(env['NODE_ENV']);
   const isProduction = nodeEnv === 'production';
@@ -128,6 +186,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: parsePort(env['PORT']),
     allowedOrigins: parseAllowedOrigins(env['ALLOWED_ORIGINS'], isProduction),
     quizDataPath: (env['QUIZ_DATA_PATH'] ?? './data/quiz.json').trim(),
-    databaseUrl: parseDatabaseUrl(env['DATABASE_URL'], isProduction)
+    databaseUrl: parseDatabaseUrl(env['DATABASE_URL'], isProduction),
+    topicQuizReceiptSecret: parseReceiptSecret(env['TOPIC_QUIZ_RECEIPT_SECRET'], isProduction)
   };
 }
