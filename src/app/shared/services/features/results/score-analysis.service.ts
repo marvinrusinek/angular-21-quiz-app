@@ -44,28 +44,34 @@ export class ScoreAnalysisService {
       // the answer key at exactly the moment it is supposed to be unnecessary.
       const authorized = this.authorizedReveal(quizId, questionText);
 
-      // An INCOMPLETE verdict is an authoritative "not correct".
+      // NO AUTHORIZED REVEAL MEANS UNANSWERED — never "consult the bank".
       //
-      // It must not fall through to the bank scan below. It used to, and that
-      // was a real scoring defect: on a multi-answer question the user could
-      // select an option the LOCAL flags call correct, leave the question
-      // unfinished, and the scan would credit it — because the scan compares
-      // the selection against the bank's idea of the correct set rather than
-      // the server's. The verdict knows the question was never completed.
-      const knownIncomplete = this.isIncomplete(quizId, questionText);
-
+      // Every non-terminal phase lands here and they all mean the same thing
+      // for review purposes: nothing was authorized, so nothing is disclosed
+      // and nothing is credited.
+      //
+      //   idle      the question was never answered (skipped, or the quiz was
+      //             finalized before the user reached it) — legitimately a zero
+      //   incomplete answered but never completed. This one used to fall
+      //             through to the scan, and that was a real scoring defect: a
+      //             user could pick an option the LOCAL flags call correct,
+      //             leave a multi-answer question unfinished, and be credited,
+      //             because the scan compares against the bank's idea of the
+      //             correct set rather than the server's
+      //   checking  still in flight; the finalization gate blocks Results here
+      //   error     the check failed; guessing an outcome would invent a score
+      //
+      // The bank scan that used to sit here is gone. It was the last place
+      // Results could rebuild the answer key at exactly the moment it is meant
+      // to be unnecessary.
       const correctTexts = authorized
         ? authorized.correctOptionTexts.map((t) => norm(t))
-        : knownIncomplete
-          ? []
-          // TEMPORARY: no verdict at all for this question (never answered, or
-          // a snapshot rebuilt outside an attempt). Falls back to the bank
-          // until the public asset is removed.
-          : options.filter((o) => o.correct === true).map((o) => norm(o.text ?? ''));
+        : [];
 
       // Mirror the accordion exactly: ALL correct answers must be selected.
-      const wasCorrect = !knownIncomplete
-        && correctTexts.length > 0
+      // With no authorized reveal `correctTexts` is empty, so this is false —
+      // an unanswered question contributes zero rather than being judged.
+      const wasCorrect = correctTexts.length > 0
         && correctTexts.every((ct) => selectedTexts.includes(ct));
 
       // Ids are resolved FROM the authorized texts, not by re-reading

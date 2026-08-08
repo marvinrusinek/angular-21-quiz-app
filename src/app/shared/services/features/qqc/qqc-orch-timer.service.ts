@@ -38,9 +38,32 @@ export class QqcOrchTimerService {
    * touches the local adapter or the question's own flags. Emits a normalized
    * set so the caller can match against rendered option text.
    */
-  private revealExpired(host: Host): Observable<ReadonlySet<string>> {
+  /**
+   * The question that just expired, resolved defensively.
+   *
+   * `host.currentQuestion()` can read null while a payload settles, and at
+   * expiry that is exactly when this runs. Falling back to the DISPLAY-ORDER
+   * array covers it — and display order is also the shuffle-correct source, so
+   * this cannot resolve to a different question than the one on screen.
+   */
+  private expiredQuestionText(host: Host, targetIndex?: number): string | null {
+    const direct = host.currentQuestion()?.questionText;
+    if (typeof direct === 'string' && direct.length > 0) return direct;
+
+    const idx = (typeof targetIndex === 'number' && targetIndex >= 0)
+      ? targetIndex
+      : host.currentQuestionIndex();
+    const inDisplayOrder = (this.quizService as any)
+      ?.getQuestionsInDisplayOrder?.()?.[idx]?.questionText;
+
+    return typeof inDisplayOrder === 'string' && inDisplayOrder.length > 0
+      ? inDisplayOrder
+      : null;
+  }
+
+  private revealExpired(host: Host, targetIndex?: number): Observable<ReadonlySet<string>> {
     const quizId = (this.quizService as any)?.quizId as string | undefined;
-    const questionText = host.currentQuestion()?.questionText;
+    const questionText = this.expiredQuestionText(host, targetIndex);
     if (!quizId || !questionText) return of(new Set<string>());
 
     return this.verdicts.revealExpiredQuestion(quizId, questionText).pipe(
@@ -53,40 +76,46 @@ export class QqcOrchTimerService {
     host.timedOut.set(true);
 
     const soc = host.sharedOptionComponent?.();
-    if (soc) {
-      soc.timerExpiredForQuestion.set(true);
+    if (soc) soc.timerExpiredForQuestion.set(true);
 
-      const displayOpts = soc.optionsToDisplay?.length
-        ? soc.optionsToDisplay
-        : host.optionsToDisplay() ?? [];
+    // TIMEOUT REVEAL comes from the verdict service, not from the options' own
+    // `correct` flags. Expiry is the one moment a question may reveal answers
+    // the user never selected, so it goes through the same authority as every
+    // other reveal.
+    //
+    // RUN UNCONDITIONALLY — not inside the `if (soc)` above. `option-item`
+    // gates its green on the VERDICT PHASE (isTimeoutRevealAuthorized), not on
+    // `soc.timeoutCorrectOptionKeys`, so skipping this when no SharedOption is
+    // mounted left the phase at `idle` and nothing ever painted. That is the
+    // regression the timeout E2E caught after the local fallback was removed:
+    // previously `option.correct` filled the gap and hid it.
+    //
+    // Written from the subscription rather than inline: the local adapter
+    // resolves synchronously today, but the API adapter will not, and the
+    // reveal must paint when the answer ARRIVES rather than assume it is
+    // already there. `runOnQuestionTimedOut` is guarded by `host.timedOut()`
+    // above, so a second expiry cannot produce a second reveal.
+    const displayOpts = soc?.optionsToDisplay?.length
+      ? soc.optionsToDisplay
+      : host.optionsToDisplay() ?? [];
 
-      // TIMEOUT REVEAL comes from the verdict service, not from the options'
-      // own `correct` flags. Expiry is the one moment a question may reveal
-      // answers the user never selected, so it goes through the same authority
-      // as every other reveal.
-      //
-      // Written from the subscription rather than inline: the local adapter
-      // resolves synchronously today, but Stage 10 makes this an HTTP call, and
-      // the reveal must paint when the answer ARRIVES rather than assume it is
-      // already there. `runOnQuestionTimedOut` is guarded by `host.timedOut()`
-      // above, so a second expiry cannot produce a second reveal.
-      this.revealExpired(host).subscribe({
-        next: (correctTexts: ReadonlySet<string>) => {
-          const keys = new Set<string>();
-          for (const [i, opt] of displayOpts.entries()) {
-            const text = norm(opt?.text ?? '');
-            if (text && correctTexts.has(text)) keys.add(soc.keyOf(opt, i));
-          }
-          soc.timeoutCorrectOptionKeys = keys;
-        },
-        error: () => {
-          // Fail SAFE: no reveal rather than a fallback to the local answer
-          // key. An empty set leaves the options unpainted, which is wrong-
-          // looking but never wrong — and it does not restart the timer.
-          soc.timeoutCorrectOptionKeys = new Set<string>();
+    this.revealExpired(host, targetIndex).subscribe({
+      next: (correctTexts: ReadonlySet<string>) => {
+        if (!soc) return;   // verdict is recorded either way; keys need a SOC
+        const keys = new Set<string>();
+        for (const [i, opt] of displayOpts.entries()) {
+          const text = norm(opt?.text ?? '');
+          if (text && correctTexts.has(text)) keys.add(soc.keyOf(opt, i));
         }
-      });
-    }
+        soc.timeoutCorrectOptionKeys = keys;
+      },
+      error: () => {
+        // Fail SAFE: no reveal rather than a fallback to the local answer key.
+        // An empty set leaves the options unpainted, which is wrong-looking but
+        // never wrong — and it does not restart the timer.
+        if (soc) soc.timeoutCorrectOptionKeys = new Set<string>();
+      }
+    });
 
     const result = host.timerEffect.onQuestionTimedOut({
       targetIndex,

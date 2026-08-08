@@ -187,7 +187,8 @@ export class QuizScoringService {
     if (extraSelectedTexts) for (const t of extraSelectedTexts) selected.add(norm(t));
 
     // VERDICT FIRST. It answers the same question authoritatively.
-    const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, scoringKey);
+    // Keyed by qIndex (DISPLAY) — scoringKey is a SOURCE index under shuffle.
+    const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, qIndex);
     if (fromVerdict !== null) return fromVerdict;
 
     // TEMPORARY: no verdict recorded for this question yet.
@@ -219,7 +220,8 @@ export class QuizScoringService {
         if (ui) for (const t of ui) selected.add(norm(t));
       } catch (err: unknown) { swallow('quiz-scoring.service.ts gate ui-union', err); }
       // VERDICT FIRST — same question, authoritative answer.
-      const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, scoringKey);
+      // Keyed by qIndex (DISPLAY) — scoringKey is a SOURCE index under shuffle.
+      const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, qIndex);
       if (fromVerdict !== null) {
         if (!fromVerdict) isNowCorrect = false;
         return isNowCorrect;
@@ -251,11 +253,11 @@ export class QuizScoringService {
    * to under shuffle, and cross-validates against confirmed clicks to recover.
    * The verdict is keyed by question TEXT, so there is nothing to guess.
    */
-  private multiAnswerCompleteFromVerdict(quizId: string, scoringKey: number): boolean | null {
+  private multiAnswerCompleteFromVerdict(quizId: string, displayIndex: number): boolean | null {
     if (!quizId) return null;
 
     try {
-      const questionText = this.questionTextForScoringKey(scoringKey);
+      const questionText = this.questionTextForDisplayIndex(displayIndex);
       if (!questionText) return null;
 
       const verdicts = this.injector.get(QuestionVerdictService, null);
@@ -272,17 +274,20 @@ export class QuizScoringService {
   }
 
   /**
-   * The question text at a scoring key, SHUFFLE-AWARE.
+   * The question text at a DISPLAY index, shuffle-aware.
    *
-   * Scoring keys are display indexes, so `questions[key]` is the wrong question
-   * once shuffle is active — the same trap the pristine scan works around by
-   * cross-validating. The display-order array is the authoritative source.
+   * Takes the display index, NOT the scoring key. Those differ under shuffle:
+   * `resolveScoringKey` maps the display index through
+   * `QuizShuffleService.toOriginalIndex`, so the scoring key is a SOURCE index.
+   * Looking a source index up in the display-order array resolves a different
+   * question entirely — which produced no verdict and silently withheld credit
+   * for a multi-answer completed on revisit while shuffled.
    */
-  private questionTextForScoringKey(scoringKey: number): string | null {
+  private questionTextForDisplayIndex(displayIndex: number): string | null {
     // Resolved through the injector rather than a constructor dependency:
     // QuizService owns this service, so injecting it directly would be a cycle.
     const service = this.injector.get(QuizService, null) as any;
-    const inDisplayOrder = service?.getQuestionsInDisplayOrder?.()?.[scoringKey]?.questionText;
+    const inDisplayOrder = service?.getQuestionsInDisplayOrder?.()?.[displayIndex]?.questionText;
     return typeof inDisplayOrder === 'string' && inDisplayOrder.length > 0 ? inDisplayOrder : null;
   }
 
