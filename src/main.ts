@@ -20,6 +20,7 @@ import { PwaUpdateService } from './app/shared/services/pwa-update.service';
 import { GlobalErrorHandler, installGlobalErrorLogging } from './app/shared/utils/error-logging';
 import { setQuizDataCache } from './app/shared/quiz-data-cache';
 import { provideApiBaseUrl } from './app/shared/tokens/api-base-url.token';
+import { provideApiTopicQuizVerdictAdapter } from './app/shared/services/features/verdict/verdict-adapter';
 import { InterviewSessionReferenceStorage } from './app/shared/services/interview/interview-session-reference.storage';
 import { validateQuizData } from './app/shared/utils/quiz-data-validation';
 
@@ -40,9 +41,13 @@ bootstrapApplication(AppComponent, {
     // and the provider did nothing for us, so it is gone rather than silenced.
     provideHttpClient(withFetch()),
     // Base URL for the private quiz API. Provided centrally so no service or
-    // component hard-codes a host. Nothing consumes it yet — Interview Mode is
-    // wired to the API from Stage 9C.
+    // component hard-codes a host.
     provideApiBaseUrl(),
+    // Topic Quiz correctness comes from POST /check, not from option.correct.
+    // The token defaults to the LOCAL adapter so the unit suite needs no HTTP
+    // mock; the running application opts into the API here, and there is no
+    // fallback to the local answer key if the API is unreachable.
+    provideApiTopicQuizVerdictAdapter(),
     provideRouter(routes),
     provideAnimations(),
     // Fetch quiz dataset BEFORE app stabilizes. Populates the module-level

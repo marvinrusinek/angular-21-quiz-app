@@ -1,6 +1,7 @@
-import { InjectionToken, inject } from '@angular/core';
+import { InjectionToken, inject, type Provider } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import { ApiTopicQuizVerdictAdapter } from './api-verdict.adapter';
 import { LocalTopicQuizVerdictAdapter } from './local-verdict.adapter.service';
 import type { QuestionCheckResult, QuestionExpiredResult } from './question-verdict.types';
 
@@ -56,3 +57,20 @@ export const TOPIC_QUIZ_VERDICT_ADAPTER = new InjectionToken<TopicQuizVerdictAda
   'TOPIC_QUIZ_VERDICT_ADAPTER',
   { providedIn: 'root', factory: () => inject(LocalTopicQuizVerdictAdapter) }
 );
+
+/**
+ * Select the API adapter for the running application.
+ *
+ * The token's default stays LOCAL so the unit suite keeps working without an
+ * HTTP mock in every spec. Production opts in HERE, once, at bootstrap — which
+ * is also the only place worth auditing to answer "where do verdicts come
+ * from?".
+ *
+ * There is deliberately no fallback to the local adapter when the API is
+ * unreachable. A fallback would read the answer key that is about to leave the
+ * bundle, so it would work in testing and fail silently in production the day
+ * the asset is deleted. An error state is the honest outcome.
+ */
+export function provideApiTopicQuizVerdictAdapter(): Provider {
+  return { provide: TOPIC_QUIZ_VERDICT_ADAPTER, useExisting: ApiTopicQuizVerdictAdapter };
+}
