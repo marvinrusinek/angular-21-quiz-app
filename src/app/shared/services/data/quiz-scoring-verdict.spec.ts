@@ -188,12 +188,21 @@ describe('the verdict overrules the local answer key', () => {
   });
 });
 
-describe('no verdict yet', () => {
-  it('falls back to the local gate rather than crediting blindly', () => {
-    // Nothing submitted — the question is idle. The temporary pristine gate
-    // still runs; it disappears with the bank.
+describe('no verdict means NO CREDIT', () => {
+  it('an untouched question is not creditable, despite local correct flags', () => {
+    // The bank flags 'map' and 'Observable' correct. None of that may credit a
+    // question the server never judged — the local scan that used to run here
+    // is gone.
     expect(verdicts.verdictFor(QUIZ, MULTI).phase).toBe('idle');
-    expect(typeof creditable(new Set(['map']))).toBe('boolean');
+    expect(QUESTIONS[0]!.options[0]!.correct).toBe(true);
+
+    expect(creditable()).toBe(false);
+    expect(creditable(new Set(['map', 'Observable']))).toBe(false);
+  });
+
+  it('even a selection matching the BANK\'s correct set is not creditable', () => {
+    // Exactly what a pristine scan would have called complete.
+    expect(creditable(new Set(['map', 'Observable']))).toBe(false);
   });
 
   it('an ERROR verdict does not credit from the answer key', () => {

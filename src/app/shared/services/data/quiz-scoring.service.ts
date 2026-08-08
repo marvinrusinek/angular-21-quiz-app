@@ -9,8 +9,6 @@ import { QuestionVerdictService } from '../features/verdict/question-verdict.ser
 import { QuizService } from './quiz.service';
 import { SelectedOptionService } from '../state/selectedoption.service';
 
-import { getQuizData } from '../../quiz-data-cache';
-import { isOptionCorrect } from '../../utils/is-option-correct';
 import { norm } from '../../utils/text-norm';
 import { swallow } from '../../utils/error-logging';
 
@@ -165,13 +163,17 @@ export class QuizScoringService {
   }
 
   /**
-   * Whether the LEAVING question may be credited as correct. Single-answer
-   * questions (<= 1 pristine correct) are creditable when the caller has
-   * confirmed the dot is correct. Multi-answer questions are creditable ONLY
-   * when EVERY pristine-correct answer was confirmed-clicked — the green dot
-   * alone can come from a single correct click on a partial multi-answer, which
-   * must NOT score. Pure (no side effects); reuses the same confirmed-clicks +
-   * pristine data the scoring gate uses.
+   * Whether the LEAVING question may be credited as correct.
+   *
+   * Answered entirely from the VERDICT. A green dot alone is not enough: it can
+   * come from a single correct click on a partial multi-answer, which must not
+   * score. `isResolvedCorrect` already encodes the Topic Quiz superset rule, so
+   * this needs no second opinion.
+   *
+   * No verdict means no credit. It used to mean "scan the bank", which credited
+   * questions the server had never judged.
+   *
+   * Pure — no side effects; safe to call during navigation.
    */
   public isLeavingQuestionCreditable(
     qIndex: number,
@@ -186,15 +188,20 @@ export class QuizScoringService {
     const selected = new Set<string>(this._confirmedCorrectClicks.get(qIndex) ?? []);
     if (extraSelectedTexts) for (const t of extraSelectedTexts) selected.add(norm(t));
 
-    // VERDICT FIRST. It answers the same question authoritatively.
+    // THE VERDICT IS THE ONLY AUTHORITY.
     // Keyed by qIndex (DISPLAY) — scoringKey is a SOURCE index under shuffle.
     const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, qIndex);
     if (fromVerdict !== null) return fromVerdict;
 
-    // TEMPORARY: no verdict recorded for this question yet.
-    const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
-    if (pristineCorrectTexts.length <= 1) return true;                // single-answer
-    return pristineCorrectTexts.every((t: string) => selected.has(t)); // multi: all correct selected
+    // No verdict: untouched, in flight, or failed. NOT creditable.
+    //
+    // This used to scan the local bank — returning true for anything with one
+    // correct option, which credited a single-answer question the server had
+    // never judged. Scoring may not invent an outcome from data the browser is
+    // about to stop having; the finalization gate blocks Results while a check
+    // is pending, so the only way to reach here is a question that was never
+    // answered, and zero is the right contribution for that.
+    return false;
   }
 
   // PRISTINE GATE: block a multi-answer increment unless ALL pristine correct
@@ -222,17 +229,13 @@ export class QuizScoringService {
       // VERDICT FIRST — same question, authoritative answer.
       // Keyed by qIndex (DISPLAY) — scoringKey is a SOURCE index under shuffle.
       const fromVerdict = this.multiAnswerCompleteFromVerdict(quizId, qIndex);
-      if (fromVerdict !== null) {
-        if (!fromVerdict) isNowCorrect = false;
-        return isNowCorrect;
-      }
 
-      // TEMPORARY: no verdict recorded for this question yet.
-      const pristineCorrectTexts = this.resolvePristineCorrectTexts(quizId, scoringKey, selected);
-      if (pristineCorrectTexts.length > 1) {
-        const allConfirmed = pristineCorrectTexts.every((t: string) => selected.has(t));
-        if (!allConfirmed) isNowCorrect = false;
-      }
+      // No verdict for a multi-answer question means it was never judged
+      // complete, so it must not increment. The local scan that used to run
+      // here is gone — it decided completion by comparing the selection
+      // against the BANK's correct set rather than the server's.
+      if (!fromVerdict) isNowCorrect = false;
+      return isNowCorrect;
     }
     return isNowCorrect;
   }
@@ -291,42 +294,6 @@ export class QuizScoringService {
     return typeof inDisplayOrder === 'string' && inDisplayOrder.length > 0 ? inDisplayOrder : null;
   }
 
-  private resolvePristineCorrectTexts(
-    quizId: string,
-    scoringKey: number,
-    confirmed: Set<string>
-  ): string[] {
-    let pristineCorrectTexts: string[] = [];
-    const pristineQuiz = getQuizData().find((qz: any) => qz?.quizId === quizId);
-
-    // PRIMARY: index-based lookup
-    const pristineQ = pristineQuiz?.questions?.[scoringKey];
-    if (pristineQ) {
-      pristineCorrectTexts = (pristineQ.options ?? [])
-        .filter((o: any) => isOptionCorrect(o))
-        .map((o: any) => norm(o?.text))
-        .filter((t: string) => !!t);
-    }
-
-    // CROSS-VALIDATE: if index-based texts don't match confirmed clicks, scan
-    // all questions for one whose correct texts match the confirmed clicks.
-    if (pristineCorrectTexts.length > 1 && confirmed.size > 0) {
-      const allMatch = pristineCorrectTexts.every((t: string) => confirmed.has(t));
-      if (!allMatch && pristineQuiz?.questions) {
-        for (const pq of pristineQuiz.questions) {
-          const pqCorrect = (pq?.options ?? [])
-            .filter((o: any) => isOptionCorrect(o))
-            .map((o: any) => norm(o?.text))
-            .filter((t: string) => !!t);
-          if (pqCorrect.length > 1 && pqCorrect.every((t: string) => confirmed.has(t))) {
-            pristineCorrectTexts = pqCorrect;
-            break;
-          }
-        }
-      }
-    }
-    return pristineCorrectTexts;
-  }
 
   // Update the correctness map + running count based on now-vs-was correctness.
   private applyCorrectnessUpdate(scoringKey: number, isNowCorrect: boolean, wasCorrect: boolean): void {
