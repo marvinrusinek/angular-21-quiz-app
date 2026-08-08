@@ -1,4 +1,4 @@
-﻿import { inject, Service, signal, WritableSignal } from '@angular/core';
+﻿import { inject, Injector, Service, signal, WritableSignal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
@@ -24,6 +24,7 @@ import { QuizQuestionResolverService } from './quiz-question-resolver.service';
 import { QuizScoringService } from './quiz-scoring.service';
 import { QuizSessionManagerService } from './quiz-session-manager.service';
 import { QuizShuffleService } from '../flow/quiz-shuffle.service';
+import { TopicQuizTypeRegistry } from '../api/topic-quiz-type-registry.service';
 import { QuizStateService } from '../state/quizstate.service';
 
 import { SK_SHUFFLED_QUESTIONS, SK_SHUFFLED_QUESTIONS_QUIZ_ID, SK_USER_ANSWERS } from '../../constants/session-keys';
@@ -46,6 +47,7 @@ export class QuizService {
   private readonly quizStateService = inject(QuizStateService);
   public readonly scoringService = inject(QuizScoringService);
   public readonly sessionManager = inject(QuizSessionManagerService);
+  private readonly injector = inject(Injector);
 
   /**
    * Field-style accessor backed by currentQuestionIndexSig (the signal
@@ -315,6 +317,22 @@ export class QuizService {
     this.totalQuestions.set(result.totalQuestions);
     this.quizData = this.dataLoader.quizData;
     this.quizInitialState = this.dataLoader.quizInitialState;
+
+    // Fetch this quiz's DECLARED question types alongside the local content.
+    //
+    // Question content still comes from the local bank in this transitional
+    // slice; only the type comes from the API. That matters because type is
+    // currently derived by counting correct options, which makes it an
+    // answer-key derivative — and the local bank carries no `type` field at
+    // all, so there is nothing else to read.
+    //
+    // Fire-and-forget: the registry answers `null` until the response lands,
+    // and every consumer keeps its existing inference as a fallback, so a slow
+    // or failed load changes nothing. Resolved lazily to avoid a DI cycle —
+    // the registry's HTTP stack would otherwise be constructed with QuizService.
+    try {
+      this.injector.get(TopicQuizTypeRegistry, null)?.load(this.quizId).subscribe();
+    } catch (err: unknown) { swallow('quiz.service.ts type-registry load', err); }
   }
 
   public setActiveQuiz(quiz: Quiz): void {

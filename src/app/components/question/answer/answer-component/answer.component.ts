@@ -26,6 +26,7 @@ import { AnswerSelectionService } from '../../../../shared/services/features/ans
 
 import { QqcQuestionLoaderService } from '../../../../shared/services/features/qqc/qqc-question-loader.service';
 import { QuizQuestionManagerService } from '../../../../shared/services/flow/quizquestionmgr.service';
+import { TopicQuizTypeRegistry } from '../../../../shared/services/api/topic-quiz-type-registry.service';
 
 import { SharedOptionComponent } from '../shared-option-component/shared-option.component';
 
@@ -44,6 +45,7 @@ import { norm } from '../../../../shared/utils/text-norm';
 export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implements OnInit {
   // ── injects ─────────────────────────────────────────────────────
   private readonly answerBindingsService = inject(AnswerBindingsService);
+  private readonly typeRegistry = inject(TopicQuizTypeRegistry);
   private readonly answerOptionsService = inject(AnswerOptionsService);
   private readonly answerSelectionService = inject(AnswerSelectionService);
   protected readonly quizQuestionLoaderService = inject(QqcQuestionLoaderService);
@@ -86,8 +88,7 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implemen
     effect(() => {
       const q = this.questionData();
       if (q) {
-        const correctCount = q.options?.filter((o: Option) => o.correct).length ?? 0;
-        this.type.set(correctCount > 1 ? 'multiple' : 'single');
+        this.type.set(this.resolveQuestionType(q?.questionText, q.options ?? []));
       }
     });
 
@@ -146,9 +147,8 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implemen
 
         // ROBUST MULTI-ANSWER CHECK
         const opts = currentQuestion.options || [];
-        const correctCount = opts.filter((o) => isOptionCorrect(o)).length;
 
-        this.type.set(correctCount > 1 ? 'multiple' : 'single');
+        this.type.set(this.resolveQuestionType(currentQuestion?.questionText, opts));
 
         if (!this.hasComponentLoaded()) {
           this.hasComponentLoaded.set(true);
@@ -288,6 +288,36 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implemen
     this.showFeedbackForOption = {};
   }
 
+  /**
+   * Single vs multiple, from the question's DECLARED type where available.
+   *
+   * The three call sites used to count correct options — `correctCount > 1`.
+   * That makes question type an answer-key derivative, and it cannot survive
+   * the bank leaving the browser. `GET /questions` declares the type
+   * explicitly, and TopicQuizTypeRegistry holds it for the current quiz.
+   *
+   * `trueFalse` maps to 'single' here deliberately: it is a single-SELECTION
+   * question wearing a label, and this component's `type` drives radio-vs-
+   * checkbox rendering, which is a selection concern.
+   *
+   * REMOVE IN FINAL /questions RUNTIME CUTOVER — the count-based branch below
+   * exists only because question CONTENT still comes from the local bank,
+   * which carries no `type` field at all. A registry MISS is deliberately not
+   * treated as 'single': that would silently turn multi-answer questions into
+   * single-answer ones while the request is in flight.
+   */
+  private resolveQuestionType(
+    questionText: string | null | undefined,
+    options: readonly Option[]
+  ): 'single' | 'multiple' {
+    const declared = this.typeRegistry.isMultiAnswer(questionText);
+    if (declared !== null) return declared ? 'multiple' : 'single';
+
+    // REMOVE IN FINAL /questions RUNTIME CUTOVER.
+    const correctCount = (options ?? []).filter((o) => isOptionCorrect(o)).length;
+    return correctCount > 1 ? 'multiple' : 'single';
+  }
+
   private applyIncomingOptions(options: Option[], config: { resetSelection?: boolean } = {}): void {
     const normalized = this.answerOptionsService.normalizeOptions(options);
     const nextOptions = normalized.map((option: Option) => ({
@@ -304,6 +334,16 @@ export class AnswerComponent extends BaseQuestion<OptionClickedPayload> implemen
     // Without this, navigating from a multi-answer question (e.g. Q4) to a
     // single-answer question (e.g. Q5) would leave type='multiple', causing
     // SOC to render checkboxes and use multi-answer interaction logic.
+    // NOT registry-backed, deliberately. This runs while `questionData()` may
+    // still hold the PREVIOUS question (see the note above about stale
+    // questionData), so a text-keyed type lookup here would return the wrong
+    // question's type — which is exactly what broke multi-answer scoring and
+    // timeout colouring when it was tried. The incoming OPTIONS are the only
+    // thing reliably describing the next question at this point.
+    //
+    // REMOVE IN FINAL /questions RUNTIME CUTOVER: once questions arrive from
+    // the API they carry their own declared type, so this site reads it from
+    // the question itself rather than needing a lookup key at all.
     const correctCount = nextOptions.filter((o) => isOptionCorrect(o)).length;
     this.type.set(correctCount > 1 ? 'multiple' : 'single');
 

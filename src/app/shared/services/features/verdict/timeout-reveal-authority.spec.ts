@@ -109,7 +109,23 @@ beforeEach(() => {
   quizService.questionsSig.set(JSON.parse(JSON.stringify(LYING_BANK[0]!.questions)) as never);
 });
 
+/**
+ * Drain the question-TYPE request.
+ *
+ * QuizService.initializeData now asks TopicQuizTypeRegistry for this quiz's
+ * declared types, because type used to be inferred by counting correct
+ * options. It is unrelated to the reveal under test here, but it is a real
+ * consequence of constructing QuizService with an API base URL, so the spec
+ * accounts for it rather than pretending it does not happen.
+ */
+function drainTypeRequests(): void {
+  for (const req of http.match((r) => r.url.endsWith('/questions'))) {
+    req.flush({ quizId: QUIZ, questions: [] });
+  }
+}
+
 afterEach(() => {
+  drainTypeRequests();
   http.verify();
   setQuizDataCache([], []);
 });
